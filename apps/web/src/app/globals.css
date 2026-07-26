@@ -48,3 +48,8 @@
 body {
   font-family: var(--font-sans);
 }
+
+/* Direction-implying glyphs mirror in RTL. Applied via <DirectionalIcon>. */
+[dir='rtl'] .dir-flip {
+  transform: scaleX(-1);
+}
