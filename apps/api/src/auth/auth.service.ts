@@ -117,6 +117,14 @@ export class AuthService {
     return toUser(row);
   }
 
+  /**
+   * Links an OAuth identity to an existing account by email, or creates one.
+   *
+   * `email` is non-null only when the provider reported the address as
+   * verified ({@link OAuthService}); an unverified address must never reach
+   * here, because matching on it would hand the attacker a session for any
+   * account whose email they can name.
+   */
   private async linkOrCreateOAuthUser(
     dto: OAuthLoginRequest,
     providerAccountId: string,

@@ -33,9 +33,10 @@ const envSchema = z.object({
   JWT_REFRESH_TTL: z.string().default('30d'),
 
   /**
-   * OAuth client IDs. When set, the `aud` claim of an incoming Apple/Google ID
-   * token is pinned to them — without that pinning a token minted for any other
-   * app would be accepted, so these must be set before production.
+   * OAuth client IDs. The `aud` claim of an incoming Apple/Google ID token is
+   * pinned to them — without that pinning a token minted for any other app is
+   * accepted, which is an account takeover. Optional in development only; the
+   * production guard below refuses to boot without them.
    */
   GOOGLE_CLIENT_ID: z.string().default(''),
   APPLE_CLIENT_ID: z.string().default(''),
@@ -69,6 +70,18 @@ const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
       path: ['OPENAI_API_KEY'],
       message: 'is required when AI_MOCK is false',
     });
+  }
+  // Without a client id the `aud` claim cannot be pinned, and an ID token
+  // minted for any other OAuth client — including the attacker's own — is
+  // accepted as proof of identity.
+  for (const key of ['GOOGLE_CLIENT_ID', 'APPLE_CLIENT_ID'] as const) {
+    if (env.NODE_ENV === 'production' && env[key].trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: 'is required in production to pin the ID token audience',
+      });
+    }
   }
 });
 

@@ -11,6 +11,7 @@ import {
 import { AppError } from '../../common/errors.js';
 import { DB, type Database } from '../../db/index.js';
 import { recognitionSessions, users } from '../../db/schema.js';
+import { StorageService } from '../../storage/storage.service.js';
 import { AiGateway } from '../ai-gateway.service.js';
 import { CATALOG_PORT } from '../ai.constants.js';
 import type { IngredientResolverPort } from '../catalog/ingredient-resolver.port.js';
@@ -37,11 +38,20 @@ export class ReceiptService {
     @Inject(DB) private readonly db: Database,
     @Inject(CATALOG_PORT) private readonly catalog: IngredientResolverPort,
     @Inject(AiGateway) private readonly gateway: AiGateway,
+    @Inject(StorageService) private readonly storage: StorageService,
   ) {}
 
   async process(input: ReceiptProcessInput): Promise<string> {
     const { householdId, request } = input;
     const locale = await this.localeFor(input.userId);
+
+    // Signed URLs, not object keys — the provider fetches the image over HTTP.
+    // This also rejects any key outside the household's prefix.
+    const images = await Promise.all(
+      request.photoKeys.map(async (key) => ({
+        url: await this.storage.presignDownload(householdId, key),
+      })),
+    );
 
     const extraction = await this.gateway.execute<ReceiptExtraction>({
       householdId,
@@ -49,7 +59,7 @@ export class ReceiptService {
       prompt: buildReceiptExtractPrompt({ locale }),
       schema: receiptExtractionSchema,
       context: { locale },
-      images: request.photoKeys.map((url) => ({ url })),
+      images,
       scenario: input.scenario,
     });
 

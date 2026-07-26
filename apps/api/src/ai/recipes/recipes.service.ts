@@ -14,6 +14,7 @@ import {
   inventoryEvents,
   inventoryItems,
   mealPlanEntries,
+  mealPlans,
   recipeVideos,
   recipes,
   users,
@@ -99,6 +100,13 @@ export class RecipesService {
     const row = await this.loadRecipe(householdId, id);
     const scale = (request.servings ?? row.servings) / (row.servings || 1);
 
+    // `mealPlanEntryId` is client-supplied. It is stamped onto every
+    // inventory_event below and flipped to `cooked` at the end, so it has to be
+    // proved to belong to this household before either write happens.
+    if (request.mealPlanEntryId) {
+      await this.requireOwnedPlanEntry(householdId, request.mealPlanEntryId);
+    }
+
     const deductedItemIds: string[] = [];
     const missingIngredientIds: string[] = [];
 
@@ -127,6 +135,17 @@ export class RecipesService {
     }
 
     return { deductedItemIds, missingIngredientIds };
+  }
+
+  /** 404s unless the meal-plan entry belongs to a plan owned by this household. */
+  private async requireOwnedPlanEntry(householdId: string, entryId: string): Promise<void> {
+    const [owned] = await this.db
+      .select({ id: mealPlanEntries.id })
+      .from(mealPlanEntries)
+      .innerJoin(mealPlans, eq(mealPlanEntries.planId, mealPlans.id))
+      .where(and(eq(mealPlanEntries.id, entryId), eq(mealPlans.householdId, householdId)))
+      .limit(1);
+    if (!owned) throw AppError.notFound();
   }
 
   private async deductIngredient(

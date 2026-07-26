@@ -29,13 +29,23 @@ function decodeJwtPart<T>(part: string): T {
 }
 
 /**
+ * Both providers report `email_verified` as either a boolean or the string
+ * `'true'` (Google's tokeninfo endpoint returns every claim as a string).
+ * Anything else — including the claim being absent — counts as unverified.
+ */
+function isVerifiedEmail(claim: unknown): boolean {
+  return claim === true || claim === 'true';
+}
+
+/**
  * Verifies Apple / Google identity tokens without adding a JWT dependency:
  * Google via its public `tokeninfo` endpoint, Apple by validating the RS256
- * signature against Apple's published JWKS. The audience (client id) is only
- * checked when a `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` is configured (read
- * from the validated {@link Env}, never `process.env`), so the flow is
- * production-ready the moment those are set. The two `verify*` methods are the
- * single swap-point for a different strategy.
+ * signature against Apple's published JWKS. The audience (client id) is pinned
+ * to `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` (read from the validated {@link Env},
+ * never `process.env`), which {@link loadEnv} requires in production. An email
+ * is only returned when the provider states it verified the address, because
+ * the caller links accounts on it. The two `verify*` methods are the single
+ * swap-point for a different strategy.
  */
 @Injectable()
 export class OAuthService implements OnModuleInit {
@@ -65,6 +75,7 @@ export class OAuthService implements OnModuleInit {
     let payload: {
       sub?: string;
       email?: string;
+      email_verified?: boolean | string;
       aud?: string;
       iss?: string;
       exp?: string;
@@ -89,7 +100,10 @@ export class OAuthService implements OnModuleInit {
     }
     this.assertAudience(this.env.GOOGLE_CLIENT_ID, payload.aud);
 
-    return { providerAccountId: payload.sub, email: payload.email ?? null };
+    return {
+      providerAccountId: payload.sub,
+      email: isVerifiedEmail(payload.email_verified) ? (payload.email ?? null) : null,
+    };
   }
 
   private async verifyApple(idToken: string): Promise<VerifiedIdentity> {
@@ -115,6 +129,7 @@ export class OAuthService implements OnModuleInit {
     const payload = decodeJwtPart<{
       sub?: string;
       email?: string;
+      email_verified?: boolean | string;
       iss?: string;
       aud?: string;
       exp?: number;
@@ -128,11 +143,23 @@ export class OAuthService implements OnModuleInit {
     }
     this.assertAudience(this.env.APPLE_CLIENT_ID, payload.aud);
 
-    return { providerAccountId: payload.sub, email: payload.email ?? null };
+    return {
+      providerAccountId: payload.sub,
+      email: isVerifiedEmail(payload.email_verified) ? (payload.email ?? null) : null,
+    };
   }
 
   private assertAudience(expected: string | undefined, actual: string | undefined): void {
-    if (expected && actual !== expected) {
+    if (!expected) {
+      // `loadEnv` refuses to boot production without both client ids, so this
+      // is unreachable there. Fail closed anyway rather than let a single
+      // misconfigured guard turn into an account takeover.
+      if (this.env.NODE_ENV === 'production') {
+        throw AppError.unauthenticated('auth.invalidCredentials');
+      }
+      return;
+    }
+    if (actual !== expected) {
       throw AppError.unauthenticated('auth.invalidCredentials');
     }
   }

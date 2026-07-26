@@ -12,7 +12,13 @@ function envWith(overrides: Partial<Env>): Env {
  * with the given `aud`, letting us exercise the audience-pinning branch of
  * `verifyGoogle` without any network access.
  */
-function stubGoogleTokeninfo(aud: string): void {
+/** Distinguishes "the provider omitted the claim" from "the claim is false". */
+const ABSENT = Symbol('absent');
+
+function stubGoogleTokeninfo(
+  aud: string,
+  emailVerified: boolean | string | typeof ABSENT = 'true',
+): void {
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => ({
@@ -20,6 +26,7 @@ function stubGoogleTokeninfo(aud: string): void {
       json: async () => ({
         sub: 'google-sub-123',
         email: 'user@example.com',
+        ...(emailVerified === ABSENT ? {} : { email_verified: emailVerified }),
         iss: 'https://accounts.google.com',
         aud,
         exp: String(Math.floor(Date.now() / 1000) + 3600),
@@ -63,12 +70,56 @@ describe('OAuthService audience pinning', () => {
     expect(identity).toEqual({ providerAccountId: 'google-sub-123', email: 'user@example.com' });
   });
 
-  it('skips aud pinning when the client id is unset (empty)', async () => {
+  it('skips aud pinning outside production when the client id is unset', async () => {
     stubGoogleTokeninfo('any-aud-whatsoever');
-    const service = new OAuthService(envWith({ GOOGLE_CLIENT_ID: '' }));
+    const service = new OAuthService(
+      envWith({ GOOGLE_CLIENT_ID: '', NODE_ENV: 'development' }),
+    );
 
     const identity = await service.verify('google', 'header.body.sig');
 
     expect(identity.providerAccountId).toBe('google-sub-123');
+  });
+
+  it('refuses to verify in production when the client id is unset', async () => {
+    stubGoogleTokeninfo('any-aud-whatsoever');
+    const service = new OAuthService(envWith({ GOOGLE_CLIENT_ID: '', NODE_ENV: 'production' }));
+
+    await expect(service.verify('google', 'header.body.sig')).rejects.toMatchObject({
+      code: 'UNAUTHENTICATED',
+    });
+  });
+});
+
+describe('OAuthService email verification', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const clientId = 'my-client.apps.googleusercontent.com';
+
+  // The caller links an OAuth identity to an existing account by email, so an
+  // unverified address is an account takeover: anyone who can mint a token
+  // naming the victim's email would inherit their session.
+  it.each([
+    { label: 'the boolean false', claim: false as boolean | string | typeof ABSENT },
+    { label: 'the string "false"', claim: 'false' as boolean | string | typeof ABSENT },
+    { label: 'no email_verified claim at all', claim: ABSENT as boolean | string | typeof ABSENT },
+  ])('withholds the email given $label', async ({ claim }) => {
+    stubGoogleTokeninfo(clientId, claim);
+    const service = new OAuthService(envWith({ GOOGLE_CLIENT_ID: clientId }));
+
+    const identity = await service.verify('google', 'header.body.sig');
+
+    expect(identity.email).toBeNull();
+  });
+
+  it('returns the email when the provider reports it verified', async () => {
+    stubGoogleTokeninfo(clientId, 'true');
+    const service = new OAuthService(envWith({ GOOGLE_CLIENT_ID: clientId }));
+
+    await expect(service.verify('google', 'header.body.sig')).resolves.toMatchObject({
+      email: 'user@example.com',
+    });
   });
 });

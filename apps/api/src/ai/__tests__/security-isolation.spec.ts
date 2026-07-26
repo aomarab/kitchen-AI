@@ -86,7 +86,12 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
         { provide: PlanService, useValue: new PlanService(ctx.db, undefined as never, undefined as never) },
         {
           provide: RecognitionService,
-          useValue: new RecognitionService(ctx.db, undefined as never, undefined as never),
+          useValue: new RecognitionService(
+            ctx.db,
+            undefined as never,
+            undefined as never,
+            undefined as never,
+          ),
         },
         { provide: BarcodeService, useValue: {} as unknown as BarcodeService },
       ],

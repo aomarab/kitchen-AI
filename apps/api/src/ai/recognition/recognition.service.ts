@@ -13,6 +13,7 @@ import {
 import { AppError } from '../../common/errors.js';
 import { DB, type Database } from '../../db/index.js';
 import { recognitionSessions, users } from '../../db/schema.js';
+import { StorageService } from '../../storage/storage.service.js';
 import { AiGateway } from '../ai-gateway.service.js';
 import { CATALOG_PORT } from '../ai.constants.js';
 import type { IngredientResolverPort } from '../catalog/ingredient-resolver.port.js';
@@ -39,6 +40,7 @@ export class RecognitionService {
     @Inject(DB) private readonly db: Database,
     @Inject(CATALOG_PORT) private readonly catalog: IngredientResolverPort,
     @Inject(AiGateway) private readonly gateway: AiGateway,
+    @Inject(StorageService) private readonly storage: StorageService,
   ) {}
 
   async recognize(input: RecognizeInput): Promise<RecognitionSession> {
@@ -51,16 +53,19 @@ export class RecognitionService {
     const seen = new Set<string>();
 
     for (const photoKey of request.photoKeys) {
-      // INTEGRATION POINT: real vision needs a fetchable (presigned) URL for the
-      // photo key from Agent A's storage service. Under AI_MOCK the provider
-      // ignores images, so the raw key is passed through here.
+      // The provider fetches the image over HTTP, so it needs a signed URL, not
+      // an object key. `presignDownload` also rejects any key outside this
+      // household's prefix — `photoKeys` are opaque client strings, and without
+      // that check a caller could name another household's photo, or an
+      // arbitrary URL, and have the model fetch it for them.
+      const imageUrl = await this.storage.presignDownload(householdId, photoKey);
       const vision = await this.gateway.execute<VisionResult>({
         householdId,
         operation: 'vision.recognize',
         prompt: buildVisionPrompt({ locale, locationHint: hint }),
         schema: visionResultSchema,
         context: { locale, locationHint: hint },
-        images: [{ url: photoKey }],
+        images: [{ url: imageUrl }],
         scenario: input.scenario,
       });
 
