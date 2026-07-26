@@ -147,6 +147,12 @@ export class InventoryService {
     return this.fetchItems(householdId, itemIds);
   }
 
+  async get(householdId: string, id: string): Promise<InventoryItem> {
+    const [item] = await this.fetchItems(householdId, [id]);
+    if (!item) throw AppError.notFound();
+    return item;
+  }
+
   async update(
     householdId: string,
     userId: string,

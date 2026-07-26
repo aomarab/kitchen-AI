@@ -35,6 +35,14 @@ export class InventoryController {
     return this.inventory.list(household.id, query);
   }
 
+  @Get('items/:id')
+  get(
+    @CurrentHousehold() household: HouseholdContext,
+    @Param('id', new ZodPipe(uuidSchema)) id: string,
+  ): Promise<InventoryItem> {
+    return this.inventory.get(household.id, id);
+  }
+
   @Post('items:bulk')
   bulkCreate(
     @CurrentHousehold() household: HouseholdContext,

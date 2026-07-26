@@ -262,6 +262,14 @@ export const routes = {
     query: listInventoryQuerySchema,
     response: paginatedSchema(inventoryItemSchema),
   },
+  getInventoryItem: {
+    method: 'GET',
+    path: '/inventory/items/:id',
+    auth: true,
+    household: true,
+    params: idParamSchema,
+    response: inventoryItemSchema,
+  },
   bulkCreateInventory: {
     method: 'POST',
     path: '/inventory/items:bulk',

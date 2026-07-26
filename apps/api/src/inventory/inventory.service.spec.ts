@@ -48,6 +48,7 @@ describe('InventoryService (live DB)', () => {
   let ingB: string;
   let ingC: string;
   let ingD: string;
+  let ingE: string;
 
   beforeAll(async () => {
     ctx = createTestContext();
@@ -62,11 +63,12 @@ describe('InventoryService (live DB)', () => {
       .returning({ id: storageLocations.id });
     locA = l1!.id;
 
-    const rows = await ctx.db.select({ id: ingredients.id }).from(ingredients).limit(4);
+    const rows = await ctx.db.select({ id: ingredients.id }).from(ingredients).limit(5);
     ingA = rows[0]!.id;
     ingB = rows[1]!.id;
     ingC = rows[2]!.id;
     ingD = rows[3]!.id;
+    ingE = rows[4]!.id;
   });
 
   afterAll(async () => {
@@ -192,6 +194,29 @@ describe('InventoryService (live DB)', () => {
     expect(crossSync.applied).toEqual([]);
     expect(crossSync.duplicate).toEqual([]);
     expect(crossSync.rejected).toEqual([{ clientEventId, reason: 'item_not_found' }]);
+
+    // Fetching by id is scoped the same way, so it cannot be used to probe for
+    // ids belonging to another household.
+    await expectAppError(service.get(hhB, itemId), 'NOT_FOUND');
+  });
+
+  it('fetches a single item by id without depending on list pagination', async () => {
+    // The mobile item screen deep-links straight to an id, so it must resolve
+    // even when the item falls outside the first page of the default listing.
+    const created = await service.bulkCreate(hhA, userId, {
+      items: [
+        itemInput({ ingredientId: ingA, locationId: locA, quantity: 3, unit: 'kg' }),
+        itemInput({ ingredientId: ingE, locationId: locA, quantity: 4, unit: 'piece' }),
+      ],
+    });
+    const target = created[1]!;
+
+    const fetched = await service.get(hhA, target.id);
+    expect(fetched.id).toBe(target.id);
+    expect(fetched.quantity).toBe(4);
+    expect(fetched.ingredient.id).toBe(ingE);
+
+    await expectAppError(service.get(hhA, randomUUID()), 'NOT_FOUND');
   });
 
   it('reports an incompatible-unit sync event as rejected rather than swallowing it', async () => {
