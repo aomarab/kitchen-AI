@@ -7,6 +7,13 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().int().positive().default(3333),
+  /**
+   * Comma-separated origins allowed to call the API with credentials. Required
+   * in production: reflecting an arbitrary origin while allowing credentials
+   * would let any site drive an authenticated session if tokens ever move to
+   * cookies. Empty in development means "reflect the caller".
+   */
+  CORS_ORIGINS: z.string().default(''),
 
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
@@ -48,10 +55,35 @@ const envSchema = z.object({
   OPEN_FOOD_FACTS_URL: z.string().url().default('https://world.openfoodfacts.org'),
 });
 
+const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
+  if (env.NODE_ENV === 'production' && env.CORS_ORIGINS.trim() === '') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['CORS_ORIGINS'],
+      message: 'must list allowed origins explicitly in production',
+    });
+  }
+  if (env.NODE_ENV === 'production' && !env.AI_MOCK && env.OPENAI_API_KEY.trim() === '') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['OPENAI_API_KEY'],
+      message: 'is required when AI_MOCK is false',
+    });
+  }
+});
+
 export type Env = z.infer<typeof envSchema>;
 
+/** Origins allowed by CORS, or `true` to reflect the caller in development. */
+export function corsOrigins(env: Env): string[] | true {
+  const list = env.CORS_ORIGINS.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  return list.length > 0 ? list : true;
+}
+
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const parsed = envSchema.safeParse(source);
+  const parsed = validatedEnvSchema.safeParse(source);
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((issue) => `  ${issue.path.join('.')}: ${issue.message}`)

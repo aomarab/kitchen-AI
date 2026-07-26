@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { AppExceptionFilter } from './common/errors.js';
-import { loadEnv } from './config/env.js';
+import { corsOrigins, loadEnv } from './config/env.js';
 
 async function bootstrap(): Promise<void> {
   const env = loadEnv();
@@ -11,7 +11,7 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalFilters(new AppExceptionFilter());
   app.enableCors({
-    origin: true,
+    origin: corsOrigins(env),
     credentials: true,
     allowedHeaders: ['content-type', 'authorization', 'x-household-id', 'idempotency-key'],
   });

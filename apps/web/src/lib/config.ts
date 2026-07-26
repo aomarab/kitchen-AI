@@ -8,7 +8,7 @@
  * Swapping to the real API at integration is a one-line change: set
  * `NEXT_PUBLIC_API_MOCK=false` (and point `NEXT_PUBLIC_API_URL` at the API).
  */
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333').replace(
   /\/+$/,
   '',
 );
