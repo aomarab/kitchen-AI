@@ -74,6 +74,7 @@ export const mobileAr: MobileMessages = {
       barcodeManual: 'اكتب رقم الباركود',
       receiptHint: 'التقط الإيصال كاملاً في صورة واحدة.',
       recognizing: 'جارٍ التعرف على صورك…',
+      uploadFailed: 'تعذّر إرسال صورك. تحقق من اتصالك وحاول مرة أخرى.',
       manualTitle: 'إضافة يدوية',
       searchIngredient: 'ابحث عن مكوّن',
       noExpiry: 'بدون تاريخ انتهاء',

@@ -81,6 +81,7 @@ export const mobileEn = {
       barcodeManual: 'Type the barcode number',
       receiptHint: 'Capture the whole receipt in a single shot.',
       recognizing: 'Recognising your photos…',
+      uploadFailed: "Your photos couldn't be sent. Check your connection and try again.",
       manualTitle: 'Add manually',
       searchIngredient: 'Search ingredients',
       noExpiry: 'No expiry date',

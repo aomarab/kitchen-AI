@@ -10,6 +10,8 @@ import { useFormat } from '../../hooks/useFormat';
 import { usePresignUpload, useRecognizePhotos, useParseReceipt } from '../../hooks/capture';
 import { useJob, isTerminal } from '../../hooks/job';
 import { api } from '../../lib/api';
+import { expoPhotoUploader } from '../../lib/photo-uploader';
+import { uploadPhotos } from '../../lib/upload';
 import { useCaptureStore, type CaptureSource } from '../../stores/capture';
 import { colors, radius, spacing } from '../../theme';
 
@@ -31,6 +33,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
   const recognize = useRecognizePhotos();
   const parseReceipt = useParseReceipt();
   const [jobId, setJobId] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const job = useJob(jobId);
 
   const jobPending = !!jobId && !isTerminal(job.data);
@@ -61,29 +64,36 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
     if (!result.canceled) result.assets.forEach((asset) => addPhoto(asset.uri));
   };
 
-  const uploadKeys = async () => {
-    const keys: string[] = [];
-    for (let i = 0; i < photos.length; i += 1) {
-      const res = await presign.mutateAsync({
-        contentType: 'image/jpeg',
-        contentLength: 500_000,
-        purpose: mode === 'receipt' ? 'receipt' : 'inventory_photo',
-      });
-      keys.push(res.key);
-    }
-    return keys.length > 0 ? keys : ['photo-1'];
-  };
+  const uploadKeys = () =>
+    uploadPhotos(
+      photos,
+      (contentLength) =>
+        presign.mutateAsync({
+          contentType: 'image/jpeg',
+          contentLength,
+          purpose: mode === 'receipt' ? 'receipt' : 'inventory_photo',
+        }),
+      expoPhotoUploader,
+    );
 
   const submit = async () => {
-    const keys = await uploadKeys();
-    if (mode === 'receipt') {
-      const started = await parseReceipt.mutateAsync({ photoKeys: keys.slice(0, 5) });
-      setJobId(started.id);
-      return;
+    setFailed(false);
+    try {
+      const keys = await uploadKeys();
+      if (mode === 'receipt') {
+        const started = await parseReceipt.mutateAsync({ photoKeys: keys.slice(0, 5) });
+        setJobId(started.id);
+        return;
+      }
+      const session = await recognize.mutateAsync({ photoKeys: keys.slice(0, 10) });
+      setSession(session, 'photo');
+      router.replace('/capture/review');
+    } catch {
+      // Uploading or recognising can fail for reasons the user can act on
+      // (no signal, storage rejected the photo). Silently returning to the
+      // camera looks like the button simply did nothing.
+      setFailed(true);
     }
-    const session = await recognize.mutateAsync({ photoKeys: keys.slice(0, 10) });
-    setSession(session, 'photo');
-    router.replace('/capture/review');
   };
 
   if (busy) {
@@ -122,6 +132,12 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
         <AppText variant="caption" muted center>
           {mode === 'receipt' ? t('mobile.capture.receiptHint') : t('mobile.capture.captureHint')}
         </AppText>
+
+        {failed ? (
+          <AppText variant="caption" center style={{ color: colors.danger }}>
+            {t('mobile.capture.uploadFailed')}
+          </AppText>
+        ) : null}
 
         {photos.length > 0 ? (
           <ScrollView
