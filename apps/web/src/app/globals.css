@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+:root {
+  --background: #ffffff;
+  --foreground: #121a16;
+  --muted: #f4f6f5;
+  --muted-foreground: #5d6b64;
+  --border: #e3e8e5;
+  --primary: #1f7a4d;
+  --primary-foreground: #ffffff;
+  --accent: #e8a33d;
+  --danger: #c0392b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b0f0d;
+    --foreground: #e9efeb;
+    --muted: #161c19;
+    --muted-foreground: #9aa8a1;
+    --border: #232b27;
+    --primary: #3fa96f;
+    --primary-foreground: #06120c;
+    --accent: #e8a33d;
+    --danger: #e05c4c;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-latin), var(--font-arabic), system-ui, sans-serif;
+}
+
+/* Arabic needs more leading than Latin at the same size. */
+:root:lang(ar) {
+  --font-sans: var(--font-arabic), system-ui, sans-serif;
+  line-height: 1.85;
+}
+
+body {
+  font-family: var(--font-sans);
+}

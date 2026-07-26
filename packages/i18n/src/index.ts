@@ -3,7 +3,7 @@ import { en, type Messages } from './en.js';
 import { ar } from './ar.js';
 
 export { en, ar };
-export type { Messages };
+export type { Messages, Locale };
 
 export const catalogs: Record<Locale, Messages> = { en, ar };
 

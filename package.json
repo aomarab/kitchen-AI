@@ -27,7 +27,11 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "esbuild",
+      "msgpackr-extract",
+      "msw",
+      "sharp",
+      "unrs-resolver"
     ]
   }
 }
