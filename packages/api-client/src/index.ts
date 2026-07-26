@@ -64,12 +64,16 @@ export type CallArgs<K extends RouteName> = [RequiredKeys<K>] extends [never]
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Only `/:param` segments are substituted. Anchoring on the leading slash keeps
+ * custom-method paths such as `/inventory/items:bulk` intact.
+ */
 function buildPath(template: string, params?: Record<string, string>): string {
   if (!params) return template;
-  return template.replace(/:([A-Za-z0-9_]+)/g, (match, name: string) => {
+  return template.replace(/\/:([A-Za-z0-9_]+)/g, (_match, name: string) => {
     const value = params[name];
     if (value === undefined) throw new Error(`Missing path param "${name}" for "${template}"`);
-    return encodeURIComponent(value);
+    return `/${encodeURIComponent(value)}`;
   });
 }
 
@@ -91,22 +95,38 @@ function buildQuery(query?: Record<string, unknown>): string {
 /**
  * `AbortSignal.any` is not available in React Native's Hermes engine, so fall
  * back to manual forwarding.
+ *
+ * Returns a disposer because the fallback attaches a listener to the caller's
+ * signal, which typically outlives the request. Without cleanup, a long-lived
+ * signal reused across many calls would accumulate listeners.
  */
-function combineSignals(external: AbortSignal | undefined, timeout: AbortSignal): AbortSignal {
-  if (!external) return timeout;
+function combineSignals(
+  external: AbortSignal | undefined,
+  timeout: AbortSignal,
+): { signal: AbortSignal; dispose: () => void } {
+  const noop = (): void => {};
+  if (!external) return { signal: timeout, dispose: noop };
 
   const anyFn = (AbortSignal as { any?: (signals: AbortSignal[]) => AbortSignal }).any;
-  if (typeof anyFn === 'function') return anyFn([external, timeout]);
+  if (typeof anyFn === 'function') return { signal: anyFn([external, timeout]), dispose: noop };
 
   const controller = new AbortController();
-  const abort = (): void => controller.abort();
   if (external.aborted || timeout.aborted) {
     controller.abort();
-  } else {
-    external.addEventListener('abort', abort, { once: true });
-    timeout.addEventListener('abort', abort, { once: true });
+    return { signal: controller.signal, dispose: noop };
   }
-  return controller.signal;
+
+  const abort = (): void => controller.abort();
+  external.addEventListener('abort', abort);
+  timeout.addEventListener('abort', abort);
+
+  return {
+    signal: controller.signal,
+    dispose: () => {
+      external.removeEventListener('abort', abort);
+      timeout.removeEventListener('abort', abort);
+    },
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -188,7 +208,7 @@ export function createApiClient(options: ApiClientOptions) {
 
     const timeout = new AbortController();
     const timer = setTimeout(() => timeout.abort(), timeoutMs);
-    const signal = combineSignals(callOptions.signal, timeout.signal);
+    const { signal, dispose } = combineSignals(callOptions.signal, timeout.signal);
 
     let response: Response;
     try {
@@ -197,6 +217,7 @@ export function createApiClient(options: ApiClientOptions) {
       throw new NetworkError(`Request to ${route.method} ${path} failed`, cause);
     } finally {
       clearTimeout(timer);
+      dispose();
     }
 
     if (response.status === 401 && route.auth && allowRefresh) {
