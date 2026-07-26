@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { formatNumber } from '@kitchen/i18n';
 import { useLocale } from '../../lib/locale';
 import { localizedName } from '../../lib/name';
+import { unitKey } from '../../lib/labels';
 import { useRecipe, useMarkCooked } from '../../hooks/recipes';
 import { Card, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -103,7 +104,7 @@ export function RecipeView({ id }: { id: string }) {
                   {localizedName(locale, { en: ri.ingredient.canonicalNameEn, ar: ri.ingredient.canonicalNameAr })}
                   <span className="text-muted-foreground">
                     {' '}
-                    · {formatNumber(locale, ri.quantity)} {ri.unit}
+                    · {formatNumber(locale, ri.quantity)} {t(unitKey(ri.unit))}
                   </span>
                 </span>
                 {ri.optional ? (

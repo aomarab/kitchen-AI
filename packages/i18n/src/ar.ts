@@ -5,6 +5,25 @@ import type { Messages } from './en.js';
  * compile error. Translations are written natively rather than transliterated.
  */
 export const ar: Messages = {
+  units: {
+    g: 'جم',
+    kg: 'كجم',
+    ml: 'مل',
+    l: 'لتر',
+    piece: 'قطعة',
+    bunch: 'حزمة',
+    clove: 'فص',
+    slice: 'شريحة',
+    can: 'علبة',
+    jar: 'برطمان',
+    packet: 'كيس',
+    bottle: 'زجاجة',
+    cup: 'كوب',
+    tbsp: 'م.ك',
+    tsp: 'م.ص',
+    pinch: 'رشة',
+  },
+
   common: {
     appName: 'مطبخي الذكي',
     save: 'حفظ',

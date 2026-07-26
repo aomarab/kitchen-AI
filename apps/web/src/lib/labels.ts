@@ -6,6 +6,7 @@ import type {
   MealSlot,
   PlanScope,
   StorageLocationType,
+  Unit,
 } from '@kitchen/contracts';
 import type { MessageKey } from '@kitchen/i18n';
 
@@ -63,4 +64,12 @@ const SCOPE_KEYS: Record<PlanScope, MessageKey> = {
 
 export function scopeKey(scope: PlanScope): MessageKey {
   return SCOPE_KEYS[scope];
+}
+
+/**
+ * Unit abbreviations are localized: `pc` is not readable in Arabic, and `م.ك`
+ * is not readable in English. The catalog is shared with mobile.
+ */
+export function unitKey(unit: Unit): MessageKey {
+  return `units.${unit}` as MessageKey;
 }

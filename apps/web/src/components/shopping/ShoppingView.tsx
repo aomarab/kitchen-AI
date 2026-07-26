@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { formatNumber } from '@kitchen/i18n';
 import { useLocale } from '../../lib/locale';
 import { localizedName } from '../../lib/name';
-import { locationKey } from '../../lib/labels';
+import { locationKey, unitKey } from '../../lib/labels';
 import { useLocations } from '../../hooks/inventory';
 import {
   useCheckoutShopping,
@@ -77,7 +77,7 @@ export function ShoppingView() {
             <ShoppingRow
               key={item.id}
               name={localizedName(locale, { en: item.nameEn, ar: item.nameAr })}
-              detail={`${formatNumber(locale, item.quantity)} ${item.unit}`}
+              detail={`${formatNumber(locale, item.quantity)} ${t(unitKey(item.unit))}`}
               purchased={item.purchased}
               onToggle={() => toggle.mutate({ id: item.id, purchased: !item.purchased })}
             />
@@ -91,7 +91,7 @@ export function ShoppingView() {
             <ShoppingRow
               key={item.id}
               name={localizedName(locale, { en: item.nameEn, ar: item.nameAr })}
-              detail={`${formatNumber(locale, item.quantity)} ${item.unit}`}
+              detail={`${formatNumber(locale, item.quantity)} ${t(unitKey(item.unit))}`}
               purchased={item.purchased}
               onToggle={() => toggle.mutate({ id: item.id, purchased: !item.purchased })}
             />

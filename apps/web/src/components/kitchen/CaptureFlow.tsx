@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { InventorySource, Job, RecognizedItem, Unit } from '@kitchen/contracts';
 import { useLocale } from '../../lib/locale';
 import { uuid } from '../../lib/uuid';
+import { unitKey } from '../../lib/labels';
 import { useLocations } from '../../hooks/inventory';
 import {
   useLookupBarcode,
@@ -295,7 +296,7 @@ function ManualStep({ onItems }: { onItems: (items: RecognizedItem[]) => void })
           <Select id="manual-unit" value={unit} onChange={(e) => setUnit(e.target.value as Unit)}>
             {UNITS.map((u) => (
               <option key={u} value={u}>
-                {u}
+                {t(unitKey(u))}
               </option>
             ))}
           </Select>

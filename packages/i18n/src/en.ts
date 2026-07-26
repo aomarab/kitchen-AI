@@ -10,6 +10,26 @@
  * mobile adds to `mobile.en.ts`. Backend workstreams emit `errors.*` keys only.
  */
 export const en = {
+  /** Measurement unit abbreviations, shared by web and mobile. */
+  units: {
+    g: 'g',
+    kg: 'kg',
+    ml: 'ml',
+    l: 'L',
+    piece: 'pc',
+    bunch: 'bunch',
+    clove: 'clove',
+    slice: 'slice',
+    can: 'can',
+    jar: 'jar',
+    packet: 'pack',
+    bottle: 'bottle',
+    cup: 'cup',
+    tbsp: 'tbsp',
+    tsp: 'tsp',
+    pinch: 'pinch',
+  },
+
   common: {
     appName: 'Kitchen AI',
     save: 'Save',

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createTranslator, directionFor, isRtl } from '@kitchen/i18n';
 import { ApiError } from '@kitchen/api-client';
 import { errorMessageKey } from '../lib/errors';
-import { formatExpiryLabel, ingredientName, localizedName } from '../lib/format';
+import { unitSchema, type Unit } from '@kitchen/contracts';
+import { formatExpiryLabel, ingredientName, localizedName, unitLabel } from '../lib/format';
 
 const NOW = new Date('2026-07-26T12:00:00');
 
@@ -55,5 +56,19 @@ describe('error-envelope rendering', () => {
     const rendered = t(errorMessageKey(error));
     expect(rendered).toBeTruthy();
     expect(rendered).not.toBe('errors.RATE_LIMITED');
+  });
+});
+
+describe('unit labels', () => {
+  // The unit catalog moved out of the mobile-owned namespace so the web app
+  // could share it; mobile must still resolve every unit through the new keys.
+  it('resolves every contract unit in both languages', () => {
+    const en = createTranslator('en');
+    const ar = createTranslator('ar');
+    for (const unit of unitSchema.options as readonly Unit[]) {
+      expect(unitLabel(en, unit), unit).not.toBe(`units.${unit}`);
+      expect(unitLabel(ar, unit), unit).not.toBe(`units.${unit}`);
+      expect(unitLabel(ar, unit), unit).not.toBe(unitLabel(en, unit));
+    }
   });
 });

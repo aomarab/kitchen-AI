@@ -6,7 +6,7 @@ import type { InventoryItem, ListInventoryQuery } from '@kitchen/contracts';
 import { formatNumber } from '@kitchen/i18n';
 import { useLocale } from '../../lib/locale';
 import { localizedName } from '../../lib/name';
-import { locationKey } from '../../lib/labels';
+import { locationKey, unitKey } from '../../lib/labels';
 import { cn } from '../../lib/cn';
 import { expiryInfo } from '../../lib/expiry';
 import { useInventory, useLocations } from '../../hooks/inventory';
@@ -149,7 +149,7 @@ function ItemRow({ item, onClick }: { item: InventoryItem; onClick: () => void }
           {localizedName(locale, { en: item.ingredient.canonicalNameEn, ar: item.ingredient.canonicalNameAr })}
         </p>
         <p className="text-sm text-muted-foreground">
-          {formatNumber(locale, item.quantity)} {item.unit}
+          {formatNumber(locale, item.quantity)} {t(unitKey(item.unit))}
         </p>
       </div>
       {lowConfidence ? <Badge tone="warning">{t('capture.lowConfidence')}</Badge> : null}

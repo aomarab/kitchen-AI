@@ -34,7 +34,7 @@ export function formatQty(locale: Locale, value: number, prefs: NumeralPrefs = {
 }
 
 export function unitLabel(t: Translator, unit: Unit): string {
-  return t(`mobile.units.${unit}` as MessageKey);
+  return t(`units.${unit}` as MessageKey);
 }
 
 /** e.g. `2 kg`, `٣ قطعة`. Direction of the surrounding text handles ordering. */

@@ -53,7 +53,7 @@ function toggle<T>(set: readonly T[], value: T): T[] {
 }
 
 export default function GeneratePlan() {
-  const { t, locale, prefs, dir } = useFormat();
+  const { t, locale, prefs } = useFormat();
   const router = useRouter();
 
   const [scope, setScope] = useState<PlanScope>('weekly');
@@ -101,8 +101,10 @@ export default function GeneratePlan() {
                 height: 8,
                 borderRadius: radius.pill,
                 backgroundColor: colors.primary,
+                // No alignSelf: the root layout calls I18nManager.forceRTL, so the
+                // flex start edge is already the right edge in Arabic. Setting
+                // flex-end here flipped it a second time and filled from the left.
                 width: `${Math.round((job.data?.progress ?? 0.1) * 100)}%`,
-                alignSelf: dir === 'rtl' ? 'flex-end' : 'flex-start',
               }}
             />
           </View>

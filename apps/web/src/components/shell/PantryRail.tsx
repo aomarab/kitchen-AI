@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { formatNumber } from '@kitchen/i18n';
+import { unitKey } from '../../lib/labels';
 import { useLocale } from '../../lib/locale';
 import { localizedName } from '../../lib/name';
 import { usePlan, usePlanCoverage } from '../../hooks/plans';
@@ -16,7 +17,7 @@ import { LoadingState, ErrorState } from '../ui/states';
  * items expiring soon) and what still needs buying.
  */
 export function PantryRail({ planId }: { planId: string | undefined }) {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const coverageQuery = usePlanCoverage(planId);
   const planQuery = usePlan(planId);
   const inventoryQuery = useInventory({ limit: 100, sort: 'expiry' });
@@ -43,7 +44,7 @@ export function PantryRail({ planId }: { planId: string | undefined }) {
     const missing: RailEntry[] = coverage.shortfalls.map((s) => ({
       id: s.ingredientId,
       name: localizedName(locale, { en: s.nameEn, ar: s.nameAr }),
-      detail: `${formatNumber(locale, s.shortfall)} ${s.unit}`,
+      detail: `${formatNumber(locale, s.shortfall)} ${t(unitKey(s.unit))}`,
     }));
 
     const covered = coverage.coveredEntryIds.length;
