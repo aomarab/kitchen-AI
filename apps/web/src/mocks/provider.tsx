@@ -23,11 +23,18 @@ export function MswProvider({ locale, children }: { locale: Locale; children: Re
     setMockLocale(locale);
     if (!MOCKING_ENABLED) return;
     let active = true;
-    void import('./browser').then(({ worker }) =>
-      worker.start({ onUnhandledRequest: 'bypass', quiet: true }).then(() => {
+    void import('./browser')
+      .then(({ worker }) => worker.start({ onUnhandledRequest: 'bypass', quiet: true }))
+      .catch((error: unknown) => {
+        // Service-worker registration fails on insecure origins, in private
+        // windows, and when the script 404s. Every query gates on `ready`, so
+        // swallowing this left the whole app as a permanent spinner with no
+        // clue why. Let the requests through and let them fail visibly.
+        console.error('[mocks] worker failed to start; continuing unmocked', error);
+      })
+      .finally(() => {
         if (active) setReady(true);
-      }),
-    );
+      });
     return () => {
       active = false;
     };

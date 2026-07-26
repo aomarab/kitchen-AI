@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { InventorySource, Job, RecognizedItem, Unit } from '@kitchen/contracts';
 import { useLocale } from '../../lib/locale';
-import { uuid } from '../../mocks/db';
+import { uuid } from '../../lib/uuid';
 import { useLocations } from '../../hooks/inventory';
 import {
   useLookupBarcode,

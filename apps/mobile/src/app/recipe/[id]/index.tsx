@@ -131,6 +131,7 @@ export default function RecipeDetail() {
                   youtubeId={video.youtubeId}
                   thumbnailUrl={video.thumbnailUrl}
                   playLabel={t('mobile.recipe.watchOnYoutube')}
+                  errorLabel={t('mobile.recipe.videoUnavailable')}
                 />
                 <AppText variant="bodyStrong" numberOfLines={2}>
                   {video.title}

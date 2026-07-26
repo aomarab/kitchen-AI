@@ -9,6 +9,7 @@ export const qk = {
   locations: ['locations'] as const,
   inventory: ['inventory'] as const,
   inventoryList: (query: Partial<ListInventoryQuery>) => ['inventory', 'list', query] as const,
+  inventoryItem: (id: string) => ['inventory', 'item', id] as const,
   ingredients: (term: string) => ['ingredients', term] as const,
   plans: (query?: ListPlansQuery) => ['plans', query ?? null] as const,
   plan: (id: string) => ['plan', id] as const,

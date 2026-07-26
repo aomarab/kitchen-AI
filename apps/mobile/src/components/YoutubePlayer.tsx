@@ -2,14 +2,19 @@ import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Icon } from './Icon';
-import { colors, radius } from '../theme';
+import { AppText } from './AppText';
+import { isAllowedEmbedUrl, isValidYoutubeId, YOUTUBE_EMBED_ORIGINS } from '../lib/youtube';
+import { colors, radius, spacing } from '../theme';
 
 interface YoutubePlayerProps {
   youtubeId: string;
   thumbnailUrl: string;
   /** Localized label for the play affordance. */
   playLabel: string;
+  /** Localized message shown when the embed cannot be displayed. */
+  errorLabel: string;
 }
+
 
 /**
  * Embedded YouTube player (spec §6.3): the video plays *inside* the recipe
@@ -17,8 +22,17 @@ interface YoutubePlayerProps {
  * screen light we mount the WebView lazily — a tappable thumbnail until the
  * user starts playback, then the iframe with inline autoplay.
  */
-export function YoutubePlayer({ youtubeId, thumbnailUrl, playLabel }: YoutubePlayerProps) {
+export function YoutubePlayer({
+  youtubeId,
+  thumbnailUrl,
+  playLabel,
+  errorLabel,
+}: YoutubePlayerProps) {
   const [playing, setPlaying] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const valid = isValidYoutubeId(youtubeId);
+  const showError = failed || !valid;
 
   return (
     <View
@@ -29,7 +43,20 @@ export function YoutubePlayer({ youtubeId, thumbnailUrl, playLabel }: YoutubePla
         backgroundColor: '#000',
       }}
     >
-      {playing ? (
+      {showError ? (
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: spacing.md,
+          }}
+        >
+          <AppText variant="caption" style={{ color: colors.textInverse, textAlign: 'center' }}>
+            {errorLabel}
+          </AppText>
+        </View>
+      ) : playing ? (
         <WebView
           source={{
             uri: `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`,
@@ -38,6 +65,13 @@ export function YoutubePlayer({ youtubeId, thumbnailUrl, playLabel }: YoutubePla
           mediaPlaybackRequiresUserAction={false}
           javaScriptEnabled
           domStorageEnabled
+          // Without these the WebView is a general-purpose browser: a redirect
+          // out of the embed would render arbitrary pages inside the app, with
+          // the app's cookie jar and JS enabled.
+          originWhitelist={YOUTUBE_EMBED_ORIGINS}
+          onShouldStartLoadWithRequest={(request) => isAllowedEmbedUrl(request.url)}
+          onError={() => setFailed(true)}
+          onHttpError={() => setFailed(true)}
           style={{ flex: 1, backgroundColor: '#000' }}
         />
       ) : (

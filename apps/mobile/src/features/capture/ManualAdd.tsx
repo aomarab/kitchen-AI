@@ -7,7 +7,9 @@ import { useFormat } from '../../hooks/useFormat';
 import { useSearchIngredients } from '../../hooks/profile';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
 import { ingredientName, unitLabel } from '../../lib/format';
-import { spacing } from '../../theme';
+import { isValidExpiryInput } from '../../lib/expiry';
+import { errorMessageKey } from '../../lib/errors';
+import { colors, spacing } from '../../theme';
 
 const COMMON_UNITS: Unit[] = ['piece', 'g', 'kg', 'ml', 'l', 'bunch', 'can', 'packet'];
 
@@ -26,29 +28,36 @@ export function ManualAdd() {
   const locations = useLocations();
   const create = useBulkCreateInventory();
 
+  const expiryValid = isValidExpiryInput(expiresAt);
+
   const choose = (ingredient: Ingredient) => {
     setSelected(ingredient);
     setUnit(ingredient.defaultUnit);
     setLocationId(locations.data?.[0]?.id ?? '');
   };
 
-  const confirm = async () => {
-    if (!selected || !locationId) return;
-    await create.mutateAsync({
-      items: [
-        {
-          ingredientId: selected.id,
-          locationId,
-          quantity,
-          unit,
-          expiresAt: expiresAt.trim() || null,
-          source: 'manual',
-          confidence: null,
-          photoKey: null,
-        },
-      ],
-    });
-    router.replace('/kitchen');
+  const confirm = () => {
+    if (!selected || !locationId || !expiryValid) return;
+    // `mutate`, not `void mutateAsync(...)`: the latter rejected into nothing,
+    // so a failed add was an unhandled rejection and a screen that just sat
+    // there. The failure now lands in `create.isError` and is rendered below.
+    create.mutate(
+      {
+        items: [
+          {
+            ingredientId: selected.id,
+            locationId,
+            quantity,
+            unit,
+            expiresAt: expiresAt.trim() || null,
+            source: 'manual',
+            confidence: null,
+            photoKey: null,
+          },
+        ],
+      },
+      { onSuccess: () => router.replace('/kitchen') },
+    );
   };
 
   if (!selected) {
@@ -125,15 +134,25 @@ export function ManualAdd() {
           autoCapitalize="none"
           autoCorrect={false}
         />
+        {!expiryValid ? (
+          <AppText variant="caption" style={{ color: colors.danger }}>
+            {t('mobile.capture.expiryFormat')}
+          </AppText>
+        ) : null}
       </Card>
 
       <Button
         title={t('inventory.addItem')}
         icon="check"
         loading={create.isPending}
-        disabled={!locationId}
-        onPress={() => void confirm()}
+        disabled={!locationId || !expiryValid}
+        onPress={confirm}
       />
+      {create.isError ? (
+        <AppText variant="caption" style={{ color: colors.danger }}>
+          {t(errorMessageKey(create.error))}
+        </AppText>
+      ) : null}
       <Button title={t('common.cancel')} variant="ghost" onPress={() => setSelected(null)} />
     </ScrollView>
   );

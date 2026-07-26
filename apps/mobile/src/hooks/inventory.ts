@@ -17,6 +17,20 @@ export function useInventory(query: Partial<ListInventoryQuery> = {}) {
   });
 }
 
+/**
+ * A single item, fetched by id. The detail screen used to look its item up in
+ * an unfiltered first page of 50 — so anything past #50, or reached from a
+ * filtered list, rendered as NOT_FOUND on a row the user was looking at a
+ * moment earlier.
+ */
+export function useInventoryItem(id: string) {
+  return useQuery({
+    queryKey: qk.inventoryItem(id),
+    queryFn: () => api.call('getInventoryItem', { params: { id } }),
+    enabled: id.length > 0,
+  });
+}
+
 export function useCreateLocation() {
   const qc = useQueryClient();
   return useMutation({

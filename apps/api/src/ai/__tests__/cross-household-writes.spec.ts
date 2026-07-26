@@ -28,6 +28,13 @@ describe('markCooked refuses a meal-plan entry from another household', () => {
   /** `ownedEntries` is what the ownership join returns — empty means foreign. */
   function fakeDb(ownedEntries: unknown[]) {
     const update = vi.fn(() => ({ set: () => ({ where: async () => undefined }) }));
+    const tx = {
+      update,
+      insert: () => ({ values: async () => undefined }),
+      select: () => ({
+        from: () => ({ where: () => ({ orderBy: () => ({ for: async () => [] }) }) }),
+      }),
+    };
     return {
       db: {
         query: { recipes: { findFirst: async () => recipeRow } },
@@ -37,6 +44,7 @@ describe('markCooked refuses a meal-plan entry from another household', () => {
           }),
         }),
         update,
+        transaction: async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       update,
@@ -45,7 +53,7 @@ describe('markCooked refuses a meal-plan entry from another household', () => {
 
   it('throws NOT_FOUND when the entry belongs to another household', async () => {
     const { db, update } = fakeDb([]);
-    const service = new RecipesService(db, {} as never, {} as never);
+    const service = new RecipesService(db, {} as never, {} as never, {} as never);
 
     await expect(
       service.markCooked('hh-x', 'user-x', 'r1', {
@@ -60,7 +68,7 @@ describe('markCooked refuses a meal-plan entry from another household', () => {
 
   it('marks the entry cooked when it belongs to the caller', async () => {
     const { db, update } = fakeDb([{ id: 'entry-owned-by-hh-x' }]);
-    const service = new RecipesService(db, {} as never, {} as never);
+    const service = new RecipesService(db, {} as never, {} as never, {} as never);
 
     await service.markCooked('hh-x', 'user-x', 'r1', {
       mealPlanEntryId: 'entry-owned-by-hh-x',

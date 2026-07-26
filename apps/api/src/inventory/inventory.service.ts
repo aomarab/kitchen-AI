@@ -159,26 +159,31 @@ export class InventoryService {
     id: string,
     dto: UpdateInventoryItemRequest,
   ): Promise<InventoryItem> {
-    const current = await this.requireItem(householdId, id);
-
-    const finalUnit = dto.unit ?? current.unit;
-    const currentQty = toNumber(current.quantity);
-
-    if (dto.unit && dto.unit !== current.unit && dto.quantity === undefined) {
-      if (!areCompatible(current.unit, dto.unit)) throw AppError.validation({ reason: 'incompatible_unit' });
-    }
-
-    let finalQuantity = currentQty;
-    if (dto.quantity !== undefined) {
-      finalQuantity = dto.quantity;
-    } else if (dto.unit && dto.unit !== current.unit) {
-      finalQuantity = convertQuantity(currentQty, current.unit, finalUnit) ?? currentQty;
-    }
-
-    const priorInFinalUnit = convertQuantity(currentQty, current.unit, finalUnit) ?? 0;
-    const delta = finalQuantity - priorInFinalUnit;
-
     await this.db.transaction(async (tx) => {
+      // Read inside the transaction, with the row locked. The `corrected` event
+      // below records `finalQuantity - current`, so a concurrent sync landing
+      // between the read and the write would make that delta describe a
+      // quantity the item never held — and the ledger would stop summing to the
+      // stored quantity.
+      const current = await this.requireItem(tx, householdId, id);
+
+      const finalUnit = dto.unit ?? current.unit;
+      const currentQty = toNumber(current.quantity);
+
+      if (dto.unit && dto.unit !== current.unit && dto.quantity === undefined) {
+        if (!areCompatible(current.unit, dto.unit)) throw AppError.validation({ reason: 'incompatible_unit' });
+      }
+
+      let finalQuantity = currentQty;
+      if (dto.quantity !== undefined) {
+        finalQuantity = dto.quantity;
+      } else if (dto.unit && dto.unit !== current.unit) {
+        finalQuantity = convertQuantity(currentQty, current.unit, finalUnit) ?? currentQty;
+      }
+
+      const priorInFinalUnit = convertQuantity(currentQty, current.unit, finalUnit) ?? 0;
+      const delta = finalQuantity - priorInFinalUnit;
+
       if (dto.locationId) await this.assertLocation(tx, householdId, dto.locationId);
 
       const patch: Record<string, unknown> = { updatedAt: new Date() };
@@ -243,7 +248,12 @@ export class InventoryService {
     const rejected: SyncEventRejection[] = [];
     const touched = new Set<string>();
 
-    const ordered = [...events].sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+    // `occurredAt` is an ISO date-time and `isoDateTimeSchema` accepts UTC
+    // offsets, so `2026-01-01T10:00:00+03:00` sorts *after*
+    // `2026-01-01T09:00:00Z` lexically while being an hour earlier in real
+    // time. Deltas are applied in this order, so getting it wrong reorders a
+    // user's edits. Compare instants.
+    const ordered = [...events].sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt));
 
     await this.db.transaction(async (tx) => {
       for (const event of ordered) {
@@ -394,12 +404,14 @@ export class InventoryService {
     if (!row) throw AppError.notFound();
   }
 
-  private async requireItem(householdId: string, id: string): Promise<InventoryItemRow> {
-    const [row] = await this.db
+  /** Locks the row so a read-modify-write can be trusted; caller supplies the tx. */
+  private async requireItem(tx: Tx, householdId: string, id: string): Promise<InventoryItemRow> {
+    const [row] = await tx
       .select()
       .from(inventoryItems)
       .where(and(eq(inventoryItems.id, id), eq(inventoryItems.householdId, householdId)))
-      .limit(1);
+      .limit(1)
+      .for('update');
     if (!row) throw AppError.notFound();
     return row as InventoryItemRow;
   }

@@ -118,6 +118,10 @@ export function DashboardView() {
         </CardHeader>
         {expiringQuery.isLoading ? (
           <LoadingState />
+        ) : expiringQuery.isError ? (
+          // Not the same as "nothing is expiring" — that reassurance would be a
+          // lie told by a failed request.
+          <ErrorState error={expiringQuery.error} onRetry={() => void expiringQuery.refetch()} />
         ) : expiring.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('web.dashboard.expiringEmpty')}</p>
         ) : (

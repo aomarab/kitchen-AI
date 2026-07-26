@@ -27,6 +27,28 @@ function normalize(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+/**
+ * `ingredients` is a single global table — it has no `householdId`. Anything
+ * created here is visible to every household forever, and is fed back into the
+ * next household's prompt by `candidateNames()`. That closes a loop: text an
+ * attacker controls (a printed receipt line, a typed item name) becomes model
+ * output, becomes a catalog row, becomes prompt input for someone else.
+ *
+ * So creation is gated on the name looking like an ingredient name and nothing
+ * else. Anything longer, multi-line, or carrying punctuation used to structure
+ * prompts is resolved as `unresolved` instead — the user still sees their item,
+ * it just doesn't earn a permanent global row.
+ */
+const MAX_CREATABLE_NAME_CHARS = 60;
+
+export function isCreatableName(value: string): boolean {
+  const name = value.trim();
+  if (name.length === 0 || name.length > MAX_CREATABLE_NAME_CHARS) return false;
+  // Letters (any script), digits, spaces and the few separators that show up in
+  // real ingredient names. No newlines, quotes, braces, colons or guillemets.
+  return /^[\p{L}\p{N} ()%.,'’\-/&+]+$/u.test(name);
+}
+
 function titleCase(value: string): string {
   const v = value.trim();
   return v.length > 0 ? v[0]!.toUpperCase() + v.slice(1) : v;
@@ -91,7 +113,7 @@ export class DrizzleIngredientResolver implements IngredientResolverPort {
     for (const key of residue2) {
       const idxs = pending.get(key)!;
       for (const i of idxs) {
-        if (opts.createIfMissing) {
+        if (opts.createIfMissing && isCreatableName(inputs[i]!.name)) {
           const created = await this.create(inputs[i]!);
           results[i] = { rawName: inputs[i]!.name, ingredient: created, strategy: 'created', confidence: 0.5 };
         } else {

@@ -18,6 +18,8 @@ import { Badge } from '../ui/Badge';
 import { Input, Select } from '../ui/Input';
 import { IconButton } from '../ui/IconButton';
 import { CloseIcon } from '../ui/icons';
+import { resolveErrorKey } from '../../lib/errors';
+import { translateErrorKey } from '@kitchen/i18n';
 
 const LOW_CONFIDENCE = 0.6;
 
@@ -82,7 +84,13 @@ export function ReviewList({
 
   const removeRow = (tempId: string) => setRows((prev) => prev.filter((r) => r.tempId !== tempId));
 
+  // Every row needs a location and there is no valid empty value: sending "" is
+  // a guaranteed 422. If the household has no locations yet, say so instead of
+  // offering a button that cannot work.
+  const missingLocation = locations.length === 0 || rows.some((r) => !r.locationId);
+
   const confirm = () => {
+    if (missingLocation) return;
     bulkCreate.mutate(
       {
         items: rows.map((r) => ({
@@ -179,9 +187,21 @@ export function ReviewList({
 
       <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted/40 p-4">
         <p className="text-sm text-muted-foreground">{t('web.capture.confirmReviewNote')}</p>
-        <Button onClick={confirm} disabled={bulkCreate.isPending || rows.length === 0} block>
+        {missingLocation ? (
+          <p className="text-sm text-danger">{t('web.capture.needsLocation')}</p>
+        ) : null}
+        <Button
+          onClick={confirm}
+          disabled={bulkCreate.isPending || rows.length === 0 || missingLocation}
+          block
+        >
           {t('capture.addAll')}
         </Button>
+        {bulkCreate.isError ? (
+          <p className="text-sm text-danger" role="alert">
+            {translateErrorKey(locale, resolveErrorKey(bulkCreate.error))}
+          </p>
+        ) : null}
       </div>
     </div>
   );

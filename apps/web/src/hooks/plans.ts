@@ -6,7 +6,7 @@ import type {
 } from '@kitchen/contracts';
 import { api } from '../lib/api';
 import { useMocksReady } from '../mocks/provider';
-import { uuid } from '../mocks/db';
+import { uuid } from '../lib/uuid';
 
 export function usePlans(query: ListPlansQuery = {}) {
   const ready = useMocksReady();

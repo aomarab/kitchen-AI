@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ListInventoryQuery } from '@kitchen/contracts';
 import { api } from '../lib/api';
 import { useMocksReady } from '../mocks/provider';
@@ -18,6 +18,10 @@ export function useInventory(query: ListInventoryQuery = { limit: 50, sort: 'exp
     queryKey: ['inventory', query],
     queryFn: () => api.call('listInventory', { query }),
     enabled: ready,
+    // Changing a filter or search term produces a new key. Without this the
+    // list unmounts to a spinner on every change; with it the previous results
+    // stay on screen until the new ones arrive.
+    placeholderData: keepPreviousData,
   });
 }
 

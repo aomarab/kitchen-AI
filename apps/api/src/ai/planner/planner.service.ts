@@ -96,6 +96,10 @@ export class PlannerService {
       .map((e) => [e.ingredientId, Math.round(e.baseQuantity)] as const)
       .sort((a, b) => a[0].localeCompare(b[0]));
     const cacheKey = hashKey('plan', {
+      // Scoped to the household. Without it, two households whose pantries
+      // hash the same share a plan — and the second one is served from cache,
+      // skipping the ai_usage row that enforces its own daily budget.
+      householdId,
       scope,
       startsOn: request.startsOn,
       slots,

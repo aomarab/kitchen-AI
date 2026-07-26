@@ -5,9 +5,10 @@ import { LocaleProvider } from '../../lib/locale';
 import { ReviewList } from './ReviewList';
 
 const mutate = vi.fn();
+let mutationState: { isError: boolean; error: unknown } = { isError: false, error: null };
 
 vi.mock('../../hooks/capture', () => ({
-  useBulkCreateInventory: () => ({ mutate, isPending: false }),
+  useBulkCreateInventory: () => ({ mutate, isPending: false, ...mutationState }),
 }));
 
 const locations: StorageLocation[] = [
@@ -44,16 +45,19 @@ const items: RecognizedItem[] = [
   },
 ];
 
-function renderReview() {
+function renderReview(withLocations: StorageLocation[] = locations) {
   return render(
     <LocaleProvider locale="en">
-      <ReviewList items={items} locations={locations} source="photo" onDone={vi.fn()} />
+      <ReviewList items={items} locations={withLocations} source="photo" onDone={vi.fn()} />
     </LocaleProvider>,
   );
 }
 
 describe('ReviewList (AI review)', () => {
-  beforeEach(() => mutate.mockClear());
+  beforeEach(() => {
+    mutate.mockClear();
+    mutationState = { isError: false, error: null };
+  });
 
   it('does not commit anything to inventory on mount', () => {
     renderReview();
@@ -72,5 +76,24 @@ describe('ReviewList (AI review)', () => {
     expect(mutate).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Add all to kitchen' }));
     expect(mutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells the user when a commit failed instead of looking like nothing happened', () => {
+    mutationState = { isError: true, error: new Error('boom') };
+    renderReview();
+
+    expect(screen.getByRole('alert')).toBeTruthy();
+  });
+
+  it('refuses to submit when the household has no storage location', () => {
+    // Every row needs a locationId; with no locations it falls back to '' and
+    // the request is a guaranteed 422.
+    renderReview([]);
+
+    const button = screen.getByRole('button', { name: /add all|add \d+/i });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(button);
+    expect(mutate).not.toHaveBeenCalled();
   });
 });

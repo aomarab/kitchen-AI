@@ -78,6 +78,7 @@ export const mobileAr: MobileMessages = {
       manualTitle: 'إضافة يدوية',
       searchIngredient: 'ابحث عن مكوّن',
       noExpiry: 'بدون تاريخ انتهاء',
+      expiryFormat: 'استخدم الصيغة YYYY-MM-DD، مثال 2026-12-31.',
       selectLocation: 'اختر موقعاً',
       confirmTitle: 'إضافة إلى مطبخك؟',
       confirmBody: 'لن يُضاف شيء حتى تؤكد.',
@@ -129,6 +130,7 @@ export const mobileAr: MobileMessages = {
       finish: 'إنهاء',
       exitCookMode: 'خروج',
       watchOnYoutube: 'شاهد على يوتيوب',
+      videoUnavailable: 'لا يمكن تشغيل هذا الفيديو الآن.',
     },
     more: {
       title: 'المزيد',

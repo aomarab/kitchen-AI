@@ -17,6 +17,7 @@ import { buttonClasses } from '../ui/Button';
 import { LoadingState, ErrorState, EmptyState } from '../ui/states';
 import { SearchIcon, PlusIcon } from '../ui/icons';
 import { ItemSheet } from './ItemSheet';
+import { useDebounced } from '../../hooks/useDebounced';
 
 type Sort = NonNullable<ListInventoryQuery['sort']>;
 
@@ -27,8 +28,17 @@ export function KitchenView() {
   const [sort, setSort] = useState<Sort>('expiry');
   const [selected, setSelected] = useState<InventoryItem | null>(null);
 
+  // `q` drives a query key, so it is debounced: typing "tomato" used to fire
+  // six requests and blank the list six times.
+  const debouncedQ = useDebounced(q);
+
   const locationsQuery = useLocations();
-  const inventoryQuery = useInventory({ limit: 100, sort, locationId, q: q || undefined });
+  const inventoryQuery = useInventory({
+    limit: 100,
+    sort,
+    locationId,
+    q: debouncedQ || undefined,
+  });
 
   const items = inventoryQuery.data?.items ?? [];
 

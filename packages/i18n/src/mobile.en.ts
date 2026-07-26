@@ -85,6 +85,7 @@ export const mobileEn = {
       manualTitle: 'Add manually',
       searchIngredient: 'Search ingredients',
       noExpiry: 'No expiry date',
+      expiryFormat: 'Use the format YYYY-MM-DD, for example 2026-12-31.',
       selectLocation: 'Choose a location',
       confirmTitle: 'Add to your kitchen?',
       confirmBody: 'Nothing is added until you confirm.',
@@ -136,6 +137,7 @@ export const mobileEn = {
       finish: 'Finish',
       exitCookMode: 'Exit',
       watchOnYoutube: 'Watch on YouTube',
+      videoUnavailable: 'This video cannot be played right now.',
     },
     more: {
       title: 'More',

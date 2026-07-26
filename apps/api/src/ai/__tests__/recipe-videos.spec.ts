@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RecipesService } from '../recipes/recipes.service.js';
+import { InMemoryResponseCache } from '../cache/response-cache.js';
 import { YoutubeUnavailableError, type YoutubeClient } from '../clients/clients.interface.js';
 
 function fakeDb(recipeRow: unknown, freshVideos: unknown[] = []) {
@@ -24,6 +25,10 @@ const recipeRow = {
   videos: [],
 };
 
+function build(youtube: YoutubeClient, videos: unknown[] = []) {
+  return new RecipesService(fakeDb(recipeRow, videos), {} as never, youtube, new InMemoryResponseCache());
+}
+
 describe('RecipeVideos (spec §5.5 — quota exhaustion never dead-ends)', () => {
   it('returns [] when YouTube quota is exhausted and nothing is cached', async () => {
     const youtube: YoutubeClient = {
@@ -31,9 +36,8 @@ describe('RecipeVideos (spec §5.5 — quota exhaustion never dead-ends)', () =>
         throw new YoutubeUnavailableError('quota');
       },
     };
-    const service = new RecipesService(fakeDb(recipeRow), {} as never, youtube);
 
-    const videos = await service.getVideos('hh', 'r1', 'en');
+    const videos = await build(youtube).getVideos('hh', 'r1', 'en');
     expect(videos).toEqual([]);
   });
 
@@ -51,11 +55,67 @@ describe('RecipeVideos (spec §5.5 — quota exhaustion never dead-ends)', () =>
         ];
       },
     };
-    const service = new RecipesService(fakeDb(recipeRow), {} as never, youtube);
 
-    const videos = await service.getVideos('hh', 'r1', 'en');
+    const videos = await build(youtube).getVideos('hh', 'r1', 'en');
     expect(videos).toHaveLength(1);
     expect(videos[0]?.youtubeId).toBe('API_ID_123');
     expect(videos[0]?.locale).toBe('en');
+  });
+});
+
+describe('RecipeVideos quota spend', () => {
+  it('does not re-search YouTube for a recipe it already found nothing for', async () => {
+    let calls = 0;
+    const youtube: YoutubeClient = {
+      async search() {
+        calls += 1;
+        return [];
+      },
+    };
+    // One service instance, so the two requests share a cache the way two
+    // requests against one running API would.
+    const service = build(youtube);
+
+    expect(await service.getVideos('hh', 'r1', 'en')).toEqual([]);
+    expect(await service.getVideos('hh', 'r1', 'en')).toEqual([]);
+
+    // An empty result leaves no recipe_videos rows, so without a negative cache
+    // every request costs another 100 quota units against a 10,000 daily cap.
+    expect(calls).toBe(1);
+  });
+
+  it('caches the empty answer per locale, not per recipe', async () => {
+    const asked: string[] = [];
+    const youtube: YoutubeClient = {
+      async search(_title, locale) {
+        asked.push(locale);
+        return [];
+      },
+    };
+    const service = build(youtube);
+
+    await service.getVideos('hh', 'r1', 'en');
+    await service.getVideos('hh', 'r1', 'ar');
+    await service.getVideos('hh', 'r1', 'en');
+
+    expect(asked).toEqual(['en', 'ar']);
+  });
+
+  it('still searches when the failure was quota exhaustion rather than an empty result', async () => {
+    let calls = 0;
+    const youtube: YoutubeClient = {
+      async search() {
+        calls += 1;
+        throw new YoutubeUnavailableError('quota');
+      },
+    };
+    const service = build(youtube);
+
+    await service.getVideos('hh', 'r1', 'en');
+    await service.getVideos('hh', 'r1', 'en');
+
+    // "YouTube was down" is not "YouTube has nothing" — caching it would keep
+    // serving [] long after the quota window resets.
+    expect(calls).toBe(2);
   });
 });

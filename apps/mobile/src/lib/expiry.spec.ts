@@ -4,6 +4,7 @@ import {
   daysUntilExpiry,
   expiryStatus,
   isExpiringSoon,
+  isValidExpiryInput,
   todayISODate,
 } from '../lib/expiry';
 
@@ -57,5 +58,29 @@ describe('byExpiryUrgency', () => {
     ];
     const sorted = [...items].sort((a, b) => byExpiryUrgency(a, b, NOW));
     expect(sorted.map((i) => i.expiresAt)).toEqual(['2026-07-24', '2026-07-29', null]);
+  });
+});
+
+describe('isValidExpiryInput', () => {
+  it('accepts an empty value as "no expiry"', () => {
+    expect(isValidExpiryInput('')).toBe(true);
+    expect(isValidExpiryInput('   ')).toBe(true);
+  });
+
+  it('accepts the format the API accepts', () => {
+    expect(isValidExpiryInput('2026-12-31')).toBe(true);
+    expect(isValidExpiryInput(' 2026-01-01 ')).toBe(true);
+  });
+
+  it('rejects the formats a person actually types', () => {
+    // Each of these used to reach the server, come back 422, and render nothing.
+    for (const value of ['31/12/2026', '12-31-2026', 'tomorrow', '2026-12-3', '2026/12/31']) {
+      expect(isValidExpiryInput(value)).toBe(false);
+    }
+  });
+
+  it('rejects well-formed but impossible dates', () => {
+    expect(isValidExpiryInput('2026-02-31')).toBe(false);
+    expect(isValidExpiryInput('2026-13-01')).toBe(false);
   });
 });

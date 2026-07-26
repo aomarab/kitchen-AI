@@ -104,6 +104,7 @@ export const webAr: WebMessages = {
       manualName: 'اسم المكوّن',
       manualNamePlaceholder: 'مثال: طماطم',
       confirmReviewNote: 'لا يُضاف شيء حتى تؤكّد هذه القائمة.',
+      needsLocation: 'أنشئ موقع تخزين أولاً — فالأصناف تحتاج مكاناً.',
       addedToast: 'أُضيفت {count} عناصر إلى مطبخك',
       flaggedCount: '{count} صفوف تحتاج إلى مراجعة',
       noneFlagged: 'كل الصفوف تبدو موثوقة.',

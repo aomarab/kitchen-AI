@@ -1,5 +1,11 @@
 import type { PlanPromptContext } from './prompt.types.js';
-import { type BuiltPrompt, localeDirective, numbered } from './prompt.shared.js';
+import {
+  type BuiltPrompt,
+  localeDirective,
+  untrusted,
+  untrustedList,
+  UNTRUSTED_DATA_DIRECTIVE,
+} from './prompt.shared.js';
 
 /**
  * Stage-B planning prompt (spec §5.4). Turns the deterministic pantry snapshot
@@ -22,17 +28,17 @@ function constraintLines(ctx: PlanPromptContext): string {
   }
   if (c.allergies.length > 0) {
     lines.push(
-      `ALLERGIES — never include these or dishes containing them: ${c.allergies.join(', ')}.`,
+      `ALLERGIES — never include these or dishes containing them: ${c.allergies.map(untrusted).join(', ')}.`,
     );
   }
   if (c.dietaryPrefs.length > 0) {
-    lines.push(`Dietary preferences: ${c.dietaryPrefs.join(', ')}.`);
+    lines.push(`Dietary preferences: ${c.dietaryPrefs.map(untrusted).join(', ')}.`);
   }
   if (c.cuisinePrefs.length > 0) {
-    lines.push(`Preferred cuisines: ${c.cuisinePrefs.join(', ')}.`);
+    lines.push(`Preferred cuisines: ${c.cuisinePrefs.map(untrusted).join(', ')}.`);
   }
   if (c.excludeNames.length > 0) {
-    lines.push(`Avoid these ingredients for this plan: ${c.excludeNames.join(', ')}.`);
+    lines.push(`Avoid these ingredients for this plan: ${c.excludeNames.map(untrusted).join(', ')}.`);
   }
   if (c.maxCookMinutes != null) {
     lines.push(`Keep total cook time at or under ${c.maxCookMinutes} minutes per meal.`);
@@ -46,7 +52,7 @@ function pantryBlock(ctx: PlanPromptContext): string {
     .map((p) => {
       const expiry = p.expiresOn ? `, expires ${p.expiresOn}` : '';
       const staple = p.isStaple ? ' [staple]' : '';
-      return `- ${p.name}: ${p.quantity} ${p.unit}${expiry}${staple}`;
+      return `- ${untrusted(p.name)}: ${p.quantity} ${p.unit}${expiry}${staple}`;
     })
     .join('\n');
 }
@@ -62,6 +68,7 @@ export function buildPlanningPrompt(ctx: PlanPromptContext): BuiltPrompt {
     'Rules: prefer ingredients that expire soonest. Use only pantry ingredients plus common ' +
       `staples. A single recipe may appear at most ${ctx.maxRepeatsPerWeek} times per 7 days. ` +
       'Honour every dietary, allergy and halal constraint absolutely.',
+    UNTRUSTED_DATA_DIRECTIVE,
   ].join('\n\n');
 
   const targets = ctx.dates
@@ -74,9 +81,9 @@ export function buildPlanningPrompt(ctx: PlanPromptContext): BuiltPrompt {
     `Constraints:\n${constraintLines(ctx)}`,
     `Pantry (deterministic snapshot, soonest-to-expire first):\n${pantryBlock(ctx)}`,
     ctx.alreadyUsedTitles.length > 0
-      ? `Already used earlier in this plan (avoid repeating):\n${numbered(ctx.alreadyUsedTitles)}`
+      ? `Already used earlier in this plan (avoid repeating):\n${untrustedList(ctx.alreadyUsedTitles)}`
       : '',
-    ctx.note ? `User note for this request: ${ctx.note}` : '',
+    ctx.note ? `User note for this request: ${untrusted(ctx.note)}` : '',
   ]
     .filter(Boolean)
     .join('\n\n');

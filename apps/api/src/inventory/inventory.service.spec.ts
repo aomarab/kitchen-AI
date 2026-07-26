@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import type { InventoryEventInput, InventoryItemInput } from '@kitchen/contracts';
 import { AppError } from '../common/errors.js';
 import { CatalogService } from '../catalog/catalog.service.js';
-import { ingredients, storageLocations } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
+import { ingredients, inventoryEvents, storageLocations } from '../db/schema.js';
 import {
   createTestContext,
   seedUser,
@@ -49,6 +50,7 @@ describe('InventoryService (live DB)', () => {
   let ingC: string;
   let ingD: string;
   let ingE: string;
+  let ingF: string;
 
   beforeAll(async () => {
     ctx = createTestContext();
@@ -63,12 +65,13 @@ describe('InventoryService (live DB)', () => {
       .returning({ id: storageLocations.id });
     locA = l1!.id;
 
-    const rows = await ctx.db.select({ id: ingredients.id }).from(ingredients).limit(5);
+    const rows = await ctx.db.select({ id: ingredients.id }).from(ingredients).limit(6);
     ingA = rows[0]!.id;
     ingB = rows[1]!.id;
     ingC = rows[2]!.id;
     ingD = rows[3]!.id;
     ingE = rows[4]!.id;
+    ingF = rows[5]!.id;
   });
 
   afterAll(async () => {
@@ -245,5 +248,72 @@ describe('InventoryService (live DB)', () => {
     // The item's quantity is untouched — the edit was not silently applied.
     const listed = await service.list(hhA, { limit: 50, sort: 'expiry' });
     expect(listed.items.find((i) => i.id === itemId)!.quantity).toBe(5);
+  });
+
+  it('orders sync events by instant, not by the text of their timestamp', async () => {
+    const [item] = await service.bulkCreate(hhA, userId, {
+      items: [itemInput({ ingredientId: ingF, locationId: locA, quantity: 2, unit: 'piece' })],
+    });
+    const itemId = item!.id;
+
+    // `isoDateTimeSchema` accepts UTC offsets, so a client in Riyadh sends
+    // `+03:00`. `10:00+03:00` is 07:00Z — an hour *before* `09:00Z` — but sorts
+    // after it as a string. Quantities floor at zero, so replaying the two in
+    // the wrong order is not merely cosmetic: it changes the result.
+    const result = await service.sync(hhA, userId, [
+      {
+        clientEventId: randomUUID(),
+        itemId,
+        delta: -5,
+        unit: 'piece',
+        reason: 'consumed',
+        mealPlanEntryId: null,
+        occurredAt: '2026-03-01T09:00:00.000Z',
+      },
+      {
+        clientEventId: randomUUID(),
+        itemId,
+        delta: 4,
+        unit: 'piece',
+        reason: 'purchased',
+        mealPlanEntryId: null,
+        occurredAt: '2026-03-01T10:00:00.000+03:00',
+      },
+    ]);
+
+    expect(result.applied.length).toBe(2);
+    // True order is purchase (07:00Z) then consumption (09:00Z): 2 + 4 = 6,
+    // then 6 - 5 = 1. Sorting the strings gives 2 - 5 -> floored to 0, + 4 = 4.
+    expect(result.items.find((i) => i.id === itemId)!.quantity).toBe(1);
+  });
+
+  it('keeps the event ledger consistent when two updates race', async () => {
+    const [item] = await service.bulkCreate(hhA, userId, {
+      items: [itemInput({ ingredientId: ingD, locationId: locA, quantity: 10, unit: 'piece' })],
+    });
+    const itemId = item!.id;
+
+    // Each update writes a `corrected` event holding `new - current`. If the
+    // read that produces `current` happens outside the writing transaction,
+    // both updates read 10 and both deltas are measured from it — so the ledger
+    // stops explaining the stored quantity.
+    await Promise.all([
+      service.update(hhA, userId, itemId, { quantity: 7 }),
+      service.update(hhA, userId, itemId, { quantity: 4 }),
+    ]);
+
+    const events = await ctx.db
+      .select({ delta: inventoryEvents.delta })
+      .from(inventoryEvents)
+      .where(eq(inventoryEvents.itemId, itemId));
+    const sum = events.reduce((acc, e) => acc + Number(e.delta), 0);
+
+    const listed = await service.list(hhA, { limit: 50, sort: 'expiry' });
+    const finalQuantity = listed.items.find((i) => i.id === itemId)!.quantity;
+
+    // Whichever order they serialise in, the invariant is the same: the events
+    // sum to the stored quantity.
+    // `bulkCreate` writes the opening `purchased` event, so the ledger is complete.
+    expect(sum).toBeCloseTo(finalQuantity, 3);
   });
 });

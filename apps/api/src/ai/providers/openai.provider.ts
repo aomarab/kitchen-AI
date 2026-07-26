@@ -1,10 +1,16 @@
 import OpenAI from 'openai';
+import { AppError } from '../../common/errors.js';
 import type {
   AiProvider,
   StructuredRequest,
   StructuredResponse,
 } from './ai-provider.interface.js';
-import type { ModelTier } from '../ai.constants.js';
+import {
+  PROVIDER_MAX_OUTPUT_TOKENS,
+  PROVIDER_MAX_RETRIES,
+  PROVIDER_TIMEOUT_MS,
+  type ModelTier,
+} from '../ai.constants.js';
 
 export interface OpenAiModels {
   cheap: string;
@@ -26,7 +32,12 @@ export class OpenAiProvider implements AiProvider {
     apiKey: string,
     private readonly models: OpenAiModels,
   ) {
-    this.client = new OpenAI({ apiKey });
+    this.client = new OpenAI({
+      apiKey,
+      // Per-call overrides below narrow this further; this is the ceiling.
+      timeout: Math.max(...Object.values(PROVIDER_TIMEOUT_MS)),
+      maxRetries: PROVIDER_MAX_RETRIES,
+    });
   }
 
   private modelFor(tier: ModelTier): string {
@@ -59,13 +70,32 @@ export class OpenAiProvider implements AiProvider {
       });
     }
 
-    const completion = await this.client.chat.completions.create({
-      model,
-      messages,
-      response_format: { type: 'json_object' },
-    });
+    const completion = await this.client.chat.completions.create(
+      {
+        model,
+        messages,
+        response_format: { type: 'json_object' },
+        max_tokens: PROVIDER_MAX_OUTPUT_TOKENS[request.tier],
+      },
+      { timeout: PROVIDER_TIMEOUT_MS[request.tier] },
+    );
 
-    const content = completion.choices[0]?.message?.content ?? '{}';
+    const choice = completion.choices[0];
+
+    // A truncated completion is not a malformed one. Left alone it parses to
+    // half an object, fails validation, and gets routed into the SchemaGuard's
+    // repair path — which re-sends the same truncated text against the same
+    // token ceiling and truncates again. Two full-priced calls, guaranteed to
+    // fail. Fail on the first.
+    if (choice?.finish_reason === 'length') {
+      throw new AppError('AI_INVALID_OUTPUT', 'errors.AI_INVALID_OUTPUT', {
+        operation: request.operation,
+        reason: 'truncated',
+        maxTokens: PROVIDER_MAX_OUTPUT_TOKENS[request.tier],
+      });
+    }
+
+    const content = choice?.message?.content ?? '{}';
     const raw = this.parse(content);
 
     return {

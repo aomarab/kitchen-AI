@@ -20,14 +20,16 @@ import {
 import type { BadgeTone } from '../../components/Badge';
 import { useFormat } from '../../hooks/useFormat';
 import {
-  useInventory,
+  useInventoryItem,
   useLocations,
   useUpdateInventoryItem,
   useDeleteInventoryItem,
   useAdjustQuantity,
 } from '../../hooks/inventory';
 import { ingredientName, unitLabel, formatExpiryLabel } from '../../lib/format';
-import { expiryStatus, type ExpiryStatus } from '../../lib/expiry';
+import { expiryStatus, isValidExpiryInput, type ExpiryStatus } from '../../lib/expiry';
+import { errorMessageKey } from '../../lib/errors';
+import { colors } from '../../theme';
 import { spacing } from '../../theme';
 
 const COMMON_UNITS: Unit[] = ['piece', 'g', 'kg', 'ml', 'l', 'bunch', 'can', 'packet'];
@@ -45,9 +47,11 @@ export default function ItemDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const inventory = useInventory();
+  // Fetched by id. Scanning the first page of the unfiltered list instead
+  // meant anything past item #50 rendered as NOT_FOUND.
+  const itemQuery = useInventoryItem(id ?? '');
   const locations = useLocations();
-  const item = inventory.data?.items.find((i) => i.id === id);
+  const item = itemQuery.data;
 
   const update = useUpdateInventoryItem(id ?? '');
   const remove = useDeleteInventoryItem();
@@ -58,7 +62,7 @@ export default function ItemDetail() {
   const [draftLocation, setDraftLocation] = useState<string | null>(null);
   const [draftExpiry, setDraftExpiry] = useState<string | null>(null);
 
-  if (inventory.isLoading) {
+  if (itemQuery.isLoading) {
     return (
       <Screen>
         <Header title={t('inventory.editItem')} onBack={() => router.back()} />
@@ -66,11 +70,11 @@ export default function ItemDetail() {
       </Screen>
     );
   }
-  if (inventory.isError) {
+  if (itemQuery.isError) {
     return (
       <Screen>
         <Header title={t('inventory.editItem')} onBack={() => router.back()} />
-        <ErrorState error={inventory.error} onRetry={() => void inventory.refetch()} />
+        <ErrorState error={itemQuery.error} onRetry={() => void itemQuery.refetch()} />
       </Screen>
     );
   }
@@ -86,6 +90,7 @@ export default function ItemDetail() {
   const unit = draftUnit ?? item.unit;
   const locationId = draftLocation ?? item.locationId;
   const expiresAt = draftExpiry ?? item.expiresAt ?? '';
+  const expiryValid = isValidExpiryInput(expiresAt);
   const dirty =
     unit !== item.unit ||
     locationId !== item.locationId ||
@@ -97,8 +102,10 @@ export default function ItemDetail() {
     adjust.mutate({ itemId: item.id, delta, unit: item.unit, reason: 'corrected' });
   };
 
-  const save = () =>
+  const save = () => {
+    if (!expiryValid) return;
     update.mutate({ locationId, unit, expiresAt: expiresAt.trim() ? expiresAt.trim() : null });
+  };
 
   const expiryLabel = formatExpiryLabel(t, locale, item.expiresAt, prefs);
 
@@ -163,14 +170,24 @@ export default function ItemDetail() {
           autoCapitalize="none"
           autoCorrect={false}
         />
+        {!expiryValid ? (
+          <AppText variant="caption" style={{ color: colors.danger }}>
+            {t('mobile.capture.expiryFormat')}
+          </AppText>
+        ) : null}
 
         <Button
           title={t('common.save')}
           icon="check"
-          disabled={!dirty}
+          disabled={!dirty || !expiryValid}
           loading={update.isPending}
           onPress={save}
         />
+        {update.isError ? (
+          <AppText variant="caption" style={{ color: colors.danger }}>
+            {t(errorMessageKey(update.error))}
+          </AppText>
+        ) : null}
       </Card>
 
       <Button

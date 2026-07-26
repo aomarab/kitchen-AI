@@ -65,3 +65,31 @@ export function estimateCostUsd(
 
 /** Videos are cached for 30 days (spec §5.5). */
 export const VIDEO_CACHE_TTL_DAYS = 30;
+
+/**
+ * Hard limits on a single provider call.
+ *
+ * The OpenAI SDK defaults to a 10-minute timeout and 2 retries, so one wedged
+ * upstream request can hold a Nest request — and the user's HTTP connection —
+ * for half an hour. Nothing above this layer imposes a deadline, so it has to
+ * be imposed here.
+ *
+ * `maxOutputTokens` bounds the other side of the same problem: an unbounded
+ * completion is an unbounded bill, and a household's daily budget is only
+ * checked *before* a call, never mid-stream.
+ */
+export const PROVIDER_TIMEOUT_MS: Record<ModelTier, number> = {
+  cheap: 30_000,
+  vision: 60_000,
+  // Planning generates a full week of meals in one response.
+  planning: 120_000,
+};
+
+/** Retries inside the SDK, on top of which nothing else retries. */
+export const PROVIDER_MAX_RETRIES = 2;
+
+export const PROVIDER_MAX_OUTPUT_TOKENS: Record<ModelTier, number> = {
+  cheap: 2_048,
+  vision: 4_096,
+  planning: 8_192,
+};

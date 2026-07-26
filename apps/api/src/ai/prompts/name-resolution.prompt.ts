@@ -1,5 +1,12 @@
 import type { NameResolveContext, TranslateRecipeContext } from './prompt.types.js';
-import { type BuiltPrompt, localeDirective, numbered } from './prompt.shared.js';
+import {
+  type BuiltPrompt,
+  localeDirective,
+  numbered,
+  untrusted,
+  untrustedList,
+  UNTRUSTED_DATA_DIRECTIVE,
+} from './prompt.shared.js';
 
 /**
  * Cheap-model name resolution (spec §5.1 step 4 / §5.6). Given free-text names
@@ -17,10 +24,11 @@ export function buildNameResolvePrompt(ctx: NameResolveContext): BuiltPrompt {
       'order. Prefer a provided candidate; if none fits, echo a cleaned generic name with low ' +
       'confidence. Never invent a catalog entry that was not offered.',
     localeDirective(ctx.locale),
+    UNTRUSTED_DATA_DIRECTIVE,
   ].join('\n\n');
 
   const user = [
-    `Names to resolve:\n${numbered(ctx.names)}`,
+    `Names to resolve:\n${untrustedList(ctx.names)}`,
     `Catalog candidates:\n${numbered(ctx.candidateNames)}`,
   ].join('\n\n');
 
@@ -37,12 +45,13 @@ export function buildRecipeTranslatePrompt(ctx: TranslateRecipeContext): BuiltPr
     `You are a culinary translator producing native ${ctx.toLocale === 'ar' ? 'Arabic' : 'English'} recipe text.`,
     localeDirective(ctx.toLocale),
     'Return JSON {"title","description","steps":[...]} preserving the number and order of steps.',
+    UNTRUSTED_DATA_DIRECTIVE,
   ].join('\n\n');
 
   const user = [
-    `Title: ${ctx.title}`,
-    `Description: ${ctx.description}`,
-    `Steps:\n${numbered(ctx.steps)}`,
+    `Title: ${untrusted(ctx.title)}`,
+    `Description: ${untrusted(ctx.description)}`,
+    `Steps:\n${untrustedList(ctx.steps)}`,
   ].join('\n\n');
 
   return { system, user, version: RECIPE_TRANSLATE_PROMPT_VERSION };

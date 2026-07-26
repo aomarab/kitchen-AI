@@ -1,4 +1,4 @@
-import { and, desc, eq, gte } from 'drizzle-orm';
+import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
   Locale,
@@ -10,6 +10,7 @@ import type {
 } from '@kitchen/contracts';
 import { AppError } from '../../common/errors.js';
 import { DB, type Database } from '../../db/index.js';
+import { numeric } from '../../common/serialization.js';
 import {
   inventoryEvents,
   inventoryItems,
@@ -19,11 +20,14 @@ import {
   recipes,
   users,
 } from '../../db/schema.js';
-import { PANTRY_PORT, VIDEO_CACHE_TTL_DAYS, YOUTUBE_CLIENT } from '../ai.constants.js';
+import { PANTRY_PORT, RESPONSE_CACHE, VIDEO_CACHE_TTL_DAYS, YOUTUBE_CLIENT } from '../ai.constants.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { convert } from '../planner/units.js';
 import { YoutubeUnavailableError, type YoutubeClient } from '../clients/clients.interface.js';
+import { hashKey, type ResponseCachePort } from '../cache/response-cache.js';
 import { toRecipe, type FullRecipeRow } from './recipe-mapper.js';
+
+type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 @Injectable()
 export class RecipesService {
@@ -31,6 +35,7 @@ export class RecipesService {
     @Inject(DB) private readonly db: Database,
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
     @Inject(YOUTUBE_CLIENT) private readonly youtube: YoutubeClient,
+    @Inject(RESPONSE_CACHE) private readonly cache: ResponseCachePort,
   ) {}
 
   async getRecipe(householdId: string, id: string, requested?: Locale): Promise<Recipe> {
@@ -59,8 +64,19 @@ export class RecipesService {
       .orderBy(desc(recipeVideos.fetchedAt));
     if (fresh.length > 0) return fresh.map(toVideo);
 
+    // "No rows" is indistinguishable from "never searched", so a recipe YouTube
+    // has nothing for would re-run search.list on every single request — 100
+    // quota units each, against a daily allowance of 10,000. Remember the empty
+    // answer explicitly.
+    const emptyKey = hashKey('recipe-videos-empty', { recipeId: id, locale });
+    if (await this.cache.get<true>(emptyKey)) return [];
+
     try {
       const results = await this.youtube.search(title, locale);
+      if (results.length === 0) {
+        await this.cache.set(emptyKey, true, VIDEO_CACHE_TTL_DAYS * 86_400);
+        return [];
+      }
       for (const v of results) {
         await this.db
           .insert(recipeVideos)
@@ -90,7 +106,18 @@ export class RecipesService {
     }
   }
 
-  /** Marks a recipe cooked and deducts its ingredients from inventory (spec §4.2). */
+  /**
+   * Marks a recipe cooked and deducts its ingredients from inventory (spec §4.2).
+   *
+   * The whole thing runs in one transaction. Deduction is a read-then-write —
+   * how much to take from each item depends on what that item currently holds —
+   * so the rows are locked while the arithmetic happens. Without that, a
+   * concurrent offline sync landing between the read and the write is silently
+   * overwritten, and `sum(inventory_events.delta)` stops matching the quantity
+   * the ledger is supposed to explain. The plan entry flips to `cooked` in the
+   * same transaction, so a failure can never leave stock deducted for a meal
+   * that still shows as planned.
+   */
   async markCooked(
     householdId: string,
     userId: string,
@@ -107,34 +134,37 @@ export class RecipesService {
       await this.requireOwnedPlanEntry(householdId, request.mealPlanEntryId);
     }
 
-    const deductedItemIds: string[] = [];
-    const missingIngredientIds: string[] = [];
+    return this.db.transaction(async (tx) => {
+      const deductedItemIds: string[] = [];
+      const missingIngredientIds: string[] = [];
 
-    if (request.deductInventory) {
-      for (const ing of row.ingredients) {
-        if (ing.optional || ing.ingredient.isStaple) continue;
-        const need = Number(ing.quantity) * scale;
-        const done = await this.deductIngredient(
-          householdId,
-          userId,
-          ing.ingredient.id,
-          need,
-          ing.unit,
-          request.mealPlanEntryId,
-          deductedItemIds,
-        );
-        if (!done) missingIngredientIds.push(ing.ingredient.id);
+      if (request.deductInventory) {
+        for (const ing of row.ingredients) {
+          if (ing.optional || ing.ingredient.isStaple) continue;
+          const need = Number(ing.quantity) * scale;
+          const done = await this.deductIngredient(
+            tx,
+            householdId,
+            userId,
+            ing.ingredient.id,
+            need,
+            ing.unit,
+            request.mealPlanEntryId,
+            deductedItemIds,
+          );
+          if (!done) missingIngredientIds.push(ing.ingredient.id);
+        }
       }
-    }
 
-    if (request.mealPlanEntryId) {
-      await this.db
-        .update(mealPlanEntries)
-        .set({ state: 'cooked' })
-        .where(eq(mealPlanEntries.id, request.mealPlanEntryId));
-    }
+      if (request.mealPlanEntryId) {
+        await tx
+          .update(mealPlanEntries)
+          .set({ state: 'cooked' })
+          .where(eq(mealPlanEntries.id, request.mealPlanEntryId));
+      }
 
-    return { deductedItemIds, missingIngredientIds };
+      return { deductedItemIds, missingIngredientIds };
+    });
   }
 
   /** 404s unless the meal-plan entry belongs to a plan owned by this household. */
@@ -149,6 +179,7 @@ export class RecipesService {
   }
 
   private async deductIngredient(
+    tx: Tx,
     householdId: string,
     userId: string,
     ingredientId: string,
@@ -157,11 +188,14 @@ export class RecipesService {
     mealPlanEntryId: string | null,
     deductedItemIds: string[],
   ): Promise<boolean> {
-    const items = await this.db
+    const items = await tx
       .select()
       .from(inventoryItems)
       .where(and(eq(inventoryItems.householdId, householdId), eq(inventoryItems.ingredientId, ingredientId)))
-      .orderBy(inventoryItems.expiresAt);
+      .orderBy(inventoryItems.expiresAt)
+      // Held for the rest of the transaction: the amount taken from each item
+      // is computed from the quantity read here.
+      .for('update');
 
     let remaining = needed;
     for (const item of items) {
@@ -172,15 +206,19 @@ export class RecipesService {
       const take = Math.min(available, inItemUnit);
       if (take <= 1e-6) continue;
 
-      const newQty = available - take;
-      await this.db
+      await tx
         .update(inventoryItems)
-        .set({ quantity: newQty.toFixed(3), updatedAt: new Date() })
+        // Relative, and floored at zero — the same form the sync path uses, so
+        // the two never disagree about what a concurrent write means.
+        .set({
+          quantity: sql`greatest(${inventoryItems.quantity} - ${numeric(take)}::numeric, 0)`,
+          updatedAt: new Date(),
+        })
         .where(eq(inventoryItems.id, item.id));
-      await this.db.insert(inventoryEvents).values({
+      await tx.insert(inventoryEvents).values({
         itemId: item.id,
         householdId,
-        delta: (-take).toFixed(3),
+        delta: numeric(-take),
         unit: item.unit,
         reason: 'consumed',
         mealPlanEntryId: mealPlanEntryId ?? null,

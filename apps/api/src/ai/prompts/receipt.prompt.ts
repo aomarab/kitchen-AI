@@ -1,5 +1,11 @@
 import type { ReceiptExtractContext, ReceiptMapContext } from './prompt.types.js';
-import { type BuiltPrompt, localeDirective, numbered } from './prompt.shared.js';
+import {
+  type BuiltPrompt,
+  localeDirective,
+  numbered,
+  untrustedList,
+  UNTRUSTED_DATA_DIRECTIVE,
+} from './prompt.shared.js';
 
 /**
  * Receipt parsing is two passes (spec §5.3): a vision pass extracts raw line
@@ -33,10 +39,11 @@ export function buildReceiptMapPrompt(ctx: ReceiptMapContext): BuiltPrompt {
       'line, in the same order. Choose `canonicalName` from the provided candidates when a good ' +
       'match exists; otherwise return your best generic name and a low confidence.',
     localeDirective(ctx.locale),
+    UNTRUSTED_DATA_DIRECTIVE,
   ].join('\n\n');
 
   const user = [
-    `Raw lines:\n${numbered(ctx.rawLines)}`,
+    `Raw lines:\n${untrustedList(ctx.rawLines)}`,
     `Catalog candidates:\n${numbered(ctx.candidateNames)}`,
   ].join('\n\n');
 

@@ -9,6 +9,7 @@ import {
   type RecognizedItem,
 } from '@kitchen/contracts';
 import { AppError } from '../../common/errors.js';
+import { normalizeArabic } from '../../catalog/normalize.js';
 import { DB, type Database } from '../../db/index.js';
 import { recognitionSessions, users } from '../../db/schema.js';
 import { StorageService } from '../../storage/storage.service.js';
@@ -18,6 +19,11 @@ import type { IngredientResolverPort } from '../catalog/ingredient-resolver.port
 import { buildReceiptExtractPrompt, buildReceiptMapPrompt } from '../prompts/receipt.prompt.js';
 import { suggestedExpiry, suggestedLocation } from '../recognition/suggestions.js';
 import { receiptMappingSchema, type ReceiptMapping } from './receipt.schemas.js';
+
+/** Loose key so a model echoing different casing/diacritics still matches. */
+function mappingKey(rawName: string): string {
+  return normalizeArabic(rawName).toLowerCase().replace(/\s+/g, ' ').trim();
+}
 
 export interface ReceiptProcessInput {
   householdId: string;
@@ -87,17 +93,33 @@ export class ReceiptService {
       { createIfMissing: true },
     );
 
-    const items: RecognizedItem[] = foodLines.map((line, i) => {
-      const map = mapping.items[i];
-      const ref = resolved[i]?.ingredient ?? null;
+    // The mapping pass is not required to return one item per line, in order —
+    // it routinely drops non-food lines and merges duplicates. Indexing
+    // `mapping.items[i]` by line position therefore shifts every line after the
+    // first omission onto someone else's ingredient, silently: the receipt's
+    // milk is added to the pantry as chicken. `rawName` is echoed back by the
+    // model for exactly this reason, so key on it.
+    const byRawName = new Map<string, { map: ReceiptMapping['items'][number]; index: number }>();
+    mapping.items.forEach((map, index) => {
+      const key = mappingKey(map.rawName);
+      if (key && !byRawName.has(key)) byRawName.set(key, { map, index });
+    });
+
+    const items: RecognizedItem[] = foodLines.map((line) => {
+      const hit = byRawName.get(mappingKey(line.nameGuess));
+      const map = hit?.map;
+      // `resolved` is positional against `mapping.items`, so it follows the
+      // mapping's index, not the line's.
+      const resolution = hit ? resolved[hit.index] : undefined;
+      const ref = resolution?.ingredient ?? null;
       const unit = line.unit ?? ref?.defaultUnit ?? 'piece';
       const category = ref?.category ?? 'other';
       return {
         tempId: randomUUID(),
         match: {
           ingredientId: ref?.id ?? null,
-          strategy: resolved[i]?.strategy ?? 'unresolved',
-          confidence: map?.confidence ?? resolved[i]?.confidence ?? 0,
+          strategy: resolution?.strategy ?? 'unresolved',
+          confidence: map?.confidence ?? resolution?.confidence ?? 0,
           rawName: line.nameGuess,
         },
         nameEn: ref?.canonicalNameEn ?? line.nameGuess,

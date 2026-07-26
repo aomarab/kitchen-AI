@@ -111,6 +111,7 @@ export const webEn = {
       manualName: 'Ingredient name',
       manualNamePlaceholder: 'e.g. tomatoes',
       confirmReviewNote: 'Nothing is added until you confirm this list.',
+      needsLocation: 'Create a storage location first — items need somewhere to go.',
       addedToast: '{count} items added to your kitchen',
       flaggedCount: '{count} rows need a second look',
       noneFlagged: 'Every row looks confident.',

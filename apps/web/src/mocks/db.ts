@@ -18,6 +18,7 @@ import type {
   User,
 } from '@kitchen/contracts';
 import { INGREDIENTS, RECIPES, type RecipeSeed } from './catalog';
+import { uuid } from '../lib/uuid';
 
 /**
  * The seeded household id. Confined to the mock layer as fixture data — app
@@ -26,13 +27,7 @@ import { INGREDIENTS, RECIPES, type RecipeSeed } from './catalog';
  */
 export const DEFAULT_HOUSEHOLD_ID = '11111111-1111-4111-8111-111111111111';
 
-export function uuid(): string {
-  const c = globalThis.crypto as Crypto | undefined;
-  if (c?.randomUUID) return c.randomUUID();
-  return 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () =>
-    Math.floor(Math.random() * 16).toString(16),
-  );
-}
+export { uuid };
 
 const NOW = () => new Date();
 const iso = (d: Date) => d.toISOString();

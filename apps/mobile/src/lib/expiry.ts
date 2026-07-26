@@ -63,3 +63,24 @@ export function byExpiryUrgency(
   if (db === null) return -1;
   return da - db;
 }
+
+/**
+ * Whether a user-typed expiry date is something the API will accept.
+ *
+ * The field is free text, and `isoDateSchema` on the server only accepts
+ * `YYYY-MM-DD`. Anything else came back as a 422 that neither screen rendered,
+ * so "31/12/2026" simply did nothing when the user pressed save. Checked here
+ * so the message lands next to the field instead.
+ *
+ * An empty value is valid — it means "no expiry date".
+ */
+export function isValidExpiryInput(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return true;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return false;
+  // Rejects real-looking-but-impossible dates like 2026-02-31, which the regex
+  // alone would pass and the server would reject.
+  const parsed = new Date(`${trimmed}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return false;
+  return parsed.toISOString().slice(0, 10) === trimmed;
+}
