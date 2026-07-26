@@ -1,27 +1,17 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import { useLocale } from '../lib/locale';
+import { Redirect } from 'expo-router';
+import { useAuthStore } from '../stores/auth';
 
-export default function HomeScreen() {
-  const { t } = useLocale();
+/**
+ * Entry gate. Sends the user to sign-in, household onboarding, or the app
+ * depending on session state. The root layout shows a splash while the session
+ * is still hydrating, so `loading` renders nothing here.
+ */
+export default function Index() {
+  const status = useAuthStore((state) => state.status);
+  const activeHouseholdId = useAuthStore((state) => state.activeHouseholdId);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t('common.appName')}</Text>
-      <Text style={styles.subtitle}>{t('common.loading')}</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+  if (status === 'loading') return null;
+  if (status === 'signedOut') return <Redirect href="/sign-in" />;
+  if (!activeHouseholdId) return <Redirect href="/onboarding" />;
+  return <Redirect href="/home" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    gap: 8,
-  },
-  title: { fontSize: 24, fontWeight: '600' },
-  subtitle: { fontSize: 14, opacity: 0.6 },
-});
