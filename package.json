@@ -1,0 +1,28 @@
+{
+  "name": "kitchen-ai",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @kitchen/api db:generate",
+    "db:migrate": "pnpm --filter @kitchen/api db:migrate",
+    "db:seed": "pnpm --filter @kitchen/api db:seed",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}

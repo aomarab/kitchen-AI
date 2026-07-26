@@ -1,0 +1,1951 @@
+[
+  {
+    "slug": "ground-beef",
+    "canonicalNameEn": "Ground beef",
+    "canonicalNameAr": "لحم بقري مفروم",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "minced beef",
+      "beef mince",
+      "hamburger meat",
+      "لحمة مفرومة",
+      "لحم مفروم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "beef-steak",
+    "canonicalNameEn": "Beef steak",
+    "canonicalNameAr": "شريحة لحم بقري",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "steak",
+      "rib-eye steak",
+      "sirloin steak",
+      "ستيك",
+      "شريحة لحم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "beef-stew-cubes",
+    "canonicalNameEn": "Beef stew cubes",
+    "canonicalNameAr": "مكعبات لحم بقري",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "beef chunks",
+      "stewing beef",
+      "beef pieces",
+      "لحم يخني",
+      "قطع لحم بقري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "beef-brisket",
+    "canonicalNameEn": "Beef brisket",
+    "canonicalNameAr": "صدر البقر",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "brisket",
+      "beef breast cut",
+      "لحم الصدر",
+      "برسكت",
+      "صدر لحم بقري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "beef-short-ribs",
+    "canonicalNameEn": "Beef short ribs",
+    "canonicalNameAr": "ضلوع البقر",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "short ribs",
+      "beef ribs",
+      "riblets",
+      "ريش بقري",
+      "أضلاع بقري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "beef-liver",
+    "canonicalNameEn": "Beef liver",
+    "canonicalNameAr": "كبد بقري",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "calf liver",
+      "ox liver",
+      "liver",
+      "كبدة بقر",
+      "كبد البقر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "oxtail",
+    "canonicalNameEn": "Oxtail",
+    "canonicalNameAr": "ذيل البقر",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "beef tail",
+      "ox tail",
+      "ذنب البقر",
+      "ذيل الثور",
+      "عظمة الذيل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lamb-leg",
+    "canonicalNameEn": "Lamb leg",
+    "canonicalNameAr": "ران الخروف",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "leg of lamb",
+      "whole lamb leg",
+      "فخذ الخروف",
+      "رجل الخروف",
+      "ران ضأن"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lamb-shoulder",
+    "canonicalNameEn": "Lamb shoulder",
+    "canonicalNameAr": "كتف الخروف",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "shoulder of lamb",
+      "lamb neck end",
+      "كتفة خروف",
+      "كتف ضأن",
+      "رقبة خروف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lamb-chops",
+    "canonicalNameEn": "Lamb chops",
+    "canonicalNameAr": "ريش الخروف",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "lamb cutlets",
+      "lamb loin chops",
+      "شرائح الخروف",
+      "ريش ضأن",
+      "كوتليت خروف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ground-lamb",
+    "canonicalNameEn": "Ground lamb",
+    "canonicalNameAr": "لحم خروف مفروم",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "minced lamb",
+      "lamb mince",
+      "ground mutton",
+      "لحم ضأن مفروم",
+      "لحمة خروف مفرومة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lamb-shank",
+    "canonicalNameEn": "Lamb shank",
+    "canonicalNameAr": "موزة خروف",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "lamb leg shank",
+      "braised lamb shank",
+      "كراع الخروف",
+      "موز الخروف",
+      "موزات خروف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lamb-ribs",
+    "canonicalNameEn": "Lamb ribs",
+    "canonicalNameAr": "ضلوع الخروف",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "rack of lamb",
+      "lamb rack",
+      "ريش خروف",
+      "أضلاع الخروف",
+      "ضلوع ضأن"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "veal",
+    "canonicalNameEn": "Veal",
+    "canonicalNameAr": "لحم عجل",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "veal cutlet",
+      "baby beef",
+      "لحم البتلو",
+      "بتلو",
+      "لحم عجل صغير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "goat-meat",
+    "canonicalNameEn": "Goat meat",
+    "canonicalNameAr": "لحم ماعز",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "mutton",
+      "kid goat meat",
+      "لحم الغنم",
+      "لحم جدي",
+      "لحم عنز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "camel-meat",
+    "canonicalNameEn": "Camel meat",
+    "canonicalNameAr": "لحم جمل",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "dromedary meat",
+      "camel",
+      "لحم الإبل",
+      "لحم ناقة",
+      "لحم بعير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "beef-sausage",
+    "canonicalNameEn": "Beef sausage",
+    "canonicalNameAr": "سجق بقري",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "beef frankfurter",
+      "beef hot dog",
+      "نقانق بقري",
+      "سوسيس لحم",
+      "سجق لحم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "beef-bacon",
+    "canonicalNameEn": "Beef bacon",
+    "canonicalNameAr": "بيكون بقري",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "smoked beef strips",
+      "halal bacon",
+      "شرائح لحم بقري مدخنة",
+      "لحم بقري مدخن",
+      "بيكون لحم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "basturma",
+    "canonicalNameEn": "Basturma",
+    "canonicalNameAr": "بسطرمة",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "pastrami",
+      "spiced cured beef",
+      "pastirma",
+      "لحم مجفف متبل",
+      "بسطرما"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "kebab-meat",
+    "canonicalNameEn": "Kebab meat",
+    "canonicalNameAr": "لحم كباب",
+    "category": "meat",
+    "defaultUnit": "g",
+    "aliases": [
+      "kofta meat",
+      "kefta",
+      "mixed ground kebab",
+      "كفتة",
+      "لحم الكفتة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "whole-chicken",
+    "canonicalNameEn": "Whole chicken",
+    "canonicalNameAr": "دجاجة كاملة",
+    "category": "poultry",
+    "defaultUnit": "piece",
+    "aliases": [
+      "broiler chicken",
+      "roasting chicken",
+      "fryer",
+      "فروج كامل",
+      "دجاج كامل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chicken-breast",
+    "canonicalNameEn": "Chicken breast",
+    "canonicalNameAr": "صدر دجاج",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "boneless chicken breast",
+      "chicken fillet",
+      "صدور دجاج",
+      "فيليه دجاج",
+      "دجاج بلا عظم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chicken-thigh",
+    "canonicalNameEn": "Chicken thigh",
+    "canonicalNameAr": "فخذ دجاج",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "boneless thigh",
+      "chicken thigh fillet",
+      "أفخاذ دجاج",
+      "فخذة دجاج",
+      "فخذ فروج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chicken-drumstick",
+    "canonicalNameEn": "Chicken drumstick",
+    "canonicalNameAr": "ساق دجاج",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "chicken leg piece",
+      "drumstick",
+      "أرجل دجاج",
+      "أوراك دجاج",
+      "ساقين دجاج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chicken-wings",
+    "canonicalNameEn": "Chicken wings",
+    "canonicalNameAr": "أجنحة دجاج",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "wing tips",
+      "party wings",
+      "جناح دجاج",
+      "أجنحة فروج",
+      "وينجز دجاج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ground-chicken",
+    "canonicalNameEn": "Ground chicken",
+    "canonicalNameAr": "دجاج مفروم",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "minced chicken",
+      "chicken mince",
+      "فراخ مفرومة",
+      "دجاج مطحون",
+      "لحم دجاج مفروم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chicken-liver",
+    "canonicalNameEn": "Chicken liver",
+    "canonicalNameAr": "كبد دجاج",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "poultry liver",
+      "chicken giblets",
+      "كبدة دجاج",
+      "كبدة فراخ",
+      "أكباد الدجاج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chicken-shawarma-strips",
+    "canonicalNameEn": "Chicken shawarma strips",
+    "canonicalNameAr": "شرائح شاورما دجاج",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "shawarma chicken",
+      "marinated chicken strips",
+      "شاورما فراخ",
+      "دجاج شاورما",
+      "شرائح دجاج للشاورما"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "turkey-breast",
+    "canonicalNameEn": "Turkey breast",
+    "canonicalNameAr": "صدر ديك رومي",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "turkey fillet",
+      "sliced turkey",
+      "صدر الديك الرومي",
+      "فيليه ديك رومي",
+      "ديك رومي صدر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ground-turkey",
+    "canonicalNameEn": "Ground turkey",
+    "canonicalNameAr": "ديك رومي مفروم",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "minced turkey",
+      "turkey mince",
+      "لحم ديك رومي مفروم",
+      "تركي مفروم",
+      "ديك رومي مطحون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "whole-turkey",
+    "canonicalNameEn": "Whole turkey",
+    "canonicalNameAr": "ديك رومي كامل",
+    "category": "poultry",
+    "defaultUnit": "piece",
+    "aliases": [
+      "Thanksgiving turkey",
+      "roast turkey",
+      "ديك رومي",
+      "تركي كامل",
+      "رومي كامل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "duck",
+    "canonicalNameEn": "Duck",
+    "canonicalNameAr": "بطة",
+    "category": "poultry",
+    "defaultUnit": "piece",
+    "aliases": [
+      "whole duck",
+      "Pekin duck",
+      "بط",
+      "بطة كاملة",
+      "لحم بط"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "quail",
+    "canonicalNameEn": "Quail",
+    "canonicalNameAr": "سمان",
+    "category": "poultry",
+    "defaultUnit": "piece",
+    "aliases": [
+      "whole quail",
+      "coturnix quail",
+      "سمانة",
+      "طير السمان",
+      "عصفور سمان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chicken-stock-bones",
+    "canonicalNameEn": "Chicken stock bones",
+    "canonicalNameAr": "عظام دجاج",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "chicken carcass",
+      "chicken frames",
+      "bone broth base",
+      "هيكل دجاج",
+      "عظام الدجاج للمرق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "duck-breast",
+    "canonicalNameEn": "Duck breast",
+    "canonicalNameAr": "صدر بط",
+    "category": "poultry",
+    "defaultUnit": "g",
+    "aliases": [
+      "duck fillet",
+      "magret de canard",
+      "صدر البطة",
+      "فيليه بط",
+      "صدور البط"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "shrimp",
+    "canonicalNameEn": "Shrimp",
+    "canonicalNameAr": "جمبري",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "prawns",
+      "king prawns",
+      "روبيان",
+      "قريدس",
+      "جمبري طازج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "white-fish-fillet",
+    "canonicalNameEn": "White fish fillet",
+    "canonicalNameAr": "فيليه سمك أبيض",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "fish fillet",
+      "white fish",
+      "سمك فيليه",
+      "شريحة سمك",
+      "فيليه سمك"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "salmon-fillet",
+    "canonicalNameEn": "Salmon fillet",
+    "canonicalNameAr": "فيليه سلمون",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "Atlantic salmon",
+      "salmon steak",
+      "سمك السلمون",
+      "سالمون",
+      "شريحة سلمون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tuna-steak",
+    "canonicalNameEn": "Tuna steak",
+    "canonicalNameAr": "شريحة تونة طازجة",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "fresh tuna",
+      "yellowfin tuna",
+      "تونة طازجة",
+      "سمك التونة",
+      "ستيك تونة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-tuna",
+    "canonicalNameEn": "Canned tuna",
+    "canonicalNameAr": "تونة معلبة",
+    "category": "seafood",
+    "defaultUnit": "can",
+    "aliases": [
+      "tuna in oil",
+      "tuna in water",
+      "علبة تونة",
+      "تن معلب",
+      "تونة زيت"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fresh-sardine",
+    "canonicalNameEn": "Fresh sardine",
+    "canonicalNameAr": "سردين طازج",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "sardine",
+      "pilchard",
+      "سردينة",
+      "سمك السردين",
+      "أسماك سردين"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-sardine",
+    "canonicalNameEn": "Canned sardine",
+    "canonicalNameAr": "سردين معلب",
+    "category": "seafood",
+    "defaultUnit": "can",
+    "aliases": [
+      "sardines in oil",
+      "tinned sardines",
+      "علبة سردين",
+      "سردين في علبة",
+      "سردين محفوظ"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mackerel",
+    "canonicalNameEn": "Mackerel",
+    "canonicalNameAr": "إسقمري",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "Atlantic mackerel",
+      "smoked mackerel",
+      "سمك الإسقمري",
+      "ماكريل",
+      "سمك ماكريل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sea-bass",
+    "canonicalNameEn": "Sea bass",
+    "canonicalNameAr": "قاروص",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "European sea bass",
+      "branzino",
+      "لوب دو مير",
+      "سمك القاروص",
+      "سمك لقز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sea-bream",
+    "canonicalNameEn": "Sea bream",
+    "canonicalNameAr": "دنيس",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "gilt-head bream",
+      "dorade",
+      "سمك الدنيس",
+      "دنيس البحر",
+      "فيليه دنيس"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "hamour",
+    "canonicalNameEn": "Hamour",
+    "canonicalNameAr": "هامور",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "grouper",
+      "orange-spotted grouper",
+      "سمك الهامور",
+      "هامور خليجي",
+      "سمك الهامة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tilapia",
+    "canonicalNameEn": "Tilapia",
+    "canonicalNameAr": "بلطي",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "Nile tilapia",
+      "St Peter's fish",
+      "سمك البلطي",
+      "بلطي نيلي",
+      "أبو قشة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mullet",
+    "canonicalNameEn": "Mullet",
+    "canonicalNameAr": "بوري",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "grey mullet",
+      "flathead grey mullet",
+      "سمك البوري",
+      "بوري مصري",
+      "سمك طوبار"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cod",
+    "canonicalNameEn": "Cod",
+    "canonicalNameAr": "سمك القد",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "Atlantic cod",
+      "cod fillet",
+      "سمك الكود",
+      "قد",
+      "فيليه قد"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sole",
+    "canonicalNameEn": "Sole",
+    "canonicalNameAr": "سمك موسى",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "Dover sole",
+      "lemon sole",
+      "سمك النعل",
+      "فيليه موسى",
+      "سمك الموسى"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "calamari",
+    "canonicalNameEn": "Calamari",
+    "canonicalNameAr": "حبار",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "squid",
+      "fried calamari",
+      "كاليماري",
+      "سبيط",
+      "حبار بحري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "crab",
+    "canonicalNameEn": "Crab",
+    "canonicalNameAr": "سرطان البحر",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "blue crab",
+      "mud crab",
+      "كابوريا",
+      "قبقب",
+      "سرطان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lobster",
+    "canonicalNameEn": "Lobster",
+    "canonicalNameAr": "جراد البحر",
+    "category": "seafood",
+    "defaultUnit": "piece",
+    "aliases": [
+      "whole lobster",
+      "lobster tail",
+      "استاكوزا",
+      "كركند",
+      "إستاكوزا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mussels",
+    "canonicalNameEn": "Mussels",
+    "canonicalNameAr": "بلح البحر",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "blue mussels",
+      "black mussels",
+      "صدف البحر",
+      "بلح أسود",
+      "هيمون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "clams",
+    "canonicalNameEn": "Clams",
+    "canonicalNameAr": "محار",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "hard clams",
+      "surf clams",
+      "كلام",
+      "صدف",
+      "محار البحر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "octopus",
+    "canonicalNameEn": "Octopus",
+    "canonicalNameAr": "أخطبوط",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "baby octopus",
+      "grilled octopus",
+      "اخطبوط",
+      "لحم الأخطبوط",
+      "رأس الأخطبوط"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "anchovy",
+    "canonicalNameEn": "Anchovy",
+    "canonicalNameAr": "أنشوفة",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "salted anchovies",
+      "anchovy fillets",
+      "انشوجة",
+      "سمك الأنشوجة",
+      "أنشوفي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fish-roe",
+    "canonicalNameEn": "Fish roe",
+    "canonicalNameAr": "بطارخ",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "caviar",
+      "bottarga",
+      "بيض السمك",
+      "كافيار",
+      "أيكة السمك"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "faseekh",
+    "canonicalNameEn": "Faseekh",
+    "canonicalNameAr": "فسيخ",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "salted fermented fish",
+      "dried salted fish",
+      "ملوحة",
+      "سمك مملح",
+      "فسيخ مصري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-prawns",
+    "canonicalNameEn": "Frozen prawns",
+    "canonicalNameAr": "روبيان مجمد",
+    "category": "seafood",
+    "defaultUnit": "g",
+    "aliases": [
+      "tiger prawns",
+      "king prawns frozen",
+      "جمبري مجمد كبير",
+      "قريدس مجمد",
+      "جمبري تايغر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "whole-milk",
+    "canonicalNameEn": "Whole milk",
+    "canonicalNameAr": "حليب كامل الدسم",
+    "category": "dairy",
+    "defaultUnit": "ml",
+    "aliases": [
+      "full-fat milk",
+      "fresh milk",
+      "حليب طازج",
+      "لبن كامل",
+      "حليب"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "laban",
+    "canonicalNameEn": "Laban",
+    "canonicalNameAr": "لبن عيران",
+    "category": "dairy",
+    "defaultUnit": "ml",
+    "aliases": [
+      "buttermilk",
+      "drinking yoghurt",
+      "ayran",
+      "لبن رائب",
+      "عيران",
+      "لبن مخفوق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "plain-yoghurt",
+    "canonicalNameEn": "Plain yoghurt",
+    "canonicalNameAr": "زبادي",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "natural yogurt",
+      "plain yogurt",
+      "لبن",
+      "يوغرت",
+      "روب"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "greek-yoghurt",
+    "canonicalNameEn": "Greek yoghurt",
+    "canonicalNameAr": "زبادي يوناني",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "strained yoghurt",
+      "thick yoghurt",
+      "يوغرت يوناني",
+      "زبادي مصفى",
+      "يوغرت سميك"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "labneh",
+    "canonicalNameEn": "Labneh",
+    "canonicalNameAr": "لبنة",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "strained yoghurt cheese",
+      "yoghurt spread",
+      "Lebanese cream cheese",
+      "لبن مصفى",
+      "كريمة الزبادي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cream",
+    "canonicalNameEn": "Cream",
+    "canonicalNameAr": "كريمة",
+    "category": "dairy",
+    "defaultUnit": "ml",
+    "aliases": [
+      "heavy cream",
+      "single cream",
+      "double cream",
+      "كريم طازج",
+      "قشطة سائلة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sour-cream",
+    "canonicalNameEn": "Sour cream",
+    "canonicalNameAr": "كريمة حامضة",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "creme fraiche",
+      "soured cream",
+      "كريمة فراشة",
+      "قشطة حامضة",
+      "كريم حامض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "whipping-cream",
+    "canonicalNameEn": "Whipping cream",
+    "canonicalNameAr": "كريمة الخفق",
+    "category": "dairy",
+    "defaultUnit": "ml",
+    "aliases": [
+      "heavy whipping cream",
+      "double cream",
+      "كريمة مخفوقة",
+      "كريمة للتزيين",
+      "كريمة حلويات"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "qeshta",
+    "canonicalNameEn": "Qeshta",
+    "canonicalNameAr": "قشطة",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "clotted cream",
+      "ashta",
+      "kaymak",
+      "عشتة",
+      "أشطة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "butter",
+    "canonicalNameEn": "Butter",
+    "canonicalNameAr": "زبدة",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "unsalted butter",
+      "salted butter",
+      "زبدة بقر",
+      "زبدة طبيعية",
+      "مسلي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ghee",
+    "canonicalNameEn": "Ghee",
+    "canonicalNameAr": "سمن",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "clarified butter",
+      "samn",
+      "سمن عربي",
+      "سمن بلدي",
+      "زيت سمن"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cream-cheese",
+    "canonicalNameEn": "Cream cheese",
+    "canonicalNameAr": "جبنة كريمية",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "Philadelphia cream cheese",
+      "soft cheese",
+      "فيلادلفيا",
+      "جبنة طرية",
+      "كريم تشيز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "white-cheese",
+    "canonicalNameEn": "White cheese",
+    "canonicalNameAr": "جبنة بيضاء",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "feta-style cheese",
+      "brined white cheese",
+      "جبنة فيتا",
+      "جبن أبيض",
+      "جبنة مخللة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "halloumi",
+    "canonicalNameEn": "Halloumi",
+    "canonicalNameAr": "حلوم",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "grilling cheese",
+      "Cypriot cheese",
+      "حلومي",
+      "جبنة حلوم",
+      "جبن للشوي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "akkawi",
+    "canonicalNameEn": "Akkawi",
+    "canonicalNameAr": "جبنة عكاوي",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "akawi cheese",
+      "Palestinian white cheese",
+      "جبن عكا",
+      "عكاوي",
+      "جبنة عكا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "nabulsi-cheese",
+    "canonicalNameEn": "Nabulsi cheese",
+    "canonicalNameAr": "جبنة نابلسي",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "Nablus cheese",
+      "نابلسي",
+      "جبنة الكنافة",
+      "جبن فلسطيني",
+      "نابلوس جبنة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "kashkaval",
+    "canonicalNameEn": "Kashkaval",
+    "canonicalNameAr": "جبنة قشقوان",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "kasseri",
+      "yellow cheese",
+      "قشقوان",
+      "جبنة صفراء",
+      "كاشكافال"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mozzarella",
+    "canonicalNameEn": "Mozzarella",
+    "canonicalNameAr": "موزاريلا",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "fresh mozzarella",
+      "pizza cheese",
+      "جبنة الموزاريلا",
+      "موزريلا",
+      "جبنة البيتزا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cheddar",
+    "canonicalNameEn": "Cheddar",
+    "canonicalNameAr": "جبنة شيدر",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "cheddar cheese",
+      "mature cheddar",
+      "شيدر",
+      "جبنة شيدر برتقالية",
+      "تشيدر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "parmesan",
+    "canonicalNameEn": "Parmesan",
+    "canonicalNameAr": "جبنة البارميزان",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "Parmigiano-Reggiano",
+      "grated parmesan",
+      "بارميزان",
+      "بارميجانو",
+      "جبنة إيطالية مبشورة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "gouda",
+    "canonicalNameEn": "Gouda",
+    "canonicalNameAr": "جبنة غودة",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "smoked gouda",
+      "aged gouda",
+      "غودا",
+      "جبنة هولندية",
+      "غودة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "edam-cheese",
+    "canonicalNameEn": "Edam cheese",
+    "canonicalNameAr": "جبنة رومي",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "Edam",
+      "Dutch cheese",
+      "إيدام",
+      "جبنة إيدام",
+      "رومي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "processed-cheese-triangles",
+    "canonicalNameEn": "Processed cheese triangles",
+    "canonicalNameAr": "مثلثات الجبن",
+    "category": "dairy",
+    "defaultUnit": "piece",
+    "aliases": [
+      "laughing cow cheese",
+      "cheese wedges",
+      "La Vache qui rit",
+      "جبنة البقرة الضاحكة",
+      "مثلثات جبن مطبوخة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ricotta",
+    "canonicalNameEn": "Ricotta",
+    "canonicalNameAr": "جبنة الريكوتا",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "fresh ricotta",
+      "Italian whey cheese",
+      "ريكوتا",
+      "جبنة طازجة إيطالية",
+      "جبنة مصل اللبن"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cottage-cheese",
+    "canonicalNameEn": "Cottage cheese",
+    "canonicalNameAr": "جبنة قريش",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "low-fat cottage cheese",
+      "curd cheese",
+      "قريش",
+      "جبنة كوتج",
+      "جبن طازج حبيبي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mascarpone",
+    "canonicalNameEn": "Mascarpone",
+    "canonicalNameAr": "جبنة الماسكاربوني",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "Italian cream cheese",
+      "tiramisu cheese",
+      "ماسكاربوني",
+      "جبنة تيراميسو",
+      "كريم إيطالي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "condensed-milk",
+    "canonicalNameEn": "Condensed milk",
+    "canonicalNameAr": "حليب مكثف محلى",
+    "category": "dairy",
+    "defaultUnit": "can",
+    "aliases": [
+      "sweetened condensed milk",
+      "حليب حلو مكثف",
+      "لبن مكثف محلى",
+      "حليب مضاف إليه السكر",
+      "قزحة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "evaporated-milk",
+    "canonicalNameEn": "Evaporated milk",
+    "canonicalNameAr": "حليب مبخر",
+    "category": "dairy",
+    "defaultUnit": "can",
+    "aliases": [
+      "unsweetened condensed milk",
+      "carnation milk",
+      "حليب كارنيشن",
+      "لبن مبخر",
+      "حليب مركز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "milk-powder",
+    "canonicalNameEn": "Milk powder",
+    "canonicalNameAr": "حليب بودرة",
+    "category": "dairy",
+    "defaultUnit": "g",
+    "aliases": [
+      "dried milk",
+      "powdered milk",
+      "skimmed milk powder",
+      "لبن جاف",
+      "حليب مجفف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "kefir",
+    "canonicalNameEn": "Kefir",
+    "canonicalNameAr": "كفير",
+    "category": "dairy",
+    "defaultUnit": "ml",
+    "aliases": [
+      "fermented milk drink",
+      "probiotic milk",
+      "milk kefir",
+      "حليب مخمر",
+      "مشروب الكفير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chicken-eggs",
+    "canonicalNameEn": "Chicken eggs",
+    "canonicalNameAr": "بيض دجاج",
+    "category": "egg",
+    "defaultUnit": "piece",
+    "aliases": [
+      "eggs",
+      "hen eggs",
+      "fresh eggs",
+      "بيض",
+      "بيضة",
+      "بيض فراخ"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "egg-whites",
+    "canonicalNameEn": "Egg whites",
+    "canonicalNameAr": "بياض البيض",
+    "category": "egg",
+    "defaultUnit": "g",
+    "aliases": [
+      "albumen",
+      "liquid egg whites",
+      "egg white",
+      "زلال البيض",
+      "بياض بيضة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "egg-yolks",
+    "canonicalNameEn": "Egg yolks",
+    "canonicalNameAr": "صفار البيض",
+    "category": "egg",
+    "defaultUnit": "g",
+    "aliases": [
+      "yolks",
+      "egg yolk",
+      "صفرة البيض",
+      "صفار بيضة",
+      "مح البيض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "quail-eggs",
+    "canonicalNameEn": "Quail eggs",
+    "canonicalNameAr": "بيض السمان",
+    "category": "egg",
+    "defaultUnit": "piece",
+    "aliases": [
+      "small speckled eggs",
+      "coturnix eggs",
+      "بيض السمانة",
+      "بيض الطائر",
+      "سمان بيض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "duck-eggs",
+    "canonicalNameEn": "Duck eggs",
+    "canonicalNameAr": "بيض البط",
+    "category": "egg",
+    "defaultUnit": "piece",
+    "aliases": [
+      "large eggs",
+      "duck egg",
+      "بيضة البطة",
+      "بيض بط",
+      "بيض المسكوفي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chickpeas-dried",
+    "canonicalNameEn": "Dried chickpeas",
+    "canonicalNameAr": "حمص جاف",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "garbanzo beans",
+      "raw chickpeas",
+      "حمص ناشف",
+      "حب الحمص",
+      "حمص حب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chickpeas-canned",
+    "canonicalNameEn": "Canned chickpeas",
+    "canonicalNameAr": "حمص معلب",
+    "category": "legume",
+    "defaultUnit": "can",
+    "aliases": [
+      "garbanzo beans canned",
+      "ready-to-eat chickpeas",
+      "حمص علبة",
+      "حمص جاهز",
+      "علبة حمص"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "red-lentils",
+    "canonicalNameEn": "Red lentils",
+    "canonicalNameAr": "عدس أحمر",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "split red lentils",
+      "masoor dal",
+      "عدس أحمر مقشور",
+      "لنتل أحمر",
+      "عدس حمر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "brown-lentils",
+    "canonicalNameEn": "Brown lentils",
+    "canonicalNameAr": "عدس بني",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole brown lentils",
+      "lentils",
+      "عدس كامل",
+      "عدس عادي",
+      "عدس للحساء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "green-lentils",
+    "canonicalNameEn": "Green lentils",
+    "canonicalNameAr": "عدس أخضر",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "French green lentils",
+      "Puy lentils",
+      "عدس فرنسي",
+      "لنتل أخضر",
+      "عدس أخضر صغير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "split-yellow-lentils",
+    "canonicalNameEn": "Split yellow lentils",
+    "canonicalNameAr": "عدس أصفر مقشور",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "chana dal",
+      "yellow dal",
+      "عدس مقشور",
+      "عدس أصفر",
+      "عدس مقسوم أصفر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fava-beans-dried",
+    "canonicalNameEn": "Dried fava beans",
+    "canonicalNameAr": "فول جاف",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "broad beans dried",
+      "field beans",
+      "فول ناشف",
+      "حبة الفول",
+      "فول بلدي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-fava-beans",
+    "canonicalNameEn": "Canned fava beans",
+    "canonicalNameAr": "فول مدمس",
+    "category": "legume",
+    "defaultUnit": "can",
+    "aliases": [
+      "ful medames",
+      "Egyptian fava beans",
+      "فول معلب",
+      "فول إسكندراني",
+      "علبة فول"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "white-beans",
+    "canonicalNameEn": "White beans",
+    "canonicalNameAr": "فاصوليا بيضاء",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "navy beans",
+      "cannellini beans",
+      "haricot beans",
+      "لوبيا بيضاء",
+      "فاصوليا ناعمة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "red-kidney-beans",
+    "canonicalNameEn": "Red kidney beans",
+    "canonicalNameAr": "فاصوليا حمراء",
+    "category": "legume",
+    "defaultUnit": "can",
+    "aliases": [
+      "kidney beans",
+      "red beans",
+      "لوبيا حمراء",
+      "فاصوليا كلى",
+      "حبة الكلى"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "black-beans",
+    "canonicalNameEn": "Black beans",
+    "canonicalNameAr": "فاصوليا سوداء",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "black turtle beans",
+      "frijoles negros",
+      "لوبيا سوداء",
+      "فاصولياء سوداء",
+      "حبوب سوداء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "black-eyed-peas",
+    "canonicalNameEn": "Black-eyed peas",
+    "canonicalNameAr": "لوبيا",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "cowpeas",
+      "black-eyed beans",
+      "لوبيا مصرية",
+      "لوبيا عين سوداء",
+      "دجر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mung-beans",
+    "canonicalNameEn": "Mung beans",
+    "canonicalNameAr": "فاصوليا ماش",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "green gram",
+      "moong beans",
+      "ماش",
+      "حبة الماش",
+      "بذور الماش"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "soybeans",
+    "canonicalNameEn": "Soybeans",
+    "canonicalNameAr": "فول الصويا",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "soya beans",
+      "whole soybeans",
+      "صويا",
+      "بذور الصويا",
+      "حبة الصويا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "peanuts-raw",
+    "canonicalNameEn": "Raw peanuts",
+    "canonicalNameAr": "فول سوداني خام",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "groundnuts",
+      "unroasted peanuts",
+      "فستق سوداني",
+      "فول سودا",
+      "سودانيات خام"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "split-peas",
+    "canonicalNameEn": "Split peas",
+    "canonicalNameAr": "بازلاء مقسومة",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "yellow split peas",
+      "green split peas",
+      "بازلاء مجففة",
+      "بسلة مقسومة",
+      "بازلاء مقشورة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "edamame",
+    "canonicalNameEn": "Edamame",
+    "canonicalNameAr": "فول الصويا الأخضر",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "green soybeans",
+      "edamame beans",
+      "إيدامامي",
+      "صويا خضراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lupini-beans",
+    "canonicalNameEn": "Lupini beans",
+    "canonicalNameAr": "ترمس",
+    "category": "legume",
+    "defaultUnit": "g",
+    "aliases": [
+      "lupin beans",
+      "tarmos",
+      "ترمس مصري",
+      "حبة الترمس",
+      "لوبين"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "almonds",
+    "canonicalNameEn": "Almonds",
+    "canonicalNameAr": "لوز",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "raw almonds",
+      "blanched almonds",
+      "لوز حلو",
+      "لوز خام",
+      "حبة اللوز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "walnuts",
+    "canonicalNameEn": "Walnuts",
+    "canonicalNameAr": "جوز",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "English walnuts",
+      "walnut halves",
+      "حبة الجوز",
+      "جوز خام",
+      "جوز مطحون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cashews",
+    "canonicalNameEn": "Cashews",
+    "canonicalNameAr": "كاجو",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "cashew nuts",
+      "raw cashews",
+      "كاشو",
+      "حبة الكاجو",
+      "كاجو محمص"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pistachios",
+    "canonicalNameEn": "Pistachios",
+    "canonicalNameAr": "فستق حلبي",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "shelled pistachios",
+      "roasted pistachios",
+      "حبة فستق",
+      "فستق",
+      "بزر فستق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pine-nuts",
+    "canonicalNameEn": "Pine nuts",
+    "canonicalNameAr": "صنوبر",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "pignoli",
+      "pinones",
+      "بذور الصنوبر",
+      "حبة الصنوبر",
+      "نواة الصنوبر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "hazelnuts",
+    "canonicalNameEn": "Hazelnuts",
+    "canonicalNameAr": "بندق",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "filberts",
+      "cobnuts",
+      "حبة البندق",
+      "بندق تركي",
+      "بندق محمص"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "roasted-peanuts",
+    "canonicalNameEn": "Roasted peanuts",
+    "canonicalNameAr": "فول سوداني محمص",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "salted peanuts",
+      "dry roasted peanuts",
+      "سودانيات محمصة",
+      "فستق سوداني محمص",
+      "فول سوداني مملح"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "coconut-flakes",
+    "canonicalNameEn": "Coconut flakes",
+    "canonicalNameAr": "رقائق جوز الهند",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "desiccated coconut",
+      "shredded coconut",
+      "جوز الهند المبشور",
+      "نارجيل مبشور"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pecans",
+    "canonicalNameEn": "Pecans",
+    "canonicalNameAr": "جوز البقان",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "pecan nuts",
+      "American walnuts",
+      "بيكان",
+      "جوز أمريكي",
+      "حبة البيكان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "macadamia",
+    "canonicalNameEn": "Macadamia nuts",
+    "canonicalNameAr": "ماكاديميا",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "Queensland nuts",
+      "Australian nuts",
+      "جوز ماكاديميا",
+      "ماكاداميا",
+      "مكاديميا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "brazil-nuts",
+    "canonicalNameEn": "Brazil nuts",
+    "canonicalNameAr": "جوز البرازيل",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "Para nuts",
+      "cream nuts",
+      "برازيل نات",
+      "جوز برازيلي",
+      "حبة البرازيل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sesame-seeds",
+    "canonicalNameEn": "Sesame seeds",
+    "canonicalNameAr": "سمسم",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "white sesame",
+      "black sesame",
+      "حبة السمسم",
+      "بذور السمسم",
+      "سمسم أبيض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "watermelon-seeds",
+    "canonicalNameEn": "Watermelon seeds",
+    "canonicalNameAr": "بذور البطيخ",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "white seeds",
+      "egusi seeds",
+      "لب أبيض",
+      "لب بطيخ"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sunflower-seeds",
+    "canonicalNameEn": "Sunflower seeds",
+    "canonicalNameAr": "بذور عباد الشمس",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "roasted sunflower seeds",
+      "sunflower kernels",
+      "حبة عباد الشمس",
+      "عباد الشمس",
+      "بزر عباد الشمس"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pumpkin-seeds",
+    "canonicalNameEn": "Pumpkin seeds",
+    "canonicalNameAr": "بذور القرع",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "pepitas",
+      "roasted pumpkin seeds",
+      "حبة القرع",
+      "بزر اليقطين",
+      "بذر اليقطين"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chia-seeds",
+    "canonicalNameEn": "Chia seeds",
+    "canonicalNameAr": "بذور الشيا",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "salvia hispanica seeds",
+      "chia",
+      "بذور تشيا",
+      "حبة الشيا",
+      "شيا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "flax-seeds",
+    "canonicalNameEn": "Flax seeds",
+    "canonicalNameAr": "بذور الكتان",
+    "category": "nut",
+    "defaultUnit": "g",
+    "aliases": [
+      "linseed",
+      "flaxseed",
+      "حبة الكتان",
+      "كتان مطحون",
+      "بزر الكتان"
+    ],
+    "isStaple": false
+  }
+]
