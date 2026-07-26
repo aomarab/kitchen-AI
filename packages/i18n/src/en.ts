@@ -5,12 +5,9 @@
  *
  * Interpolation uses `{name}` placeholders.
  *
- * Namespace ownership during parallel development — append to your own
- * namespace only, so workstreams do not conflict:
- *   common, errors, auth, household, profile  -> coordinator
- *   inventory, capture                        -> agents A & D
- *   plans, recipe, shopping                   -> agents B & C
- *   web, mobile                               -> agents C & D respectively
+ * **Coordinator-owned.** Shared domain strings for all three apps live here.
+ * Parallel workstreams must NOT edit this file — web adds to `web.en.ts`,
+ * mobile adds to `mobile.en.ts`. Backend workstreams emit `errors.*` keys only.
  */
 export const en = {
   common: {

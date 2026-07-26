@@ -1,9 +1,26 @@
 import type { Locale } from '@kitchen/contracts';
-import { en, type Messages } from './en.js';
-import { ar } from './ar.js';
+import { en as sharedEn, type Messages as SharedMessages } from './en.js';
+import { ar as sharedAr } from './ar.js';
+import { webEn } from './web.en.js';
+import { webAr } from './web.ar.js';
+import { mobileEn } from './mobile.en.js';
+import { mobileAr } from './mobile.ar.js';
 
-export { en, ar };
-export type { Messages, Locale };
+/**
+ * Namespace ownership during parallel development. Each workstream writes only
+ * its own files, so catalogs grow without merge conflicts:
+ *   en.ts / ar.ts               -> coordinator (all shared domain strings)
+ *   web.en.ts / web.ar.ts       -> web workstream
+ *   mobile.en.ts / mobile.ar.ts -> mobile workstream
+ */
+export const en = { ...sharedEn, ...webEn, ...mobileEn };
+
+export type Messages = typeof en;
+
+export const ar: Messages = { ...sharedAr, ...webAr, ...mobileAr };
+
+export { sharedEn, sharedAr };
+export type { SharedMessages, Locale };
 
 export const catalogs: Record<Locale, Messages> = { en, ar };
 
