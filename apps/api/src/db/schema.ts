@@ -520,7 +520,19 @@ export const householdMembersRelations = relations(householdMembers, ({ one }) =
   user: one(users, { fields: [householdMembers.userId], references: [users.id] }),
 }));
 
+export const storageLocationsRelations = relations(storageLocations, ({ one, many }) => ({
+  household: one(households, {
+    fields: [storageLocations.householdId],
+    references: [households.id],
+  }),
+  items: many(inventoryItems),
+}));
+
 export const inventoryItemsRelations = relations(inventoryItems, ({ one, many }) => ({
+  household: one(households, {
+    fields: [inventoryItems.householdId],
+    references: [households.id],
+  }),
   ingredient: one(ingredients, {
     fields: [inventoryItems.ingredientId],
     references: [ingredients.id],
@@ -532,9 +544,25 @@ export const inventoryItemsRelations = relations(inventoryItems, ({ one, many })
   events: many(inventoryEvents),
 }));
 
+export const inventoryEventsRelations = relations(inventoryEvents, ({ one }) => ({
+  item: one(inventoryItems, {
+    fields: [inventoryEvents.itemId],
+    references: [inventoryItems.id],
+  }),
+  household: one(households, {
+    fields: [inventoryEvents.householdId],
+    references: [households.id],
+  }),
+  actor: one(users, { fields: [inventoryEvents.actorUserId], references: [users.id] }),
+}));
+
 export const recipesRelations = relations(recipes, ({ many }) => ({
   ingredients: many(recipeIngredients),
   videos: many(recipeVideos),
+}));
+
+export const recipeVideosRelations = relations(recipeVideos, ({ one }) => ({
+  recipe: one(recipes, { fields: [recipeVideos.recipeId], references: [recipes.id] }),
 }));
 
 export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
@@ -578,9 +606,12 @@ export const schema = {
   usersRelations,
   householdsRelations,
   householdMembersRelations,
+  storageLocationsRelations,
   inventoryItemsRelations,
+  inventoryEventsRelations,
   recipesRelations,
   recipeIngredientsRelations,
+  recipeVideosRelations,
   mealPlansRelations,
   mealPlanEntriesRelations,
 };
