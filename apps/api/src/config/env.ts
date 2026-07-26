@@ -25,6 +25,14 @@ const envSchema = z.object({
   JWT_ACCESS_TTL: z.string().default('15m'),
   JWT_REFRESH_TTL: z.string().default('30d'),
 
+  /**
+   * OAuth client IDs. When set, the `aud` claim of an incoming Apple/Google ID
+   * token is pinned to them — without that pinning a token minted for any other
+   * app would be accepted, so these must be set before production.
+   */
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  APPLE_CLIENT_ID: z.string().default(''),
+
   OPENAI_API_KEY: z.string().default(''),
   OPENAI_MODEL_PLANNING: z.string().default('gpt-5'),
   OPENAI_MODEL_VISION: z.string().default('gpt-5'),
