@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Linking, View } from 'react-native';
+import { Image, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Difficulty } from '@kitchen/contracts';
 import {
@@ -8,10 +8,10 @@ import {
   AppText,
   Badge,
   Button,
-  Card,
   Sheet,
   LoadingState,
   ErrorState,
+  YoutubePlayer,
 } from '../../../components';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe, useMarkCooked } from '../../../hooks/recipe';
@@ -126,31 +126,19 @@ export default function RecipeDetail() {
             </AppText>
           ) : (
             data.videos.map((video) => (
-              <Card
-                key={video.youtubeId}
-                onPress={() =>
-                  void Linking.openURL(`https://www.youtube.com/watch?v=${video.youtubeId}`)
-                }
-                accessibilityLabel={t('mobile.recipe.watchOnYoutube')}
-              >
-                <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
-                  <Image
-                    source={{ uri: video.thumbnailUrl }}
-                    style={{ width: 96, height: 54, borderRadius: radius.sm }}
-                  />
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <AppText variant="bodyStrong" numberOfLines={2}>
-                      {video.title}
-                    </AppText>
-                    <AppText variant="caption" muted>
-                      {video.channel}
-                    </AppText>
-                    <AppText variant="caption" color="primary">
-                      {t('mobile.recipe.watchOnYoutube')}
-                    </AppText>
-                  </View>
-                </View>
-              </Card>
+              <View key={video.youtubeId} style={{ gap: spacing.xs }}>
+                <YoutubePlayer
+                  youtubeId={video.youtubeId}
+                  thumbnailUrl={video.thumbnailUrl}
+                  playLabel={t('mobile.recipe.watchOnYoutube')}
+                />
+                <AppText variant="bodyStrong" numberOfLines={2}>
+                  {video.title}
+                </AppText>
+                <AppText variant="caption" muted>
+                  {video.channel}
+                </AppText>
+              </View>
             ))
           )}
         </View>

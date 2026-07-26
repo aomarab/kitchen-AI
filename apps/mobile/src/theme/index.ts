@@ -49,9 +49,9 @@ export const radius = {
 
 /**
  * Typography scale. Arabic runs at a larger line-height than Latin per spec §7,
- * and `fontFamily` is centralised here so wiring IBM Plex Sans Arabic (via
- * `expo-font`, once added) is a one-line change. Until then we fall back to the
- * platform's system font, which already renders Arabic legibly.
+ * and the `fontFamily` itself (IBM Plex Sans Arabic) is resolved per locale and
+ * weight in `lib/fonts.ts` — text primitives call `resolveFontFamily` so nothing
+ * here needs to know about font loading.
  */
 export interface TextStyleToken {
   fontSize: number;
@@ -87,11 +87,5 @@ export function typography(locale: Locale): Record<TypographyVariant, TextStyleT
   }
   return out;
 }
-
-/**
- * Set to the loaded IBM Plex Sans Arabic family name once `expo-font` is wired.
- * `undefined` intentionally falls back to the system font.
- */
-export const fontFamily: string | undefined = undefined;
 
 export const hitSlop = 12 as const;

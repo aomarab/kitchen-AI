@@ -1,8 +1,9 @@
 import { forwardRef } from 'react';
 import { TextInput, View, type TextInputProps } from 'react-native';
 import { AppText } from './AppText';
-import { colors, fontFamily, radius, spacing } from '../theme';
+import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../lib/locale';
+import { resolveFontFamily, useFontStore } from '../lib/fonts';
 
 export interface FieldProps extends TextInputProps {
   label?: string;
@@ -15,7 +16,9 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
   { label, error, hint, style, ...rest },
   ref,
 ) {
-  const { dir } = useLocale();
+  const { dir, locale } = useLocale();
+  const fontsLoaded = useFontStore((state) => state.loaded);
+  const fontFamily = resolveFontFamily(locale, fontsLoaded);
   return (
     <View style={{ gap: spacing.xs }}>
       {label ? (

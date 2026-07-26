@@ -1,6 +1,7 @@
 import { Text, type TextProps, type TextStyle } from 'react-native';
-import { colors, fontFamily, typography, type ColorToken, type TypographyVariant } from '../theme';
+import { colors, typography, type ColorToken, type TypographyVariant } from '../theme';
 import { useLocale } from '../lib/locale';
+import { resolveFontFamily, useFontStore } from '../lib/fonts';
 
 export interface AppTextProps extends TextProps {
   variant?: TypographyVariant;
@@ -23,14 +24,18 @@ export function AppText({
   ...rest
 }: AppTextProps) {
   const { locale } = useLocale();
+  const fontsLoaded = useFontStore((state) => state.loaded);
   const token = typography(locale)[variant]!;
   const resolvedColor = color ? colors[color] : muted ? colors.textMuted : colors.text;
+  const fontFamily = resolveFontFamily(locale, fontsLoaded, token.fontWeight);
   const base: TextStyle = {
     fontSize: token.fontSize,
     lineHeight: token.lineHeight,
-    fontWeight: token.fontWeight,
     color: resolvedColor,
     fontFamily,
+    // The weight-specific Arabic family already encodes the weight; setting
+    // fontWeight on top of it makes iOS synthesize a heavier face.
+    ...(fontFamily ? null : { fontWeight: token.fontWeight }),
     ...(center ? { textAlign: 'center' } : null),
   };
   return <Text style={[base, style]} {...rest} />;

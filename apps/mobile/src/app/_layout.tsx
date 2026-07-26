@@ -9,8 +9,10 @@ import { directionFor, type Locale } from '@kitchen/i18n';
 import { queryClient } from '../lib/queryClient';
 import { useLocale } from '../lib/locale';
 import { useBootstrap } from '../lib/bootstrap';
+import { useAppFonts } from '../lib/font-loader';
 import { useOfflineSync } from '../hooks/offline-sync';
 import { setMockLocale } from '../mocks';
+import { startConnectivityMonitor } from '../stores/connectivity';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { SyncFailuresBanner } from '../components/SyncFailuresBanner';
 import { colors } from '../theme';
@@ -33,6 +35,7 @@ export default function RootLayout() {
   const { locale } = useLocale();
   const ready = useBootstrap();
   applyDirection(locale);
+  useAppFonts();
   useOfflineSync();
 
   // Mocks have no locale header; mirror the app locale into the mock layer so
@@ -40,6 +43,9 @@ export default function RootLayout() {
   useEffect(() => {
     setMockLocale(locale);
   }, [locale]);
+
+  // Track real device connectivity for the whole app lifetime.
+  useEffect(() => startConnectivityMonitor(), []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

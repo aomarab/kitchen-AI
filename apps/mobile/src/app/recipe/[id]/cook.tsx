@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppText, Button, Badge, LoadingState } from '../../../components';
 import { useFormat } from '../../../hooks/useFormat';
@@ -10,11 +11,11 @@ import { colors, spacing } from '../../../theme';
 
 /**
  * Full-screen cook mode: one step at a time, large type, forward/back stepping.
- * `expo-keep-awake` is not installed in this workspace, so the screen-awake hint
- * is shown but not enforced — wiring `useKeepAwake()` is a one-line change once
- * the package is available (reported to the coordinator).
+ * `useKeepAwake` holds a wake lock for as long as this screen is mounted so the
+ * display never sleeps mid-recipe (spec §6.3).
  */
 export default function CookMode() {
+  useKeepAwake();
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();

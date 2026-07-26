@@ -43,7 +43,17 @@
           "cameraPermission": "Kitchen AI uses the camera to recognise ingredients in your kitchen."
         }
       ],
-      "expo-font"
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/IBMPlexSansArabic-Regular.ttf",
+            "./assets/fonts/IBMPlexSansArabic-Medium.ttf",
+            "./assets/fonts/IBMPlexSansArabic-SemiBold.ttf",
+            "./assets/fonts/IBMPlexSansArabic-Bold.ttf"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
