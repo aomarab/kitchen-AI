@@ -40,7 +40,7 @@ export class ApiError extends Error {
 
 /** Thrown when the request never reached the server (offline, DNS, timeout). */
 export class NetworkError extends Error {
-  readonly cause?: unknown;
+  override readonly cause?: unknown;
 
   constructor(message: string, cause?: unknown) {
     super(message);
