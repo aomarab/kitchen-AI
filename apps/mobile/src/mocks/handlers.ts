@@ -58,6 +58,9 @@ export function setMockLocale(locale: Locale): void {
   mockLocale = locale;
 }
 
+/** Client event ids the server has already committed, so replays read as duplicates. */
+const processedEventIds = new Set<string>();
+
 let idCounter = 9000;
 function nextId(): string {
   idCounter += 1;
@@ -283,19 +286,30 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     const body = await readBody(request);
     const events = Array.isArray(body.events) ? (body.events as Body[]) : [];
     const applied: string[] = [];
+    const duplicate: string[] = [];
+    const rejected: { clientEventId: string; reason: string }[] = [];
     const touched = new Set<string>();
     for (const event of events) {
-      applied.push(String(event.clientEventId));
-      const item = db.inventory.find((i) => i.id === event.itemId);
-      if (item) {
-        item.quantity = Math.max(0, item.quantity + Number(event.delta ?? 0));
-        item.updatedAt = isoDateTime(0);
-        touched.add(item.id);
+      const clientEventId = String(event.clientEventId);
+      if (processedEventIds.has(clientEventId)) {
+        duplicate.push(clientEventId);
+        continue;
       }
+      const item = db.inventory.find((i) => i.id === event.itemId);
+      if (!item) {
+        rejected.push({ clientEventId, reason: 'item_not_found' });
+        continue;
+      }
+      item.quantity = Math.max(0, item.quantity + Number(event.delta ?? 0));
+      item.updatedAt = isoDateTime(0);
+      touched.add(item.id);
+      processedEventIds.add(clientEventId);
+      applied.push(clientEventId);
     }
     return HttpResponse.json({
       applied,
-      skipped: [],
+      duplicate,
+      rejected,
       items: db.inventory.filter((i) => touched.has(i.id)),
     });
   },

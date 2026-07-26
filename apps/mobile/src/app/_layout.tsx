@@ -12,6 +12,7 @@ import { useBootstrap } from '../lib/bootstrap';
 import { useOfflineSync } from '../hooks/offline-sync';
 import { setMockLocale } from '../mocks';
 import { OfflineBanner } from '../components/OfflineBanner';
+import { SyncFailuresBanner } from '../components/SyncFailuresBanner';
 import { colors } from '../theme';
 
 /**
@@ -70,6 +71,7 @@ export default function RootLayout() {
           )}
           <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, start: 0, end: 0 }}>
             <OfflineBanner />
+            <SyncFailuresBanner />
           </View>
         </QueryClientProvider>
       </SafeAreaProvider>

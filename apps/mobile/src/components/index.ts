@@ -11,6 +11,7 @@ export { Icon, ICONS } from './Icon';
 export type { IconName } from './Icon';
 export { ListRow } from './ListRow';
 export { OfflineBanner } from './OfflineBanner';
+export { SyncFailuresBanner } from './SyncFailuresBanner';
 export { QuantityStepper } from './QuantityStepper';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';

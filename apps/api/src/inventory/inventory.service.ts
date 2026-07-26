@@ -7,6 +7,7 @@ import type {
   InventoryItem,
   InventoryItemInput,
   ListInventoryQuery,
+  SyncEventRejection,
   SyncEventsResponse,
   UpdateInventoryItemRequest,
 } from '@kitchen/contracts';
@@ -215,9 +216,16 @@ export class InventoryService {
   }
 
   /**
-   * Offline replay. Idempotent by `clientEventId` (unique index): a replayed
-   * event is skipped, never re-applied. Deltas sum, so two members editing the
-   * same item concurrently both converge. See spec §9.
+   * Offline replay. Idempotent by `clientEventId` (unique index). The batch
+   * splits three ways so the client never loses an edit:
+   *   - `applied`   — newly committed events.
+   *   - `duplicate` — a `clientEventId` we already committed; safe for the
+   *     client to drop (it was applied on an earlier sync).
+   *   - `rejected`  — events that could NOT be applied ({@link SyncEventRejection}
+   *     with a reason); the client must surface/retry these rather than drop
+   *     them, otherwise the user's change is silently discarded.
+   * Deltas sum, so two members editing the same item concurrently converge.
+   * See spec §9.
    */
   async sync(
     householdId: string,
@@ -225,7 +233,8 @@ export class InventoryService {
     events: InventoryEventInput[],
   ): Promise<SyncEventsResponse> {
     const applied: string[] = [];
-    const skipped: string[] = [];
+    const duplicate: string[] = [];
+    const rejected: SyncEventRejection[] = [];
     const touched = new Set<string>();
 
     const ordered = [...events].sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
@@ -243,13 +252,16 @@ export class InventoryService {
           )
           .limit(1);
         if (!item) {
-          skipped.push(event.clientEventId);
+          // A cross-household item id also lands here and is reported as
+          // `item_not_found` on purpose: a distinct "wrong household" reason
+          // would let a caller probe which item ids exist in other households.
+          rejected.push({ clientEventId: event.clientEventId, reason: 'item_not_found' });
           continue;
         }
 
         const deltaInItemUnit = convertQuantity(event.delta, event.unit, item.unit);
         if (deltaInItemUnit === null) {
-          skipped.push(event.clientEventId);
+          rejected.push({ clientEventId: event.clientEventId, reason: 'incompatible_unit' });
           continue;
         }
 
@@ -272,7 +284,8 @@ export class InventoryService {
           .returning({ id: inventoryEvents.id });
 
         if (inserted.length === 0) {
-          skipped.push(event.clientEventId);
+          // Already committed on an earlier sync — resolved, not a failure.
+          duplicate.push(event.clientEventId);
           continue;
         }
 
@@ -288,7 +301,7 @@ export class InventoryService {
       }
     });
 
-    return { applied, skipped, items: await this.fetchItems(householdId, [...touched]) };
+    return { applied, duplicate, rejected, items: await this.fetchItems(householdId, [...touched]) };
   }
 
   /* --------------------------- helpers ------------------------- */

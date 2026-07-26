@@ -136,9 +136,31 @@ export const syncEventsRequestSchema = z.object({
 });
 export type SyncEventsRequest = z.infer<typeof syncEventsRequestSchema>;
 
+/** Why the server could not apply a synced event. */
+export const syncRejectionReasonSchema = z.enum([
+  'item_not_found',
+  'incompatible_unit',
+  'invalid_event',
+]);
+export type SyncRejectionReason = z.infer<typeof syncRejectionReasonSchema>;
+
+export const syncEventRejectionSchema = z.object({
+  clientEventId: uuidSchema,
+  reason: syncRejectionReasonSchema,
+});
+export type SyncEventRejection = z.infer<typeof syncEventRejectionSchema>;
+
+/**
+ * A replayed batch splits three ways, and the difference matters. `applied` and
+ * `duplicate` are both resolved — the server holds the user's change either way,
+ * so the client drops them from its queue. `rejected` events were NOT applied;
+ * collapsing them into a single "skipped" list would make a client that clears
+ * its queue on acknowledgement silently discard the user's edit.
+ */
 export const syncEventsResponseSchema = z.object({
   applied: z.array(uuidSchema),
-  skipped: z.array(uuidSchema),
+  duplicate: z.array(uuidSchema),
+  rejected: z.array(syncEventRejectionSchema),
   items: z.array(inventoryItemSchema),
 });
 export type SyncEventsResponse = z.infer<typeof syncEventsResponseSchema>;

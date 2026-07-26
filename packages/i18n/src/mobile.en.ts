@@ -175,6 +175,14 @@ export const mobileEn = {
       pendingSync: '{count} changes waiting to sync',
       syncNow: 'Sync now',
       reconnect: 'Try to reconnect',
+      failedBanner: "{count} changes couldn't be synced",
+      failedItem: "Couldn't sync a change to {name}",
+      dismiss: 'Dismiss',
+      reasons: {
+        item_not_found: 'That item no longer exists.',
+        incompatible_unit: "The unit doesn't match this item.",
+        invalid_event: "This change couldn't be applied.",
+      },
     },
     aiUsage: {
       title: 'AI usage',

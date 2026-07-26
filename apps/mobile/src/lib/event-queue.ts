@@ -2,6 +2,7 @@ import type {
   InventoryEventInput,
   InventoryEventReason,
   SyncEventsResponse,
+  SyncRejectionReason,
   Unit,
 } from '@kitchen/contracts';
 import { uuidv4 } from './uuid';
@@ -50,17 +51,50 @@ export function enqueue(
   return [...queue, event];
 }
 
+/** An event the server refused to apply, kept so the user can be told. */
+export interface RejectedEvent {
+  event: InventoryEventInput;
+  reason: SyncRejectionReason;
+}
+
+/** Outcome of reconciling the local queue against a sync response. */
+export interface SyncResolution {
+  /** Events still awaiting sync — neither committed nor rejected. */
+  pending: InventoryEventInput[];
+  /**
+   * Events the server will never accept (item deleted, incompatible unit,
+   * malformed). Retrying is futile, so they are pulled out of the pending queue,
+   * but returned here so the caller can surface them — never silently dropped.
+   */
+  rejected: RejectedEvent[];
+}
+
 /**
- * Drop every event the server acknowledged. `applied` are events it just
- * committed; `skipped` are events it had already seen (a previous partial sync).
- * Both are resolved and must leave the queue.
+ * Reconcile the queue against a sync response. `applied` (just committed) and
+ * `duplicate` (already committed on a prior sync) are both resolved and leave
+ * the queue. `rejected` events were NOT applied: retrying can never succeed, so
+ * they are removed from the pending queue to avoid an infinite loop, but they
+ * are surfaced separately so the user's edit is never lost in silence
+ * (spec §9; contract `syncEventsResponseSchema`).
  */
 export function resolveSynced(
   queue: readonly InventoryEventInput[],
-  response: Pick<SyncEventsResponse, 'applied' | 'skipped'>,
-): InventoryEventInput[] {
-  const resolved = new Set<string>([...response.applied, ...response.skipped]);
-  return queue.filter((e) => !resolved.has(e.clientEventId));
+  response: Pick<SyncEventsResponse, 'applied' | 'duplicate' | 'rejected'>,
+): SyncResolution {
+  const committed = new Set<string>([...response.applied, ...response.duplicate]);
+  const rejectionReason = new Map(response.rejected.map((r) => [r.clientEventId, r.reason]));
+  const pending: InventoryEventInput[] = [];
+  const rejected: RejectedEvent[] = [];
+  for (const event of queue) {
+    if (committed.has(event.clientEventId)) continue;
+    const reason = rejectionReason.get(event.clientEventId);
+    if (reason) {
+      rejected.push({ event, reason });
+      continue;
+    }
+    pending.push(event);
+  }
+  return { pending, rejected };
 }
 
 export function pendingCount(queue: readonly InventoryEventInput[]): number {

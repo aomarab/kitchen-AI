@@ -47,6 +47,7 @@ describe('InventoryService (live DB)', () => {
   let ingA: string;
   let ingB: string;
   let ingC: string;
+  let ingD: string;
 
   beforeAll(async () => {
     ctx = createTestContext();
@@ -61,10 +62,11 @@ describe('InventoryService (live DB)', () => {
       .returning({ id: storageLocations.id });
     locA = l1!.id;
 
-    const rows = await ctx.db.select({ id: ingredients.id }).from(ingredients).limit(3);
+    const rows = await ctx.db.select({ id: ingredients.id }).from(ingredients).limit(4);
     ingA = rows[0]!.id;
     ingB = rows[1]!.id;
     ingC = rows[2]!.id;
+    ingD = rows[3]!.id;
   });
 
   afterAll(async () => {
@@ -97,7 +99,7 @@ describe('InventoryService (live DB)', () => {
     );
   });
 
-  it('applies a sync event once and skips a replayed clientEventId', async () => {
+  it('applies a sync event once and reports a replayed clientEventId as duplicate', async () => {
     const [item] = await service.bulkCreate(hhA, userId, {
       items: [itemInput({ ingredientId: ingB, locationId: locA, quantity: 4, unit: 'piece' })],
     });
@@ -115,13 +117,15 @@ describe('InventoryService (live DB)', () => {
 
     const first = await service.sync(hhA, userId, [event]);
     expect(first.applied).toEqual([event.clientEventId]);
-    expect(first.skipped).toEqual([]);
+    expect(first.duplicate).toEqual([]);
+    expect(first.rejected).toEqual([]);
     expect(first.items.find((i) => i.id === itemId)!.quantity).toBe(3);
 
-    // Replay the exact same event — must be skipped, not double-applied.
+    // Replay the exact same event — reported as duplicate, not double-applied.
     const replay = await service.sync(hhA, userId, [event]);
     expect(replay.applied).toEqual([]);
-    expect(replay.skipped).toEqual([event.clientEventId]);
+    expect(replay.duplicate).toEqual([event.clientEventId]);
+    expect(replay.rejected).toEqual([]);
     expect(replay.items.find((i) => i.id === itemId)!.quantity).toBe(3);
   });
 
@@ -170,10 +174,13 @@ describe('InventoryService (live DB)', () => {
     await expectAppError(service.update(hhB, userId, itemId, { quantity: 99 }), 'NOT_FOUND');
     await expectAppError(service.delete(hhB, itemId), 'NOT_FOUND');
 
-    // A sync targeting hhA's item from hhB is skipped, never applied.
+    // A sync targeting hhA's item from hhB is rejected as item_not_found (a
+    // cross-household id is indistinguishable from a missing one on purpose),
+    // never applied — so the client surfaces it rather than dropping the edit.
+    const clientEventId = randomUUID();
     const crossSync = await service.sync(hhB, userId, [
       {
-        clientEventId: randomUUID(),
+        clientEventId,
         itemId,
         delta: -1,
         unit: 'kg',
@@ -183,6 +190,35 @@ describe('InventoryService (live DB)', () => {
       },
     ]);
     expect(crossSync.applied).toEqual([]);
-    expect(crossSync.skipped.length).toBe(1);
+    expect(crossSync.duplicate).toEqual([]);
+    expect(crossSync.rejected).toEqual([{ clientEventId, reason: 'item_not_found' }]);
+  });
+
+  it('reports an incompatible-unit sync event as rejected rather than swallowing it', async () => {
+    const [item] = await service.bulkCreate(hhA, userId, {
+      items: [itemInput({ ingredientId: ingD, locationId: locA, quantity: 5, unit: 'piece' })],
+    });
+    const itemId = item!.id;
+
+    const clientEventId = randomUUID();
+    const result = await service.sync(hhA, userId, [
+      {
+        clientEventId,
+        itemId,
+        delta: -1,
+        unit: 'kg', // mass against the item's count dimension → cannot convert
+        reason: 'consumed',
+        mealPlanEntryId: null,
+        occurredAt: new Date().toISOString(),
+      },
+    ]);
+
+    expect(result.applied).toEqual([]);
+    expect(result.duplicate).toEqual([]);
+    expect(result.rejected).toEqual([{ clientEventId, reason: 'incompatible_unit' }]);
+
+    // The item's quantity is untouched — the edit was not silently applied.
+    const listed = await service.list(hhA, { limit: 50, sort: 'expiry' });
+    expect(listed.items.find((i) => i.id === itemId)!.quantity).toBe(5);
   });
 });

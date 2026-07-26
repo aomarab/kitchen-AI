@@ -167,6 +167,14 @@ export const mobileAr: MobileMessages = {
       pendingSync: '{count} تغييرات بانتظار المزامنة',
       syncNow: 'مزامنة الآن',
       reconnect: 'محاولة إعادة الاتصال',
+      failedBanner: 'تعذّرت مزامنة {count} من التغييرات',
+      failedItem: 'تعذّرت مزامنة تغيير على {name}',
+      dismiss: 'تجاهل',
+      reasons: {
+        item_not_found: 'لم يعد هذا العنصر موجوداً.',
+        incompatible_unit: 'الوحدة لا تطابق هذا العنصر.',
+        invalid_event: 'تعذّر تطبيق هذا التغيير.',
+      },
     },
     aiUsage: {
       title: 'استخدام الذكاء الاصطناعي',
