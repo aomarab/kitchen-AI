@@ -88,8 +88,18 @@ export const PROVIDER_TIMEOUT_MS: Record<ModelTier, number> = {
 /** Retries inside the SDK, on top of which nothing else retries. */
 export const PROVIDER_MAX_RETRIES = 2;
 
+/**
+ * Ceilings, not targets. A weekly plan is one call covering 21 meal slots, each
+ * a full recipe with ingredients, steps and nutrition — a measured worst case
+ * is ~8k tokens in English and denser in Arabic. On top of that the GPT-5
+ * family bills *reasoning* tokens against this same ceiling without emitting
+ * them, so the visible-output headroom is well below the number here. Since
+ * hitting the ceiling is now a hard failure rather than a degraded response,
+ * these are set with room to spare; the daily budget, not this, is the cost
+ * control.
+ */
 export const PROVIDER_MAX_OUTPUT_TOKENS: Record<ModelTier, number> = {
-  cheap: 2_048,
-  vision: 4_096,
-  planning: 8_192,
+  cheap: 4_096,
+  vision: 8_192,
+  planning: 32_000,
 };

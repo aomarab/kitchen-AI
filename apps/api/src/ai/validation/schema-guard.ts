@@ -5,6 +5,7 @@ import type {
   StructuredRequest,
   TokenUsage,
 } from '../providers/ai-provider.interface.js';
+import { addUsage, attachSpend, readSpend } from '../ai-spend.js';
 
 export interface GuardedResult<T> {
   data: T;
@@ -13,13 +14,6 @@ export interface GuardedResult<T> {
   model: string;
   /** 1 = valid first time, 2 = valid after one repair. */
   attempts: number;
-}
-
-function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
-  return {
-    inputTokens: a.inputTokens + b.inputTokens,
-    outputTokens: a.outputTokens + b.outputTokens,
-  };
 }
 
 /**
@@ -51,7 +45,19 @@ export class SchemaGuard {
       },
     };
 
-    const second = await provider.complete(repairRequest);
+    // The first call is already billed. If the repair itself throws, its error
+    // must carry both calls' spend or the first one is lost.
+    let second;
+    try {
+      second = await provider.complete(repairRequest);
+    } catch (error) {
+      const repairSpend = readSpend(error);
+      throw attachSpend(error as object, {
+        usage: repairSpend ? addUsage(first.usage, repairSpend.usage) : first.usage,
+        model: repairSpend?.model ?? first.model,
+      });
+    }
+
     const secondParse = schema.safeParse(second.raw);
     const usage = addUsage(first.usage, second.usage);
 
@@ -59,12 +65,17 @@ export class SchemaGuard {
       return { data: secondParse.data, usage, model: second.model, attempts: 2 };
     }
 
-    throw new AppError('AI_INVALID_OUTPUT', 'errors.AI_INVALID_OUTPUT', {
-      operation: request.operation,
-      issues: secondParse.error.issues.slice(0, 8).map((i) => ({
-        path: i.path.join('.'),
-        message: i.message,
-      })),
-    });
+    // Two full-priced calls have been made and neither produced usable output.
+    // That is the most expensive outcome there is; it must still be billed.
+    throw attachSpend(
+      new AppError('AI_INVALID_OUTPUT', 'errors.AI_INVALID_OUTPUT', {
+        operation: request.operation,
+        issues: secondParse.error.issues.slice(0, 8).map((i) => ({
+          path: i.path.join('.'),
+          message: i.message,
+        })),
+      }),
+      { usage, model: second.model },
+    );
   }
 }

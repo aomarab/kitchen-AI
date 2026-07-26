@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NEXT_PUBLIC_API_MOCK=true next dev --port 3000",
+    "dev": "NEXT_PUBLIC_API_MOCK=true next dev --port ${WEB_PORT:-3100}",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port ${WEB_PORT:-3100}",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
   Locale,
@@ -77,6 +77,7 @@ export class RecipesService {
         await this.cache.set(emptyKey, true, VIDEO_CACHE_TTL_DAYS * 86_400);
         return [];
       }
+      const now = new Date();
       for (const v of results) {
         await this.db
           .insert(recipeVideos)
@@ -89,7 +90,22 @@ export class RecipesService {
             durationSeconds: v.durationSeconds,
             locale,
           })
-          .onConflictDoNothing({ target: [recipeVideos.recipeId, recipeVideos.youtubeId] });
+          // Renew fetchedAt, don't skip. `fetchedAt` only defaults on insert,
+          // so doing nothing on conflict froze it at the first search: for a
+          // popular recipe whose top results never change, the freshness
+          // window could never reopen and every request past day 30 spent
+          // another 100 quota units, forever.
+          .onConflictDoUpdate({
+            target: [recipeVideos.recipeId, recipeVideos.youtubeId],
+            set: {
+              title: v.title,
+              channel: v.channel,
+              thumbnailUrl: v.thumbnailUrl,
+              durationSeconds: v.durationSeconds,
+              locale,
+              fetchedAt: now,
+            },
+          });
       }
       return results.map((v) => ({ ...v, locale }));
     } catch (err) {
@@ -139,8 +155,36 @@ export class RecipesService {
       const missingIngredientIds: string[] = [];
 
       if (request.deductInventory) {
-        for (const ing of row.ingredients) {
-          if (ing.optional || ing.ingredient.isStaple) continue;
+        const deductable = row.ingredients.filter(
+          (ing) => !ing.optional && !ing.ingredient.isStaple,
+        );
+
+        // Take every row lock up front, ordered by primary key. The per-
+        // ingredient FOR UPDATE below would otherwise acquire locks in
+        // whatever order the relational load happened to return ingredients,
+        // which is per-recipe and arbitrary: two recipes sharing two
+        // ingredients, cooked concurrently, could each hold the lock the other
+        // is waiting for. `sync` locks the same table in the order the client
+        // sent its events, so it could deadlock against this too. A single
+        // canonical ordering, applied by both, removes the cycle.
+        if (deductable.length > 0) {
+          await tx
+            .select({ id: inventoryItems.id })
+            .from(inventoryItems)
+            .where(
+              and(
+                eq(inventoryItems.householdId, householdId),
+                inArray(
+                  inventoryItems.ingredientId,
+                  deductable.map((ing) => ing.ingredient.id),
+                ),
+              ),
+            )
+            .orderBy(inventoryItems.id)
+            .for('update');
+        }
+
+        for (const ing of deductable) {
           const need = Number(ing.quantity) * scale;
           const done = await this.deductIngredient(
             tx,

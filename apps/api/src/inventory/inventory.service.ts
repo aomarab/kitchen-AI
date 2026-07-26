@@ -256,6 +256,27 @@ export class InventoryService {
     const ordered = [...events].sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt));
 
     await this.db.transaction(async (tx) => {
+      // Lock the whole batch up front in primary-key order. Each event's UPDATE
+      // takes a row lock that is then held for the rest of the transaction, and
+      // the order events arrive in is chosen by the client — so two batches
+      // touching the same two items in opposite orders would deadlock, as would
+      // a batch racing `markCooked`, which locks the same table. Both paths now
+      // acquire in the same canonical order, so there is no cycle to close.
+      const itemIds = [...new Set(ordered.map((event) => event.itemId))];
+      if (itemIds.length > 0) {
+        await tx
+          .select({ id: inventoryItems.id })
+          .from(inventoryItems)
+          .where(
+            and(
+              eq(inventoryItems.householdId, householdId),
+              inArray(inventoryItems.id, itemIds),
+            ),
+          )
+          .orderBy(inventoryItems.id)
+          .for('update');
+      }
+
       for (const event of ordered) {
         const [item] = await tx
           .select({ id: inventoryItems.id, unit: inventoryItems.unit })

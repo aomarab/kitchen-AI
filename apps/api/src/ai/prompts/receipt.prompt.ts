@@ -2,7 +2,6 @@ import type { ReceiptExtractContext, ReceiptMapContext } from './prompt.types.js
 import {
   type BuiltPrompt,
   localeDirective,
-  numbered,
   untrustedList,
   UNTRUSTED_DATA_DIRECTIVE,
 } from './prompt.shared.js';
@@ -44,7 +43,7 @@ export function buildReceiptMapPrompt(ctx: ReceiptMapContext): BuiltPrompt {
 
   const user = [
     `Raw lines:\n${untrustedList(ctx.rawLines)}`,
-    `Catalog candidates:\n${numbered(ctx.candidateNames)}`,
+    `Catalog candidates:\n${untrustedList(ctx.candidateNames)}`,
   ].join('\n\n');
 
   return { system, user, version: RECEIPT_MAP_PROMPT_VERSION };

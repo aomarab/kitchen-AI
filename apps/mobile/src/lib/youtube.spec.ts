@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isAllowedEmbedUrl, isValidYoutubeId } from './youtube';
+import {
+  isAllowedEmbedUrl,
+  isValidYoutubeId,
+  WEBVIEW_ORIGIN_WHITELIST,
+  YOUTUBE_EMBED_ORIGINS,
+} from './youtube';
 
 describe('isValidYoutubeId', () => {
   it('accepts a real 11-character id', () => {
@@ -37,9 +42,30 @@ describe('isAllowedEmbedUrl', () => {
       'http://www.youtube.com/embed/x',
       'https://www.youtube.com.evil.test/embed/x',
       'javascript:alert(1)',
-      'about:blank',
     ]) {
       expect(isAllowedEmbedUrl(url)).toBe(false);
+    }
+  });
+
+  it('allows about:blank, which WebViews navigate to internally', () => {
+    expect(isAllowedEmbedUrl('about:blank')).toBe(true);
+  });
+});
+
+describe('originWhitelist', () => {
+  /**
+   * react-native-webview does not *cancel* a URL that fails originWhitelist —
+   * it hands it to Linking.openURL, launching the system browser (or a deep
+   * link into another app) without user intent, and skips the app-level
+   * onShouldStartLoadWithRequest entirely. A narrow whitelist therefore turns
+   * an unwanted in-app navigation into an unwanted external one. The whitelist
+   * must stay wide so the library never reaches for Linking; isAllowedEmbedUrl
+   * is what actually blocks, and it cancels in place.
+   */
+  it('stays permissive so blocked URLs are cancelled, not escalated', () => {
+    expect(WEBVIEW_ORIGIN_WHITELIST).toEqual(['http://*', 'https://*']);
+    for (const origin of YOUTUBE_EMBED_ORIGINS) {
+      expect(isAllowedEmbedUrl(`${origin}/embed/dQw4w9WgXcQ`)).toBe(true);
     }
   });
 });

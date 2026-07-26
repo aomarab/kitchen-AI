@@ -10,6 +10,7 @@ import { ingredients } from '../db/schema.js';
 import { AppError } from '../common/errors.js';
 import { decodeCursor, toPage, type Page } from '../common/pagination.js';
 import { bilingualNames, ingredientNameEquals, ingredientNameMatches } from './normalize.js';
+import { toCatalogName } from '../ai/catalog/drizzle-ingredient-resolver.js';
 import { toIngredient, type IngredientRow } from './catalog.serializer.js';
 
 function isUniqueViolation(error: unknown): boolean {
@@ -81,7 +82,21 @@ export class CatalogService {
       .limit(1);
     if (existing) return existing.id;
 
-    const { en, ar, aliases } = bilingualNames(rawName, rawNameAr);
+    // `ingredients` is global, and its names are read back into every
+    // household's AI prompt as catalog candidates. Anything a user can type
+    // into a manual inventory add would otherwise become permanent prompt
+    // input for every other household. The AI resolver gates the same table on
+    // the same character set; this is the other writer to it.
+    const safeName = toCatalogName(rawName);
+    if (!safeName) {
+      throw new AppError('VALIDATION_FAILED', 'errors.VALIDATION_FAILED', {
+        field: 'rawName',
+        reason: 'not_a_catalog_name',
+      });
+    }
+    const safeNameAr = rawNameAr != null ? toCatalogName(rawNameAr) ?? undefined : undefined;
+
+    const { en, ar, aliases } = bilingualNames(safeName, safeNameAr);
     try {
       const [row] = await this.db
         .insert(ingredients)

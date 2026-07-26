@@ -5,6 +5,7 @@ import type { AiProvider, ImageInput } from './providers/ai-provider.interface.j
 import type { BuiltPrompt } from './prompts/prompt.shared.js';
 import { SchemaGuard } from './validation/schema-guard.js';
 import { BudgetService } from './usage/budget.service.js';
+import { readSpend } from './ai-spend.js';
 
 export interface ExecuteInput<T> {
   householdId: string;
@@ -35,19 +36,38 @@ export class AiGateway {
     await this.budget.assertWithinBudget(input.householdId);
 
     const tier = OPERATION_TIER[input.operation];
-    const result = await this.guard.run(
-      this.provider,
-      {
-        operation: input.operation,
-        tier,
-        system: input.prompt.system,
-        user: input.prompt.user,
-        images: input.images,
-        context: input.context,
-        scenario: input.scenario,
-      },
-      input.schema,
-    );
+    let result;
+    try {
+      result = await this.guard.run(
+        this.provider,
+        {
+          operation: input.operation,
+          tier,
+          system: input.prompt.system,
+          user: input.prompt.user,
+          images: input.images,
+          context: input.context,
+          scenario: input.scenario,
+        },
+        input.schema,
+      );
+    } catch (error) {
+      // A failed call is still a billed call. Record before rethrowing, or a
+      // household that reliably fails never counts against its own daily cap.
+      const spend = readSpend(error);
+      if (spend) {
+        await this.budget
+          .record({
+            householdId: input.householdId,
+            model: spend.model,
+            operation: input.operation,
+            tier,
+            usage: spend.usage,
+          })
+          .catch(() => undefined);
+      }
+      throw error;
+    }
 
     await this.budget.record({
       householdId: input.householdId,

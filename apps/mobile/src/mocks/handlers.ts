@@ -264,6 +264,10 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     db.inventory.push(...created);
     return HttpResponse.json(created);
   },
+  getInventoryItem: ({ params }) => {
+    const item = db.inventory.find((i) => i.id === String(params.id));
+    return item ? HttpResponse.json(item) : notFound();
+  },
   updateInventoryItem: async ({ request, params }) => {
     const body = await readBody(request);
     const id = String(params.id);

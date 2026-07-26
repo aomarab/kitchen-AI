@@ -20,6 +20,28 @@ export const YOUTUBE_EMBED_ORIGINS = [
   'https://www.youtube.com',
 ];
 
+/**
+ * Deliberately permissive, and it must stay that way.
+ *
+ * `originWhitelist` is not a blocker. In react-native-webview, a URL that fails
+ * the whitelist is handed to `Linking.openURL` — the request is not cancelled,
+ * it is escalated out of the app into the system browser (see
+ * `createOnShouldStartLoadWithRequest` in WebViewShared). A restrictive list
+ * therefore turns an unwanted in-app navigation into an unwanted *external*
+ * one, including non-http schemes that deep-link into other installed apps,
+ * and the app-level `onShouldStartLoadWithRequest` is never consulted.
+ *
+ * So the whitelist stays wide enough that the library never reaches for
+ * `Linking`, and `isAllowedEmbedUrl` below does the real filtering — it runs
+ * only for URLs that already passed, and returning false there cancels the
+ * navigation in place.
+ */
+export const WEBVIEW_ORIGIN_WHITELIST = ['http://*', 'https://*'];
+
 export function isAllowedEmbedUrl(url: string): boolean {
-  return YOUTUBE_EMBED_ORIGINS.some((origin) => url.startsWith(`${origin}/`));
+  // WebViews navigate to about:blank internally; blocking it breaks the embed.
+  if (url === 'about:blank') return true;
+  return YOUTUBE_EMBED_ORIGINS.some(
+    (origin) => url === origin || url.startsWith(`${origin}/`),
+  );
 }

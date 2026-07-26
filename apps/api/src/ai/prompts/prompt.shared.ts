@@ -25,12 +25,6 @@ export function localeDirective(locale: Locale): string {
   );
 }
 
-/** Renders a list as a compact, numbered block for a prompt. */
-export function numbered(lines: string[]): string {
-  if (lines.length === 0) return '(none)';
-  return lines.map((line, i) => `${i + 1}. ${line}`).join('\n');
-}
-
 /**
  * Every prompt that interpolates user- or OCR-derived text carries this. The
  * text below it is data the model is asked to *process*, not instructions it is
@@ -61,7 +55,14 @@ export function untrusted(value: string): string {
   return `«${flattened}»`;
 }
 
-/** {@link numbered}, but every entry is fenced as untrusted data. */
+/**
+ * Renders a list as a numbered block with every entry fenced as untrusted data.
+ *
+ * There is deliberately no unfenced variant. Every list that has reached a
+ * prompt so far — OCR lines, catalog candidate names, pantry contents — is
+ * ultimately user-controlled, and the one that looked safest (the global
+ * ingredient catalog) turned out to be the cross-tenant injection channel.
+ */
 export function untrustedList(values: string[]): string {
   if (values.length === 0) return '(none)';
   return values.map((value, i) => `${i + 1}. ${untrusted(value)}`).join('\n');

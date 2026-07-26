@@ -41,12 +41,34 @@ function normalize(value: string): string {
  */
 const MAX_CREATABLE_NAME_CHARS = 60;
 
+/**
+ * Letters (any script), digits, spaces and the few separators that show up in
+ * real ingredient names. No newlines, quotes, braces, colons or guillemets.
+ */
+const CATALOG_NAME_CHARS = /^[\p{L}\p{N} ()%.,'’\-/&+]+$/u;
+const NON_CATALOG_NAME_CHARS = /[^\p{L}\p{N} ()%.,'’\-/&+]+/gu;
+
 export function isCreatableName(value: string): boolean {
   const name = value.trim();
   if (name.length === 0 || name.length > MAX_CREATABLE_NAME_CHARS) return false;
-  // Letters (any script), digits, spaces and the few separators that show up in
-  // real ingredient names. No newlines, quotes, braces, colons or guillemets.
-  return /^[\p{L}\p{N} ()%.,'’\-/&+]+$/u.test(name);
+  return CATALOG_NAME_CHARS.test(name);
+}
+
+/**
+ * The manual-add path has no "unresolved" outcome — the user typed a name and
+ * expects their item saved — so there rejecting is the wrong answer for a name
+ * that is merely punctuated oddly ("Milk: whole"). Strip what may not enter the
+ * global catalog and keep the rest. Returns null only when nothing usable is
+ * left, which is the case worth refusing.
+ */
+export function toCatalogName(value: string): string | null {
+  const cleaned = value
+    .replace(NON_CATALOG_NAME_CHARS, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_CREATABLE_NAME_CHARS)
+    .trim();
+  return cleaned.length > 0 ? cleaned : null;
 }
 
 function titleCase(value: string): string {

@@ -2,7 +2,6 @@ import type { NameResolveContext, TranslateRecipeContext } from './prompt.types.
 import {
   type BuiltPrompt,
   localeDirective,
-  numbered,
   untrusted,
   untrustedList,
   UNTRUSTED_DATA_DIRECTIVE,
@@ -29,7 +28,7 @@ export function buildNameResolvePrompt(ctx: NameResolveContext): BuiltPrompt {
 
   const user = [
     `Names to resolve:\n${untrustedList(ctx.names)}`,
-    `Catalog candidates:\n${numbered(ctx.candidateNames)}`,
+    `Catalog candidates:\n${untrustedList(ctx.candidateNames)}`,
   ].join('\n\n');
 
   return { system, user, version: NAME_RESOLVE_PROMPT_VERSION };

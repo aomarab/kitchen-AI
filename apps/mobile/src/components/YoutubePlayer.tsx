@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Icon } from './Icon';
 import { AppText } from './AppText';
-import { isAllowedEmbedUrl, isValidYoutubeId, YOUTUBE_EMBED_ORIGINS } from '../lib/youtube';
+import { isAllowedEmbedUrl, isValidYoutubeId, WEBVIEW_ORIGIN_WHITELIST } from '../lib/youtube';
 import { colors, radius, spacing } from '../theme';
 
 interface YoutubePlayerProps {
@@ -65,10 +65,11 @@ export function YoutubePlayer({
           mediaPlaybackRequiresUserAction={false}
           javaScriptEnabled
           domStorageEnabled
-          // Without these the WebView is a general-purpose browser: a redirect
-          // out of the embed would render arbitrary pages inside the app, with
-          // the app's cookie jar and JS enabled.
-          originWhitelist={YOUTUBE_EMBED_ORIGINS}
+          // The whitelist is intentionally wide and the real check is in
+          // onShouldStartLoadWithRequest — see WEBVIEW_ORIGIN_WHITELIST. A
+          // narrow whitelist would send blocked URLs to the system browser
+          // instead of cancelling them.
+          originWhitelist={WEBVIEW_ORIGIN_WHITELIST}
           onShouldStartLoadWithRequest={(request) => isAllowedEmbedUrl(request.url)}
           onError={() => setFailed(true)}
           onHttpError={() => setFailed(true)}

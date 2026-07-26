@@ -11,6 +11,17 @@ import {
   PROVIDER_TIMEOUT_MS,
   type ModelTier,
 } from '../ai.constants.js';
+import { attachSpend } from '../ai-spend.js';
+
+/**
+ * The GPT-5 and o-series families removed `max_tokens` from Chat Completions
+ * and reject it with a 400 that the SDK does not retry. Everything older only
+ * understands `max_tokens`. The model id is configurable, so pick per call
+ * rather than assuming the default.
+ */
+function usesMaxCompletionTokens(model: string): boolean {
+  return /^(gpt-5|o[1-9])/i.test(model);
+}
 
 export interface OpenAiModels {
   cheap: string;
@@ -70,17 +81,24 @@ export class OpenAiProvider implements AiProvider {
       });
     }
 
+    const maxOutputTokens = PROVIDER_MAX_OUTPUT_TOKENS[request.tier];
     const completion = await this.client.chat.completions.create(
       {
         model,
         messages,
         response_format: { type: 'json_object' },
-        max_tokens: PROVIDER_MAX_OUTPUT_TOKENS[request.tier],
+        ...(usesMaxCompletionTokens(model)
+          ? { max_completion_tokens: maxOutputTokens }
+          : { max_tokens: maxOutputTokens }),
       },
       { timeout: PROVIDER_TIMEOUT_MS[request.tier] },
     );
 
     const choice = completion.choices[0];
+    const usage = {
+      inputTokens: completion.usage?.prompt_tokens ?? 0,
+      outputTokens: completion.usage?.completion_tokens ?? 0,
+    };
 
     // A truncated completion is not a malformed one. Left alone it parses to
     // half an object, fails validation, and gets routed into the SchemaGuard's
@@ -88,24 +106,22 @@ export class OpenAiProvider implements AiProvider {
     // token ceiling and truncates again. Two full-priced calls, guaranteed to
     // fail. Fail on the first.
     if (choice?.finish_reason === 'length') {
-      throw new AppError('AI_INVALID_OUTPUT', 'errors.AI_INVALID_OUTPUT', {
-        operation: request.operation,
-        reason: 'truncated',
-        maxTokens: PROVIDER_MAX_OUTPUT_TOKENS[request.tier],
-      });
+      // Truncation bills the full ceiling, so the spend rides along on the
+      // error for the gateway to record.
+      throw attachSpend(
+        new AppError('AI_INVALID_OUTPUT', 'errors.AI_INVALID_OUTPUT', {
+          operation: request.operation,
+          reason: 'truncated',
+          maxTokens: maxOutputTokens,
+        }),
+        { usage, model: completion.model ?? model },
+      );
     }
 
     const content = choice?.message?.content ?? '{}';
     const raw = this.parse(content);
 
-    return {
-      raw,
-      usage: {
-        inputTokens: completion.usage?.prompt_tokens ?? 0,
-        outputTokens: completion.usage?.completion_tokens ?? 0,
-      },
-      model: completion.model ?? model,
-    };
+    return { raw, usage, model: completion.model ?? model };
   }
 
   /** Parse leniently — a fenced or prefixed body should not crash the pipeline. */

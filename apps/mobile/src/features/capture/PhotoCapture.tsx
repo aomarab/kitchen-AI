@@ -37,7 +37,17 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
   const job = useJob(jobId);
 
   const jobPending = !!jobId && !isTerminal(job.data);
-  const busy = presign.isPending || recognize.isPending || parseReceipt.isPending || jobPending;
+  /**
+   * The bytes going to object storage happen between the presign mutation and
+   * the recognise mutation, so no mutation's `isPending` covers them. Without
+   * this the spinner drops back to the full camera UI for the whole upload —
+   * seconds, on a slow connection — with the submit button live again, and a
+   * second tap starts a second presign, upload and recognition: duplicate AI
+   * spend and two racing navigations.
+   */
+  const [uploading, setUploading] = useState(false);
+  const busy =
+    presign.isPending || uploading || recognize.isPending || parseReceipt.isPending || jobPending;
 
   useEffect(() => {
     if (mode !== 'receipt' || job.data?.status !== 'done' || !job.data.resultRef) return;
@@ -77,7 +87,9 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
     );
 
   const submit = async () => {
+    if (busy) return;
     setFailed(false);
+    setUploading(true);
     try {
       const keys = await uploadKeys();
       if (mode === 'receipt') {
@@ -93,6 +105,8 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
       // (no signal, storage rejected the photo). Silently returning to the
       // camera looks like the button simply did nothing.
       setFailed(true);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -177,7 +191,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
                 : t('mobile.capture.usePhoto')
             }
             icon="check"
-            disabled={photos.length === 0}
+            disabled={photos.length === 0 || busy}
             onPress={() => void submit()}
           />
         </View>

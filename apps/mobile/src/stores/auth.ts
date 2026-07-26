@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Session, User } from '@kitchen/contracts';
 import { tokenStore } from '../lib/token-store';
 import { readJson, writeJson, removeJson } from '../lib/storage';
+import { queryClient } from '../lib/queryClient';
 
 const PERSIST_KEY = 'session';
 
@@ -27,6 +28,20 @@ function persist(state: PersistedSession): void {
   void writeJson(PERSIST_KEY, state);
 }
 
+/**
+ * Query keys carry no user or household id, and the household is sent as a
+ * request *header* — so every cached entry for one household sits under exactly
+ * the key the next household will read. React Query serves cached data
+ * synchronously on mount and refetches behind it, so without this the first
+ * frames after a sign-out or a household switch render the previous
+ * household's inventory, plans and shopping list to whoever is looking now.
+ */
+function dropCachedHouseholdData(): void {
+  // removeQueries, not clear(): clear() also wipes the *mutation* cache, and
+  // this runs from inside a mutation's own onSuccess (create/join household).
+  queryClient.removeQueries();
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   status: 'loading',
   user: null,
@@ -34,6 +49,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   activeHouseholdId: null,
 
   setSession: (session) => {
+    dropCachedHouseholdData();
     const next: PersistedSession = {
       user: session.user,
       householdIds: session.householdIds,
@@ -45,6 +61,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setActiveHousehold: (householdId) => {
+    if (get().activeHouseholdId === householdId) return;
+    dropCachedHouseholdData();
     const next: PersistedSession = { ...snapshot(get()), activeHouseholdId: householdId };
     persist(next);
     set({ activeHouseholdId: householdId });
@@ -56,6 +74,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       ? current.householdIds
       : [...current.householdIds, householdId];
     const next: PersistedSession = { ...current, householdIds, activeHouseholdId: householdId };
+    if (current.activeHouseholdId !== householdId) dropCachedHouseholdData();
     persist(next);
     set({ householdIds, activeHouseholdId: householdId });
   },
@@ -76,6 +95,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
+    dropCachedHouseholdData();
     await tokenStore.set(null);
     await removeJson(PERSIST_KEY);
     set({ status: 'signedOut', user: null, householdIds: [], activeHouseholdId: null });
