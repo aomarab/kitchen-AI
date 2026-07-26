@@ -65,6 +65,12 @@ export const inventoryItemInputSchema = z.object({
   ingredientId: uuidSchema.nullable(),
   /** Used when `ingredientId` is null — the API creates/resolves a catalog row. */
   rawName: z.string().min(1).max(120).optional(),
+  /**
+   * The Arabic name, when the client knows it. Recognition returns both names,
+   * and `ingredients` is a global table: without this the API only ever learns
+   * one, and files it under both languages for every household.
+   */
+  rawNameAr: z.string().min(1).max(120).optional(),
   locationId: uuidSchema,
   quantity: quantitySchema,
   unit: unitSchema,

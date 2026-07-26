@@ -76,6 +76,9 @@ export function buildInventoryInputs(
     .map((row) => ({
       ingredientId: row.ingredientId,
       rawName: row.ingredientId ? undefined : row.rawName,
+      // Recognition returns both names. Sending only one makes the API file it
+      // under both languages in the globally shared ingredient catalog.
+      rawNameAr: row.ingredientId ? undefined : row.nameAr,
       locationId: row.locationId,
       quantity: row.quantity,
       unit: row.unit,

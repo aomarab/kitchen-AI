@@ -4,11 +4,17 @@ import {
   batchEvents,
   enqueue,
   makeInventoryEvent,
+  ownedBy,
   pendingCount,
   resolveSynced,
+  type QueuedEvent,
+  type QueueOwner,
 } from '../lib/event-queue';
 
-function event(clientEventId: string, delta = 1): InventoryEventInput {
+const ALICE: QueueOwner = { userId: 'user-alice', householdId: 'hh-1' };
+const BOB: QueueOwner = { userId: 'user-bob', householdId: 'hh-1' };
+
+function rawEvent(clientEventId: string, delta = 1): InventoryEventInput {
   return {
     clientEventId,
     itemId: 'item-1',
@@ -19,6 +25,13 @@ function event(clientEventId: string, delta = 1): InventoryEventInput {
     occurredAt: '2026-07-26T10:00:00.000Z',
   };
 }
+
+function event(clientEventId: string, owner: QueueOwner = ALICE): QueuedEvent {
+  return { ...owner, event: rawEvent(clientEventId) };
+}
+
+const ids = (entries: readonly QueuedEvent[]): string[] =>
+  entries.map((e) => e.event.clientEventId);
 
 describe('makeInventoryEvent', () => {
   it('stamps a unique clientEventId and an occurredAt', () => {
@@ -46,7 +59,7 @@ describe('makeInventoryEvent', () => {
 describe('enqueue', () => {
   it('appends new events', () => {
     const queue = enqueue([event('a')], event('b'));
-    expect(queue.map((e) => e.clientEventId)).toEqual(['a', 'b']);
+    expect(ids(queue)).toEqual(['a', 'b']);
   });
 
   it('is idempotent on clientEventId (double-tap is a no-op)', () => {
@@ -65,7 +78,7 @@ describe('resolveSynced — three-way reconciliation', () => {
       duplicate: ['b'],
       ...noRejections,
     });
-    expect(pending.map((e) => e.clientEventId)).toEqual(['c']);
+    expect(ids(pending)).toEqual(['c']);
     expect(rejected).toEqual([]);
   });
 
@@ -91,7 +104,7 @@ describe('resolveSynced — three-way reconciliation', () => {
       rejected: [{ clientEventId: 'b', reason: 'item_not_found' }],
     });
     // 'b' is gone from the retry queue (retrying can never succeed)...
-    expect(pending.map((e) => e.clientEventId)).toEqual(['c']);
+    expect(ids(pending)).toEqual(['c']);
     // ...but it is surfaced with its reason and the original event, not lost.
     expect(rejected).toHaveLength(1);
     expect(rejected[0]!.event.clientEventId).toBe('b');
@@ -120,7 +133,53 @@ describe('batchEvents', () => {
     expect(batches.map((b) => b.length)).toEqual([500, 500, 200]);
   });
 
+  it('sends the wire event, not the local envelope', () => {
+    const [batch] = batchEvents([event('a')]);
+    expect(batch?.[0]).toEqual(rawEvent('a'));
+    expect(batch?.[0]).not.toHaveProperty('userId');
+  });
+
   it('returns nothing for an empty queue', () => {
     expect(batchEvents([])).toEqual([]);
+  });
+});
+
+/**
+ * The queue is durable and outlives sign-out, and the server takes the actor
+ * and household from the caller's credentials — so an entry replayed by the
+ * wrong session would be silently written into someone else's ledger.
+ */
+describe('queue ownership on a shared device', () => {
+  it('replays only the signed-in user\u2019s own events', () => {
+    const queue = [event('a', ALICE), event('b', BOB), event('c', ALICE)];
+    expect(ids(ownedBy(queue, ALICE))).toEqual(['a', 'c']);
+    expect(ids(ownedBy(queue, BOB))).toEqual(['b']);
+  });
+
+  it('does not replay events queued for a different household', () => {
+    const queue = [event('a', ALICE)];
+    expect(ownedBy(queue, { userId: ALICE.userId, householdId: 'hh-2' })).toEqual([]);
+  });
+
+  it('keeps the other member\u2019s events queued rather than discarding them', () => {
+    const queue = [event('a', ALICE), event('b', BOB)];
+    // Alice syncs; Bob's event is untouched and still waiting for Bob.
+    const { pending } = resolveSynced(queue, {
+      applied: ['a'],
+      duplicate: [],
+      rejected: [],
+    });
+    expect(ids(pending)).toEqual(['b']);
+    expect(ids(ownedBy(pending, BOB))).toEqual(['b']);
+  });
+
+  it('carries ownership through to a rejection so it is shown to the right person', () => {
+    const { rejected } = resolveSynced([event('a', BOB)], {
+      applied: [],
+      duplicate: [],
+      rejected: [{ clientEventId: 'a', reason: 'item_not_found' }],
+    });
+    expect(rejected[0]).toMatchObject({ userId: BOB.userId, householdId: BOB.householdId });
+    expect(ownedBy(rejected, ALICE)).toEqual([]);
   });
 });

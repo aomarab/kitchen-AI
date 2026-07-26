@@ -15,6 +15,7 @@ import { DB, type Database } from '../../db/index.js';
 import { mealPlanEntries, mealPlans } from '../../db/schema.js';
 import { PANTRY_PORT } from '../ai.constants.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
+import { cloneSnapshot, consumeFromSnapshot } from '../planner/pantry-snapshot.js';
 import { validateRecipe } from '../planner/validation.js';
 import type { CatalogIngredientRef, ResolvedRecipe } from '../planner/types.js';
 import { toRecipeSummary, type RecipeRow } from '../recipes/recipe-mapper.js';
@@ -75,12 +76,19 @@ export class PlanService {
     });
     if (!plan) throw AppError.notFound('errors.NOT_FOUND');
 
+    // Forward-simulated, exactly as the planner does when it builds the plan.
+    // Validating every entry against the same pristine snapshot double-counts
+    // shared stock: two meals that each need the whole bag of rice would both
+    // report as covered, and the shopping list would miss the second bag.
+    // `position` is assigned in the order the planner accepted entries, so
+    // replaying in that order reproduces its arithmetic.
     const snapshot = await this.pantry.snapshot(householdId);
+    const working = cloneSnapshot(snapshot);
     const covered: string[] = [];
     const uncovered: string[] = [];
     const shortfallMap = new Map<string, CoverageShortfall>();
 
-    for (const entry of plan.entries) {
+    for (const entry of inPlannerOrder(plan.entries)) {
       const resolved: ResolvedRecipe = {
         title: entry.recipe.titleEn ?? entry.recipe.titleAr ?? '',
         ingredients: entry.recipe.ingredients.map((ri) => ({
@@ -91,9 +99,10 @@ export class PlanService {
           optional: ri.optional,
         })),
       };
-      const validation = validateRecipe(resolved, snapshot, { allergies: [], halal: false });
+      const validation = validateRecipe(resolved, working, { allergies: [], halal: false });
       if (validation.fullyCovered) covered.push(entry.id);
       else uncovered.push(entry.id);
+      consumeFromSnapshot(working, resolved.ingredients);
 
       for (const sf of validation.shortfalls) {
         if (!sf.ingredientId) continue;
@@ -275,4 +284,13 @@ function toRef(ingredient: {
     defaultUnit: ingredient.defaultUnit,
     isStaple: ingredient.isStaple,
   };
+}
+
+/**
+ * The order the planner accepted entries in, and therefore the order it spent
+ * the pantry in. `position` is assigned as each entry is committed, so the
+ * (date, position) sort used for display is the same sequence.
+ */
+function inPlannerOrder<T extends { date: string; position: number }>(entries: T[]): T[] {
+  return [...entries].sort((a, b) => a.date.localeCompare(b.date) || a.position - b.position);
 }

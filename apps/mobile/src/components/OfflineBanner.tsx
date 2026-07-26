@@ -6,18 +6,22 @@ import { colors, spacing } from '../theme';
 import { useLocale } from '../lib/locale';
 import { useConnectivity } from '../stores/connectivity';
 import { useOfflineQueue } from '../stores/offline-queue';
+import { useOwnedQueue } from '../hooks/owned-queue';
 
 /**
  * Persistent strip shown while the device is offline (spec §6.3). Also surfaces
  * the number of inventory events queued for replay so the user knows their
  * changes are safe. Rendered as a top overlay by the root layout, so it fills
  * behind the status bar via the top safe-area inset.
+ *
+ * The count is scoped to the current session: the durable queue can also hold
+ * another member's unsynced writes, and only this user's will replay.
  */
 export function OfflineBanner() {
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const online = useConnectivity((state) => state.online);
-  const pending = useOfflineQueue((state) => state.events.length);
+  const pending = useOwnedQueue(useOfflineQueue((state) => state.events)).length;
   if (online) return null;
   return (
     <View

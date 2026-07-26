@@ -60,6 +60,11 @@ function GateFallback({ label }: { label: string }) {
  * Guards the authenticated shell in a single place (spec §6.1): no session
  * redirects to sign-in; a session without a household redirects to the
  * create-or-join setup screen. Only renders children once both hold.
+ *
+ * The `loading` status has to hold children back too. Mounting the shell before
+ * the session resolves lets its queries fire without an `x-household-id`
+ * header, and nothing refetches them when the household arrives — so the app
+ * settles into a permanently empty kitchen.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const { t } = useLocale();
@@ -75,7 +80,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     else if (needsHousehold) router.replace('/setup');
   }, [status, needsHousehold, router]);
 
-  if (status === 'unauthenticated' || needsHousehold) {
+  if (status !== 'authenticated' || householdId === null) {
     return <GateFallback label={t('common.loading')} />;
   }
 

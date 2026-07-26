@@ -2,23 +2,34 @@ import { useEffect } from 'react';
 import { NetworkError } from '@kitchen/api-client';
 import { api } from '../lib/api';
 import { queryClient } from '../lib/queryClient';
-import { batchEvents } from '../lib/event-queue';
+import { batchEvents, type QueueOwner } from '../lib/event-queue';
 import { uuidv4 } from '../lib/uuid';
-import { useOfflineQueue } from '../stores/offline-queue';
+import { useOfflineQueue, ownedPending } from '../stores/offline-queue';
+import { useAuthStore } from '../stores/auth';
 import { useConnectivity } from '../stores/connectivity';
 import { qk } from './keys';
 
 let flushing = false;
 
 /**
- * Replays every queued inventory event through `syncInventoryEvents`. Safe to
- * call anytime: a `NetworkError` leaves the queue intact (we are simply still
- * offline), and because each event carries a `clientEventId` the server ignores
- * anything it has already applied — so a double flush never double-counts.
+ * Replays the queued inventory events *belonging to the current session*
+ * through `syncInventoryEvents`.
+ *
+ * Safe to call anytime: a `NetworkError` leaves the queue intact (we are simply
+ * still offline), and because each event carries a `clientEventId` the server
+ * ignores anything it has already applied — so a double flush never
+ * double-counts.
+ *
+ * The owner filter is what keeps a shared device honest. The queue is durable
+ * and survives sign-out, and the server takes the actor and household from the
+ * caller's credentials, so replaying an unowned event would silently write one
+ * person's changes into whoever is signed in now.
  */
 export async function flushInventoryQueue(): Promise<void> {
   if (flushing) return;
-  const pending = useOfflineQueue.getState().events;
+  const owner = currentOwner();
+  if (!owner) return;
+  const pending = ownedPending(owner);
   if (pending.length === 0) return;
 
   flushing = true;
@@ -36,6 +47,13 @@ export async function flushInventoryQueue(): Promise<void> {
   } finally {
     flushing = false;
   }
+}
+
+/** The signed-in user and their active household, or `null` if either is missing. */
+export function currentOwner(): QueueOwner | null {
+  const { user, activeHouseholdId } = useAuthStore.getState();
+  if (!user || !activeHouseholdId) return null;
+  return { userId: user.id, householdId: activeHouseholdId };
 }
 
 /**

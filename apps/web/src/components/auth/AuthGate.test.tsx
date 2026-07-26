@@ -65,4 +65,26 @@ describe('AuthGate', () => {
     await waitFor(() => expect(screen.getByText('protected content')).toBeInTheDocument());
     expect(replace).not.toHaveBeenCalled();
   });
+
+  /**
+   * Asserted on the *first* render, deliberately outside `waitFor`. The shell's
+   * queries run on mount and send `x-household-id` from the session store; if
+   * children mount during `loading` those requests go out headerless and
+   * nothing refetches once the household lands.
+   */
+  it('holds children back while the session is still resolving', () => {
+    tokenGet.mockReturnValue(new Promise(() => {}));
+    renderGate();
+
+    expect(screen.queryByText('protected content')).not.toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('holds children back when a household is known but not yet selected', () => {
+    tokenGet.mockReturnValue(new Promise(() => {}));
+    useSession.setState({ status: 'authenticated', user: null, householdId: null, householdIds: [] });
+    renderGate();
+
+    expect(screen.queryByText('protected content')).not.toBeInTheDocument();
+  });
 });

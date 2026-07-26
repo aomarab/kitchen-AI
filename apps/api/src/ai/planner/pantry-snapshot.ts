@@ -1,6 +1,6 @@
 import type { Unit } from '@kitchen/contracts';
 import { dimensionOf, toBase, type Dimension } from './units.js';
-import type { PantryEntry, PantrySnapshot } from './types.js';
+import type { PantryEntry, PantrySnapshot, ResolvedRecipeIngredient } from './types.js';
 
 /**
  * One inventory row as read from the database, before aggregation. Kept as a
@@ -71,6 +71,27 @@ export function cloneSnapshot(snapshot: PantrySnapshot): PantrySnapshot {
     byIngredientId.set(id, { ...entry });
   }
   return { byIngredientId, outOfStockStapleIds: new Set(snapshot.outOfStockStapleIds) };
+}
+
+/**
+ * Subtract one recipe's requirements from a working snapshot, in place.
+ *
+ * Every consumer that walks a sequence of meals has to do this. A pantry line
+ * is spent by the first meal that uses it, so validating each meal against the
+ * same pristine snapshot reports a plan as fully covered when only its first
+ * meal can actually be cooked. Mutates, so callers pass a {@link cloneSnapshot}.
+ */
+export function consumeFromSnapshot(
+  snapshot: PantrySnapshot,
+  ingredients: readonly ResolvedRecipeIngredient[],
+): void {
+  for (const ing of ingredients) {
+    if (ing.optional || !ing.ingredient) continue;
+    const stock = snapshot.byIngredientId.get(ing.ingredient.id);
+    if (!stock) continue;
+    if (dimensionOf(ing.unit) !== stock.dimension) continue;
+    stock.baseQuantity = Math.max(0, stock.baseQuantity - toBase(ing.quantity, ing.unit));
+  }
 }
 
 /** Entries sorted soonest-expiry first, for the planning prompt. */

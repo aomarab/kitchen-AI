@@ -1,9 +1,8 @@
 import type { GeneratedPlan, GeneratedRecipe, MealSlot, PlanScope } from '@kitchen/contracts';
 import { AppError } from '../../common/errors.js';
 import type { ResolvedName } from '../catalog/ingredient-resolver.port.js';
-import { cloneSnapshot } from './pantry-snapshot.js';
+import { cloneSnapshot, consumeFromSnapshot } from './pantry-snapshot.js';
 import { mergeShortfalls, validateRecipe } from './validation.js';
-import { dimensionOf, toBase } from './units.js';
 import type {
   PantrySnapshot,
   RecipeValidation,
@@ -98,13 +97,7 @@ function toResolvedRecipe(
 
 /** Deplete the working snapshot by what an accepted recipe consumes. */
 function applyConsumption(snapshot: PantrySnapshot, entry: PlanCoreEntry): void {
-  for (const ing of entry.resolved) {
-    if (ing.optional || !ing.ingredient) continue;
-    const stock = snapshot.byIngredientId.get(ing.ingredient.id);
-    if (!stock) continue;
-    if (dimensionOf(ing.unit) !== stock.dimension) continue;
-    stock.baseQuantity = Math.max(0, stock.baseQuantity - toBase(ing.quantity, ing.unit));
-  }
+  consumeFromSnapshot(snapshot, entry.resolved);
 }
 
 function findEntry(plan: GeneratedPlan, cell: Cell): GeneratedPlan['entries'][number] | undefined {

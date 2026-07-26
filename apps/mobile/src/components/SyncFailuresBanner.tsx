@@ -6,6 +6,7 @@ import { colors, hitSlop, spacing } from '../theme';
 import { useLocale } from '../lib/locale';
 import { useConnectivity } from '../stores/connectivity';
 import { useOfflineQueue } from '../stores/offline-queue';
+import { useOwnedQueue } from '../hooks/owned-queue';
 
 /**
  * Surfaces inventory changes the server refused to apply (item deleted,
@@ -13,12 +14,15 @@ import { useOfflineQueue } from '../stores/offline-queue';
  * pulled out of the offline queue — but failing loudly here beats silent data
  * loss: the user sees their edit did not stick and can acknowledge it. Rendered
  * as a top overlay by the root layout, below the offline strip.
+ *
+ * Scoped to the current session, so one member is never asked to acknowledge
+ * another member's failed edit.
  */
 export function SyncFailuresBanner() {
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const online = useConnectivity((state) => state.online);
-  const rejected = useOfflineQueue((state) => state.rejected);
+  const rejected = useOwnedQueue(useOfflineQueue((state) => state.rejected));
   const dismissRejected = useOfflineQueue((state) => state.dismissRejected);
   if (rejected.length === 0) return null;
 

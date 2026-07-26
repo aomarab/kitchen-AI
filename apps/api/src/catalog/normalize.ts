@@ -72,3 +72,41 @@ export function ingredientNameEquals(rawName: string): SQL {
     )
   )`;
 }
+
+// Arabic block, Arabic Supplement, Extended-A and the presentation forms.
+const ARABIC_SCRIPT = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+/** Whether a name is written in Arabic script. */
+export function isArabicScript(value: string): boolean {
+  return ARABIC_SCRIPT.test(value);
+}
+
+/**
+ * Sort a free-text ingredient name (and optionally its translation) into the
+ * `ingredients` columns.
+ *
+ * The table is global — shared by every household — and both name columns are
+ * NOT NULL. When the caller knows both names each goes in its own column, so
+ * an English household sees English and an Arabic one sees Arabic. That is the
+ * case worth getting right: recognition returns both, and dropping one used to
+ * put Arabic model output into `canonical_name_en` for everyone.
+ *
+ * With only one name there is nothing to translate, so it is mirrored and both
+ * spellings are kept as aliases; `ingredientNameEquals` then resolves the row
+ * from either script if the other name turns up later.
+ */
+export function bilingualNames(
+  rawName: string,
+  rawNameAr?: string,
+): { en: string; ar: string; aliases: string[] } {
+  const primary = rawName.trim();
+  const other = rawNameAr?.trim();
+
+  if (!other || other === primary) return { en: primary, ar: primary, aliases: [primary] };
+
+  // `rawName` is normally the English name, but the manual-add path sends
+  // whatever the user typed — so trust the script over the field name.
+  return isArabicScript(primary) && !isArabicScript(other)
+    ? { en: other, ar: primary, aliases: [other, primary] }
+    : { en: primary, ar: other, aliases: [primary, other] };
+}

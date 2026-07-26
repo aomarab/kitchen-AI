@@ -9,7 +9,7 @@ import { DB, type Database } from '../db/index.js';
 import { ingredients } from '../db/schema.js';
 import { AppError } from '../common/errors.js';
 import { decodeCursor, toPage, type Page } from '../common/pagination.js';
-import { ingredientNameEquals, ingredientNameMatches } from './normalize.js';
+import { bilingualNames, ingredientNameEquals, ingredientNameMatches } from './normalize.js';
 import { toIngredient, type IngredientRow } from './catalog.serializer.js';
 
 function isUniqueViolation(error: unknown): boolean {
@@ -65,8 +65,15 @@ export class CatalogService {
    * creating a minimal catalog row when nothing matches. Vision/receipt
    * resolution with embeddings lives in Agent B's AI module; this is the
    * deterministic fallback the inventory writes rely on.
+   *
+   * `ingredients` is global — shared by every household — so which column a
+   * name lands in matters. When only one name is known it is filed under the
+   * script it is actually written in, and mirrored into the other column as a
+   * display fallback (both columns are NOT NULL, and showing the one name we
+   * have beats showing none). Passing `nameAr` avoids the mirroring entirely,
+   * which is why recognition threads both names through.
    */
-  async resolveOrCreate(rawName: string): Promise<string> {
+  async resolveOrCreate(rawName: string, rawNameAr?: string): Promise<string> {
     const [existing] = await this.db
       .select({ id: ingredients.id })
       .from(ingredients)
@@ -74,15 +81,18 @@ export class CatalogService {
       .limit(1);
     if (existing) return existing.id;
 
+    const { en, ar, aliases } = bilingualNames(rawName, rawNameAr);
     try {
       const [row] = await this.db
         .insert(ingredients)
         .values({
-          canonicalNameEn: rawName,
-          canonicalNameAr: rawName,
+          canonicalNameEn: en,
+          canonicalNameAr: ar,
           category: 'other',
           defaultUnit: 'piece',
-          aliases: [rawName],
+          // Every spelling we were given is kept as an alias so
+          // `ingredientNameEquals` resolves this row from either script later.
+          aliases,
           isStaple: false,
         })
         .returning({ id: ingredients.id });

@@ -88,6 +88,9 @@ export function ReviewList({
         items: rows.map((r) => ({
           ingredientId: r.ingredientId,
           rawName: r.ingredientId ? undefined : r.rawName,
+          // Recognition gives us both names; sending only one would have the
+          // API file it under both languages in the shared catalog.
+          rawNameAr: r.ingredientId ? undefined : r.nameAr,
           locationId: r.locationId,
           quantity: r.quantity,
           unit: r.unit,

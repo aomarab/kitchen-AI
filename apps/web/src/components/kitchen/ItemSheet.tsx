@@ -14,14 +14,20 @@ import { Input, Field } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 
 export function ItemSheet({ item, onClose }: { item: InventoryItem | null; onClose: () => void }) {
+  if (!item) return null;
+  // Keyed on the item so the draft state below is torn down between items.
+  // Without it the sheet is reused: an abandoned edit to one item is still
+  // sitting in state when the next one opens, and Save writes it onto that item.
+  return <ItemSheetBody key={item.id} item={item} onClose={onClose} />;
+}
+
+function ItemSheetBody({ item, onClose }: { item: InventoryItem; onClose: () => void }) {
   const { t, locale } = useLocale();
   const locationsQuery = useLocations();
   const update = useUpdateInventoryItem();
   const remove = useDeleteInventoryItem();
-  const [quantity, setQuantity] = useState('');
-  const [expiresAt, setExpiresAt] = useState('');
-
-  if (!item) return null;
+  const [quantity, setQuantity] = useState(String(item.quantity));
+  const [expiresAt, setExpiresAt] = useState(item.expiresAt ?? '');
 
   const name = localizedName(locale, {
     en: item.ingredient.canonicalNameEn,
@@ -30,12 +36,18 @@ export function ItemSheet({ item, onClose }: { item: InventoryItem | null; onClo
   const info = expiryInfo(item.expiresAt, t);
   const location = locationsQuery.data?.find((l) => l.id === item.locationId);
 
+  const parsedQuantity = Number(quantity);
+  const quantityValid = quantity.trim() !== '' && Number.isFinite(parsedQuantity) && parsedQuantity >= 0;
+
   const save = () => {
+    if (!quantityValid) return;
     update.mutate(
       {
         id: item.id,
-        quantity: quantity === '' ? undefined : Number(quantity),
-        expiresAt: expiresAt === '' ? undefined : expiresAt,
+        quantity: parsedQuantity,
+        // `null` clears the date; `undefined` would leave the old one in place,
+        // making an expiry impossible to remove once set.
+        expiresAt: expiresAt === '' ? null : expiresAt,
       },
       { onSuccess: onClose },
     );
@@ -66,7 +78,8 @@ export function ItemSheet({ item, onClose }: { item: InventoryItem | null; onClo
             id="item-qty"
             type="number"
             inputMode="decimal"
-            defaultValue={item.quantity}
+            min={0}
+            value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
           />
         </Field>
@@ -75,13 +88,13 @@ export function ItemSheet({ item, onClose }: { item: InventoryItem | null; onClo
           <Input
             id="item-exp"
             type="date"
-            defaultValue={item.expiresAt ?? ''}
+            value={expiresAt}
             onChange={(e) => setExpiresAt(e.target.value)}
           />
         </Field>
 
         <div className="flex flex-wrap gap-2">
-          <Button onClick={save} disabled={update.isPending}>
+          <Button onClick={save} disabled={update.isPending || !quantityValid}>
             {t('common.save')}
           </Button>
           <Button

@@ -3,7 +3,7 @@ import type { ListInventoryQuery, RouteBody } from '@kitchen/contracts';
 import type { MakeEventParams } from '../lib/event-queue';
 import { api } from '../lib/api';
 import { useOfflineQueue } from '../stores/offline-queue';
-import { flushInventoryQueue } from './offline-sync';
+import { flushInventoryQueue, currentOwner } from './offline-sync';
 import { qk } from './keys';
 
 export function useLocations() {
@@ -62,7 +62,9 @@ export function useAdjustQuantity() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (params: MakeEventParams) => {
-      enqueue(params);
+      const owner = currentOwner();
+      if (!owner) throw new Error('cannot queue an inventory event without an active household');
+      enqueue(owner, params);
       await flushInventoryQueue();
     },
     onSettled: () => qc.invalidateQueries({ queryKey: qk.inventory }),
