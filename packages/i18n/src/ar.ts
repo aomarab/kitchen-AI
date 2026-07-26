@@ -181,6 +181,44 @@ export const ar: Messages = {
     },
   },
 
+  diet: {
+    vegetarian: 'نباتي',
+    vegan: 'نباتي صرف',
+    pescatarian: 'نباتي مع الأسماك',
+    keto: 'كيتو',
+    low_carb: 'قليل الكربوهيدرات',
+    gluten_free: 'خالٍ من الغلوتين',
+    dairy_free: 'خالٍ من الألبان',
+    low_sodium: 'قليل الصوديوم',
+    high_protein: 'عالي البروتين',
+  },
+
+  cuisine: {
+    levantine: 'شامي',
+    gulf: 'خليجي',
+    egyptian: 'مصري',
+    moroccan: 'مغربي',
+    turkish: 'تركي',
+    persian: 'فارسي',
+    indian: 'هندي',
+    italian: 'إيطالي',
+    mediterranean: 'متوسطي',
+    chinese: 'صيني',
+    japanese: 'ياباني',
+    thai: 'تايلندي',
+    mexican: 'مكسيكي',
+    american: 'أمريكي',
+    french: 'فرنسي',
+  },
+
+  healthGoal: {
+    weight_loss: 'إنقاص الوزن',
+    muscle_gain: 'بناء العضلات',
+    maintenance: 'المحافظة على الوزن',
+    diabetic_friendly: 'مناسب لمرضى السكري',
+    heart_healthy: 'صحي للقلب',
+  },
+
   shopping: {
     title: 'قائمة التسوق',
     empty: 'قائمة التسوق فارغة.',

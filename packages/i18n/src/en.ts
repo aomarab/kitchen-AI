@@ -186,6 +186,46 @@ export const en = {
     },
   },
 
+  /** Keyed by `dietaryPreferenceSchema.options` — shared by web and mobile. */
+  diet: {
+    vegetarian: 'Vegetarian',
+    vegan: 'Vegan',
+    pescatarian: 'Pescatarian',
+    keto: 'Keto',
+    low_carb: 'Low carb',
+    gluten_free: 'Gluten-free',
+    dairy_free: 'Dairy-free',
+    low_sodium: 'Low sodium',
+    high_protein: 'High protein',
+  },
+
+  /** Keyed by `cuisineSchema.options` — shared by web and mobile. */
+  cuisine: {    levantine: 'Levantine',
+    gulf: 'Gulf',
+    egyptian: 'Egyptian',
+    moroccan: 'Moroccan',
+    turkish: 'Turkish',
+    persian: 'Persian',
+    indian: 'Indian',
+    italian: 'Italian',
+    mediterranean: 'Mediterranean',
+    chinese: 'Chinese',
+    japanese: 'Japanese',
+    thai: 'Thai',
+    mexican: 'Mexican',
+    american: 'American',
+    french: 'French',
+  },
+
+  /** Keyed by `healthGoalSchema.options` — shared by web and mobile. */
+  healthGoal: {
+    weight_loss: 'Weight loss',
+    muscle_gain: 'Muscle gain',
+    maintenance: 'Maintenance',
+    diabetic_friendly: 'Diabetic-friendly',
+    heart_healthy: 'Heart-healthy',
+  },
+
   shopping: {
     title: 'Shopping list',
     empty: 'Your shopping list is empty.',
