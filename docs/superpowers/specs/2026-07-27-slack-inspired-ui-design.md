@@ -179,6 +179,8 @@ decoupling work is web-only. Mobile needs values changed, not structure.
 | `warn` / `warnSoft` | `#B8860B` / `#F6EBCB` | `#8A5300` / `#F3EEE6` |
 | `danger` / `dangerSoft` | `#B23B2E` / `#F6DAD4` | `#BF3A10` / `#FAEFEC` |
 | `success` / `successSoft` | `#2E6E4E` / `#DCEBE0` | `#007A5A` / `#EBF4F2` |
+| `surfaceInverse` | *(none)* | `#1D1D1D` — new, cook mode |
+| `textInverseMuted` | *(none)* | `#C7C7C7` — new, cook mode |
 | `overlay` | `rgba(28,20,14,0.45)` | `rgba(26,14,27,0.45)` |
 
 Mobile has no dark theme today and does not gain one here. It therefore needs neither
@@ -215,12 +217,22 @@ Variants:
 
 `buttonClasses()` is shared with link-as-button, so both update together.
 
+On mobile, `Button.tsx` moves from `radius.md` (12px) to `radius.pill`, and the `primary`
+variant gains a pressed **colour** (`colors.primaryPressed`) rather than only the current
+blanket `opacity: 0.85`, matching web's `hover:bg-primary-press`. Other variants keep the
+opacity press. `primaryPressed` is defined but referenced nowhere today — this makes the
+token live rather than decorative.
+
 ### Fields
 
 Inputs go 8px → **4px** (`rounded-lg` → `rounded`). Sharp fields against 90px pills is
 deliberate in the source spec and is a large part of why the language reads as Slack
 rather than generically rounded. Applies to `Input`, `Select` (`FIELD_BASE`) and
 mobile `Field.tsx`.
+
+Mobile's `radius` scale has no 4px entry — it is `sm: 8, md: 12, lg: 18, pill: 999` — so
+it gains `xs: 4`, and `Field.tsx:37` moves from `radius.md` to `radius.xs`. Only the field
+moves; the other 25 `radius.*` call sites are unaffected.
 
 ### Everything else
 
@@ -268,8 +280,9 @@ The canvas is already abstracted to three places:
 
 | File | Today | New |
 |---|---|---|
-| `apps/web/src/components/shell/AppShell.tsx` | `bg-muted/30` | `bg-canvas` |
-| `apps/web/src/app/(auth)/layout.tsx` | `bg-muted/40` | `bg-canvas-lavender` |
+| `apps/web/src/components/shell/AppShell.tsx:26` | `bg-muted/30` | `bg-canvas` |
+| `apps/web/src/app/(auth)/layout.tsx:5` | `bg-muted/40` | `bg-canvas-lavender` |
+| `apps/web/src/app/(auth)/layout.tsx:8` auth card | `shadow-sm` | `shadow-[0_5px_20px_rgba(0,0,0,0.1)]` — the spec's level-1 shadow, the single lifted surface in the app |
 | `apps/mobile/src/components/Screen.tsx` | `colors.bg` | unchanged — token value changes |
 
 Cards already use `bg-background` (white), so once the canvas turns cream every card
@@ -280,24 +293,86 @@ through a door. Signed-out pages are the only marketing-adjacent surface in the 
 
 ## Semantic corrections
 
-Roughly fifteen lines where a component names the brand but means a status, or hardcodes
-a colour the theme should own:
+Every place a component names the brand but means a status, or reaches for an opacity
+tint the theme should own. An earlier draft of this spec tabulated thirteen of these.
+A full sweep of the codebase found **thirty-five**, and the omissions were not cosmetic:
+every `text-primary` that renders actual text fails WCAG in dark mode, because
+`--primary` `#8a4d90` is a *fill* colour. Measured against the surfaces it lands on:
+**2.00:1** on `--primary-soft`, **2.57:1** on `--muted`, **2.86:1** on `--background`,
+**3.21:1** on `--canvas`. `--primary-text` exists precisely to absorb this, so it must be
+applied at every such site, not a sample of them.
+
+### The three mechanical rules
+
+Applied uniformly, these cover every row below:
+
+1. **Aubergine that renders text or an icon** → `text-primary-text` (never `text-primary`,
+   which is reserved for fills and focus rings).
+2. **Opacity tint behind text** (`bg-primary/5` … `/20`) → the matching solid `*-soft` token.
+3. **Opacity border** (`border-primary/40`, `/50`) → the matching solid token.
+
+Two sites are deliberately **excluded**: `settings/SettingsView.tsx:165` and
+`shopping/ShoppingView.tsx:135` put `text-primary` on a native `<input type="checkbox">`,
+where it sets `color` — a property native checkboxes ignore. It renders nothing today and
+would render nothing after. Changing it to `accent-primary` would alter appearance, which
+this restyle does not do.
+
+### Brand-as-status and brand-as-text
 
 | Location | Today | New |
 |---|---|---|
-| `ui/Badge.tsx` `success` | `bg-primary/15 text-primary` | `bg-success-soft text-success border border-success` |
-| `ui/Badge.tsx` `warning` | `bg-accent/20 text-accent` | `bg-warning-soft text-warning border border-warning` |
-| `ui/Badge.tsx` `danger` | `bg-danger/15 text-danger` | `bg-danger-soft text-danger border border-danger` |
-| `shell/PantryRailView.tsx:137` warning branch | `bg-accent/10` | `bg-warning-soft border border-warning` |
-| `shell/PantryRailView.tsx:137` success branch | `bg-primary/5` | `bg-success-soft border border-success` |
-| `kitchen/ReviewList.tsx:134` low stock | `border-accent/50 bg-accent/5` | `border-warning bg-warning-soft` |
-| `dashboard/DashboardView.tsx:115` `ClockIcon` | `text-accent` | `text-warning` |
+| `ui/Badge.tsx:8` `success` | `bg-primary/15 text-primary` | `bg-success-soft text-success border border-success` |
+| `ui/Badge.tsx:9` `warning` | `bg-accent/20 text-accent` | `bg-warning-soft text-warning border border-warning` |
+| `ui/Badge.tsx:10` `danger` | `bg-danger/15 text-danger` | `bg-danger-soft text-danger border border-danger` |
+| `ui/Button.tsx:11` `danger` | `text-white` | `text-danger-foreground` |
+| `shell/Sidebar.tsx:26` nav active | `bg-primary/12 text-primary` | `bg-primary-soft text-primary-text` |
+| `shell/Sidebar.tsx:29` nav active icon | `text-primary` | `text-primary-text` |
+| `shell/PantryRailView.tsx:79` check icon | `text-primary` | `text-primary-text` |
 | `shell/PantryRailView.tsx:59,87` sparkle/plus | `text-accent` | `text-primary-text` |
+| `shell/PantryRailView.tsx:137` success branch | `bg-primary/5` | `bg-success-soft border border-success` |
+| `shell/PantryRailView.tsx:137` warning branch | `bg-accent/10` | `bg-warning-soft border border-warning` |
 | `dashboard/DashboardView.tsx:54` `FlameIcon` | `text-accent` | `text-primary-text` |
-| `kitchen/CaptureFlow.tsx:58`, `recipe/RecipeView.tsx:127`, `settings/HouseholdView.tsx:40` | `bg-primary/15 text-primary` | `bg-primary-soft text-primary-text` |
-| `kitchen/CaptureFlow.tsx:137`, `plans/GeneratePlanForm.tsx:97` chips | `bg-primary/12 border-primary text-primary` | `bg-primary-soft border-primary-text text-primary-text` |
-| `ui/Button.tsx` `danger` | `text-white` | `text-danger-foreground` |
+| `dashboard/DashboardView.tsx:115` `ClockIcon` | `text-accent` | `text-warning` |
+| `dashboard/DashboardView.tsx:168` quick-add icon | `text-primary` | `text-primary-text` |
+| `kitchen/ReviewList.tsx:134` low stock | `border-accent/50 bg-accent/5` | `border-warning bg-warning-soft` |
+| `kitchen/KitchenView.tsx:129` tab active | `border-primary bg-primary/12 text-primary` | `border-primary-text bg-primary-soft text-primary-text` |
+| `kitchen/CaptureFlow.tsx:58` avatar | `bg-primary/15 text-primary` | `bg-primary-soft text-primary-text` |
+| `kitchen/CaptureFlow.tsx:137` chip | `border-primary bg-primary/12 text-primary` | `border-primary-text bg-primary-soft text-primary-text` |
+| `recipe/RecipeView.tsx:67` confirm card | `border-primary/40 bg-primary/5` | `border-primary-text bg-primary-soft` |
+| `recipe/RecipeView.tsx:69` confirm text | `text-primary` | `text-primary-text` |
+| `recipe/RecipeView.tsx:127` step number | `bg-primary/15 text-primary` | `bg-primary-soft text-primary-text` |
+| `recipe/RecipesIndex.tsx:34` card hover | `hover:border-primary/50` | `hover:border-primary-text` |
+| `plans/PlanDetail.tsx:81` tab active | `border-primary bg-primary/12 text-primary` | `border-primary-text bg-primary-soft text-primary-text` |
+| `plans/PlanDetail.tsx:95` row hover | `hover:border-primary/50` | `hover:border-primary-text` |
+| `plans/PlanDetail.tsx:220` day chip | `border-primary/40 bg-primary/10 text-primary hover:bg-primary/20` | `border-primary-text bg-primary-soft text-primary-text hover:bg-primary-soft` |
+| `plans/PlansIndex.tsx:46` card hover | `hover:border-primary/50` | `hover:border-primary-text` |
+| `plans/GeneratePlanForm.tsx:97` chip | `border-primary bg-primary/12 text-primary` | `border-primary-text bg-primary-soft text-primary-text` |
+| `settings/SettingsView.tsx:130` allergen chip | `bg-danger/10 text-danger` | `bg-danger-soft border border-danger text-danger` |
+| `settings/SettingsView.tsx:208` tab active | `border-primary bg-primary/12 text-primary` | `border-primary-text bg-primary-soft text-primary-text` |
+| `settings/HouseholdView.tsx:40` avatar | `bg-primary/15 text-primary` | `bg-primary-soft text-primary-text` |
+| `ui/states.tsx:47` error state | `border-danger/40 bg-danger/5` | `border-danger bg-danger-soft` |
 | `mobile/app/(tabs)/home.tsx:19`, `plans/PlanBoard.tsx:189` | `colors.accent` | unchanged — `accent` becomes link-blue |
+
+Unchanged by design: `ui/Sheet.tsx:44` and `shell/AppShell.tsx:41` use `bg-foreground/40`
+as a modal scrim — a deliberate translucency over arbitrary page content, not a tint
+behind text. `ui/Badge.tsx:11` `info` keeps `bg-foreground/10 text-foreground`; it is
+neutral, not a status, and both halves derive from the same token so it cannot drift.
+
+### `--link` gets its only home
+
+`--link` would otherwise be defined and never used, which is the YAGNI violation this
+spec warns about elsewhere. The app has exactly two inline text links — the sign-in /
+sign-up cross-references — and they are `text-primary` today, so they are also two of the
+dark-mode failures above. They take `--link` rather than `--primary-text`:
+
+| Location | Today | New |
+|---|---|---|
+| `auth/SignInForm.tsx:56` | `text-primary` | `text-link` |
+| `auth/SignUpForm.tsx:72` | `text-primary` | `text-link` |
+
+Both sit inside the white auth card. Measured: light `#1264a3` on `--background` **6.22:1**,
+dark `#7cb3e8` **7.63:1**. This also matches mobile, where `accent` becomes the same
+link blue.
 
 ## Loose ends fixed alongside
 
@@ -305,9 +380,13 @@ a colour the theme should own:
   the only hardcoded colours in the web app outside `globals.css` and would leave a white
   notch above a cream page in mobile Safari. They become `#f4ede4` / `#140e15`.
 - **`apps/mobile/src/app/recipe/[id]/cook.tsx`** paints its background with `colors.text`
-  and its text with `colors.surface` / `colors.surfaceAlt` — inverted by accident, not
-  intent. It still passes contrast after the swap, but should use `textInverse` and an
-  explicit inverse surface.
+  (lines 27, 38) and its text with `colors.surface` / `colors.surfaceAlt` (lines 41, 64,
+  69) — inverted by accident, not intent. Reading a *surface* token as a *text* colour
+  works only by coincidence and breaks the moment either value moves. Mobile gains two
+  tokens so the intent is stated: `surfaceInverse` `#1D1D1D` for the background, and
+  `textInverseMuted` `#C7C7C7` for the secondary lines. Primary text uses the existing
+  `textInverse`. Measured on `surfaceInverse`: `textInverse` **16.86:1**,
+  `textInverseMuted` **9.97:1**.
 
 ## Dropped from `DESIGN.md`
 
@@ -329,7 +408,8 @@ Four steps, each independently verifiable:
    one commit.
 2. **Primitives.** `Button`, `Input`, `Badge`, `IconButton`, `Card` — pill radius, 4px
    fields, solid `*-soft` tints with status-coloured borders, 700 labels.
-3. **Semantic corrections.** The ~15 lines tabulated above.
+3. **Semantic corrections.** The ~35 lines tabulated above, applied by the three
+   mechanical rules.
 4. **Shell and type.** Cream canvas, lavender auth, Latin-only tracking, 1.55 body
    leading, `theme-color` metas, cook-mode token fix.
 
@@ -365,8 +445,22 @@ themes:
 - Each status colour as a chip border against `canvas` and `background` — 3:1.
 
 Because tints are solid tokens, the test reads literal values and needs no compositing
-maths. It must be shown to **fail against the current palette** before the token change
-lands; that is the proof it works. It should catch at least the 1.87:1 warning badge.
+maths. It parses `globals.css` itself rather than duplicating the values, so the CSS
+stays the single source of truth and the test cannot silently drift from it. It must be
+shown to **fail against the current palette** before the token change lands; that is the
+proof it works. It should catch at least the 1.87:1 warning badge.
+
+Mobile gets the equivalent, importing `colors` directly: every text token on every
+surface it lands on, `textInverse` and `textInverseMuted` on `surfaceInverse`, each
+status on its `*Soft`, and `textInverse` on the `primary` / `danger` fills.
+
+**A usage guard.** Contrast tests check the palette; they cannot see a component reaching
+for the wrong token. The eleven dark-mode failures this spec's first draft missed were all
+of that kind — correct tokens, wrong site. A source sweep asserts that `text-primary`
+(as opposed to `text-primary-foreground`) and `bg-primary/<n>`-style opacity tints do not
+reappear in `apps/web/src`, with the two inert checkbox lines listed as explicit
+exceptions. Without it, the next component to be written re-introduces a 2.86:1 label and
+nothing notices.
 
 **Route sweep.** All 11 web routes return 200 in both `en` and `ar`, in light and dark.
 
