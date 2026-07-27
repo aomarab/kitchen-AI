@@ -20,7 +20,7 @@ export function HouseholdView() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>{household.name}</CardTitle>
+          <CardTitle className="tracking-normal">{household.name}</CardTitle>
         </CardHeader>
         <div className="flex flex-col gap-1">
           <p className="text-sm text-muted-foreground">{t('household.shareInvite')}</p>
@@ -37,7 +37,7 @@ export function HouseholdView() {
         <ul className="divide-y divide-border">
           {household.members.map((member) => (
             <li key={member.userId} className="flex items-center gap-3 px-5 py-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 font-semibold text-primary">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft font-semibold text-primary-text">
                 {member.displayName.slice(0, 1)}
               </span>
               <div className="min-w-0 flex-1">

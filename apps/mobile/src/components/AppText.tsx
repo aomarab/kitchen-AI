@@ -31,6 +31,7 @@ export function AppText({
   const base: TextStyle = {
     fontSize: token.fontSize,
     lineHeight: token.lineHeight,
+    letterSpacing: token.letterSpacing,
     color: resolvedColor,
     fontFamily,
     // The weight-specific Arabic family already encodes the weight; setting

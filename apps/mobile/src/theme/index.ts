@@ -8,25 +8,33 @@ import type { Locale } from '@kitchen/i18n';
  */
 
 export const colors = {
-  bg: '#FBF7F0',
+  bg: '#F4EDE4',
   surface: '#FFFFFF',
-  surfaceAlt: '#F3ECE1',
-  border: '#E7DECF',
-  text: '#241C15',
-  textMuted: '#7A6E60',
+  surfaceAlt: '#F9F0FF',
+  border: '#E6E6E6',
+  text: '#1D1D1D',
+  textMuted: '#696969',
   textInverse: '#FFFFFF',
-  primary: '#C4562B',
-  primaryPressed: '#A8461F',
-  primarySoft: '#F7E3D8',
-  accent: '#2E6E4E',
-  accentSoft: '#DCEBE0',
-  warn: '#B8860B',
-  warnSoft: '#F6EBCB',
-  danger: '#B23B2E',
-  dangerSoft: '#F6DAD4',
-  success: '#2E6E4E',
-  successSoft: '#DCEBE0',
-  overlay: 'rgba(28,20,14,0.45)',
+  primary: '#4A154B',
+  primaryPressed: '#611F69',
+  primarySoft: '#EDE8ED',
+  // Cook mode inverts the screen, and #4A154B on #1D1D1D is 1.20:1 — the CTA
+  // fill vanishes and the ghost label is unreadable. This is the same lifted
+  // aubergine the web dark theme uses for --primary-text, and it measures
+  // 7.72:1 on surfaceInverse both as text and as a fill carrying a dark label.
+  primaryInverse: '#C9A3CE',
+  accent: '#1264A3',
+  accentSoft: '#E3EDF6',
+  warn: '#8A5300',
+  warnSoft: '#F3EEE6',
+  danger: '#BF3A10',
+  dangerSoft: '#FAEFEC',
+  success: '#007A5A',
+  successSoft: '#EBF4F2',
+  /** Cook mode runs inverted. Named so the intent survives a palette change. */
+  surfaceInverse: '#1D1D1D',
+  textInverseMuted: '#C7C7C7',
+  overlay: 'rgba(26,14,27,0.45)',
 } as const;
 
 export type ColorToken = keyof typeof colors;
@@ -41,6 +49,7 @@ export const spacing = {
 } as const;
 
 export const radius = {
+  xs: 4,
   sm: 8,
   md: 12,
   lg: 18,
@@ -57,25 +66,33 @@ export interface TextStyleToken {
   fontSize: number;
   lineHeight: number;
   fontWeight: '400' | '500' | '600' | '700';
+  letterSpacing: number;
 }
 
 const LATIN_LINE_HEIGHT = 1.35;
 const ARABIC_LINE_HEIGHT = 1.7;
 
-const SCALE: Record<string, { fontSize: number; fontWeight: TextStyleToken['fontWeight'] }> = {
-  display: { fontSize: 28, fontWeight: '700' },
-  title: { fontSize: 22, fontWeight: '700' },
-  heading: { fontSize: 18, fontWeight: '600' },
-  body: { fontSize: 16, fontWeight: '400' },
-  bodyStrong: { fontSize: 16, fontWeight: '600' },
-  label: { fontSize: 14, fontWeight: '500' },
-  caption: { fontSize: 12, fontWeight: '500' },
-};
+/**
+ * `letterSpacing` is a Latin-only device and is zeroed for Arabic below, the
+ * same way line-height is switched. Arabic is cursive: spacing the letters
+ * forces gaps into the joins.
+ */
+const SCALE = {
+  display: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.22 },
+  title: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.09 },
+  heading: { fontSize: 18, fontWeight: '600' as const, letterSpacing: -0.02 },
+  body: { fontSize: 16, fontWeight: '400' as const, letterSpacing: 0 },
+  bodyStrong: { fontSize: 16, fontWeight: '600' as const, letterSpacing: 0 },
+  button: { fontSize: 16, fontWeight: '700' as const, letterSpacing: 0.2 },
+  label: { fontSize: 14, fontWeight: '500' as const, letterSpacing: 0.1 },
+  caption: { fontSize: 12, fontWeight: '500' as const, letterSpacing: 0.1 },
+} satisfies Record<string, { fontSize: number; fontWeight: TextStyleToken['fontWeight']; letterSpacing: number }>;
 
 export type TypographyVariant = keyof typeof SCALE;
 
 export function typography(locale: Locale): Record<TypographyVariant, TextStyleToken> {
-  const factor = locale === 'ar' ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;
+  const isArabic = locale === 'ar';
+  const factor = isArabic ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;
   const out = {} as Record<TypographyVariant, TextStyleToken>;
   for (const key of Object.keys(SCALE) as TypographyVariant[]) {
     const entry = SCALE[key]!;
@@ -83,6 +100,7 @@ export function typography(locale: Locale): Record<TypographyVariant, TextStyleT
       fontSize: entry.fontSize,
       fontWeight: entry.fontWeight,
       lineHeight: Math.round(entry.fontSize * factor),
+      letterSpacing: isArabic ? 0 : entry.letterSpacing,
     };
   }
   return out;

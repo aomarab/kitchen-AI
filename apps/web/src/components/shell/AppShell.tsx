@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex min-h-screen bg-canvas">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
@@ -57,7 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <IconButton label={t('web.nav.primary')} className="md:hidden" onClick={() => setMenuOpen(true)}>
             <MenuIcon />
           </IconButton>
-          <h1 className="text-lg font-semibold">{t(activeLabel(pathname))}</h1>
+          <h1 className="text-lg font-semibold tracking-heading-sm">{t(activeLabel(pathname))}</h1>
           <div className="ms-auto md:hidden">
             <LocaleToggle />
           </div>

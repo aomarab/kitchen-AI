@@ -94,7 +94,7 @@ export function GeneratePlanForm({ onGenerated }: { onGenerated: (planId: string
                 onClick={() => toggleSlot(slot)}
                 className={
                   on
-                    ? 'rounded-full border border-primary bg-primary/12 px-3 py-1.5 text-sm font-medium text-primary'
+                    ? 'rounded-full border border-primary-text bg-primary-soft px-3 py-1.5 text-sm font-medium text-primary-text'
                     : 'rounded-full border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted'
                 }
               >

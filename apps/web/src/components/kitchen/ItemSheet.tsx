@@ -57,7 +57,7 @@ function ItemSheetBody({ item, onClose }: { item: InventoryItem; onClose: () => 
     <Sheet open={Boolean(item)} onClose={onClose} title={t('web.kitchen.itemDetail')}>
       <div className="flex flex-col gap-5">
         <div>
-          <h3 className="text-xl font-semibold">{name}</h3>
+          <h3 className="text-xl font-semibold tracking-heading-sm">{name}</h3>
           <div className="mt-2 flex flex-wrap gap-2">
             {location ? <Badge tone="info">{t(locationKey(location.type))}</Badge> : null}
             <Badge tone={info.tone === 'danger' ? 'danger' : info.tone === 'warning' ? 'warning' : 'neutral'}>

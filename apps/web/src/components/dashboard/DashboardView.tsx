@@ -40,7 +40,7 @@ export function DashboardView() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h2 className="text-2xl font-semibold">{t('web.dashboard.greeting')}</h2>
+        <h2 className="text-2xl font-semibold tracking-heading-lg">{t('web.dashboard.greeting')}</h2>
         <p className="text-muted-foreground">{t('web.dashboard.subtitle')}</p>
         <p className="mt-1 text-sm text-muted-foreground">
           <LocalizedDate value={new Date()} options={{ weekday: 'long', day: 'numeric', month: 'long' }} />
@@ -51,7 +51,7 @@ export function DashboardView() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>{t('web.dashboard.tonightTitle')}</CardTitle>
-            <FlameIcon className="h-5 w-5 text-accent" />
+            <FlameIcon className="h-5 w-5 text-primary-text" />
           </CardHeader>
           {tonight ? (
             <div className="flex flex-col gap-4 sm:flex-row">
@@ -69,7 +69,7 @@ export function DashboardView() {
                     {tonight.entry.fullyCovered ? t('plans.fullyCovered') : t('recipe.notInStock')}
                   </Badge>
                 </div>
-                <h3 className="text-lg font-semibold">{tonight.entry.recipe.title}</h3>
+                <h3 className="text-lg font-semibold tracking-heading-sm">{tonight.entry.recipe.title}</h3>
                 <p className="text-sm text-muted-foreground">
                   {t('recipe.servings', { count: formatNumber(locale, tonight.entry.servings) })} ·{' '}
                   {t('recipe.cookTime', { minutes: formatNumber(locale, tonight.entry.recipe.cookMinutes) })}
@@ -112,7 +112,7 @@ export function DashboardView() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ClockIcon className="h-5 w-5 text-accent" />
+            <ClockIcon className="h-5 w-5 text-warning" />
             {t('web.dashboard.expiringTitle')}
           </CardTitle>
         </CardHeader>
@@ -165,7 +165,7 @@ function QuickAdd({ href, icon, label }: { href: string; icon: React.ReactNode; 
       href={href}
       className="flex flex-col items-center gap-2 rounded-xl border border-border p-4 text-center text-sm font-medium transition hover:bg-muted"
     >
-      <span className="text-primary">{icon}</span>
+      <span className="text-primary-text">{icon}</span>
       {label}
     </Link>
   );

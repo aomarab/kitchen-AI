@@ -55,7 +55,7 @@ export function CaptureFlow() {
   if (added !== null) {
     return (
       <Card className="flex flex-col items-center gap-4 text-center">
-        <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/15 text-primary">
+        <span className="grid h-12 w-12 place-items-center rounded-full bg-primary-soft text-primary-text">
           <PlusIcon />
         </span>
         <p className="font-medium">{t('web.capture.addedToast', { count: String(added) })}</p>
@@ -134,7 +134,7 @@ function MethodTab({
       onClick={() => onSelect(method)}
       className={
         active
-          ? 'flex items-center gap-2 rounded-full border border-primary bg-primary/12 px-4 py-2 text-sm font-medium text-primary'
+          ? 'flex items-center gap-2 rounded-full border border-primary-text bg-primary-soft px-4 py-2 text-sm font-medium text-primary-text'
           : 'flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted'
       }
     >

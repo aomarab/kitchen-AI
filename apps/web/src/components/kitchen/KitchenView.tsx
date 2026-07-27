@@ -126,7 +126,7 @@ function LocationChip({
       aria-pressed={active}
       className={cn(
         'rounded-full border px-3 py-1.5 text-sm font-medium transition',
-        active ? 'border-primary bg-primary/12 text-primary' : 'border-border text-muted-foreground hover:bg-muted',
+        active ? 'border-primary-text bg-primary-soft text-primary-text' : 'border-border text-muted-foreground hover:bg-muted',
       )}
     >
       {children}

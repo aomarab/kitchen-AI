@@ -116,7 +116,7 @@ export function ReviewList({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-semibold">{t('capture.reviewTitle')}</h2>
+          <h2 className="text-lg font-semibold tracking-heading-sm">{t('capture.reviewTitle')}</h2>
           <p className="text-sm text-muted-foreground">{t('capture.reviewHint')}</p>
         </div>
         <Badge tone={flaggedCount > 0 ? 'warning' : 'success'}>
@@ -131,7 +131,7 @@ export function ReviewList({
           const low = row.confidence < LOW_CONFIDENCE;
           return (
             <li key={row.tempId}>
-              <Card className={low ? 'border-accent/50 bg-accent/5' : undefined}>
+              <Card className={low ? 'border-warning bg-warning-soft' : undefined}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-medium">{localizedName(locale, { en: row.nameEn, ar: row.nameAr })}</p>

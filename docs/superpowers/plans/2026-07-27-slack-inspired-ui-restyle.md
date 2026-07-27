@@ -14,10 +14,10 @@
 
 - **This is a restyle, not a redesign.** No layout changes, no new screens, no navigation restructure, no component API changes, no mobile dark theme.
 - **No test may be modified to make it pass.** No test in either app asserts a class name and there are no snapshots. The 29 web and 68 mobile tests must stay green untouched. If one breaks, it found a real regression.
-- **Every colour lives in a token file.** No hex literal may be introduced into any `.tsx`/`.ts` outside `apps/web/src/app/globals.css` and `apps/mobile/src/theme/index.ts`. The one pre-existing exception is the Google logo SVG in `OAuthButtons`, which is a brand asset and stays.
+- **Every colour lives in a token file.** No hex literal may be introduced into any `.tsx`/`.ts` outside `apps/web/src/app/globals.css` and `apps/mobile/src/theme/index.ts`. Two exceptions, both enforced by name in Task 4's guard: the Google logo SVG in `OAuthButtons` is a third-party brand asset, and `app/layout.tsx` sets Next's `themeColor`, which is serialised into a `<meta>` tag and cannot read a CSS variable.
 - **`text-primary` is reserved for fills and focus rings.** Aubergine that renders text or an icon uses `text-primary-text`. `--primary` `#8a4d90` measures 2.00–3.21:1 as text in dark mode.
-- **Tinted backgrounds are solid `*-soft` tokens, never opacity utilities.** Tailwind v4 compiles `/8` to `color-mix(in oklab, … 8%, transparent)`, so an opacity tint is not the sRGB blend contrast maths assumes.
-- **Latin typographic devices stay on Latin.** Tracking is delivered through `--track-*` variables that `:root:lang(ar)` sets to `0`. Never hard-code a `letter-spacing` value on an element.
+- **Tinted backgrounds are solid `*-soft` tokens, never opacity utilities.** Tailwind v4 compiles `/8` to `color-mix(in oklab, … 8%, transparent)`, so an opacity tint is not the sRGB blend contrast maths assumes. This binds every brand and status colour — `primary`, `success`, `warning`, `danger` — which is exactly what Task 4's guard matches. `Badge`'s `info` tone is the one deliberate exception: `bg-foreground/10` under `text-foreground` derives both halves from the same token, so the tint is always a 10% wash of the very colour standing on it and cannot drift. Measured, it is the most legible chip in the set at 13.76:1 on a light card, 11.94:1 on light canvas, 10.83:1 on a dark card and 12.72:1 on dark canvas.
+- **Latin typographic devices stay on Latin.** Tracking is delivered through `--track-*` variables that `:root:lang(ar)` sets to `0`. Never hard-code a `letter-spacing` value on an element. Two pre-existing `tracking-[0.3em]` sites are exempt and stay: `settings/HouseholdView.tsx:27` displays the six-character invite code and `auth/HouseholdSetup.tsx:72` is the input that accepts it. Both render an alphanumeric code rather than prose, so their content is never Arabic script and the fixed tracking is correct in both locales.
 - **Arabic keeps 1.85 line-height; Latin moves to 1.55.**
 - **Run commands from the repo root** unless a step says otherwise. Web dev server is on port **3100** (`WEB_PORT`) — port 3000 is taken on this machine.
 
@@ -465,6 +465,18 @@ describe('mobile palette', () => {
     expect(contrast(colors.textInverse, colors.surfaceInverse), 'primary').toBeGreaterThanOrEqual(AA_TEXT);
     expect(contrast(colors.textInverseMuted, colors.surfaceInverse), 'muted').toBeGreaterThanOrEqual(AA_TEXT);
   });
+
+  /**
+   * Cook mode is the one screen that inverts, and it hosts buttons. The
+   * light-mode `primary` is 1.20:1 on `surfaceInverse` — the CTA fill
+   * disappears and the ghost label is unreadable. These three pairs are what
+   * the `primaryInverse` / `ghostInverse` variants must satisfy.
+   */
+  it('cook mode buttons separate from the inverted surface', () => {
+    expect(contrast(colors.primaryInverse, colors.surfaceInverse), 'ghostInverse label').toBeGreaterThanOrEqual(AA_TEXT);
+    expect(contrast(colors.primaryInverse, colors.surfaceInverse), 'primaryInverse fill').toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(contrast(colors.text, colors.primaryInverse), 'primaryInverse label').toBeGreaterThanOrEqual(AA_TEXT);
+  });
 });
 ```
 
@@ -502,6 +514,11 @@ export const colors = {
   primary: '#4A154B',
   primaryPressed: '#611F69',
   primarySoft: '#EDE8ED',
+  // Cook mode inverts the screen, and #4A154B on #1D1D1D is 1.20:1 — the CTA
+  // fill vanishes and the ghost label is unreadable. This is the same lifted
+  // aubergine the web dark theme uses for --primary-text, and it measures
+  // 7.72:1 on surfaceInverse both as text and as a fill carrying a dark label.
+  primaryInverse: '#C9A3CE',
   accent: '#1264A3',
   accentSoft: '#E3EDF6',
   warn: '#8A5300',
@@ -649,7 +666,7 @@ Expected: PASS. `states.test.tsx`, `AppShell.test.tsx`, `ReviewList.test.tsx`, `
 pnpm --filter @kitchen/web typecheck && pnpm --filter @kitchen/web lint
 ```
 
-Expected: PASS, 0 warnings.
+Expected: PASS. Lint reports exactly one pre-existing warning — `shell/PantryRail.tsx:54`, a `useMemo` missing-dependency unrelated to the restyle. It is present at this task's base commit and is not this task's to fix; the gate is that no NEW warning appears.
 
 - [ ] **Step 8: Commit**
 
@@ -927,6 +944,20 @@ For example `apps/web/src/components/ui/Card.tsx:18` becomes:
 
 Three `text-lg`/`text-2xl` sites are deliberately skipped because they are not headings: `settings/HouseholdView.tsx:27` is the invite code and carries its own intentional `tracking-[0.3em]`; `recipe/RecipeView.tsx:182` is a stat value; `recipe/CookMode.tsx:36` is a cooking step, which is body copy at a large size.
 
+- [ ] **Step 3b: Keep the Latin device off user-generated content**
+
+`CardTitle` is shared, so tracking it reaches all sixteen call sites. Fifteen render `t(...)` — translated UI strings, which follow the UI locale, so `:root:lang(ar)` zeroes them correctly. One does not.
+
+`settings/HouseholdView.tsx:23` renders `{household.name}`, free text the user typed. A household can be named in Arabic while the UI locale stays English, and `:root:lang(ar)` keys off the UI locale, not the content — so that title would keep its Latin tracking. Opt it out:
+
+```tsx
+          <CardTitle className="tracking-normal">{household.name}</CardTitle>
+```
+
+`cn()` is a naive joiner, not `tailwind-merge`, so this override depends on CSS source order rather than class order. Verified by compiling: Tailwind emits `.tracking-normal` after `.tracking-heading-sm`, so it wins, and `--tracking-normal: 0em` survives our `@theme inline` from the default theme. The override is deterministic, not incidental.
+
+The practical effect here is small — `--track-heading-sm` is `-0.02px`, which tightens rather than opening gaps in cursive joins — but the rule is that a Latin typographic device never lands on content whose language we do not control, and a shared primitive is exactly where that rule quietly stops holding.
+
 Body leading needs no work here — Task 1 set `line-height: 1.55` on `:root` with `:root:lang(ar)` overriding at 1.85 on higher specificity.
 
 - [ ] **Step 4: Run the web suite, typecheck, lint and build**
@@ -965,7 +996,7 @@ is cursive: letter-spacing forces gaps into the letter joins."
 - Modify: `apps/mobile/src/app/recipe/[id]/cook.tsx:27,38,41,64,69`
 
 **Interfaces:**
-- Consumes: `colors.surfaceInverse`, `colors.textInverseMuted`, `colors.primaryPressed` from Task 2.
+- Consumes: `colors.surfaceInverse`, `colors.textInverseMuted`, `colors.primaryPressed`, `colors.primaryInverse` from Task 2.
 - Produces: `radius.xs = 4`; `TextStyleToken` gains `letterSpacing: number`; `SCALE` gains a `button` variant, so `TypographyVariant` becomes `'display' | 'title' | 'heading' | 'body' | 'bodyStrong' | 'button' | 'label' | 'caption'`. `typography(locale)` keeps its signature `(locale: Locale) => Record<TypographyVariant, TextStyleToken>`.
 
 - [ ] **Step 1: Add the 4px radius**
@@ -1045,20 +1076,30 @@ const ARABIC_LINE_HEIGHT = 1.7;
  * `letterSpacing` is a Latin-only device and is zeroed for Arabic below, the
  * same way line-height is switched. Arabic is cursive: spacing the letters
  * forces gaps into the joins.
+ *
+ * `satisfies`, not a type annotation. An annotation of `Record<string, …>`
+ * widens `keyof typeof SCALE` to `string`, so `TypographyVariant` stops being
+ * a union of the eight names and `Record<TypographyVariant, TextStyleToken>`
+ * becomes an index signature — under this repo's `noUncheckedIndexedAccess`
+ * every `typography('en').display` in the spec is then `TextStyleToken |
+ * undefined` and the file does not compile (10 errors, measured). `satisfies`
+ * shape-checks the literal without widening it, which is what the Interfaces
+ * section above requires. Note this also tightens `AppText`'s `variant` prop,
+ * which was silently `string` before.
  */
-const SCALE: Record<
+const SCALE = {
+  display: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.22 },
+  title: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.09 },
+  heading: { fontSize: 18, fontWeight: '600' as const, letterSpacing: -0.02 },
+  body: { fontSize: 16, fontWeight: '400' as const, letterSpacing: 0 },
+  bodyStrong: { fontSize: 16, fontWeight: '600' as const, letterSpacing: 0 },
+  button: { fontSize: 16, fontWeight: '700' as const, letterSpacing: 0.2 },
+  label: { fontSize: 14, fontWeight: '500' as const, letterSpacing: 0.1 },
+  caption: { fontSize: 12, fontWeight: '500' as const, letterSpacing: 0.1 },
+} satisfies Record<
   string,
   { fontSize: number; fontWeight: TextStyleToken['fontWeight']; letterSpacing: number }
-> = {
-  display: { fontSize: 28, fontWeight: '700', letterSpacing: -0.22 },
-  title: { fontSize: 22, fontWeight: '700', letterSpacing: -0.09 },
-  heading: { fontSize: 18, fontWeight: '600', letterSpacing: -0.02 },
-  body: { fontSize: 16, fontWeight: '400', letterSpacing: 0 },
-  bodyStrong: { fontSize: 16, fontWeight: '600', letterSpacing: 0 },
-  button: { fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
-  label: { fontSize: 14, fontWeight: '500', letterSpacing: 0.1 },
-  caption: { fontSize: 12, fontWeight: '500', letterSpacing: 0.1 },
-};
+>;
 
 export type TypographyVariant = keyof typeof SCALE;
 
@@ -1139,6 +1180,45 @@ and change the label to the new 700-weight variant:
 
 `primaryPressed` is defined but referenced nowhere today; this makes it live. Variants without a pressed colour keep the existing opacity feedback.
 
+- [ ] **Step 7b: Give cook mode buttons that survive the inversion**
+
+Still in `apps/mobile/src/components/Button.tsx`. Cook mode is the only screen that inverts, and `BG`/`FG` are keyed off a light-mode palette: `primary` `#4A154B` on `surfaceInverse` `#1D1D1D` is **1.20:1**, so the CTA fill vanishes and the ghost "exit" label is unreadable. Extend the variant union rather than adding a prop — every existing call site keeps compiling and the component's API is unchanged:
+
+```tsx
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'primaryInverse' | 'ghostInverse';
+```
+
+Add the two entries to each map:
+
+```tsx
+const BG: Record<ButtonVariant, string> = {
+  primary: colors.primary,
+  secondary: colors.surfaceAlt,
+  ghost: 'transparent',
+  danger: colors.danger,
+  primaryInverse: colors.primaryInverse,
+  ghostInverse: 'transparent',
+};
+
+const FG: Record<ButtonVariant, string> = {
+  primary: colors.textInverse,
+  secondary: colors.text,
+  ghost: colors.primary,
+  danger: colors.textInverse,
+  // The lifted aubergine is light, so its label is dark: 7.72:1.
+  primaryInverse: colors.text,
+  ghostInverse: colors.primaryInverse,
+};
+```
+
+`ghostInverse` must also be borderless, so widen the ghost check in the `style` callback:
+
+```tsx
+          borderWidth: variant === 'ghost' || variant === 'ghostInverse' ? 0 : 1,
+```
+
+`Record<ButtonVariant, string>` is exhaustive, so typecheck fails if either map misses a variant. That is the gate for this step.
+
 - [ ] **Step 8: Sharpen the mobile field**
 
 `apps/mobile/src/components/Field.tsx:37`:
@@ -1172,6 +1252,19 @@ Line 69:
 ```tsx
         <AppText variant="caption" style={{ color: colors.textInverseMuted }} center>
 ```
+
+Lines 47–52 and 74–94 — the buttons. Swap each to its inverted variant so it survives the dark surface. The exit button:
+
+```tsx
+          <Button
+            title={t('mobile.recipe.exitCookMode')}
+            variant="ghostInverse"
+            fullWidth={false}
+            onPress={() => router.back()}
+          />
+```
+
+and both CTAs (`finish` and `next`) take `variant="primaryInverse"`. `prev` stays `secondary` — `surfaceAlt` is 13.9:1 on the inverted surface and already reads.
 
 - [ ] **Step 10: Run the mobile suite, typecheck and lint**
 
@@ -1212,7 +1305,16 @@ textInverseMuted so it survives a palette change."
 pnpm typecheck && pnpm lint && pnpm test && pnpm build
 ```
 
-Expected: 9 of 9 tasks green, 0 lint warnings. The test count rises from 344 by roughly 40 — the web palette test, the web usage guard, and the mobile palette and typography specs — and no existing test changes.
+Expected: 9 of 9 tasks green. Lint reports exactly **one** warning — the
+pre-existing `react-hooks/exhaustive-deps` on `PantryRail.tsx:54`, which
+predates this branch and is not ours to fix. The test count rises from 344 by
+roughly 40 — the web palette test, the web usage guard, and the mobile palette
+and typography specs — and no existing test changes.
+
+Run `pnpm build` **before** starting the dev server in Step 2, never after:
+both write to `apps/web/.next`, and a production build under a running dev
+server corrupts its chunks and turns every route into a 500. If that happens,
+`rm -rf apps/web/.next` and restart the dev server.
 
 - [ ] **Step 2: Start the API and web servers**
 
@@ -1235,15 +1337,23 @@ curl -fsS http://localhost:3333/health
 - [ ] **Step 3: Sweep every route in both languages**
 
 ```bash
-for path in "" sign-in sign-up dashboard kitchen recipes plans shopping settings household capture; do
+for path in "" sign-in sign-up setup kitchen kitchen/capture plans recipes shopping settings household; do
   for lang in en ar; do
-    code=$(curl -s -o /dev/null -w '%{http_code}' -H "Accept-Language: $lang" "http://localhost:3100/$path")
-    printf '%s %-12s %s\n' "$lang" "${path:-/}" "$code"
+    code=$(curl -s -o /dev/null -w '%{http_code}' -b "kitchen_locale=$lang" "http://localhost:3100/$path")
+    printf '%s %-16s %s\n' "$lang" "${path:-/}" "$code"
   done
 done
 ```
 
-Expected: `200` for all 22 combinations. A `404` means a route name in this loop is wrong, not that the restyle broke — check against `apps/web/src/app` before investigating further.
+Expected: `200` for all 22 combinations. A `404` means a route name in this loop is wrong, not that the restyle broke — check against `apps/web/src/app` before investigating further. The eleven names above are the app's real routes, taken from `next build`'s own route table; note there is **no `/dashboard`** (the dashboard is `/`, from `app/(app)/page.tsx`) and capture is nested at `/kitchen/capture`.
+
+The locale is driven by the **`kitchen_locale` cookie**, read server-side in `lib/locale.server.ts` and applied to `<html lang dir>` in `app/layout.tsx`. It is *not* content-negotiated, so sweeping with `Accept-Language` silently renders English twice and proves nothing about Arabic. Confirm the header actually took effect rather than trusting the status code:
+
+```bash
+curl -s -b 'kitchen_locale=ar' http://localhost:3100/sign-in | grep -o '<html[^>]*>'
+```
+
+Expected: `lang="ar" dir="rtl"`. That attribute is what makes `:root:lang(ar)` fire and zero the tracking, so if it says `en` the Arabic half of this task has not been tested at all.
 
 - [ ] **Step 4: Check both themes by eye**
 
@@ -1266,3 +1376,32 @@ If steps 3 and 4 were clean there is nothing to commit and this task ends here.
 - **After editing `packages/i18n/src/*.ts`** run `pnpm --filter @kitchen/i18n build`, or downstream `t()` calls fail typecheck with a key-union error. No task here touches i18n, but the restyle sits next to it.
 - **Never pipe a long-running dev server into `head` or `tail`.** The pipe closes, the server spins on EPIPE at ~115% CPU and wedges its own event loop. Redirect to a file instead.
 - **macOS:** there is no `timeout` binary, and process termination must use `kill <PID>`.
+
+---
+
+## Follow-up left open on purpose
+
+**`--border` / `colors.border` is never asserted by either contrast guard, and
+it does not meet WCAG 1.4.11.** Measured 1.075–1.471:1 depending on the surface
+behind it.
+
+This is deliberately *not* fixed here, because it is not a regression: the old
+palette's `#E7DECF` measured 1.30:1 and the new `#e6e6e6` measures 1.25:1, so
+both fail equally and the restyle neither caused nor worsened it.
+
+It matters more than "a decorative border" suggests. Web `Input` and `Select`
+render `bg-background` inside cards that are also `bg-background`, so the 1px
+border is the **only** thing distinguishing the control from the card behind
+it. Under 3:1, that affordance is not reliably visible.
+
+The fix is two parts, and the second is the important one:
+
+1. Darken `--border`, or introduce a dedicated `--field-border`, to ≥3:1
+   against the fill it sits on. A single shared border token may not be able to
+   satisfy both "hairline divider" and "control affordance" — check before
+   assuming one value works.
+2. **Assert it in `app/palette.test.ts` and `theme/palette.spec.ts`.** The
+   guards already cover 51 web and 16 mobile pairs; this pair was simply never
+   among them, which is why a failing value sat unnoticed through an entire
+   palette replacement. Pinning the measurement matters even more than moving
+   it, because unmeasured is how it got here.

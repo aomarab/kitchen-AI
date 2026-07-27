@@ -1,48 +1,105 @@
 @import 'tailwindcss';
 
 :root {
+  --canvas: #f4ede4;
+  --canvas-lavender: #f9f0ff;
   --background: #ffffff;
-  --foreground: #121a16;
-  --muted: #f4f6f5;
-  --muted-foreground: #5d6b64;
-  --border: #e3e8e5;
-  --primary: #1f7a4d;
+  --foreground: #1d1d1d;
+  --muted: #f2f2f2;
+  --muted-foreground: #696969;
+  --border: #e6e6e6;
+  --primary: #4a154b;
+  --primary-press: #611f69;
   --primary-foreground: #ffffff;
-  --accent: #e8a33d;
-  --danger: #c0392b;
+  --primary-soft: #ede8ed;
+  --primary-text: #4a154b;
+  --link: #1264a3;
+  --success: #007a5a;
+  --success-soft: #ebf4f2;
+  --warning: #8a5300;
+  --warning-soft: #f3eee6;
+  --danger: #bf3a10;
+  --danger-soft: #faefec;
+  --danger-foreground: #ffffff;
+
+  /* Latin letter-spacing. Arabic is cursive — letter-spacing forces gaps into
+     the joins — so :root:lang(ar) resets each of these to zero and every
+     `tracking-*` utility follows automatically, with no per-element rules.
+     Only the tiers the app actually renders are defined: web tops out at 24px,
+     so there is no display tier, and there is no caption component. */
+  --track-heading-lg: -0.096px;
+  --track-heading-sm: -0.02px;
+  --track-button: 0.2px;
+
+  line-height: 1.55;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b0f0d;
-    --foreground: #e9efeb;
-    --muted: #161c19;
-    --muted-foreground: #9aa8a1;
-    --border: #232b27;
-    --primary: #3fa96f;
-    --primary-foreground: #06120c;
-    --accent: #e8a33d;
-    --danger: #e05c4c;
+    --canvas: #140e15;
+    /* Same as --canvas on purpose: a lifted plum canvas puts the #221a24 card
+       at 1.05:1 and the card disappears. Lavender is a light-mode device. */
+    --canvas-lavender: #140e15;
+    --background: #221a24;
+    --foreground: #f0e9f1;
+    --muted: #2c2230;
+    --muted-foreground: #a99dab;
+    --border: #3a2d3d;
+    --primary: #8a4d90;
+    --primary-press: #7a4380;
+    --primary-foreground: #f0e9f1;
+    --primary-soft: #403343;
+    /* --primary as *text* on a card is 2.86:1, so aubergine text lifts here. */
+    --primary-text: #c9a3ce;
+    --link: #7cb3e8;
+    --success: #3fbd95;
+    --success-soft: #273738;
+    --warning: #e0a94a;
+    --warning-soft: #44342b;
+    --danger: #ef7a63;
+    --danger-soft: #472b2f;
+    /* White on this salmon is 2.31:1, so destructive labels go dark. */
+    --danger-foreground: #221a24;
   }
 }
 
 @theme inline {
+  --color-canvas: var(--canvas);
+  --color-canvas-lavender: var(--canvas-lavender);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-primary: var(--primary);
+  --color-primary-press: var(--primary-press);
   --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-text: var(--primary-text);
+  --color-link: var(--link);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-foreground: var(--danger-foreground);
+
+  --tracking-heading-lg: var(--track-heading-lg);
+  --tracking-heading-sm: var(--track-heading-sm);
+  --tracking-button: var(--track-button);
+
   --font-sans: var(--font-latin), var(--font-arabic), system-ui, sans-serif;
 }
 
-/* Arabic needs more leading than Latin at the same size. */
+/* Arabic needs more leading than Latin at the same size, and no tracking.
+   `:root:lang(ar)` outranks the `:root` defaults above on specificity. */
 :root:lang(ar) {
   --font-sans: var(--font-arabic), system-ui, sans-serif;
   line-height: 1.85;
+  --track-heading-lg: 0;
+  --track-heading-sm: 0;
+  --track-button: 0;
 }
 
 body {
@@ -53,3 +110,4 @@ body {
 [dir='rtl'] .dir-flip {
   transform: scaleX(-1);
 }
+

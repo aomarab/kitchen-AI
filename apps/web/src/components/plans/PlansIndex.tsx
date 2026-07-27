@@ -43,7 +43,7 @@ export function PlansIndex() {
         <div className="grid gap-4 md:grid-cols-2">
           {plansQuery.data!.map((plan) => (
             <Link key={plan.id} href={`/plans/${plan.id}`} className="block">
-              <Card className="h-full transition hover:border-primary/50">
+              <Card className="h-full transition hover:border-primary-text">
                 <CardHeader>
                   <CardTitle className="text-base">{t(scopeKey(plan.scope))}</CardTitle>
                   <Badge tone={plan.status === 'ready' ? 'success' : plan.status === 'failed' ? 'danger' : 'warning'}>

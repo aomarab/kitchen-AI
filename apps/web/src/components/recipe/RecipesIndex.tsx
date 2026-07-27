@@ -31,7 +31,7 @@ export function RecipesIndex() {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {recipes.map((recipe) => (
         <Link key={recipe.id} href={`/recipes/${recipe.id}`} className="block">
-          <Card className="flex h-full flex-col gap-3 p-3 transition hover:border-primary/50">
+          <Card className="flex h-full flex-col gap-3 p-3 transition hover:border-primary-text">
             {recipe.heroImageUrl ? (
               <AppImage src={recipe.heroImageUrl} alt={recipe.title} className="aspect-video w-full rounded-xl" />
             ) : null}

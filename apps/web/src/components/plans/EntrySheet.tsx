@@ -44,7 +44,7 @@ export function EntrySheet({
         </div>
 
         <div>
-          <h3 className="text-xl font-semibold">{entry.recipe.title}</h3>
+          <h3 className="text-xl font-semibold tracking-heading-sm">{entry.recipe.title}</h3>
           <p className="text-sm text-muted-foreground">
             <LocalizedDate value={entry.date} /> ·{' '}
             {t('recipe.servings', { count: formatNumber(locale, entry.servings) })}

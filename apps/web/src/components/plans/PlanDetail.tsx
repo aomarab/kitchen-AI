@@ -78,7 +78,7 @@ function ViewTab({
       onClick={() => onSelect(view)}
       className={cn(
         'rounded-full border px-4 py-1.5 text-sm font-medium transition',
-        active ? 'border-primary bg-primary/12 text-primary' : 'border-border text-muted-foreground hover:bg-muted',
+        active ? 'border-primary-text bg-primary-soft text-primary-text' : 'border-border text-muted-foreground hover:bg-muted',
       )}
     >
       {label}
@@ -92,7 +92,7 @@ export function EntryCard({ entry, onOpen }: { entry: MealPlanEntry; onOpen: (e:
     <button
       type="button"
       onClick={() => onOpen(entry)}
-      className="flex w-full items-center gap-3 rounded-xl border border-border p-2 text-start transition hover:border-primary/50 hover:bg-muted"
+      className="flex w-full items-center gap-3 rounded-xl border border-border p-2 text-start transition hover:border-primary-text hover:bg-muted"
     >
       {entry.recipe.heroImageUrl ? (
         <AppImage src={entry.recipe.heroImageUrl} alt={entry.recipe.title} className="h-14 w-14 shrink-0 rounded-lg" sizes="56px" />
@@ -217,7 +217,7 @@ function MonthView({
             onClick={() => has && onPickDay(iso)}
             className={cn(
               'aspect-square rounded-lg border p-1 text-sm transition',
-              has ? 'border-primary/40 bg-primary/10 font-medium text-primary hover:bg-primary/20' : 'border-border text-muted-foreground',
+              has ? 'border-primary-text bg-primary-soft font-medium text-primary-text' : 'border-border text-muted-foreground',
             )}
           >
             {formatNumber(locale, dayNum)}
