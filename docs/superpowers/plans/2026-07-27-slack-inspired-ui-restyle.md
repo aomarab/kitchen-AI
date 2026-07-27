@@ -14,7 +14,7 @@
 
 - **This is a restyle, not a redesign.** No layout changes, no new screens, no navigation restructure, no component API changes, no mobile dark theme.
 - **No test may be modified to make it pass.** No test in either app asserts a class name and there are no snapshots. The 29 web and 68 mobile tests must stay green untouched. If one breaks, it found a real regression.
-- **Every colour lives in a token file.** No hex literal may be introduced into any `.tsx`/`.ts` outside `apps/web/src/app/globals.css` and `apps/mobile/src/theme/index.ts`. The one pre-existing exception is the Google logo SVG in `OAuthButtons`, which is a brand asset and stays.
+- **Every colour lives in a token file.** No hex literal may be introduced into any `.tsx`/`.ts` outside `apps/web/src/app/globals.css` and `apps/mobile/src/theme/index.ts`. Two exceptions, both enforced by name in Task 4's guard: the Google logo SVG in `OAuthButtons` is a third-party brand asset, and `app/layout.tsx` sets Next's `themeColor`, which is serialised into a `<meta>` tag and cannot read a CSS variable.
 - **`text-primary` is reserved for fills and focus rings.** Aubergine that renders text or an icon uses `text-primary-text`. `--primary` `#8a4d90` measures 2.00–3.21:1 as text in dark mode.
 - **Tinted backgrounds are solid `*-soft` tokens, never opacity utilities.** Tailwind v4 compiles `/8` to `color-mix(in oklab, … 8%, transparent)`, so an opacity tint is not the sRGB blend contrast maths assumes.
 - **Latin typographic devices stay on Latin.** Tracking is delivered through `--track-*` variables that `:root:lang(ar)` sets to `0`. Never hard-code a `letter-spacing` value on an element.
