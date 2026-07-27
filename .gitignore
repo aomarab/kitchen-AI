@@ -20,3 +20,6 @@ build/
 .DS_Store
 coverage/
 *.log
+
+# Brainstorming visual companion artifacts
+.superpowers/
