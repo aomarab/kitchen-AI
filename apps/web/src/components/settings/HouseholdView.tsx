@@ -20,7 +20,7 @@ export function HouseholdView() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>{household.name}</CardTitle>
+          <CardTitle className="tracking-normal">{household.name}</CardTitle>
         </CardHeader>
         <div className="flex flex-col gap-1">
           <p className="text-sm text-muted-foreground">{t('household.shareInvite')}</p>
