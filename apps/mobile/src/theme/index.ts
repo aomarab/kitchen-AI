@@ -18,6 +18,11 @@ export const colors = {
   primary: '#4A154B',
   primaryPressed: '#611F69',
   primarySoft: '#EDE8ED',
+  // Cook mode inverts the screen, and #4A154B on #1D1D1D is 1.20:1 — the CTA
+  // fill vanishes and the ghost label is unreadable. This is the same lifted
+  // aubergine the web dark theme uses for --primary-text, and it measures
+  // 7.72:1 on surfaceInverse both as text and as a fill carrying a dark label.
+  primaryInverse: '#C9A3CE',
   accent: '#1264A3',
   accentSoft: '#E3EDF6',
   warn: '#8A5300',

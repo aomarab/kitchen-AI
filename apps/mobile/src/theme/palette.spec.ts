@@ -48,4 +48,16 @@ describe('mobile palette', () => {
     expect(contrast(colors.textInverse, colors.surfaceInverse), 'primary').toBeGreaterThanOrEqual(AA_TEXT);
     expect(contrast(colors.textInverseMuted, colors.surfaceInverse), 'muted').toBeGreaterThanOrEqual(AA_TEXT);
   });
+
+  /**
+   * Cook mode is the one screen that inverts, and it hosts buttons. The
+   * light-mode `primary` is 1.20:1 on `surfaceInverse` — the CTA fill
+   * disappears and the ghost label is unreadable. These three pairs are what
+   * the `primaryInverse` / `ghostInverse` variants must satisfy.
+   */
+  it('cook mode buttons separate from the inverted surface', () => {
+    expect(contrast(colors.primaryInverse, colors.surfaceInverse), 'ghostInverse label').toBeGreaterThanOrEqual(AA_TEXT);
+    expect(contrast(colors.primaryInverse, colors.surfaceInverse), 'primaryInverse fill').toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(contrast(colors.text, colors.primaryInverse), 'primaryInverse label').toBeGreaterThanOrEqual(AA_TEXT);
+  });
 });
