@@ -465,6 +465,18 @@ describe('mobile palette', () => {
     expect(contrast(colors.textInverse, colors.surfaceInverse), 'primary').toBeGreaterThanOrEqual(AA_TEXT);
     expect(contrast(colors.textInverseMuted, colors.surfaceInverse), 'muted').toBeGreaterThanOrEqual(AA_TEXT);
   });
+
+  /**
+   * Cook mode is the one screen that inverts, and it hosts buttons. The
+   * light-mode `primary` is 1.20:1 on `surfaceInverse` — the CTA fill
+   * disappears and the ghost label is unreadable. These three pairs are what
+   * the `primaryInverse` / `ghostInverse` variants must satisfy.
+   */
+  it('cook mode buttons separate from the inverted surface', () => {
+    expect(contrast(colors.primaryInverse, colors.surfaceInverse), 'ghostInverse label').toBeGreaterThanOrEqual(AA_TEXT);
+    expect(contrast(colors.primaryInverse, colors.surfaceInverse), 'primaryInverse fill').toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(contrast(colors.text, colors.primaryInverse), 'primaryInverse label').toBeGreaterThanOrEqual(AA_TEXT);
+  });
 });
 ```
 
@@ -502,6 +514,11 @@ export const colors = {
   primary: '#4A154B',
   primaryPressed: '#611F69',
   primarySoft: '#EDE8ED',
+  // Cook mode inverts the screen, and #4A154B on #1D1D1D is 1.20:1 — the CTA
+  // fill vanishes and the ghost label is unreadable. This is the same lifted
+  // aubergine the web dark theme uses for --primary-text, and it measures
+  // 7.72:1 on surfaceInverse both as text and as a fill carrying a dark label.
+  primaryInverse: '#C9A3CE',
   accent: '#1264A3',
   accentSoft: '#E3EDF6',
   warn: '#8A5300',
@@ -965,7 +982,7 @@ is cursive: letter-spacing forces gaps into the letter joins."
 - Modify: `apps/mobile/src/app/recipe/[id]/cook.tsx:27,38,41,64,69`
 
 **Interfaces:**
-- Consumes: `colors.surfaceInverse`, `colors.textInverseMuted`, `colors.primaryPressed` from Task 2.
+- Consumes: `colors.surfaceInverse`, `colors.textInverseMuted`, `colors.primaryPressed`, `colors.primaryInverse` from Task 2.
 - Produces: `radius.xs = 4`; `TextStyleToken` gains `letterSpacing: number`; `SCALE` gains a `button` variant, so `TypographyVariant` becomes `'display' | 'title' | 'heading' | 'body' | 'bodyStrong' | 'button' | 'label' | 'caption'`. `typography(locale)` keeps its signature `(locale: Locale) => Record<TypographyVariant, TextStyleToken>`.
 
 - [ ] **Step 1: Add the 4px radius**
@@ -1139,6 +1156,45 @@ and change the label to the new 700-weight variant:
 
 `primaryPressed` is defined but referenced nowhere today; this makes it live. Variants without a pressed colour keep the existing opacity feedback.
 
+- [ ] **Step 7b: Give cook mode buttons that survive the inversion**
+
+Still in `apps/mobile/src/components/Button.tsx`. Cook mode is the only screen that inverts, and `BG`/`FG` are keyed off a light-mode palette: `primary` `#4A154B` on `surfaceInverse` `#1D1D1D` is **1.20:1**, so the CTA fill vanishes and the ghost "exit" label is unreadable. Extend the variant union rather than adding a prop — every existing call site keeps compiling and the component's API is unchanged:
+
+```tsx
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'primaryInverse' | 'ghostInverse';
+```
+
+Add the two entries to each map:
+
+```tsx
+const BG: Record<ButtonVariant, string> = {
+  primary: colors.primary,
+  secondary: colors.surfaceAlt,
+  ghost: 'transparent',
+  danger: colors.danger,
+  primaryInverse: colors.primaryInverse,
+  ghostInverse: 'transparent',
+};
+
+const FG: Record<ButtonVariant, string> = {
+  primary: colors.textInverse,
+  secondary: colors.text,
+  ghost: colors.primary,
+  danger: colors.textInverse,
+  // The lifted aubergine is light, so its label is dark: 7.72:1.
+  primaryInverse: colors.text,
+  ghostInverse: colors.primaryInverse,
+};
+```
+
+`ghostInverse` must also be borderless, so widen the ghost check in the `style` callback:
+
+```tsx
+          borderWidth: variant === 'ghost' || variant === 'ghostInverse' ? 0 : 1,
+```
+
+`Record<ButtonVariant, string>` is exhaustive, so typecheck fails if either map misses a variant. That is the gate for this step.
+
 - [ ] **Step 8: Sharpen the mobile field**
 
 `apps/mobile/src/components/Field.tsx:37`:
@@ -1172,6 +1228,19 @@ Line 69:
 ```tsx
         <AppText variant="caption" style={{ color: colors.textInverseMuted }} center>
 ```
+
+Lines 47–52 and 74–94 — the buttons. Swap each to its inverted variant so it survives the dark surface. The exit button:
+
+```tsx
+          <Button
+            title={t('mobile.recipe.exitCookMode')}
+            variant="ghostInverse"
+            fullWidth={false}
+            onPress={() => router.back()}
+          />
+```
+
+and both CTAs (`finish` and `next`) take `variant="primaryInverse"`. `prev` stays `secondary` — `surfaceAlt` is 13.9:1 on the inverted surface and already reads.
 
 - [ ] **Step 10: Run the mobile suite, typecheck and lint**
 
