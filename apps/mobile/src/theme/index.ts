@@ -49,6 +49,7 @@ export const spacing = {
 } as const;
 
 export const radius = {
+  xs: 4,
   sm: 8,
   md: 12,
   lg: 18,
@@ -65,25 +66,33 @@ export interface TextStyleToken {
   fontSize: number;
   lineHeight: number;
   fontWeight: '400' | '500' | '600' | '700';
+  letterSpacing: number;
 }
 
 const LATIN_LINE_HEIGHT = 1.35;
 const ARABIC_LINE_HEIGHT = 1.7;
 
-const SCALE: Record<string, { fontSize: number; fontWeight: TextStyleToken['fontWeight'] }> = {
-  display: { fontSize: 28, fontWeight: '700' },
-  title: { fontSize: 22, fontWeight: '700' },
-  heading: { fontSize: 18, fontWeight: '600' },
-  body: { fontSize: 16, fontWeight: '400' },
-  bodyStrong: { fontSize: 16, fontWeight: '600' },
-  label: { fontSize: 14, fontWeight: '500' },
-  caption: { fontSize: 12, fontWeight: '500' },
-};
+/**
+ * `letterSpacing` is a Latin-only device and is zeroed for Arabic below, the
+ * same way line-height is switched. Arabic is cursive: spacing the letters
+ * forces gaps into the joins.
+ */
+const SCALE = {
+  display: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.22 },
+  title: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.09 },
+  heading: { fontSize: 18, fontWeight: '600' as const, letterSpacing: -0.02 },
+  body: { fontSize: 16, fontWeight: '400' as const, letterSpacing: 0 },
+  bodyStrong: { fontSize: 16, fontWeight: '600' as const, letterSpacing: 0 },
+  button: { fontSize: 16, fontWeight: '700' as const, letterSpacing: 0.2 },
+  label: { fontSize: 14, fontWeight: '500' as const, letterSpacing: 0.1 },
+  caption: { fontSize: 12, fontWeight: '500' as const, letterSpacing: 0.1 },
+} satisfies Record<string, { fontSize: number; fontWeight: TextStyleToken['fontWeight']; letterSpacing: number }>;
 
 export type TypographyVariant = keyof typeof SCALE;
 
 export function typography(locale: Locale): Record<TypographyVariant, TextStyleToken> {
-  const factor = locale === 'ar' ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;
+  const isArabic = locale === 'ar';
+  const factor = isArabic ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;
   const out = {} as Record<TypographyVariant, TextStyleToken>;
   for (const key of Object.keys(SCALE) as TypographyVariant[]) {
     const entry = SCALE[key]!;
@@ -91,6 +100,7 @@ export function typography(locale: Locale): Record<TypographyVariant, TextStyleT
       fontSize: entry.fontSize,
       fontWeight: entry.fontWeight,
       lineHeight: Math.round(entry.fontSize * factor),
+      letterSpacing: isArabic ? 0 : entry.letterSpacing,
     };
   }
   return out;

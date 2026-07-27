@@ -34,7 +34,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
             minHeight: 48,
             borderWidth: 1,
             borderColor: error ? colors.danger : colors.border,
-            borderRadius: radius.md,
+            borderRadius: radius.xs,
             paddingHorizontal: spacing.md,
             backgroundColor: colors.surface,
             color: colors.text,

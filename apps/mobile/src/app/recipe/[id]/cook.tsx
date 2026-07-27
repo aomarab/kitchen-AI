@@ -24,7 +24,7 @@ export default function CookMode() {
 
   if (recipe.isLoading || !recipe.data) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.text }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.surfaceInverse }}>
         <LoadingState />
       </SafeAreaView>
     );
@@ -35,10 +35,10 @@ export default function CookMode() {
   const isLast = step === steps.length - 1;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.text }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surfaceInverse }}>
       <View style={{ flex: 1, padding: spacing.xl, gap: spacing.lg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <AppText variant="label" style={{ color: colors.surfaceAlt }}>
+          <AppText variant="label" style={{ color: colors.textInverseMuted }}>
             {t('mobile.recipe.stepProgress', {
               current: formatMinutes(locale, step + 1, prefs),
               total: formatMinutes(locale, steps.length, prefs),
@@ -46,7 +46,7 @@ export default function CookMode() {
           </AppText>
           <Button
             title={t('mobile.recipe.exitCookMode')}
-            variant="ghost"
+            variant="ghostInverse"
             fullWidth={false}
             onPress={() => router.back()}
           />
@@ -61,12 +61,12 @@ export default function CookMode() {
               })}
             />
           ) : null}
-          <AppText variant="display" style={{ color: colors.surface, fontSize: 30, lineHeight: 44 }}>
+          <AppText variant="display" style={{ color: colors.textInverse, fontSize: 30, lineHeight: 44 }}>
             {current.text}
           </AppText>
         </View>
 
-        <AppText variant="caption" style={{ color: colors.surfaceAlt }} center>
+        <AppText variant="caption" style={{ color: colors.textInverseMuted }} center>
           {t('mobile.recipe.cookModeHint')}
         </AppText>
 
@@ -82,12 +82,14 @@ export default function CookMode() {
             <Button
               title={t('mobile.recipe.finish')}
               icon="check"
+              variant="primaryInverse"
               onPress={() => router.back()}
               style={{ flex: 1 }}
             />
           ) : (
             <Button
               title={t('mobile.recipe.next')}
+              variant="primaryInverse"
               onPress={() => setStep((s) => Math.min(steps.length - 1, s + 1))}
               style={{ flex: 1 }}
             />
