@@ -116,7 +116,7 @@ export function ReviewList({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-semibold">{t('capture.reviewTitle')}</h2>
+          <h2 className="text-lg font-semibold tracking-heading-sm">{t('capture.reviewTitle')}</h2>
           <p className="text-sm text-muted-foreground">{t('capture.reviewHint')}</p>
         </div>
         <Badge tone={flaggedCount > 0 ? 'warning' : 'success'}>

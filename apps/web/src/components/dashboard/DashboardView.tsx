@@ -40,7 +40,7 @@ export function DashboardView() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h2 className="text-2xl font-semibold">{t('web.dashboard.greeting')}</h2>
+        <h2 className="text-2xl font-semibold tracking-heading-lg">{t('web.dashboard.greeting')}</h2>
         <p className="text-muted-foreground">{t('web.dashboard.subtitle')}</p>
         <p className="mt-1 text-sm text-muted-foreground">
           <LocalizedDate value={new Date()} options={{ weekday: 'long', day: 'numeric', month: 'long' }} />
@@ -69,7 +69,7 @@ export function DashboardView() {
                     {tonight.entry.fullyCovered ? t('plans.fullyCovered') : t('recipe.notInStock')}
                   </Badge>
                 </div>
-                <h3 className="text-lg font-semibold">{tonight.entry.recipe.title}</h3>
+                <h3 className="text-lg font-semibold tracking-heading-sm">{tonight.entry.recipe.title}</h3>
                 <p className="text-sm text-muted-foreground">
                   {t('recipe.servings', { count: formatNumber(locale, tonight.entry.servings) })} ·{' '}
                   {t('recipe.cookTime', { minutes: formatNumber(locale, tonight.entry.recipe.cookMinutes) })}

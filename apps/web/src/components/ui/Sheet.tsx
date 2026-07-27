@@ -53,7 +53,7 @@ export function Sheet({
         )}
       >
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="text-lg font-semibold tracking-heading-sm">{title}</h2>
           <IconButton label={t('common.close')} onClick={onClose}>
             <CloseIcon />
           </IconButton>

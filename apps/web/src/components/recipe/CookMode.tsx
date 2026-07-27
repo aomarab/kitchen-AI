@@ -20,7 +20,7 @@ export function CookMode({ recipe, onExit }: { recipe: Recipe; onExit: () => voi
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background p-6">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">{recipe.title}</h2>
+        <h2 className="text-lg font-semibold tracking-heading-sm">{recipe.title}</h2>
         <IconButton label={t('web.recipe.exitCookMode')} onClick={onExit}>
           <CloseIcon />
         </IconButton>

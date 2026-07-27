@@ -29,7 +29,7 @@ export function SignUpForm() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t('web.auth.signUpTitle')}</h1>
+        <h1 className="text-2xl font-semibold tracking-heading-lg">{t('web.auth.signUpTitle')}</h1>
         <p className="text-muted-foreground">{t('web.auth.signUpSubtitle')}</p>
       </div>
 

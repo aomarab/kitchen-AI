@@ -25,7 +25,7 @@ export function HouseholdSetup() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t('web.auth.householdTitle')}</h1>
+        <h1 className="text-2xl font-semibold tracking-heading-lg">{t('web.auth.householdTitle')}</h1>
         <p className="text-muted-foreground">{t('web.auth.householdSubtitle')}</p>
       </div>
 

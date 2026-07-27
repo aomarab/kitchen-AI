@@ -22,7 +22,7 @@ export function PlanDetailContainer({ id }: { id: string }) {
   return (
     <div className="flex flex-col gap-4">
       <header>
-        <h2 className="text-xl font-semibold">{t(scopeKey(plan.scope))}</h2>
+        <h2 className="text-xl font-semibold tracking-heading-sm">{t(scopeKey(plan.scope))}</h2>
         <p className="text-sm text-muted-foreground">
           <LocalizedDate value={plan.startsOn} /> — <LocalizedDate value={plan.endsOn} />
         </p>

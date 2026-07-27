@@ -49,7 +49,7 @@ export function RecipeView({ id }: { id: string }) {
           <Badge>{t('recipe.cookTime', { minutes: formatNumber(locale, recipe.cookMinutes) })}</Badge>
           <Badge>{t('recipe.servings', { count: formatNumber(locale, recipe.servings) })}</Badge>
         </div>
-        <h2 className="text-2xl font-semibold">{recipe.title}</h2>
+        <h2 className="text-2xl font-semibold tracking-heading-lg">{recipe.title}</h2>
         <p className="text-muted-foreground">{recipe.description}</p>
         <div className="flex flex-wrap gap-2 pt-2">
           <Button onClick={() => setCookMode(true)}>
