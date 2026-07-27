@@ -666,7 +666,7 @@ Expected: PASS. `states.test.tsx`, `AppShell.test.tsx`, `ReviewList.test.tsx`, `
 pnpm --filter @kitchen/web typecheck && pnpm --filter @kitchen/web lint
 ```
 
-Expected: PASS, 0 warnings.
+Expected: PASS. Lint reports exactly one pre-existing warning — `shell/PantryRail.tsx:54`, a `useMemo` missing-dependency unrelated to the restyle. It is present at this task's base commit and is not this task's to fix; the gate is that no NEW warning appears.
 
 - [ ] **Step 8: Commit**
 
