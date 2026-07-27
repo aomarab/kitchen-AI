@@ -41,6 +41,7 @@ function templateToRecipe(t: RecipeTemplate, locale: Locale, servings: number): 
     servings,
     ingredients: t.ingredients.map((i) => ({
       name: i.name,
+      nameEn: i.name,
       quantity: i.quantity,
       unit: i.unit,
       optional: i.optional,

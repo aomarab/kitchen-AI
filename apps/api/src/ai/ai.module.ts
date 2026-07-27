@@ -6,6 +6,7 @@ import { StorageModule } from '../storage/storage.module.js';
 import {
   AI_PROVIDER,
   CATALOG_PORT,
+  EMBEDDINGS_PORT,
   JOB_STORE,
   OPEN_FOOD_FACTS_CLIENT,
   PANTRY_PORT,
@@ -23,6 +24,8 @@ import { BudgetService } from './usage/budget.service.js';
 import { DrizzleUsageRepository } from './usage/usage.repository.js';
 import { AiGateway } from './ai-gateway.service.js';
 import { DrizzleIngredientResolver } from './catalog/drizzle-ingredient-resolver.js';
+import { MockEmbeddings } from './catalog/mock-embeddings.js';
+import { OpenAiEmbeddings } from './catalog/openai-embeddings.js';
 import { DrizzlePantryRepository } from './planner/drizzle-pantry.repository.js';
 import { RedisResponseCache } from './cache/response-cache.js';
 import { MockYoutubeClient } from './clients/mock-youtube.client.js';
@@ -122,6 +125,12 @@ function redisConnection(url: string) {
           : new HttpOpenFoodFactsClient(env.OPEN_FOOD_FACTS_URL),
     },
     { provide: RESPONSE_CACHE, useClass: RedisResponseCache },
+    {
+      provide: EMBEDDINGS_PORT,
+      inject: [ENV],
+      useFactory: (env: Env) =>
+        env.AI_MOCK ? new MockEmbeddings() : new OpenAiEmbeddings(env.OPENAI_API_KEY),
+    },
     { provide: CATALOG_PORT, useClass: DrizzleIngredientResolver },
     { provide: USAGE_REPOSITORY, useClass: DrizzleUsageRepository },
     { provide: PANTRY_PORT, useClass: DrizzlePantryRepository },

@@ -61,7 +61,7 @@ export async function seedHousehold(
  */
 export async function cleanup(
   db: TestDatabase,
-  ids: { households?: string[]; users?: string[] },
+  ids: { households?: string[]; users?: string[]; ingredients?: string[] },
 ): Promise<void> {
   if (ids.households?.length) {
     await db.delete(schema.households).where(inArray(schema.households.id, ids.households));
@@ -69,4 +69,34 @@ export async function cleanup(
   if (ids.users?.length) {
     await db.delete(schema.users).where(inArray(schema.users.id, ids.users));
   }
+  if (ids.ingredients?.length) {
+    await db.delete(schema.ingredients).where(inArray(schema.ingredients.id, ids.ingredients));
+  }
+}
+
+/**
+ * Creates ingredients belonging to this test run.
+ *
+ * Borrowing rows out of the global catalog (`select().from(ingredients).limit(n)`)
+ * looks harmless and is not: the catalog is shared, other suites create rows in
+ * it, and the ids are random UUIDs — so any ordering over it reshuffles the
+ * moment something else writes. Two fixtures quietly becoming the same
+ * ingredient then makes `bulkCreate` merge rows a test assumed were separate.
+ */
+export async function seedIngredients(db: TestDatabase, count: number): Promise<string[]> {
+  const tag = randomUUID().slice(0, 8);
+  const rows = await db
+    .insert(schema.ingredients)
+    .values(
+      Array.from({ length: count }, (_, i) => ({
+        canonicalNameEn: `Test ingredient ${tag} ${i}`,
+        canonicalNameAr: `مكون اختبار ${tag} ${i}`,
+        aliases: [] as string[],
+        category: 'other' as const,
+        defaultUnit: 'piece' as const,
+        isStaple: false,
+      })),
+    )
+    .returning({ id: schema.ingredients.id });
+  return rows.map((r) => r.id);
 }

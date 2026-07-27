@@ -5,6 +5,11 @@ export type ResolveStrategy = 'exact' | 'alias' | 'embedding' | 'created' | 'unr
 
 export interface ResolveNameInput {
   name: string;
+  /**
+   * Canonical English name when the caller knows one. Tried after `name`
+   * fails, and used for the English column when a row must be created.
+   */
+  nameEn?: string;
   /** Hints used only when a new catalog row must be created. */
   category?: IngredientCategory;
   defaultUnit?: Unit;
@@ -29,6 +34,12 @@ export interface IngredientResolverPort {
   findByIds(ids: string[]): Promise<Map<string, CatalogIngredientRef>>;
   /** A sample of catalog names to supply as candidates in resolution prompts. */
   candidateNames(limit: number): Promise<string[]>;
+  /**
+   * Catalog names ranked by embedding proximity to `texts`, best first. Falls
+   * back to `candidateNames` when embeddings are unavailable, so callers never
+   * need to branch.
+   */
+  candidateNamesFor(texts: string[], limit: number): Promise<string[]>;
   /** Cache extra names/barcodes onto an existing catalog row (spec §5.2). */
   addAliases(ingredientId: string, aliases: string[]): Promise<void>;
 }

@@ -39,6 +39,7 @@ function build(extractionLines: string[], mapping: ReceiptMapping) {
 
   const catalog = {
     candidateNames: async () => ['Milk', 'Rice', 'Chicken'],
+    candidateNamesFor: async () => ['Milk', 'Rice', 'Chicken'],
     resolve: async (inputs: { name: string }[]) =>
       inputs.map((input) => {
         const hit = CATALOG[input.name.toLowerCase()];

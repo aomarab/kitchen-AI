@@ -182,6 +182,9 @@ function buildRecipe(
     servings: ctx.servings,
     ingredients: chosen.map((c) => ({
       name: ar ? c.line.nameAr : c.line.nameEn,
+      // Always Latin script, exactly as the real prompt demands — otherwise the
+      // mock cannot exercise the resolver's English fallback at all.
+      nameEn: c.line.nameEn,
       quantity: c.quantity,
       unit: c.unit,
       optional: false,

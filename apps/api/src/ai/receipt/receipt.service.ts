@@ -74,7 +74,13 @@ export class ReceiptService {
       throw new AppError('AI_NO_RESULT', 'errors.AI_NO_RESULT');
     }
 
-    const candidateNames = await this.catalog.candidateNames(200);
+    // Ranked against the actual receipt lines rather than an arbitrary slice of
+    // the catalog: with 500+ ingredients, an unordered 200 routinely omitted the
+    // very row the line should map to.
+    const candidateNames = await this.catalog.candidateNamesFor(
+      foodLines.map((l) => l.nameGuess),
+      120,
+    );
     const mapping = await this.gateway.execute<ReceiptMapping>({
       householdId,
       operation: 'receipt.map',

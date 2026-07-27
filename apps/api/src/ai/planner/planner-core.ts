@@ -22,7 +22,12 @@ export type StageBGenerate = (params: {
 }) => Promise<GeneratedPlan>;
 
 /** Resolve recipe ingredient names to catalog rows. */
-export type ResolveNames = (names: string[]) => Promise<ResolvedName[]>;
+export interface ResolveNameRequest {
+  name: string;
+  nameEn?: string;
+}
+
+export type ResolveNames = (names: ResolveNameRequest[]) => Promise<ResolvedName[]>;
 
 export interface PlanCoreEntry {
   date: string;
@@ -71,11 +76,22 @@ async function resolvePlan(
   plan: GeneratedPlan,
   resolve: ResolveNames,
 ): Promise<Map<string, ResolvedName>> {
-  const names = new Set<string>();
+  // Keyed by the locale-facing name, which is what `toResolvedRecipe` looks up.
+  // The English name rides along so the resolver can fall back to it rather
+  // than creating a duplicate catalog row for an Arabic spelling.
+  const names = new Map<string, ResolveNameRequest>();
   for (const entry of plan.entries) {
-    for (const ing of entry.recipe.ingredients) names.add(ing.name);
+    for (const ing of entry.recipe.ingredients) {
+      const existing = names.get(normalize(ing.name));
+      const nameEn = ing.nameEn ?? undefined;
+      if (existing) {
+        existing.nameEn ??= nameEn;
+      } else {
+        names.set(normalize(ing.name), { name: ing.name, nameEn });
+      }
+    }
   }
-  const resolved = await resolve([...names]);
+  const resolved = await resolve([...names.values()]);
   const map = new Map<string, ResolvedName>();
   for (const r of resolved) map.set(normalize(r.rawName), r);
   return map;

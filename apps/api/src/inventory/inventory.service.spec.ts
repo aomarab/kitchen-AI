@@ -4,11 +4,12 @@ import type { InventoryEventInput, InventoryItemInput } from '@kitchen/contracts
 import { AppError } from '../common/errors.js';
 import { CatalogService } from '../catalog/catalog.service.js';
 import { eq } from 'drizzle-orm';
-import { ingredients, inventoryEvents, storageLocations } from '../db/schema.js';
+import { inventoryEvents, storageLocations } from '../db/schema.js';
 import {
   createTestContext,
   seedUser,
   seedHousehold,
+  seedIngredients,
   cleanup,
   type TestContext,
 } from '../testing/harness.js';
@@ -42,6 +43,7 @@ describe('InventoryService (live DB)', () => {
   let ctx: TestContext;
   let service: InventoryService;
   let userId: string;
+  let seededIngredients: string[] = [];
   let hhA: string;
   let hhB: string;
   let locA: string;
@@ -65,17 +67,23 @@ describe('InventoryService (live DB)', () => {
       .returning({ id: storageLocations.id });
     locA = l1!.id;
 
-    const rows = await ctx.db.select({ id: ingredients.id }).from(ingredients).limit(6);
-    ingA = rows[0]!.id;
-    ingB = rows[1]!.id;
-    ingC = rows[2]!.id;
-    ingD = rows[3]!.id;
-    ingE = rows[4]!.id;
-    ingF = rows[5]!.id;
+    // Owned by this run. These used to be borrowed from the global catalog with
+    // an unordered `limit(6)`, which meant the fixtures changed identity
+    // whenever anything else wrote to `ingredients` — a parallel suite creating
+    // a row, or an embedding backfill rewriting the heap, was enough to make
+    // two of them the same ingredient and turn bulkCreate into a merge.
+    seededIngredients = await seedIngredients(ctx.db, 6);
+    [ingA, ingB, ingC, ingD, ingE, ingF] = seededIngredients as [
+      string, string, string, string, string, string,
+    ];
   });
 
   afterAll(async () => {
-    await cleanup(ctx.db, { households: [hhA, hhB], users: [userId] });
+    await cleanup(ctx.db, {
+      households: [hhA, hhB],
+      users: [userId],
+      ingredients: seededIngredients,
+    });
     await ctx.client.end({ timeout: 5 });
   });
 

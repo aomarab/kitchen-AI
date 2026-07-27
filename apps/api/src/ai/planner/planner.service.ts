@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq, inArray } from 'drizzle-orm';
 import {
   DEFAULT_SLOTS_BY_SCOPE,
@@ -26,7 +26,8 @@ import type { IngredientResolverPort } from '../catalog/ingredient-resolver.port
 import type { PantryPort } from './pantry-snapshot.js';
 import { pantryLinesByExpiry } from './pantry-snapshot.js';
 import { fromBase } from './units.js';
-import { lastDate, planWeeks } from './date-range.js';
+import { lastDate, planGroups, PLAN_GROUP_TRANSIENT_RETRIES } from './date-range.js';
+import { withTransientRetry } from './transient-retry.js';
 import { runPlanner, type PlanCoreEntry, type PlanCoreResult } from './planner-core.js';
 import { validateRecipe } from './validation.js';
 import type { ResolvedRecipeIngredient } from './types.js';
@@ -60,6 +61,8 @@ interface ResolvedProfile {
  */
 @Injectable()
 export class PlannerService {
+  private readonly logger = new Logger(PlannerService.name);
+
   constructor(
     @Inject(DB) private readonly db: Database,
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
@@ -90,7 +93,7 @@ export class PlannerService {
     };
 
     const snapshot = await this.pantry.snapshot(householdId);
-    const weeks = planWeeks(request.startsOn, scope);
+    const weeks = planGroups(request.startsOn, scope, slots.length);
 
     const signature = [...snapshot.byIngredientId.values()]
       .map((e) => [e.ingredientId, Math.round(e.baseQuantity)] as const)
@@ -120,23 +123,21 @@ export class PlannerService {
         maxDailyRetries: 2,
         baseSnapshot: snapshot,
         generate: ({ dates, slots: weekSlots, snapshot: working, alreadyUsedTitles }) =>
-          this.stageB({
-            householdId,
-            locale,
-            scope,
-            servings,
-            constraints,
-            dates,
-            slots: weekSlots,
-            snapshot: working,
-            alreadyUsedTitles,
-            scenario: input.scenario,
-          }),
-        resolve: (names) =>
-          this.catalog.resolve(
-            names.map((name) => ({ name })),
-            { createIfMissing: true },
+          this.retryGroup(dates, () =>
+            this.stageB({
+              householdId,
+              locale,
+              scope,
+              servings,
+              constraints,
+              dates,
+              slots: weekSlots,
+              snapshot: working,
+              alreadyUsedTitles,
+              scenario: input.scenario,
+            }),
           ),
+        resolve: (names) => this.catalog.resolve(names, { createIfMissing: true }),
       });
       await this.cache.set(cacheKey, result, 60 * 30);
     }
@@ -305,6 +306,30 @@ export class PlannerService {
       names.push(ref.canonicalNameEn, ref.canonicalNameAr);
     }
     return names;
+  }
+
+
+  /**
+   * Retries one generation group through a transient provider failure.
+   *
+   * A plan is generated in several sequential calls, and the whole plan is
+   * discarded if any one of them throws. That makes a single dropped
+   * connection on the last group of a weekly plan throw away six successful
+   * groups and everything they cost — which is exactly what happened on a real
+   * run. Only transport-level failures are retried: a schema failure has
+   * already had its own repair attempt, and an over-budget household must not
+   * be charged three times to be told no twice.
+   */
+  private retryGroup<T>(dates: string[], run: () => Promise<T>): Promise<T> {
+    return withTransientRetry(run, {
+      retries: PLAN_GROUP_TRANSIENT_RETRIES,
+      onRetry: (attempt, error) =>
+        this.logger.warn(
+          `plan group ${dates[0] ?? '?'} attempt ${attempt} failed transiently: ${
+            (error as Error).message
+          }`,
+        ),
+    });
   }
 
   private async persist(params: {

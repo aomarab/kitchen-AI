@@ -80,7 +80,11 @@ export function genRecipe(
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 2,
-    ingredients: ingredients.map((i) => ({ ...i, optional: i.optional ?? false })),
+    ingredients: ingredients.map((i) => ({
+      nameEn: i.name,
+      ...i,
+      optional: i.optional ?? false,
+    })),
     steps: ['Step one', 'Step two'],
     nutritionPerServing: { calories: 400, proteinG: 20, carbsG: 40, fatG: 12 },
   };
@@ -100,9 +104,14 @@ export function resolverFor(refs: CatalogIngredientRef[]) {
     byName.set(r.canonicalNameAr.trim().toLowerCase(), r);
     for (const a of r.aliases) byName.set(a.trim().toLowerCase(), r);
   }
-  return async (names: string[]): Promise<ResolvedName[]> =>
-    names.map((name) => {
-      const ref = byName.get(name.trim().toLowerCase()) ?? null;
+  // Mirrors the real resolver: the locale name wins, the English name is the
+  // fallback. A stub that ignored nameEn would hide the very bug it exists for.
+  return async (names: { name: string; nameEn?: string }[]): Promise<ResolvedName[]> =>
+    names.map(({ name, nameEn }) => {
+      const ref =
+        byName.get(name.trim().toLowerCase()) ??
+        (nameEn ? byName.get(nameEn.trim().toLowerCase()) : undefined) ??
+        null;
       return {
         rawName: name,
         ingredient: ref,

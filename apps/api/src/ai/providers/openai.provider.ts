@@ -23,6 +23,36 @@ function usesMaxCompletionTokens(model: string): boolean {
   return /^(gpt-5|o[1-9])/i.test(model);
 }
 
+/**
+ * Maps an SDK failure onto the error vocabulary the rest of the app speaks.
+ * Anything that is not a recognisable API status is a transport problem.
+ */
+export function toProviderError(error: unknown, operation: string, model: string): unknown {
+  if (error instanceof AppError) return error;
+  const status = (error as { status?: number }).status;
+  const name = (error as { name?: string }).name ?? 'Error';
+  const message = (error as { message?: string }).message ?? String(error);
+
+  if (status === 429) {
+    return new AppError('RATE_LIMITED', 'errors.RATE_LIMITED', { operation, model, provider: true });
+  }
+  if (status != null && status >= 400 && status < 500) {
+    // A rejected request shape (a bad parameter, an unsupported model) is our
+    // bug, not an outage — surface it as such so it is not silently retried.
+    return new AppError('EXTERNAL_SERVICE_ERROR', 'errors.EXTERNAL_SERVICE_ERROR', {
+      operation,
+      model,
+      status,
+      reason: message,
+    });
+  }
+  return new AppError('AI_UNAVAILABLE', 'errors.AI_UNAVAILABLE', {
+    operation,
+    model,
+    reason: `${name}: ${message}`,
+  });
+}
+
 export interface OpenAiModels {
   cheap: string;
   vision: string;
@@ -47,7 +77,7 @@ export class OpenAiProvider implements AiProvider {
       apiKey,
       // Per-call overrides below narrow this further; this is the ceiling.
       timeout: Math.max(...Object.values(PROVIDER_TIMEOUT_MS)),
-      maxRetries: PROVIDER_MAX_RETRIES,
+      maxRetries: Math.max(...Object.values(PROVIDER_MAX_RETRIES)),
     });
   }
 
@@ -82,17 +112,29 @@ export class OpenAiProvider implements AiProvider {
     }
 
     const maxOutputTokens = PROVIDER_MAX_OUTPUT_TOKENS[request.tier];
-    const completion = await this.client.chat.completions.create(
-      {
-        model,
-        messages,
-        response_format: { type: 'json_object' },
-        ...(usesMaxCompletionTokens(model)
-          ? { max_completion_tokens: maxOutputTokens }
-          : { max_tokens: maxOutputTokens }),
-      },
-      { timeout: PROVIDER_TIMEOUT_MS[request.tier] },
-    );
+    let completion;
+    try {
+      completion = await this.client.chat.completions.create(
+        {
+          model,
+          messages,
+          response_format: { type: 'json_object' },
+          ...(usesMaxCompletionTokens(model)
+            ? { max_completion_tokens: maxOutputTokens }
+            : { max_tokens: maxOutputTokens }),
+        },
+        {
+          timeout: PROVIDER_TIMEOUT_MS[request.tier],
+          maxRetries: PROVIDER_MAX_RETRIES[request.tier],
+        },
+      );
+    } catch (error) {
+      // Left raw, an SDK timeout reaches the job store as INTERNAL_ERROR — a
+      // 500 that tells the client nothing and the operator less. Transport
+      // failures are AI_UNAVAILABLE (503): the model did not answer, which is
+      // a different thing from answering unusably.
+      throw toProviderError(error, request.operation, model);
+    }
 
     const choice = completion.choices[0];
     const usage = {

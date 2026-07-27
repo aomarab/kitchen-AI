@@ -52,6 +52,46 @@ export type Job = z.infer<typeof jobSchema>;
 /* ------------------------------------------------------------------ */
 
 /**
+ * Real gpt-5 returned `steps` as an array of objects — `{"step":1,"text":"…"}`
+ * and friends — rather than plain strings, and did it again on the repair
+ * attempt. The prompt now states the shape explicitly, which is the actual
+ * fix; this keeps a well-formed instruction from being thrown away (at the
+ * price of two calls) when the model decides to structure it anyway.
+ *
+ * Only unambiguous single-text objects are unwrapped. Anything else still
+ * fails, so this cannot quietly turn nonsense into a recipe step.
+ */
+const STEP_TEXT_KEYS = ['text', 'instruction', 'step', 'description', 'content'] as const;
+
+function coerceSteps(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.map((step) => {
+    if (typeof step === 'string') return step;
+    if (step && typeof step === 'object') {
+      for (const key of STEP_TEXT_KEYS) {
+        const candidate = (step as Record<string, unknown>)[key];
+        if (typeof candidate === 'string' && candidate.trim().length > 0) return candidate;
+      }
+    }
+    return step;
+  });
+}
+
+/**
+ * A nullable field in a schema the *model* fills in, as opposed to one we fill
+ * in ourselves. `.nullable()` alone demands the key be present carrying null,
+ * and a model told a value is optional simply leaves the key out — real GPT-5
+ * output dropped `nutritionPerServing` from every recipe it generated, which
+ * failed validation, failed the repair, and cost two full-priced calls each
+ * time. The prompt now asks for explicit nulls; this makes the omission
+ * harmless if the model does it anyway. Output stays `T | null`, so nothing
+ * downstream changes.
+ */
+function modelNullable<T extends z.ZodTypeAny>(schema: T) {
+  return schema.nullish().default(null);
+}
+
+/**
  * Raw structured output from the vision model, before catalog resolution.
  * Kept separate from the API response so a model change cannot silently alter
  * the client contract.
@@ -130,16 +170,16 @@ export type BarcodeLookupResponse = z.infer<typeof barcodeLookupResponseSchema>;
 export const receiptLineSchema = z.object({
   rawText: z.string(),
   nameGuess: z.string(),
-  quantity: quantitySchema.nullable(),
-  unit: unitSchema.nullable(),
-  priceMinor: z.number().int().nullable(),
+  quantity: modelNullable(quantitySchema),
+  unit: modelNullable(unitSchema),
+  priceMinor: modelNullable(z.number().int()),
 });
 export type ReceiptLine = z.infer<typeof receiptLineSchema>;
 
 export const receiptExtractionSchema = z.object({
-  merchant: z.string().nullable(),
-  purchasedOn: isoDateSchema.nullable(),
-  currency: z.string().length(3).nullable(),
+  merchant: modelNullable(z.string()),
+  purchasedOn: modelNullable(isoDateSchema),
+  currency: modelNullable(z.string().length(3)),
   lines: z.array(receiptLineSchema),
 });
 export type ReceiptExtraction = z.infer<typeof receiptExtractionSchema>;
@@ -160,7 +200,7 @@ export type ParseReceiptRequest = z.infer<typeof parseReceiptRequestSchema>;
 export const generatedRecipeSchema = z.object({
   title: z.string().min(1),
   description: z.string(),
-  cuisine: z.string().nullable(),
+  cuisine: modelNullable(z.string()),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   prepMinutes: z.number().int().nonnegative(),
   cookMinutes: z.number().int().nonnegative(),
@@ -168,20 +208,30 @@ export const generatedRecipeSchema = z.object({
   ingredients: z.array(
     z.object({
       name: z.string().min(1),
+      /**
+       * Canonical English name, used only to match the global catalog.
+       *
+       * Without it an Arabic plan resolves Arabic names against an
+       * English-seeded catalog, misses, and creates a duplicate row per
+       * recipe — so the household's own pantry stops matching and coverage
+       * reports a shortfall for food that is sitting in the fridge.
+       * `modelNullable` because a model told a field may be absent omits it.
+       */
+      nameEn: modelNullable(z.string()),
       quantity: quantitySchema,
       unit: unitSchema,
       optional: z.boolean(),
     }),
   ),
-  steps: z.array(z.string().min(1)).min(1),
-  nutritionPerServing: z
-    .object({
+  steps: z.preprocess(coerceSteps, z.array(z.string().min(1)).min(1)),
+  nutritionPerServing: modelNullable(
+    z.object({
       calories: z.number().nonnegative(),
       proteinG: z.number().nonnegative(),
       carbsG: z.number().nonnegative(),
       fatG: z.number().nonnegative(),
-    })
-    .nullable(),
+    }),
+  ),
 });
 export type GeneratedRecipe = z.infer<typeof generatedRecipeSchema>;
 

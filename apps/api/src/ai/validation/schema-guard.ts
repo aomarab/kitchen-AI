@@ -26,7 +26,7 @@ export class SchemaGuard {
   async run<T>(
     provider: AiProvider,
     request: StructuredRequest,
-    schema: z.ZodType<T>,
+    schema: z.ZodType<T, z.ZodTypeDef, unknown>,
   ): Promise<GuardedResult<T>> {
     const first = await provider.complete(request);
     const firstParse = schema.safeParse(first.raw);

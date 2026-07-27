@@ -9,6 +9,7 @@ export const YOUTUBE_CLIENT = Symbol('YOUTUBE_CLIENT');
 export const OPEN_FOOD_FACTS_CLIENT = Symbol('OPEN_FOOD_FACTS_CLIENT');
 export const RESPONSE_CACHE = Symbol('RESPONSE_CACHE');
 export const CATALOG_PORT = Symbol('CATALOG_PORT');
+export const EMBEDDINGS_PORT = Symbol('EMBEDDINGS_PORT');
 export const USAGE_REPOSITORY = Symbol('USAGE_REPOSITORY');
 export const PANTRY_PORT = Symbol('PANTRY_PORT');
 export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
@@ -81,12 +82,26 @@ export const VIDEO_CACHE_TTL_DAYS = 30;
 export const PROVIDER_TIMEOUT_MS: Record<ModelTier, number> = {
   cheap: 30_000,
   vision: 60_000,
-  // Planning generates a full week of meals in one response.
-  planning: 120_000,
+  // A generation group is at most MAX_RECIPES_PER_GENERATION recipes, measured
+  // at ~70s for three against real gpt-5. This is headroom over that, not room
+  // for a whole week — asking for a week is what made this time out before.
+  planning: 180_000,
 };
 
-/** Retries inside the SDK, on top of which nothing else retries. */
-export const PROVIDER_MAX_RETRIES = 2;
+/**
+ * Retries inside the SDK, on top of which nothing else retries.
+ *
+ * Planning gets fewer: its calls are the expensive ones, and a timeout there
+ * is usually deterministic (too much asked for) rather than transient, so the
+ * SDK's retry just re-buys the same failure. Worse, a timed-out call still
+ * generated tokens we are billed for but never see a usage record for, so each
+ * retry is invisible spend.
+ */
+export const PROVIDER_MAX_RETRIES: Record<ModelTier, number> = {
+  cheap: 2,
+  vision: 2,
+  planning: 1,
+};
 
 /**
  * Ceilings, not targets. A weekly plan is one call covering 21 meal slots, each
@@ -101,5 +116,9 @@ export const PROVIDER_MAX_RETRIES = 2;
 export const PROVIDER_MAX_OUTPUT_TOKENS: Record<ModelTier, number> = {
   cheap: 4_096,
   vision: 8_192,
-  planning: 32_000,
+  // Real gpt-5 spends ~2.9k output tokens per generated recipe (reasoning
+  // tokens included, which are billed against this same ceiling). A group is
+  // bounded at MAX_RECIPES_PER_GENERATION, so this is roughly double the
+  // measured worst case.
+  planning: 16_000,
 };

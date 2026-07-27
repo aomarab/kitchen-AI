@@ -11,7 +11,12 @@ export interface ExecuteInput<T> {
   householdId: string;
   operation: AiOperation;
   prompt: BuiltPrompt;
-  schema: z.ZodType<T>;
+  /**
+   * Input is `unknown` on purpose: what gets parsed is raw model JSON, never a
+   * value we constructed. That also lets output schemas accept a wider input
+   * than they emit (an omitted nullable key normalising to null).
+   */
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>;
   /** Structured hints for the mock provider; ignored by the real provider. */
   context?: unknown;
   images?: ImageInput[];

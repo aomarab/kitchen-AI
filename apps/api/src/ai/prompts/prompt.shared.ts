@@ -16,12 +16,25 @@ const LANGUAGE_NAME: Record<Locale, string> = {
  * Shared preamble reminding the model that all human-readable text must be
  * written natively in the active locale — never machine-translated. See spec §7.
  */
+/**
+ * Asking for Arabic prose and then handing the model a schema full of English
+ * enum literals is ambiguous, and the model resolves it the helpful way: real
+ * GPT-5 output returned `"difficulty": "سهل"` for every entry of every plan,
+ * failing validation *and* its repair. `difficulty` reads as human-readable
+ * text, because it is. The carve-out has to be explicit — and it applies to
+ * `unit`, `category` and `slot` in the vision and receipt prompts too.
+ */
 export function localeDirective(locale: Locale): string {
   return (
     `Write every human-readable string (titles, descriptions, steps, notes) natively in ` +
     `${LANGUAGE_NAME[locale]}. Do not translate from another language; compose directly in ` +
     `${LANGUAGE_NAME[locale]}. Respond with a single JSON object and nothing else — no prose, ` +
-    `no markdown fences.`
+    `no markdown fences.\n` +
+    `Exception: JSON keys, and any value drawn from a fixed set of allowed values ` +
+    `(for example difficulty, slot, unit, category), are identifiers, not prose. Emit them ` +
+    `verbatim in lowercase ASCII English exactly as listed. Never translate, transliterate or ` +
+    `localise them, even when the rest of the response is in ${LANGUAGE_NAME[locale]}.\n` +
+    `Include every field the shape requires, even when its value is null. Never omit a key.`
   );
 }
 
