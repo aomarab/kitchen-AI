@@ -1076,20 +1076,30 @@ const ARABIC_LINE_HEIGHT = 1.7;
  * `letterSpacing` is a Latin-only device and is zeroed for Arabic below, the
  * same way line-height is switched. Arabic is cursive: spacing the letters
  * forces gaps into the joins.
+ *
+ * `satisfies`, not a type annotation. An annotation of `Record<string, …>`
+ * widens `keyof typeof SCALE` to `string`, so `TypographyVariant` stops being
+ * a union of the eight names and `Record<TypographyVariant, TextStyleToken>`
+ * becomes an index signature — under this repo's `noUncheckedIndexedAccess`
+ * every `typography('en').display` in the spec is then `TextStyleToken |
+ * undefined` and the file does not compile (10 errors, measured). `satisfies`
+ * shape-checks the literal without widening it, which is what the Interfaces
+ * section above requires. Note this also tightens `AppText`'s `variant` prop,
+ * which was silently `string` before.
  */
-const SCALE: Record<
+const SCALE = {
+  display: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.22 },
+  title: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.09 },
+  heading: { fontSize: 18, fontWeight: '600' as const, letterSpacing: -0.02 },
+  body: { fontSize: 16, fontWeight: '400' as const, letterSpacing: 0 },
+  bodyStrong: { fontSize: 16, fontWeight: '600' as const, letterSpacing: 0 },
+  button: { fontSize: 16, fontWeight: '700' as const, letterSpacing: 0.2 },
+  label: { fontSize: 14, fontWeight: '500' as const, letterSpacing: 0.1 },
+  caption: { fontSize: 12, fontWeight: '500' as const, letterSpacing: 0.1 },
+} satisfies Record<
   string,
   { fontSize: number; fontWeight: TextStyleToken['fontWeight']; letterSpacing: number }
-> = {
-  display: { fontSize: 28, fontWeight: '700', letterSpacing: -0.22 },
-  title: { fontSize: 22, fontWeight: '700', letterSpacing: -0.09 },
-  heading: { fontSize: 18, fontWeight: '600', letterSpacing: -0.02 },
-  body: { fontSize: 16, fontWeight: '400', letterSpacing: 0 },
-  bodyStrong: { fontSize: 16, fontWeight: '600', letterSpacing: 0 },
-  button: { fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
-  label: { fontSize: 14, fontWeight: '500', letterSpacing: 0.1 },
-  caption: { fontSize: 12, fontWeight: '500', letterSpacing: 0.1 },
-};
+>;
 
 export type TypographyVariant = keyof typeof SCALE;
 
