@@ -1376,3 +1376,32 @@ If steps 3 and 4 were clean there is nothing to commit and this task ends here.
 - **After editing `packages/i18n/src/*.ts`** run `pnpm --filter @kitchen/i18n build`, or downstream `t()` calls fail typecheck with a key-union error. No task here touches i18n, but the restyle sits next to it.
 - **Never pipe a long-running dev server into `head` or `tail`.** The pipe closes, the server spins on EPIPE at ~115% CPU and wedges its own event loop. Redirect to a file instead.
 - **macOS:** there is no `timeout` binary, and process termination must use `kill <PID>`.
+
+---
+
+## Follow-up left open on purpose
+
+**`--border` / `colors.border` is never asserted by either contrast guard, and
+it does not meet WCAG 1.4.11.** Measured 1.075–1.471:1 depending on the surface
+behind it.
+
+This is deliberately *not* fixed here, because it is not a regression: the old
+palette's `#E7DECF` measured 1.30:1 and the new `#e6e6e6` measures 1.25:1, so
+both fail equally and the restyle neither caused nor worsened it.
+
+It matters more than "a decorative border" suggests. Web `Input` and `Select`
+render `bg-background` inside cards that are also `bg-background`, so the 1px
+border is the **only** thing distinguishing the control from the card behind
+it. Under 3:1, that affordance is not reliably visible.
+
+The fix is two parts, and the second is the important one:
+
+1. Darken `--border`, or introduce a dedicated `--field-border`, to ≥3:1
+   against the fill it sits on. A single shared border token may not be able to
+   satisfy both "hairline divider" and "control affordance" — check before
+   assuming one value works.
+2. **Assert it in `app/palette.test.ts` and `theme/palette.spec.ts`.** The
+   guards already cover 51 web and 16 mobile pairs; this pair was simply never
+   among them, which is why a failing value sat unnoticed through an entire
+   palette replacement. Pinning the measurement matters even more than moving
+   it, because unmeasured is how it got here.
