@@ -64,9 +64,9 @@ export function RecipeView({ id }: { id: string }) {
       </header>
 
       {confirming ? (
-        <Card className="flex flex-col gap-3 border-primary/40 bg-primary/5">
+        <Card className="flex flex-col gap-3 border-primary-text bg-primary-soft">
           {markCooked.isSuccess ? (
-            <p className="flex items-center gap-2 font-medium text-primary">
+            <p className="flex items-center gap-2 font-medium text-primary-text">
               <CheckIcon className="h-5 w-5" />
               {t('recipe.cookedDone')}
             </p>
@@ -124,7 +124,7 @@ export function RecipeView({ id }: { id: string }) {
           <ol className="flex flex-col gap-3">
             {recipe.steps.map((step) => (
               <li key={step.index} className="flex gap-3">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-semibold text-primary-text">
                   {formatNumber(locale, step.index)}
                 </span>
                 <p className="text-sm leading-relaxed">{step.text}</p>

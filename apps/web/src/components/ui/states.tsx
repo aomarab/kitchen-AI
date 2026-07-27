@@ -44,7 +44,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   return (
     <div
       role="alert"
-      className="flex flex-col items-center gap-3 rounded-2xl border border-danger/40 bg-danger/5 py-10 text-center"
+      className="flex flex-col items-center gap-3 rounded-2xl border border-danger bg-danger-soft py-10 text-center"
     >
       <p className="font-medium text-danger">{t('web.states.errorTitle')}</p>
       <p className="max-w-sm text-sm text-muted-foreground">{message}</p>

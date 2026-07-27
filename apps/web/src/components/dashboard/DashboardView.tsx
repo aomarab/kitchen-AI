@@ -51,7 +51,7 @@ export function DashboardView() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>{t('web.dashboard.tonightTitle')}</CardTitle>
-            <FlameIcon className="h-5 w-5 text-accent" />
+            <FlameIcon className="h-5 w-5 text-primary-text" />
           </CardHeader>
           {tonight ? (
             <div className="flex flex-col gap-4 sm:flex-row">
@@ -112,7 +112,7 @@ export function DashboardView() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ClockIcon className="h-5 w-5 text-accent" />
+            <ClockIcon className="h-5 w-5 text-warning" />
             {t('web.dashboard.expiringTitle')}
           </CardTitle>
         </CardHeader>
@@ -165,7 +165,7 @@ function QuickAdd({ href, icon, label }: { href: string; icon: React.ReactNode; 
       href={href}
       className="flex flex-col items-center gap-2 rounded-xl border border-border p-4 text-center text-sm font-medium transition hover:bg-muted"
     >
-      <span className="text-primary">{icon}</span>
+      <span className="text-primary-text">{icon}</span>
       {label}
     </Link>
   );

@@ -23,10 +23,10 @@ function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void 
       aria-current={active ? 'page' : undefined}
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition',
-        active ? 'bg-primary/12 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        active ? 'bg-primary-soft text-primary-text' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
-      <Icon className={cn('h-5 w-5', active && 'text-primary')} />
+      <Icon className={cn('h-5 w-5', active && 'text-primary-text')} />
       <span>{t(item.labelKey)}</span>
     </Link>
   );

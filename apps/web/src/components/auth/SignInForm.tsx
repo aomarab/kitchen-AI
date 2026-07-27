@@ -53,7 +53,7 @@ export function SignInForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         {t('web.auth.noAccount')}{' '}
-        <Link href="/sign-up" className="font-medium text-primary underline-offset-2 hover:underline">
+        <Link href="/sign-up" className="font-medium text-link underline-offset-2 hover:underline">
           {t('auth.signUp')}
         </Link>
       </p>

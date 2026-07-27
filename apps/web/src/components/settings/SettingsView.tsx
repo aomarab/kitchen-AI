@@ -127,7 +127,7 @@ export function SettingsView() {
             <p className="text-xs text-muted-foreground">{t('profile.allergiesHint')}</p>
             <div className="flex flex-wrap gap-2">
               {profile.allergies.map((a) => (
-                <span key={a} className="flex items-center gap-1 rounded-full bg-danger/10 px-3 py-1 text-sm text-danger">
+                <span key={a} className="flex items-center gap-1 rounded-full border border-danger bg-danger-soft px-3 py-1 text-sm text-danger">
                   {a}
                   <button type="button" aria-label={t('common.delete')} onClick={() => removeAllergy(a)}>
                     <CloseIcon className="h-3.5 w-3.5" />
@@ -205,7 +205,7 @@ function Chip({
       onClick={onClick}
       className={cn(
         'rounded-full border px-3 py-1.5 text-sm font-medium transition',
-        active ? 'border-primary bg-primary/12 text-primary' : 'border-border text-muted-foreground hover:bg-muted',
+        active ? 'border-primary-text bg-primary-soft text-primary-text' : 'border-border text-muted-foreground hover:bg-muted',
       )}
     >
       {children}

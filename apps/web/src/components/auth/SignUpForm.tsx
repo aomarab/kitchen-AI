@@ -69,7 +69,7 @@ export function SignUpForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         {t('web.auth.haveAccount')}{' '}
-        <Link href="/sign-in" className="font-medium text-primary underline-offset-2 hover:underline">
+        <Link href="/sign-in" className="font-medium text-link underline-offset-2 hover:underline">
           {t('auth.signIn')}
         </Link>
       </p>

@@ -131,7 +131,7 @@ export function ReviewList({
           const low = row.confidence < LOW_CONFIDENCE;
           return (
             <li key={row.tempId}>
-              <Card className={low ? 'border-accent/50 bg-accent/5' : undefined}>
+              <Card className={low ? 'border-warning bg-warning-soft' : undefined}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-medium">{localizedName(locale, { en: row.nameEn, ar: row.nameAr })}</p>
