@@ -944,6 +944,20 @@ For example `apps/web/src/components/ui/Card.tsx:18` becomes:
 
 Three `text-lg`/`text-2xl` sites are deliberately skipped because they are not headings: `settings/HouseholdView.tsx:27` is the invite code and carries its own intentional `tracking-[0.3em]`; `recipe/RecipeView.tsx:182` is a stat value; `recipe/CookMode.tsx:36` is a cooking step, which is body copy at a large size.
 
+- [ ] **Step 3b: Keep the Latin device off user-generated content**
+
+`CardTitle` is shared, so tracking it reaches all sixteen call sites. Fifteen render `t(...)` — translated UI strings, which follow the UI locale, so `:root:lang(ar)` zeroes them correctly. One does not.
+
+`settings/HouseholdView.tsx:23` renders `{household.name}`, free text the user typed. A household can be named in Arabic while the UI locale stays English, and `:root:lang(ar)` keys off the UI locale, not the content — so that title would keep its Latin tracking. Opt it out:
+
+```tsx
+          <CardTitle className="tracking-normal">{household.name}</CardTitle>
+```
+
+`cn()` is a naive joiner, not `tailwind-merge`, so this override depends on CSS source order rather than class order. Verified by compiling: Tailwind emits `.tracking-normal` after `.tracking-heading-sm`, so it wins, and `--tracking-normal: 0em` survives our `@theme inline` from the default theme. The override is deterministic, not incidental.
+
+The practical effect here is small — `--track-heading-sm` is `-0.02px`, which tightens rather than opening gaps in cursive joins — but the rule is that a Latin typographic device never lands on content whose language we do not control, and a shared primitive is exactly where that rule quietly stops holding.
+
 Body leading needs no work here — Task 1 set `line-height: 1.55` on `:root` with `:root:lang(ar)` overriding at 1.85 on higher specificity.
 
 - [ ] **Step 4: Run the web suite, typecheck, lint and build**
