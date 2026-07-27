@@ -1305,7 +1305,16 @@ textInverseMuted so it survives a palette change."
 pnpm typecheck && pnpm lint && pnpm test && pnpm build
 ```
 
-Expected: 9 of 9 tasks green, 0 lint warnings. The test count rises from 344 by roughly 40 — the web palette test, the web usage guard, and the mobile palette and typography specs — and no existing test changes.
+Expected: 9 of 9 tasks green. Lint reports exactly **one** warning — the
+pre-existing `react-hooks/exhaustive-deps` on `PantryRail.tsx:54`, which
+predates this branch and is not ours to fix. The test count rises from 344 by
+roughly 40 — the web palette test, the web usage guard, and the mobile palette
+and typography specs — and no existing test changes.
+
+Run `pnpm build` **before** starting the dev server in Step 2, never after:
+both write to `apps/web/.next`, and a production build under a running dev
+server corrupts its chunks and turns every route into a 500. If that happens,
+`rm -rf apps/web/.next` and restart the dev server.
 
 - [ ] **Step 2: Start the API and web servers**
 
@@ -1328,15 +1337,23 @@ curl -fsS http://localhost:3333/health
 - [ ] **Step 3: Sweep every route in both languages**
 
 ```bash
-for path in "" sign-in sign-up dashboard kitchen recipes plans shopping settings household capture; do
+for path in "" sign-in sign-up setup kitchen kitchen/capture plans recipes shopping settings household; do
   for lang in en ar; do
-    code=$(curl -s -o /dev/null -w '%{http_code}' -H "Accept-Language: $lang" "http://localhost:3100/$path")
-    printf '%s %-12s %s\n' "$lang" "${path:-/}" "$code"
+    code=$(curl -s -o /dev/null -w '%{http_code}' -b "kitchen_locale=$lang" "http://localhost:3100/$path")
+    printf '%s %-16s %s\n' "$lang" "${path:-/}" "$code"
   done
 done
 ```
 
-Expected: `200` for all 22 combinations. A `404` means a route name in this loop is wrong, not that the restyle broke — check against `apps/web/src/app` before investigating further.
+Expected: `200` for all 22 combinations. A `404` means a route name in this loop is wrong, not that the restyle broke — check against `apps/web/src/app` before investigating further. The eleven names above are the app's real routes, taken from `next build`'s own route table; note there is **no `/dashboard`** (the dashboard is `/`, from `app/(app)/page.tsx`) and capture is nested at `/kitchen/capture`.
+
+The locale is driven by the **`kitchen_locale` cookie**, read server-side in `lib/locale.server.ts` and applied to `<html lang dir>` in `app/layout.tsx`. It is *not* content-negotiated, so sweeping with `Accept-Language` silently renders English twice and proves nothing about Arabic. Confirm the header actually took effect rather than trusting the status code:
+
+```bash
+curl -s -b 'kitchen_locale=ar' http://localhost:3100/sign-in | grep -o '<html[^>]*>'
+```
+
+Expected: `lang="ar" dir="rtl"`. That attribute is what makes `:root:lang(ar)` fire and zero the tracking, so if it says `en` the Arabic half of this task has not been tested at all.
 
 - [ ] **Step 4: Check both themes by eye**
 
