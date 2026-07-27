@@ -256,6 +256,10 @@ The font stack does not change. Inter is already the Latin face and `DESIGN.md` 
 Inter as its own substitute for the proprietary Salesforce faces. IBM Plex Sans Arabic
 stays.
 
+> **Superseded (2026-07-27):** the Arabic face was subsequently changed to Tajawal.
+> Tajawal ships no semibold cut, so the `heading-sm` and `bodyStrong` 600 tiers
+> below render in Bold for Arabic. Sizes and Latin tracking are unaffected.
+
 | Tier | Size / weight | Latin tracking | Where |
 |---|---|---|---|
 | `display-md` | 32 / 700 | `-0.256px` | Page titles (mobile `display` stays 28) |

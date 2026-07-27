@@ -314,7 +314,7 @@ plan will cost them at the store. In Arabic the sidebar moves right and the rail
   `start-`, `end-`). Physical `left`/`right` utilities are banned and enforced by an ESLint rule.
 - **Mobile RTL:** React Native `I18nManager` with logical row direction. Direction-implying icons
   (chevrons, back arrows) flip through a shared `<DirectionalIcon>` component.
-- **Typography:** IBM Plex Sans Arabic on both platforms, with increased line-height relative to Latin.
+- **Typography:** Tajawal on both platforms, with increased line-height relative to Latin. Tajawal ships no semibold (400, 500, 700 are the cuts used), so the 600 tier resolves to Bold.
   Numerals are Western Arabic by default, with an optional Eastern Arabic setting.
 - **Dates, numbers and units** are formatted with `Intl`. In the Arabic locale a Hijri date is shown
   alongside the Gregorian date.

@@ -47,10 +47,9 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/IBMPlexSansArabic-Regular.ttf",
-            "./assets/fonts/IBMPlexSansArabic-Medium.ttf",
-            "./assets/fonts/IBMPlexSansArabic-SemiBold.ttf",
-            "./assets/fonts/IBMPlexSansArabic-Bold.ttf"
+            "./assets/fonts/Tajawal-Regular.ttf",
+            "./assets/fonts/Tajawal-Medium.ttf",
+            "./assets/fonts/Tajawal-Bold.ttf"
           ]
         }
       ]
