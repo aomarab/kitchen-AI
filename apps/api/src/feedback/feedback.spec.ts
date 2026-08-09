@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -25,12 +26,16 @@ describe('POST /feedback', () => {
   let ctx: TestContext;
   let app: INestApplication;
   let userId: string;
+  let otherUserId: string;
   let token: string;
+  let otherToken: string;
 
   beforeAll(async () => {
     ctx = createTestContext();
     userId = await seedUser(ctx.db);
     token = await ctx.jwt.signAsync({ sub: userId });
+    otherUserId = await seedUser(ctx.db, `test+feedback-${randomUUID()}@example.com`);
+    otherToken = await ctx.jwt.signAsync({ sub: otherUserId });
 
     const moduleRef = await Test.createTestingModule({
       imports: [
@@ -50,11 +55,12 @@ describe('POST /feedback', () => {
 
   beforeEach(async () => {
     await ctx.db.delete(feedback).where(eq(feedback.userId, userId));
+    await ctx.db.delete(feedback).where(eq(feedback.userId, otherUserId));
   });
 
   afterAll(async () => {
     await app?.close();
-    await cleanup(ctx.db, { users: [userId] });
+    await cleanup(ctx.db, { users: [userId, otherUserId] });
     await ctx.client.end({ timeout: 5 });
   });
 
@@ -123,6 +129,28 @@ describe('POST /feedback', () => {
     });
     const rows = await ctx.db.select().from(feedback).where(eq(feedback.userId, userId));
     expect(rows).toHaveLength(FEEDBACK_DAILY_LIMIT);
+  });
+
+  it('keeps the rate limit scoped to the calling user', async () => {
+    for (let i = 0; i < FEEDBACK_DAILY_LIMIT; i += 1) {
+      expect((await post(body)).status).toBe(201);
+    }
+
+    const limited = await post(body);
+    expect(limited.status).toBe(429);
+    expect(limited.body).toMatchObject({
+      code: 'RATE_LIMITED',
+      messageKey: 'errors.feedbackRateLimited',
+    });
+
+    const other = await request(app.getHttpServer())
+      .post('/feedback')
+      .set('authorization', `Bearer ${otherToken}`)
+      .send(body);
+    expect(other.status).toBe(201);
+
+    const rows = await ctx.db.select().from(feedback).where(eq(feedback.userId, otherUserId));
+    expect(rows).toHaveLength(1);
   });
 
   it('counts only the last 24 hours toward the limit', async () => {

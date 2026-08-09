@@ -41,3 +41,26 @@ Commit: `2cd9c31` — `feat(api): add feedback submission endpoint`
 
 ## Concerns
 - None.
+
+## Fix update — user-isolation rate-limit test
+- Added a second seeded user to `apps/api/src/feedback/feedback.spec.ts`.
+- Added an integration test that drives user A to the 5-submission limit, verifies A then gets `429` / `RATE_LIMITED`, and verifies user B can still submit successfully.
+- Extended test cleanup to delete both seeded users.
+
+## Validation for the fix
+- Command: `VITE_CJS_IGNORE_WARNING=1 pnpm --filter @kitchen/api exec vitest run src/feedback/feedback.spec.ts`
+  ```
+   RUN  v2.1.9 /Users/aomr/projects/kitchen/apps/api
+
+   ✓ src/feedback/feedback.spec.ts (11 tests) 213ms
+
+   Test Files  1 passed (1)
+        Tests  11 passed (11)
+     Start at  01:11:26
+     Duration  847ms (transform 58ms, setup 11ms, collect 411ms, tests 191ms, environment 0ms, prepare 48ms)
+  ```
+- Command: `pnpm --filter @kitchen/api lint`
+  ```
+  > @kitchen/api@0.1.0 lint /Users/aomr/projects/kitchen/apps/api
+  > eslint src
+  ```
