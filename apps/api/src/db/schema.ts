@@ -1,6 +1,7 @@
 import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   date,
   index,
   integer,
@@ -9,6 +10,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -22,6 +24,9 @@ import {
 
 export const localeEnum = pgEnum('locale', ['en', 'ar']);
 export const householdRoleEnum = pgEnum('household_role', ['owner', 'member']);
+export const userRoleEnum = pgEnum('user_role', ['user', 'staff']);
+export const feedbackStatusEnum = pgEnum('feedback_status', ['new', 'triaged', 'resolved', 'wont_fix']);
+export const feedbackPlatformEnum = pgEnum('feedback_platform', ['ios', 'android', 'web']);
 export const oauthProviderEnum = pgEnum('oauth_provider', ['apple', 'google']);
 export const storageLocationTypeEnum = pgEnum('storage_location_type', [
   'fridge',
@@ -111,6 +116,7 @@ export const users = pgTable(
     passwordHash: text('password_hash'),
     displayName: text('display_name').notNull(),
     locale: localeEnum('locale').notNull().default('en'),
+    role: userRoleEnum('role').notNull().default('user'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -497,6 +503,47 @@ export const aiUsage = pgTable(
 );
 
 /* ------------------------------------------------------------------ */
+/* Feedback                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * App feedback: a 1–5 rating and an optional message.
+ *
+ * `ON DELETE CASCADE` on `user_id` is deliberate. Account deletion must have a
+ * single erasure path, and the message is free text the user has asked us to
+ * forget; keeping an orphaned row for the sake of an average would retain
+ * exactly the part we were asked to delete.
+ *
+ * `platform`, `app_version` and `locale` are captured because a 2★ rating
+ * without them is unactionable. None is a device identifier.
+ */
+export const feedback = pgTable(
+  'feedback',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    rating: smallint('rating').notNull(),
+    message: text('message'),
+    platform: feedbackPlatformEnum('platform').notNull(),
+    appVersion: text('app_version').notNull(),
+    locale: localeEnum('locale').notNull(),
+    status: feedbackStatusEnum('status').notNull().default('new'),
+    adminNote: text('admin_note'),
+    reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('feedback_rating_range', sql`${table.rating} between 1 and 5`),
+    index('feedback_status_created_idx').on(table.status, table.createdAt.desc()),
+    index('feedback_created_idx').on(table.createdAt.desc()),
+    index('feedback_user_created_idx').on(table.userId, table.createdAt.desc()),
+  ],
+);
+
+/* ------------------------------------------------------------------ */
 /* Relations                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -583,6 +630,11 @@ export const mealPlanEntriesRelations = relations(mealPlanEntries, ({ one }) => 
   recipe: one(recipes, { fields: [mealPlanEntries.recipeId], references: [recipes.id] }),
 }));
 
+export const feedbackRelations = relations(feedback, ({ one }) => ({
+  user: one(users, { fields: [feedback.userId], references: [users.id], relationName: 'submitter' }),
+  reviewer: one(users, { fields: [feedback.reviewedBy], references: [users.id], relationName: 'reviewer' }),
+}));
+
 export const schema = {
   users,
   oauthAccounts,
@@ -603,6 +655,7 @@ export const schema = {
   jobs,
   recognitionSessions,
   aiUsage,
+  feedback,
   usersRelations,
   householdsRelations,
   householdMembersRelations,
@@ -614,4 +667,5 @@ export const schema = {
   recipeVideosRelations,
   mealPlansRelations,
   mealPlanEntriesRelations,
+  feedbackRelations,
 };
