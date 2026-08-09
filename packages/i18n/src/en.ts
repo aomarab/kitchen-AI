@@ -70,6 +70,7 @@ export const en = {
     JOB_FAILED: 'That task failed. You can retry it.',
     INTERNAL_ERROR: 'Something went wrong on our side.',
     offline: "You're offline. Changes will sync when you reconnect.",
+    feedbackRateLimited: "You've sent us plenty of feedback today. Please try again tomorrow.",
   },
 
   auth: {
