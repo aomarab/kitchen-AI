@@ -1,7 +1,8 @@
-/* global module, process, __dirname */
+/* global process, __dirname, require */
+/* eslint-disable @typescript-eslint/no-require-imports */
 
-const { existsSync } = module.require('node:fs');
-const { dirname, join, parse } = module.require('node:path');
+const { existsSync } = require('node:fs');
+const { dirname, join, parse } = require('node:path');
 
 function findEnvFile(startDirs) {
   for (const start of startDirs) {
