@@ -1,0 +1,1759 @@
+[
+  {
+    "slug": "basmati-rice",
+    "canonicalNameEn": "Basmati rice",
+    "canonicalNameAr": "أرز بسمتي",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "long grain rice",
+      "Indian rice",
+      "رز بسمتي",
+      "أرز طويل الحبة",
+      "رز هندي"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "egyptian-short-grain-rice",
+    "canonicalNameEn": "Egyptian short-grain rice",
+    "canonicalNameAr": "أرز مصري",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "short grain rice",
+      "Egyptian rice",
+      "رز مصري",
+      "أرز قصير الحبة"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "jasmine-rice",
+    "canonicalNameEn": "Jasmine rice",
+    "canonicalNameAr": "أرز الياسمين",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "Thai rice",
+      "fragrant rice",
+      "رز الياسمين",
+      "أرز تايلاندي",
+      "أرز عطري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "brown-rice",
+    "canonicalNameEn": "Brown rice",
+    "canonicalNameAr": "أرز أسمر",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole grain rice",
+      "unpolished rice",
+      "رز أسمر",
+      "أرز كامل الحبة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "bulgur-coarse",
+    "canonicalNameEn": "Coarse bulgur",
+    "canonicalNameAr": "برغل خشن",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "coarse cracked wheat",
+      "burghul coarse",
+      "بُرغل خشن",
+      "جريش خشن"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "bulgur-fine",
+    "canonicalNameEn": "Fine bulgur",
+    "canonicalNameAr": "برغل ناعم",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "fine cracked wheat",
+      "burghul fine",
+      "بُرغل ناعم",
+      "برغل رقيق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "freekeh",
+    "canonicalNameEn": "Freekeh",
+    "canonicalNameAr": "فريكة",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "roasted green wheat",
+      "farik",
+      "فريك",
+      "القمح الأخضر المحمص"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "couscous",
+    "canonicalNameEn": "Couscous",
+    "canonicalNameAr": "كسكس",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "North African couscous",
+      "steamed couscous",
+      "كسكسو",
+      "كسكوس"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "semolina",
+    "canonicalNameEn": "Semolina",
+    "canonicalNameAr": "سميد",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "durum semolina",
+      "cream of wheat",
+      "سُميد خشن",
+      "دقيق السميد"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "rolled-oats",
+    "canonicalNameEn": "Rolled oats",
+    "canonicalNameAr": "شوفان مُرقق",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "oatmeal",
+      "old-fashioned oats",
+      "شوفان",
+      "دقيق الشوفان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "quinoa",
+    "canonicalNameEn": "Quinoa",
+    "canonicalNameAr": "كينوا",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "white quinoa",
+      "quinoa seeds",
+      "بذور الكينوا",
+      "الكينوا البيضاء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "barley",
+    "canonicalNameEn": "Barley",
+    "canonicalNameAr": "شعير",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "pearl barley",
+      "hulled barley",
+      "شعير مقشر",
+      "حبوب الشعير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cornmeal",
+    "canonicalNameEn": "Cornmeal",
+    "canonicalNameAr": "دقيق الذرة الصفراء",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "polenta",
+      "corn grits",
+      "دقيق الذرة",
+      "ذرة مطحونة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "wheat-berries",
+    "canonicalNameEn": "Wheat berries",
+    "canonicalNameAr": "قمح كامل",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole wheat kernels",
+      "hard wheat",
+      "قمح",
+      "حبوب القمح"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "vermicelli",
+    "canonicalNameEn": "Vermicelli",
+    "canonicalNameAr": "شعيرية",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "toasted vermicelli",
+      "rice vermicelli noodles",
+      "شعيريه",
+      "شعيرية محمصة",
+      "شعيرية رز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cracked-wheat",
+    "canonicalNameEn": "Cracked wheat",
+    "canonicalNameAr": "جريش القمح",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "broken wheat",
+      "dalia",
+      "جريش",
+      "قمح مجروش"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "maftoul",
+    "canonicalNameEn": "Maftoul",
+    "canonicalNameAr": "مفتول",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "moghrabieh",
+      "Palestinian couscous",
+      "مغربية",
+      "كسكس فلسطيني"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "buckwheat",
+    "canonicalNameEn": "Buckwheat",
+    "canonicalNameAr": "حنطة سوداء",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "kasha",
+      "buckwheat groats",
+      "الحنطة السوداء",
+      "قمح الحضارة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "rice-flour",
+    "canonicalNameEn": "Rice flour",
+    "canonicalNameAr": "دقيق الأرز",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "ground rice",
+      "white rice flour",
+      "طحين الأرز",
+      "نشا الأرز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "popcorn-kernels",
+    "canonicalNameEn": "Popcorn kernels",
+    "canonicalNameAr": "حبوب الفشار",
+    "category": "grain",
+    "defaultUnit": "g",
+    "aliases": [
+      "popping corn",
+      "dried corn kernels",
+      "فشار",
+      "ذرة الفشار"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "spaghetti",
+    "canonicalNameEn": "Spaghetti",
+    "canonicalNameAr": "سباغيتي",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "spaghettini",
+      "thin spaghetti",
+      "إسباغيتي",
+      "معكرونة سباغيتي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "penne",
+    "canonicalNameEn": "Penne",
+    "canonicalNameAr": "بيني",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "penne rigate",
+      "quill pasta",
+      "بيني ريغاتي",
+      "معكرونة بيني"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "macaroni-elbows",
+    "canonicalNameEn": "Macaroni elbows",
+    "canonicalNameAr": "معكرونة كوع",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "elbow macaroni",
+      "short macaroni",
+      "مكرونة كوع",
+      "معكرونة مرفق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fusilli",
+    "canonicalNameEn": "Fusilli",
+    "canonicalNameAr": "فوسيلي",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "spiral pasta",
+      "rotini",
+      "معكرونة لولبية",
+      "مكرونة فوسيلي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "farfalle",
+    "canonicalNameEn": "Farfalle",
+    "canonicalNameAr": "معكرونة الفراشة",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "bow tie pasta",
+      "butterfly pasta",
+      "فارفالي",
+      "مكرونة الفراشة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "linguine",
+    "canonicalNameEn": "Linguine",
+    "canonicalNameAr": "لينغويني",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "flat ribbon noodles",
+      "linguini",
+      "معكرونة مسطحة رفيعة",
+      "لينجويني"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tagliatelle",
+    "canonicalNameEn": "Tagliatelle",
+    "canonicalNameAr": "تالياتيلي",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "flat ribbon pasta",
+      "fettuccine",
+      "معكرونة مسطحة",
+      "فيتوتشيني"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lasagne-sheets",
+    "canonicalNameEn": "Lasagne sheets",
+    "canonicalNameAr": "صفائح اللازانيا",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "lasagna noodles",
+      "lasagna sheets",
+      "لازانيا",
+      "أوراق اللازانيا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "orzo",
+    "canonicalNameEn": "Orzo",
+    "canonicalNameAr": "لسان عصفور",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "risoni",
+      "rice-shaped pasta",
+      "أورزو",
+      "معكرونة لسان عصفور"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "shell-pasta",
+    "canonicalNameEn": "Shell pasta",
+    "canonicalNameAr": "معكرونة صدفية",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "conchiglie",
+      "pasta shells",
+      "مكرونة صدف",
+      "كونكيلي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "rigatoni",
+    "canonicalNameEn": "Rigatoni",
+    "canonicalNameAr": "ريغاتوني",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "ridged tube pasta",
+      "rigatone",
+      "معكرونة أنبوبية مضلعة",
+      "مكرونة ريغاتوني"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "angel-hair",
+    "canonicalNameEn": "Angel hair pasta",
+    "canonicalNameAr": "معكرونة شعر الملاك",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "capellini",
+      "capelli pasta",
+      "كابيليني",
+      "معكرونة رفيعة جداً"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "egg-noodles",
+    "canonicalNameEn": "Egg noodles",
+    "canonicalNameAr": "معكرونة البيض",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "Chinese egg noodles",
+      "yellow noodles",
+      "نودلز البيض",
+      "شعيرية البيض الصفراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "instant-noodles",
+    "canonicalNameEn": "Instant noodles",
+    "canonicalNameAr": "معكرونة فورية",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "ramen noodles",
+      "cup noodles",
+      "نودلز فورية",
+      "مكرونة سريعة التحضير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "rice-noodles",
+    "canonicalNameEn": "Rice noodles",
+    "canonicalNameAr": "شعيرية الأرز",
+    "category": "pasta",
+    "defaultUnit": "g",
+    "aliases": [
+      "rice stick noodles",
+      "rice vermicelli pasta",
+      "نودلز الأرز",
+      "مكرونة الأرز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "arabic-pita",
+    "canonicalNameEn": "Arabic pita bread",
+    "canonicalNameAr": "خبز عربي",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "pita bread",
+      "pocket bread",
+      "عيش شامي",
+      "كماج",
+      "خبز لبناني"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "saj-bread",
+    "canonicalNameEn": "Saj bread",
+    "canonicalNameAr": "خبز الصاج",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "markouk bread",
+      "mountain bread",
+      "خبز مرقوق",
+      "خبز رقيق صاج",
+      "صاج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tannour-bread",
+    "canonicalNameEn": "Tannour bread",
+    "canonicalNameAr": "خبز التنور",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "tandoor bread",
+      "clay oven bread",
+      "خبز طابون",
+      "خبز تنور"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "egyptian-baladi-bread",
+    "canonicalNameEn": "Egyptian baladi bread",
+    "canonicalNameAr": "عيش بلدي",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "baladi bread",
+      "Egyptian flatbread",
+      "خبز بلدي",
+      "عيش مصري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "white-sandwich-bread",
+    "canonicalNameEn": "White sandwich bread",
+    "canonicalNameAr": "خبز الساندويش الأبيض",
+    "category": "bread",
+    "defaultUnit": "slice",
+    "aliases": [
+      "sliced white bread",
+      "soft white loaf",
+      "خبز الساندويش",
+      "عيش ناعم"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "whole-wheat-bread",
+    "canonicalNameEn": "Whole wheat bread",
+    "canonicalNameAr": "خبز القمح الكامل",
+    "category": "bread",
+    "defaultUnit": "slice",
+    "aliases": [
+      "wholemeal bread",
+      "brown bread",
+      "خبز الأسمر",
+      "خبز الحبوب الكاملة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "toast-bread",
+    "canonicalNameEn": "Toast bread",
+    "canonicalNameAr": "خبز التوست",
+    "category": "bread",
+    "defaultUnit": "slice",
+    "aliases": [
+      "milk bread loaf",
+      "sliced toast loaf",
+      "توست",
+      "عيش توست",
+      "خبز الحليب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "baguette",
+    "canonicalNameEn": "Baguette",
+    "canonicalNameAr": "باغيت",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "French stick",
+      "French bread",
+      "خبز فرنسي",
+      "الرغيف الفرنسي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ciabatta",
+    "canonicalNameEn": "Ciabatta",
+    "canonicalNameAr": "شياباتا",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "Italian bread",
+      "ciabatta loaf",
+      "خبز إيطالي",
+      "خبز الشياباتا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "burger-buns",
+    "canonicalNameEn": "Burger buns",
+    "canonicalNameAr": "خبز البرغر",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "hamburger buns",
+      "burger rolls",
+      "كعكة البرغر",
+      "خبز الهمبرغر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "hot-dog-rolls",
+    "canonicalNameEn": "Hot dog rolls",
+    "canonicalNameAr": "خبز النقانق",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "hot dog buns",
+      "sausage bread rolls",
+      "خبز الهوت دوج",
+      "خبز السجق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tortilla-wraps",
+    "canonicalNameEn": "Tortilla wraps",
+    "canonicalNameAr": "خبز التورتيا",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "flour tortillas",
+      "wrap bread",
+      "تورتيا",
+      "خبز اللفائف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "croissant",
+    "canonicalNameEn": "Croissant",
+    "canonicalNameAr": "كرواسان",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "butter croissant",
+      "crescent roll",
+      "كرواسون",
+      "خبز هلالي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "rusk",
+    "canonicalNameEn": "Rusk",
+    "canonicalNameAr": "بقسماط",
+    "category": "bread",
+    "defaultUnit": "piece",
+    "aliases": [
+      "zwieback",
+      "dry toast biscuit",
+      "بقصماط",
+      "خبز مجفف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "breadcrumbs",
+    "canonicalNameEn": "Breadcrumbs",
+    "canonicalNameAr": "فتات الخبز",
+    "category": "bread",
+    "defaultUnit": "g",
+    "aliases": [
+      "panko breadcrumbs",
+      "dry breadcrumbs",
+      "بانكو",
+      "بقسماط مطحون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "extra-virgin-olive-oil",
+    "canonicalNameEn": "Extra virgin olive oil",
+    "canonicalNameAr": "زيت زيتون بكر ممتاز",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "EVOO",
+      "cold pressed olive oil",
+      "زيت الزيتون البكر",
+      "زيت زيتون عضوي"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "olive-oil",
+    "canonicalNameEn": "Olive oil",
+    "canonicalNameAr": "زيت الزيتون",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "pure olive oil",
+      "light olive oil",
+      "زيت زيتون",
+      "زيت الزيتون الصافي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sunflower-oil",
+    "canonicalNameEn": "Sunflower oil",
+    "canonicalNameAr": "زيت عباد الشمس",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "sunflower seed oil",
+      "عباد الشمس زيت",
+      "زيت دوار الشمس",
+      "زيت الزهرة"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "vegetable-oil",
+    "canonicalNameEn": "Vegetable oil",
+    "canonicalNameAr": "زيت نباتي",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "cooking oil",
+      "neutral vegetable oil",
+      "زيت الطبخ",
+      "الزيت النباتي"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "corn-oil",
+    "canonicalNameEn": "Corn oil",
+    "canonicalNameAr": "زيت الذرة",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "maize oil",
+      "corn germ oil",
+      "زيت ذرة",
+      "زيت الذرة الصفراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canola-oil",
+    "canonicalNameEn": "Canola oil",
+    "canonicalNameAr": "زيت الكانولا",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "rapeseed oil",
+      "canola cooking oil",
+      "زيت بذور اللفت",
+      "زيت اللفت"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sesame-oil",
+    "canonicalNameEn": "Sesame oil",
+    "canonicalNameAr": "زيت السمسم",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "toasted sesame oil",
+      "sesame seed oil",
+      "زيت السمسم المحمص",
+      "زيت الحلاوة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "coconut-oil",
+    "canonicalNameEn": "Coconut oil",
+    "canonicalNameAr": "زيت جوز الهند",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "virgin coconut oil",
+      "cold pressed coconut oil",
+      "زيت الجوز الهندي",
+      "زيت النارجيل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sunflower-frying-oil",
+    "canonicalNameEn": "Sunflower frying oil",
+    "canonicalNameAr": "زيت القلي من عباد الشمس",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "high heat sunflower oil",
+      "refined frying oil",
+      "زيت القلي",
+      "زيت التحمير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "vegetable-shortening",
+    "canonicalNameEn": "Vegetable shortening",
+    "canonicalNameAr": "سمن نباتي",
+    "category": "oil",
+    "defaultUnit": "g",
+    "aliases": [
+      "ghee-style shortening",
+      "hydrogenated vegetable fat",
+      "شحم نباتي",
+      "زيت مهدرج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "avocado-oil",
+    "canonicalNameEn": "Avocado oil",
+    "canonicalNameAr": "زيت الأفوكادو",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "cold pressed avocado oil",
+      "avocado cooking oil",
+      "زيت أڤوكادو",
+      "زيت الأفوكاتو"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "black-seed-oil",
+    "canonicalNameEn": "Black seed oil",
+    "canonicalNameAr": "زيت حبة البركة",
+    "category": "oil",
+    "defaultUnit": "ml",
+    "aliases": [
+      "nigella seed oil",
+      "black cumin oil",
+      "زيت الحبة السوداء",
+      "زيت الكمون الأسود"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "white-sugar",
+    "canonicalNameEn": "White sugar",
+    "canonicalNameAr": "سكر أبيض",
+    "category": "sweetener",
+    "defaultUnit": "g",
+    "aliases": [
+      "granulated sugar",
+      "table sugar",
+      "سكر",
+      "سكر حبيبي"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "brown-sugar",
+    "canonicalNameEn": "Brown sugar",
+    "canonicalNameAr": "سكر بني",
+    "category": "sweetener",
+    "defaultUnit": "g",
+    "aliases": [
+      "raw sugar",
+      "muscovado sugar",
+      "سكر أسمر",
+      "سكر خام"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "powdered-sugar",
+    "canonicalNameEn": "Powdered sugar",
+    "canonicalNameAr": "سكر ناعم",
+    "category": "sweetener",
+    "defaultUnit": "g",
+    "aliases": [
+      "icing sugar",
+      "confectioners sugar",
+      "caster sugar",
+      "سكر مطحون",
+      "سكر بودرة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "date-syrup",
+    "canonicalNameEn": "Date syrup",
+    "canonicalNameAr": "دبس التمر",
+    "category": "sweetener",
+    "defaultUnit": "ml",
+    "aliases": [
+      "date molasses",
+      "date honey",
+      "ديبس التمر",
+      "عسل التمر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "grape-molasses",
+    "canonicalNameEn": "Grape molasses",
+    "canonicalNameAr": "دبس العنب",
+    "category": "sweetener",
+    "defaultUnit": "ml",
+    "aliases": [
+      "grape syrup",
+      "concentrated grape juice",
+      "ديبس العنب",
+      "عصير العنب المركز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "carob-molasses",
+    "canonicalNameEn": "Carob molasses",
+    "canonicalNameAr": "دبس الخروب",
+    "category": "sweetener",
+    "defaultUnit": "ml",
+    "aliases": [
+      "carob syrup",
+      "locust bean syrup",
+      "ديبس الخروب",
+      "عسل الخروب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "honey",
+    "canonicalNameEn": "Honey",
+    "canonicalNameAr": "عسل النحل",
+    "category": "sweetener",
+    "defaultUnit": "jar",
+    "aliases": [
+      "natural honey",
+      "raw honey",
+      "عسل",
+      "عسل طبيعي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sugar-syrup",
+    "canonicalNameEn": "Sugar syrup",
+    "canonicalNameAr": "قطر",
+    "category": "sweetener",
+    "defaultUnit": "ml",
+    "aliases": [
+      "simple syrup",
+      "attar",
+      "شربات",
+      "قطر الحلوى"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "maple-syrup",
+    "canonicalNameEn": "Maple syrup",
+    "canonicalNameAr": "شراب القيقب",
+    "category": "sweetener",
+    "defaultUnit": "ml",
+    "aliases": [
+      "pure maple syrup",
+      "maple extract",
+      "عسل القيقب",
+      "شراب الحقل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "stevia",
+    "canonicalNameEn": "Stevia",
+    "canonicalNameAr": "ستيفيا",
+    "category": "sweetener",
+    "defaultUnit": "g",
+    "aliases": [
+      "stevia sweetener",
+      "natural stevia extract",
+      "حلوة الستيفيا",
+      "سكر الستيفيا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "agave-syrup",
+    "canonicalNameEn": "Agave syrup",
+    "canonicalNameAr": "شراب الأغاف",
+    "category": "sweetener",
+    "defaultUnit": "ml",
+    "aliases": [
+      "agave nectar",
+      "blue agave syrup",
+      "رحيق الأغاف",
+      "عسل الأغاف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "coconut-sugar",
+    "canonicalNameEn": "Coconut sugar",
+    "canonicalNameAr": "سكر جوز الهند",
+    "category": "sweetener",
+    "defaultUnit": "g",
+    "aliases": [
+      "coconut palm sugar",
+      "palm sugar",
+      "سكر النارجيل",
+      "سكر النخيل الجوزي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "all-purpose-flour",
+    "canonicalNameEn": "All-purpose flour",
+    "canonicalNameAr": "دقيق متعدد الأغراض",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "plain flour",
+      "all purpose flour",
+      "دقيق",
+      "طحين"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "whole-wheat-flour",
+    "canonicalNameEn": "Whole wheat flour",
+    "canonicalNameAr": "دقيق القمح الكامل",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "wholemeal flour",
+      "whole grain flour",
+      "دقيق الأسمر",
+      "طحين القمح الكامل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "bread-flour",
+    "canonicalNameEn": "Bread flour",
+    "canonicalNameAr": "دقيق الخبز",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "strong flour",
+      "high protein flour",
+      "دقيق قوي",
+      "طحين الخبز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cornstarch",
+    "canonicalNameEn": "Cornstarch",
+    "canonicalNameAr": "نشا",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "corn flour",
+      "cornflour",
+      "نشا الذرة",
+      "نشاء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "baking-powder",
+    "canonicalNameEn": "Baking powder",
+    "canonicalNameAr": "خميرة كيميائية",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "leavening powder",
+      "baking agent",
+      "مسحوق الخبز",
+      "بيكنج باودر"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "baking-soda",
+    "canonicalNameEn": "Baking soda",
+    "canonicalNameAr": "بيكربونات الصوديوم",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "bicarbonate of soda",
+      "sodium bicarbonate",
+      "صودا الخبز",
+      "بيكربونات صودا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "instant-yeast",
+    "canonicalNameEn": "Instant yeast",
+    "canonicalNameAr": "خميرة فورية",
+    "category": "baking",
+    "defaultUnit": "packet",
+    "aliases": [
+      "fast action yeast",
+      "rapid rise yeast",
+      "خميرة سريعة",
+      "خميرة جاهزة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fresh-yeast",
+    "canonicalNameEn": "Fresh yeast",
+    "canonicalNameAr": "خميرة طازجة",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "cake yeast",
+      "compressed yeast",
+      "خميرة عجن",
+      "خميرة مضغوطة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "vanilla-extract",
+    "canonicalNameEn": "Vanilla extract",
+    "canonicalNameAr": "خلاصة الفانيليا",
+    "category": "baking",
+    "defaultUnit": "ml",
+    "aliases": [
+      "pure vanilla",
+      "vanilla essence",
+      "فانيليا سائلة",
+      "مستخلص الفانيليا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "vanilla-sugar",
+    "canonicalNameEn": "Vanilla sugar",
+    "canonicalNameAr": "سكر الفانيليا",
+    "category": "baking",
+    "defaultUnit": "packet",
+    "aliases": [
+      "vanilla flavoured sugar",
+      "vanillin sugar",
+      "سكر بالفانيليا",
+      "سكر فانيليا ناعم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cocoa-powder",
+    "canonicalNameEn": "Cocoa powder",
+    "canonicalNameAr": "مسحوق الكاكاو",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "unsweetened cocoa",
+      "dark cocoa powder",
+      "كاكاو",
+      "بودرة الكاكاو"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "dark-chocolate",
+    "canonicalNameEn": "Dark chocolate",
+    "canonicalNameAr": "شوكولاتة داكنة",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "bittersweet chocolate",
+      "plain chocolate",
+      "شوكولاتة سوداء",
+      "شوكولاتة التحمير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chocolate-chips",
+    "canonicalNameEn": "Chocolate chips",
+    "canonicalNameAr": "رقائق الشوكولاتة",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "chocolate morsels",
+      "chocolate drops",
+      "قطع الشوكولاتة",
+      "حبيبات الشوكولاتة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "halal-gelatin",
+    "canonicalNameEn": "Halal gelatin",
+    "canonicalNameAr": "جيلاتين حلال",
+    "category": "baking",
+    "defaultUnit": "packet",
+    "aliases": [
+      "beef gelatin",
+      "kosher gelatin",
+      "جيلاتين بقري",
+      "بودرة الجيلاتين الحلال"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "corn-syrup",
+    "canonicalNameEn": "Corn syrup",
+    "canonicalNameAr": "شراب الذرة",
+    "category": "baking",
+    "defaultUnit": "ml",
+    "aliases": [
+      "glucose syrup",
+      "light corn syrup",
+      "جلوكوز سائل",
+      "شراب الجلوكوز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "food-colouring",
+    "canonicalNameEn": "Food colouring",
+    "canonicalNameAr": "ألوان الطعام",
+    "category": "baking",
+    "defaultUnit": "ml",
+    "aliases": [
+      "food dye",
+      "food color",
+      "صبغة الطعام",
+      "ملونات الطعام"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mahleb",
+    "canonicalNameEn": "Mahleb",
+    "canonicalNameAr": "محلب",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "mahaleb",
+      "St Lucie cherry pits",
+      "محلب كرز",
+      "بذور المحلب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mastic",
+    "canonicalNameEn": "Mastic",
+    "canonicalNameAr": "مستكة",
+    "category": "baking",
+    "defaultUnit": "g",
+    "aliases": [
+      "gum mastic",
+      "Chios mastic",
+      "علك الروم",
+      "صمغ المستكة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "rose-water",
+    "canonicalNameEn": "Rose water",
+    "canonicalNameAr": "ماء الورد",
+    "category": "baking",
+    "defaultUnit": "ml",
+    "aliases": [
+      "rose extract",
+      "distilled rose water",
+      "مياه الورد",
+      "جلاب الورد"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "orange-blossom-water",
+    "canonicalNameEn": "Orange blossom water",
+    "canonicalNameAr": "ماء الزهر",
+    "category": "baking",
+    "defaultUnit": "ml",
+    "aliases": [
+      "orange flower water",
+      "neroli water",
+      "ماء زهر البرتقال",
+      "جلاب الزهر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-chopped-tomatoes",
+    "canonicalNameEn": "Canned chopped tomatoes",
+    "canonicalNameAr": "طماطم مقطعة معلبة",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "diced tomatoes",
+      "tinned tomatoes",
+      "طماطم معلبة",
+      "بندورة معلبة"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "tomato-paste",
+    "canonicalNameEn": "Tomato paste",
+    "canonicalNameAr": "معجون الطماطم",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "tomato puree",
+      "concentrated tomatoes",
+      "صلصة طماطم مركزة",
+      "رب الطماطم"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "canned-corn",
+    "canonicalNameEn": "Canned corn",
+    "canonicalNameAr": "ذرة معلبة",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "sweet corn canned",
+      "tinned corn",
+      "ذرة حلوة معلبة",
+      "كورن معلب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-peas",
+    "canonicalNameEn": "Canned peas",
+    "canonicalNameAr": "بازلاء معلبة",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "garden peas canned",
+      "tinned peas",
+      "بازلاء خضراء معلبة",
+      "جلبانة معلبة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-mushrooms",
+    "canonicalNameEn": "Canned mushrooms",
+    "canonicalNameAr": "فطر معلب",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "sliced mushrooms canned",
+      "button mushrooms canned",
+      "فطر مشروم معلب",
+      "فطر معلب مقطع"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-green-olives",
+    "canonicalNameEn": "Canned green olives",
+    "canonicalNameAr": "زيتون أخضر معلب",
+    "category": "canned",
+    "defaultUnit": "jar",
+    "aliases": [
+      "green olives",
+      "stuffed green olives",
+      "زيتون أخضر",
+      "زيتون أخضر بالجرة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-black-olives",
+    "canonicalNameEn": "Canned black olives",
+    "canonicalNameAr": "زيتون أسود معلب",
+    "category": "canned",
+    "defaultUnit": "jar",
+    "aliases": [
+      "black olives",
+      "kalamata olives",
+      "زيتون أسود",
+      "زيتون كلاماتا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-artichoke-hearts",
+    "canonicalNameEn": "Canned artichoke hearts",
+    "canonicalNameAr": "قلوب الخرشوف المعلبة",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "artichoke hearts in brine",
+      "jarred artichokes",
+      "خرشوف معلب",
+      "أرضي شوكي معلب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-white-beans",
+    "canonicalNameEn": "Canned white beans",
+    "canonicalNameAr": "فاصولياء بيضاء معلبة",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "cannellini beans",
+      "haricot beans",
+      "لوبيا بيضاء معلبة",
+      "فاصولياء ناعمة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-green-beans",
+    "canonicalNameEn": "Canned green beans",
+    "canonicalNameAr": "فاصوليا خضراء معلبة",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "tinned green beans",
+      "canned french beans",
+      "لوبيا خضراء معلبة",
+      "فاصولياء معلبة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-tuna-in-oil",
+    "canonicalNameEn": "Canned tuna in oil",
+    "canonicalNameAr": "تونة معلبة بالزيت",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "tuna in oil",
+      "chunk light tuna",
+      "سمك التونة المعلب",
+      "تونة زيت"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "coconut-milk",
+    "canonicalNameEn": "Coconut milk",
+    "canonicalNameAr": "حليب جوز الهند",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "canned coconut milk",
+      "full fat coconut milk",
+      "لبن جوز الهند",
+      "حليب النارجيل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-baked-beans",
+    "canonicalNameEn": "Canned baked beans",
+    "canonicalNameAr": "فاصوليا بالصلصة معلبة",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "beans in tomato sauce",
+      "tinned baked beans",
+      "فول بالطماطم معلب",
+      "فاصولياء بالصلصة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-cream",
+    "canonicalNameEn": "Canned cream",
+    "canonicalNameAr": "كريمة معلبة",
+    "category": "canned",
+    "defaultUnit": "can",
+    "aliases": [
+      "table cream",
+      "cooking cream canned",
+      "كريم معلب",
+      "قشطة معلبة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pickled-cucumbers",
+    "canonicalNameEn": "Pickled cucumbers",
+    "canonicalNameAr": "مخلل الخيار",
+    "category": "canned",
+    "defaultUnit": "jar",
+    "aliases": [
+      "dill pickles",
+      "gherkins",
+      "خيار مخلل",
+      "خيار حامض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pickled-turnips",
+    "canonicalNameEn": "Pickled turnips",
+    "canonicalNameAr": "لفت مخلل",
+    "category": "canned",
+    "defaultUnit": "jar",
+    "aliases": [
+      "Lebanese pickled turnips",
+      "pink pickled turnips",
+      "لفت أرجواني مخلل",
+      "مخلل اللفت"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-grape-leaves",
+    "canonicalNameEn": "Canned grape leaves",
+    "canonicalNameAr": "ورق عنب معلب",
+    "category": "canned",
+    "defaultUnit": "jar",
+    "aliases": [
+      "vine leaves canned",
+      "dolma wrappers",
+      "ورق الدوالي",
+      "أوراق العنب المعلبة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "canned-jalapenos",
+    "canonicalNameEn": "Canned jalapeños",
+    "canonicalNameAr": "هالابينو معلب",
+    "category": "canned",
+    "defaultUnit": "jar",
+    "aliases": [
+      "pickled jalapenos",
+      "sliced jalapenos",
+      "فلفل هالابينو",
+      "هالابينو مخلل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-peas",
+    "canonicalNameEn": "Frozen peas",
+    "canonicalNameAr": "بازلاء مجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "frozen garden peas",
+      "green peas frozen",
+      "جلبانة مجمدة",
+      "بازلاء خضراء مجمدة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-mixed-vegetables",
+    "canonicalNameEn": "Frozen mixed vegetables",
+    "canonicalNameAr": "خضروات مشكلة مجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "vegetable medley frozen",
+      "frozen stir fry vegetables",
+      "خضار مشكلة مجمدة",
+      "خضروات متنوعة مجمدة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-okra",
+    "canonicalNameEn": "Frozen okra",
+    "canonicalNameAr": "بامية مجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "frozen lady fingers",
+      "okra pods frozen",
+      "بامية",
+      "بامية مقطعة مجمدة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-molokhia",
+    "canonicalNameEn": "Frozen molokhia",
+    "canonicalNameAr": "ملوخية مجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "frozen jute leaves",
+      "mulukhiyah frozen",
+      "ملوخية خضراء مجمدة",
+      "خضار الملوخية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-spinach",
+    "canonicalNameEn": "Frozen spinach",
+    "canonicalNameAr": "سبانخ مجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "chopped spinach frozen",
+      "leaf spinach frozen",
+      "سبانخ مفروم مجمد",
+      "سبانخ أوراق مجمدة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-french-fries",
+    "canonicalNameEn": "Frozen french fries",
+    "canonicalNameAr": "بطاطس مقلية مجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "oven chips",
+      "frozen chips",
+      "بطاطس مجمدة",
+      "شيبس مجمد"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-corn",
+    "canonicalNameEn": "Frozen corn",
+    "canonicalNameAr": "ذرة مجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "frozen sweet corn",
+      "corn kernels frozen",
+      "ذرة صفراء مجمدة",
+      "كورن مجمد"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-berries",
+    "canonicalNameEn": "Frozen berries",
+    "canonicalNameAr": "توت مجمد",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "mixed berries frozen",
+      "wild berries frozen",
+      "بري مجمد",
+      "فراولة وتوت مجمد"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-puff-pastry",
+    "canonicalNameEn": "Frozen puff pastry",
+    "canonicalNameAr": "عجينة الفطير المجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "puff pastry sheets",
+      "vol au vent pastry",
+      "عجينة مورقة مجمدة",
+      "باف باستري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-filo",
+    "canonicalNameEn": "Frozen filo pastry",
+    "canonicalNameAr": "عجينة الجلاش المجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "filo sheets",
+      "phyllo pastry",
+      "عجينة فيلو مجمدة",
+      "جلاش"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-samosa-wrappers",
+    "canonicalNameEn": "Frozen samosa wrappers",
+    "canonicalNameAr": "أوراق السمبوسة المجمدة",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "samosa sheets",
+      "spring roll wrappers",
+      "أوراق السمبوسك",
+      "أوراق السبرينج رول"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "frozen-shrimp",
+    "canonicalNameEn": "Frozen shrimp",
+    "canonicalNameAr": "جمبري مجمد",
+    "category": "frozen",
+    "defaultUnit": "g",
+    "aliases": [
+      "frozen prawns",
+      "peeled shrimp frozen",
+      "روبيان مجمد",
+      "قريدس مجمد"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ice-cubes",
+    "canonicalNameEn": "Ice cubes",
+    "canonicalNameAr": "مكعبات الثلج",
+    "category": "frozen",
+    "defaultUnit": "piece",
+    "aliases": [
+      "ice",
+      "crushed ice",
+      "ثلج",
+      "ثلج مجمد"
+    ],
+    "isStaple": false
+  }
+]

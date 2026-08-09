@@ -1,0 +1,1822 @@
+[
+  {
+    "slug": "onion",
+    "canonicalNameEn": "Onion",
+    "canonicalNameAr": "بصل",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "yellow onion",
+      "white onion",
+      "بصلة",
+      "بصل أصفر",
+      "بصل أبيض"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "red-onion",
+    "canonicalNameEn": "Red onion",
+    "canonicalNameAr": "بصل أحمر",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "purple onion",
+      "Spanish onion",
+      "بصل بنفسجي",
+      "بصلة حمراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "garlic",
+    "canonicalNameEn": "Garlic",
+    "canonicalNameAr": "ثوم",
+    "category": "vegetable",
+    "defaultUnit": "clove",
+    "aliases": [
+      "garlic clove",
+      "garlic bulb",
+      "ثومة",
+      "فص ثوم",
+      "توم"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "potato",
+    "canonicalNameEn": "Potato",
+    "canonicalNameAr": "بطاطس",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "potatoes",
+      "spud",
+      "بطاطا",
+      "باتاتا",
+      "بطاطس بيضاء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sweet-potato",
+    "canonicalNameEn": "Sweet potato",
+    "canonicalNameAr": "بطاطا حلوة",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "yam",
+      "sweet potatoes",
+      "بطاطس حلوة",
+      "بطاطا صفراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "carrot",
+    "canonicalNameEn": "Carrot",
+    "canonicalNameAr": "جزر",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "carrots",
+      "orange carrot",
+      "جزرة",
+      "جزر برتقالي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "roma-tomato",
+    "canonicalNameEn": "Roma tomato",
+    "canonicalNameAr": "طماطم روما",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "plum tomato",
+      "tomato",
+      "طماطم",
+      "بندورة",
+      "بندوره"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cherry-tomato",
+    "canonicalNameEn": "Cherry tomato",
+    "canonicalNameAr": "طماطم كرز",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "grape tomato",
+      "cherry tomatoes",
+      "طماطم صغيرة",
+      "بندورة صغيرة",
+      "طماطم عنقود"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cucumber",
+    "canonicalNameEn": "Cucumber",
+    "canonicalNameAr": "خيار",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "cucumbers",
+      "خيارة",
+      "قثاء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "green-bell-pepper",
+    "canonicalNameEn": "Green bell pepper",
+    "canonicalNameAr": "فلفل أخضر",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "green pepper",
+      "sweet green pepper",
+      "فلفل رومي أخضر",
+      "فلفل بارد",
+      "فليفلة خضراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "red-bell-pepper",
+    "canonicalNameEn": "Red bell pepper",
+    "canonicalNameAr": "فلفل أحمر",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "red pepper",
+      "sweet red pepper",
+      "فلفل رومي أحمر",
+      "فلفل أحمر حلو",
+      "فليفلة حمراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "yellow-bell-pepper",
+    "canonicalNameEn": "Yellow bell pepper",
+    "canonicalNameAr": "فلفل أصفر",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "yellow pepper",
+      "sweet yellow pepper",
+      "فلفل رومي أصفر",
+      "فلفل أصفر حلو"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chili-pepper",
+    "canonicalNameEn": "Chili pepper",
+    "canonicalNameAr": "فلفل حار",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "hot pepper",
+      "hot chili",
+      "green chili",
+      "شطة",
+      "فلفل أحمر حار",
+      "فليفلة حارة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "eggplant",
+    "canonicalNameEn": "Eggplant",
+    "canonicalNameAr": "باذنجان",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "aubergine",
+      "brinjal",
+      "بتنجان",
+      "بادنجان",
+      "بذنجان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "zucchini",
+    "canonicalNameEn": "Zucchini",
+    "canonicalNameAr": "كوسة",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "courgette",
+      "baby marrow",
+      "كوسا",
+      "كوسه",
+      "قرع أخضر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cauliflower",
+    "canonicalNameEn": "Cauliflower",
+    "canonicalNameAr": "قرنبيط",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "cauliflowers",
+      "زهرة",
+      "كرنب أبيض",
+      "قرنبيطة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "broccoli",
+    "canonicalNameEn": "Broccoli",
+    "canonicalNameAr": "بروكلي",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "broccoli florets",
+      "بروكولي",
+      "بروكوليا",
+      "كرنب بروكلي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cabbage",
+    "canonicalNameEn": "Cabbage",
+    "canonicalNameAr": "ملفوف",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "green cabbage",
+      "white cabbage",
+      "كرنب",
+      "ملفوفة",
+      "كرمب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lettuce",
+    "canonicalNameEn": "Lettuce",
+    "canonicalNameAr": "خس",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "salad lettuce",
+      "butter lettuce",
+      "خسة",
+      "أوراق الخس"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "spinach",
+    "canonicalNameEn": "Spinach",
+    "canonicalNameAr": "سبانخ",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "baby spinach",
+      "English spinach",
+      "سبانخة",
+      "اسبانخ",
+      "إسبانخ"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mushroom",
+    "canonicalNameEn": "Mushroom",
+    "canonicalNameAr": "فطر",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "button mushroom",
+      "white mushroom",
+      "فطر أبيض",
+      "فطريات",
+      "عيش الغراب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "celery",
+    "canonicalNameEn": "Celery",
+    "canonicalNameAr": "كرفس",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "celery stalks",
+      "celery sticks",
+      "كرفسة",
+      "كرافس"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "leek",
+    "canonicalNameEn": "Leek",
+    "canonicalNameAr": "كراث",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "leeks",
+      "كراثة",
+      "الكراث"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "green-beans",
+    "canonicalNameEn": "Green beans",
+    "canonicalNameAr": "فاصولياء خضراء",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "string beans",
+      "French beans",
+      "haricot beans",
+      "لوبيا",
+      "فاصوليا خضراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "peas",
+    "canonicalNameEn": "Peas",
+    "canonicalNameAr": "بازلاء",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "green peas",
+      "garden peas",
+      "جلبانة",
+      "بسلة",
+      "حبوب البازلاء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "corn",
+    "canonicalNameEn": "Corn",
+    "canonicalNameAr": "ذرة",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "maize",
+      "sweet corn",
+      "corn on the cob",
+      "ذرة شامية",
+      "ذرة صفراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pumpkin",
+    "canonicalNameEn": "Pumpkin",
+    "canonicalNameAr": "يقطين",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "squash",
+      "قرع",
+      "قرعة",
+      "يقطينة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "beetroot",
+    "canonicalNameEn": "Beetroot",
+    "canonicalNameAr": "شمندر",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "beet",
+      "red beet",
+      "بنجر",
+      "شمندر أحمر",
+      "بنجر أحمر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "radish",
+    "canonicalNameEn": "Radish",
+    "canonicalNameAr": "فجل",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "red radish",
+      "فجلة",
+      "الفجل",
+      "فجل أحمر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "turnip",
+    "canonicalNameEn": "Turnip",
+    "canonicalNameAr": "لفت",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "turnips",
+      "شلجم",
+      "لفتة",
+      "لفت أبيض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "asparagus",
+    "canonicalNameEn": "Asparagus",
+    "canonicalNameAr": "هليون",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "asparagus spears",
+      "هليونة",
+      "أسباراغوس",
+      "نبات الهليون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "kale",
+    "canonicalNameEn": "Kale",
+    "canonicalNameAr": "كيل",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "curly kale",
+      "lacinato kale",
+      "كيل أخضر",
+      "كرنب كرلي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "avocado",
+    "canonicalNameEn": "Avocado",
+    "canonicalNameAr": "أفوكادو",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "avocados",
+      "alligator pear",
+      "أفوكاتو",
+      "أفوكادو أخضر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "okra",
+    "canonicalNameEn": "Okra",
+    "canonicalNameAr": "بامية",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "ladies' fingers",
+      "gumbo",
+      "bamya",
+      "بامية خضراء",
+      "بمية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "molokhia",
+    "canonicalNameEn": "Molokhia",
+    "canonicalNameAr": "ملوخية",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "jute mallow",
+      "Jew's mallow",
+      "Egyptian spinach",
+      "ملوخيا",
+      "ملوخيه"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "vine-leaves",
+    "canonicalNameEn": "Vine leaves",
+    "canonicalNameAr": "ورق عنب",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "grape leaves",
+      "grapevine leaves",
+      "dolma leaves",
+      "ورق دوالي",
+      "ورق العنب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "taro",
+    "canonicalNameEn": "Taro",
+    "canonicalNameAr": "قلقاس",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "colocasia",
+      "taro root",
+      "Egyptian taro",
+      "قلقاسة",
+      "كولوكاسيا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "white-radish",
+    "canonicalNameEn": "White radish",
+    "canonicalNameAr": "فجل أبيض",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "daikon",
+      "Japanese radish",
+      "mooli",
+      "فجل ياباني",
+      "دايكون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "armenian-cucumber",
+    "canonicalNameEn": "Armenian cucumber",
+    "canonicalNameAr": "مقتة",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "snake cucumber",
+      "yard-long cucumber",
+      "فقوس",
+      "خيار أرمني",
+      "مقتة خضراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chard",
+    "canonicalNameEn": "Chard",
+    "canonicalNameAr": "سلق",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "Swiss chard",
+      "rainbow chard",
+      "silver beet",
+      "سلق أبيض",
+      "الصلق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fava-bean-pods",
+    "canonicalNameEn": "Fava bean pods",
+    "canonicalNameAr": "فول أخضر",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "broad beans",
+      "fresh fava beans",
+      "fava beans",
+      "باقلاء",
+      "فول طازج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "purslane",
+    "canonicalNameEn": "Purslane",
+    "canonicalNameAr": "بقلة",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "common purslane",
+      "portulaca",
+      "بقلة حمقاء",
+      "فرفحينة",
+      "بقلة خضراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "brussels-sprouts",
+    "canonicalNameEn": "Brussels sprouts",
+    "canonicalNameAr": "كرنب بروكسل",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "sprouts",
+      "mini cabbage",
+      "كرنب صغير",
+      "بروكسيل",
+      "ملفوف صغير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "butternut-squash",
+    "canonicalNameEn": "Butternut squash",
+    "canonicalNameAr": "قرع عسلي",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "butternut pumpkin",
+      "winter squash",
+      "يقطين عسلي",
+      "كوسة بترناط"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "artichoke",
+    "canonicalNameEn": "Artichoke",
+    "canonicalNameAr": "خرشوف",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "globe artichoke",
+      "أرضي شوكي",
+      "خرشوفة",
+      "أرضي شوك"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fennel-bulb",
+    "canonicalNameEn": "Fennel bulb",
+    "canonicalNameAr": "شمر",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "Florence fennel",
+      "sweet fennel",
+      "شمرة",
+      "رازيانج",
+      "بسباس"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "bok-choy",
+    "canonicalNameEn": "Bok choy",
+    "canonicalNameAr": "بوك تشوي",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "pak choi",
+      "pak choy",
+      "Chinese white cabbage",
+      "ملفوف صيني أخضر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "snap-peas",
+    "canonicalNameEn": "Snap peas",
+    "canonicalNameAr": "بازلاء سكرية",
+    "category": "vegetable",
+    "defaultUnit": "g",
+    "aliases": [
+      "sugar snap peas",
+      "sugar peas",
+      "بازلاء حلوة",
+      "بازلاء قرنية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "bitter-melon",
+    "canonicalNameEn": "Bitter melon",
+    "canonicalNameAr": "قرع مر",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "bitter gourd",
+      "karela",
+      "foo gua",
+      "كاريلا",
+      "مومورديكا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "luffa",
+    "canonicalNameEn": "Luffa",
+    "canonicalNameAr": "لوف",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "loofah",
+      "sponge gourd",
+      "vegetable sponge",
+      "لوفة",
+      "خيار الليف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "iceberg-lettuce",
+    "canonicalNameEn": "Iceberg lettuce",
+    "canonicalNameAr": "خس جبلي",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "crispy lettuce",
+      "crisphead lettuce",
+      "خس أيسبرج",
+      "خس قبة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "romaine-lettuce",
+    "canonicalNameEn": "Romaine lettuce",
+    "canonicalNameAr": "خس روماني",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "cos lettuce",
+      "romaine",
+      "خس كوس",
+      "خس طويل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "parsnip",
+    "canonicalNameEn": "Parsnip",
+    "canonicalNameAr": "باسنب",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "parsnips",
+      "white parsnip",
+      "جزر الشتاء",
+      "باسنيب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "shallot",
+    "canonicalNameEn": "Shallot",
+    "canonicalNameAr": "أسقلونة",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "shallots",
+      "French shallot",
+      "عرموط",
+      "بصل صغير",
+      "كراث صغير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "wild-chicory",
+    "canonicalNameEn": "Wild chicory",
+    "canonicalNameAr": "هندباء برية",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "dandelion greens",
+      "chicory leaves",
+      "هندبة",
+      "علت"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "collard-greens",
+    "canonicalNameEn": "Collard greens",
+    "canonicalNameAr": "ورق اللفت",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "collards",
+      "collard leaves",
+      "أوراق اللفت",
+      "كرنب ورقي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "napa-cabbage",
+    "canonicalNameEn": "Napa cabbage",
+    "canonicalNameAr": "ملفوف صيني",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "Chinese cabbage",
+      "wombok",
+      "ملفوف صيني أبيض",
+      "كرنب صيني"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "endive",
+    "canonicalNameEn": "Endive",
+    "canonicalNameAr": "هندباء",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "Belgian endive",
+      "chicory",
+      "هندباء بلجيكية",
+      "شيكوري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "kohlrabi",
+    "canonicalNameEn": "Kohlrabi",
+    "canonicalNameAr": "كولرابي",
+    "category": "vegetable",
+    "defaultUnit": "piece",
+    "aliases": [
+      "turnip cabbage",
+      "German turnip",
+      "كرنب درني",
+      "لفت كرنبي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sorrel",
+    "canonicalNameEn": "Sorrel",
+    "canonicalNameAr": "حميضة",
+    "category": "vegetable",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "garden sorrel",
+      "common sorrel",
+      "حماض",
+      "حميض",
+      "عشبة الحموضة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "apple",
+    "canonicalNameEn": "Apple",
+    "canonicalNameAr": "تفاح",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "red apple",
+      "green apple",
+      "تفاحة",
+      "تفاح أحمر",
+      "تفاح أخضر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "banana",
+    "canonicalNameEn": "Banana",
+    "canonicalNameAr": "موز",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "bananas",
+      "yellow banana",
+      "موزة",
+      "موز أصفر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "orange",
+    "canonicalNameEn": "Orange",
+    "canonicalNameAr": "برتقال",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "navel orange",
+      "sweet orange",
+      "برتقالة",
+      "برتقال حلو"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mandarin",
+    "canonicalNameEn": "Mandarin",
+    "canonicalNameAr": "يوسفي",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "tangerine",
+      "mandarin orange",
+      "مندرين",
+      "يوسفندي",
+      "يوسف أفندي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lemon",
+    "canonicalNameEn": "Lemon",
+    "canonicalNameAr": "ليمون",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "yellow lemon",
+      "ليمونة",
+      "ليمون أصفر",
+      "حامض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lime",
+    "canonicalNameEn": "Lime",
+    "canonicalNameAr": "ليمون أخضر",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "key lime",
+      "limes",
+      "لايم",
+      "ليمون بغدادي",
+      "ليمون أخضر صغير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "grapes",
+    "canonicalNameEn": "Grapes",
+    "canonicalNameAr": "عنب",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "seedless grapes",
+      "table grapes",
+      "عنبة",
+      "عنب أخضر",
+      "عنب أسود"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "watermelon",
+    "canonicalNameEn": "Watermelon",
+    "canonicalNameAr": "بطيخ",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "citrullus",
+      "حبحب",
+      "دلاح",
+      "بطيخة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cantaloupe",
+    "canonicalNameEn": "Cantaloupe",
+    "canonicalNameAr": "شمام",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "rockmelon",
+      "muskmelon",
+      "شمامة",
+      "بطيخ أصفر",
+      "قاوون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mango",
+    "canonicalNameEn": "Mango",
+    "canonicalNameAr": "مانجو",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "mangoes",
+      "منجة",
+      "منجا",
+      "مانجة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pineapple",
+    "canonicalNameEn": "Pineapple",
+    "canonicalNameAr": "أناناس",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "pineapples",
+      "أنانسة",
+      "فاكهة الأناناس",
+      "أناناسة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "strawberry",
+    "canonicalNameEn": "Strawberry",
+    "canonicalNameAr": "فراولة",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "strawberries",
+      "fresh strawberry",
+      "فريز",
+      "توت الأرض",
+      "فراولة حمراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "blueberry",
+    "canonicalNameEn": "Blueberry",
+    "canonicalNameAr": "توت أزرق",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "blueberries",
+      "bilberry",
+      "توت أزرق طازج",
+      "عنب الدب الأزرق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "raspberry",
+    "canonicalNameEn": "Raspberry",
+    "canonicalNameAr": "توت العليق",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "raspberries",
+      "red raspberry",
+      "توت أحمر",
+      "عليق أحمر",
+      "توت العليق الأحمر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "peach",
+    "canonicalNameEn": "Peach",
+    "canonicalNameAr": "خوخ",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "peaches",
+      "yellow peach",
+      "دراق",
+      "خوخة",
+      "دراقنة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "apricot",
+    "canonicalNameEn": "Apricot",
+    "canonicalNameAr": "مشمش",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "apricots",
+      "مشمشة",
+      "قمر الدين طازج",
+      "أبو سيف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "plum",
+    "canonicalNameEn": "Plum",
+    "canonicalNameAr": "برقوق",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "plums",
+      "خوخ أسود",
+      "إجاص",
+      "برقوقة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pear",
+    "canonicalNameEn": "Pear",
+    "canonicalNameAr": "كمثرى",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "pears",
+      "إجاصة",
+      "كمترا",
+      "كمثرى أخضر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cherry",
+    "canonicalNameEn": "Cherry",
+    "canonicalNameAr": "كرز",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "sweet cherry",
+      "cherries",
+      "كرزة",
+      "الكرز الحلو",
+      "كرز أحمر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "kiwi",
+    "canonicalNameEn": "Kiwi",
+    "canonicalNameAr": "كيوي",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "kiwifruit",
+      "Chinese gooseberry",
+      "كيوي أخضر",
+      "فاكهة الكيوي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pomegranate",
+    "canonicalNameEn": "Pomegranate",
+    "canonicalNameAr": "رمان",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "pomegranates",
+      "رمانة",
+      "الرمان",
+      "حب الرمان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fig",
+    "canonicalNameEn": "Fig",
+    "canonicalNameAr": "تين",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "fresh fig",
+      "figs",
+      "تينة",
+      "التين الطازج",
+      "تين أخضر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "date",
+    "canonicalNameEn": "Date",
+    "canonicalNameAr": "تمر",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "dates",
+      "fresh dates",
+      "بلح",
+      "رطب",
+      "نخلة التمر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "guava",
+    "canonicalNameEn": "Guava",
+    "canonicalNameAr": "جوافة",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "guavas",
+      "جوافة بيضاء",
+      "جوافة وردية",
+      "الجوافة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "persimmon",
+    "canonicalNameEn": "Persimmon",
+    "canonicalNameAr": "كاكا",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "sharon fruit",
+      "kaki",
+      "خرما",
+      "كاكي",
+      "تفاح الجنة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "prickly-pear",
+    "canonicalNameEn": "Prickly pear",
+    "canonicalNameAr": "تين شوكي",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "cactus fruit",
+      "cactus pear",
+      "صبار",
+      "هندي",
+      "تين الصبار"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "loquat",
+    "canonicalNameEn": "Loquat",
+    "canonicalNameAr": "إسكدنيا",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "Japanese plum",
+      "medlar",
+      "نسبرة",
+      "اسبيدج",
+      "عناب الشجر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sour-cherry",
+    "canonicalNameEn": "Sour cherry",
+    "canonicalNameAr": "كرز حامض",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "tart cherry",
+      "morello cherry",
+      "كرز بلدي",
+      "دبس الكرز",
+      "كرزة حامضة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "coconut",
+    "canonicalNameEn": "Coconut",
+    "canonicalNameAr": "جوز الهند",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "fresh coconut",
+      "coconut flesh",
+      "نارجيل",
+      "هندي الجوز",
+      "جوز هندي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "papaya",
+    "canonicalNameEn": "Papaya",
+    "canonicalNameAr": "بابايا",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "pawpaw",
+      "papaw",
+      "باباي",
+      "فاكهة البابايا",
+      "بابايا برتقالية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "dragon-fruit",
+    "canonicalNameEn": "Dragon fruit",
+    "canonicalNameAr": "فاكهة التنين",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "pitaya",
+      "pitahaya",
+      "بيتايا",
+      "فاكهة التنين الوردية",
+      "بيتاهايا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "grapefruit",
+    "canonicalNameEn": "Grapefruit",
+    "canonicalNameAr": "جريب فروت",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "pomelo",
+      "grapefruit pink",
+      "ليمون كبير",
+      "شدوك",
+      "زهرة البنسج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "quince",
+    "canonicalNameEn": "Quince",
+    "canonicalNameAr": "سفرجل",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "quinces",
+      "سفرجلة",
+      "الجسفرجل",
+      "تفاح الجبل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "honeydew-melon",
+    "canonicalNameEn": "Honeydew melon",
+    "canonicalNameAr": "شمام أبيض",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "honeydew",
+      "white melon",
+      "بطيخ عسلي",
+      "قاوون أبيض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "blackberry",
+    "canonicalNameEn": "Blackberry",
+    "canonicalNameAr": "توت أسود",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "blackberries",
+      "wild blackberry",
+      "عليق أسود",
+      "توت العليق الأسود"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mulberry",
+    "canonicalNameEn": "Mulberry",
+    "canonicalNameAr": "توت",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "white mulberry",
+      "black mulberry",
+      "فرصاد",
+      "توت الشجر",
+      "توتة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "nectarine",
+    "canonicalNameEn": "Nectarine",
+    "canonicalNameAr": "نكتارين",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "smooth peach",
+      "nectarines",
+      "خوخ أملس",
+      "نكترين",
+      "دراق أملس"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "passion-fruit",
+    "canonicalNameEn": "Passion fruit",
+    "canonicalNameAr": "فاكهة الآلام",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "granadilla",
+      "maracuja",
+      "باشن فروت",
+      "زهرة الآلام",
+      "فاكهة العاطفة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tamarind",
+    "canonicalNameEn": "Tamarind",
+    "canonicalNameAr": "تمر هندي",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "tamarind pod",
+      "Indian date",
+      "حامض هندي",
+      "تمر الهند",
+      "عصام"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "blood-orange",
+    "canonicalNameEn": "Blood orange",
+    "canonicalNameAr": "برتقال أحمر",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "Moro orange",
+      "ruby orange",
+      "برتقال دموي",
+      "برتقالة حمراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "plantain",
+    "canonicalNameEn": "Plantain",
+    "canonicalNameAr": "موز الطهي",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "cooking banana",
+      "green plantain",
+      "موز أخضر للطهي",
+      "بلانتين"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lychee",
+    "canonicalNameEn": "Lychee",
+    "canonicalNameAr": "ليتشي",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "litchi",
+      "lichi",
+      "ليشي",
+      "ليتشيا",
+      "فاكهة الليتشي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "jackfruit",
+    "canonicalNameEn": "Jackfruit",
+    "canonicalNameAr": "فاكهة الجاك",
+    "category": "fruit",
+    "defaultUnit": "g",
+    "aliases": [
+      "jak fruit",
+      "jack fruit",
+      "جاك فروت",
+      "ثمرة الجاك",
+      "نانكا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "starfruit",
+    "canonicalNameEn": "Starfruit",
+    "canonicalNameAr": "كرمبولا",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "carambola",
+      "five-finger fruit",
+      "فاكهة النجمة",
+      "نجمية",
+      "كرامبولا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "clementine",
+    "canonicalNameEn": "Clementine",
+    "canonicalNameAr": "كليمنتين",
+    "category": "fruit",
+    "defaultUnit": "piece",
+    "aliases": [
+      "seedless tangerine",
+      "clementines",
+      "كليمنتينة",
+      "يوسفي صغير",
+      "مندرين صغير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "parsley",
+    "canonicalNameEn": "Parsley",
+    "canonicalNameAr": "بقدونس",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "flat-leaf parsley",
+      "curly parsley",
+      "Italian parsley",
+      "معدنوس",
+      "بقدونس أخضر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "coriander",
+    "canonicalNameEn": "Coriander",
+    "canonicalNameAr": "كزبرة",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "cilantro",
+      "Chinese parsley",
+      "coriander leaves",
+      "كسبرة",
+      "قزبرة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mint",
+    "canonicalNameEn": "Mint",
+    "canonicalNameAr": "نعناع",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "spearmint",
+      "fresh mint",
+      "peppermint",
+      "نعناع طازج",
+      "نعنع"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "dill",
+    "canonicalNameEn": "Dill",
+    "canonicalNameAr": "شبت",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "dill weed",
+      "fresh dill",
+      "شبت أخضر",
+      "شباث"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "basil",
+    "canonicalNameEn": "Basil",
+    "canonicalNameAr": "ريحان",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "sweet basil",
+      "Italian basil",
+      "حبق",
+      "ريحانة",
+      "ريحان حلو"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "thyme",
+    "canonicalNameEn": "Thyme",
+    "canonicalNameAr": "زعتر أخضر",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "fresh thyme",
+      "garden thyme",
+      "زعتر طازج",
+      "أعشاب الزعتر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "rosemary",
+    "canonicalNameEn": "Rosemary",
+    "canonicalNameAr": "إكليل الجبل",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "rosemary sprigs",
+      "حصالبان",
+      "كليل الجبل",
+      "إكليل الجبل الأخضر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sage",
+    "canonicalNameEn": "Sage",
+    "canonicalNameAr": "مريمية",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "garden sage",
+      "common sage",
+      "سالفيا",
+      "ميرمية",
+      "مريمية خضراء"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "oregano",
+    "canonicalNameEn": "Oregano",
+    "canonicalNameAr": "أوريغانو",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "wild marjoram",
+      "fresh oregano",
+      "أوريغانو أخضر",
+      "زعتر أوريغانو"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tarragon",
+    "canonicalNameEn": "Tarragon",
+    "canonicalNameAr": "طرخون",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "French tarragon",
+      "dragon herb",
+      "طرخون أخضر",
+      "التركان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chives",
+    "canonicalNameEn": "Chives",
+    "canonicalNameAr": "ثوم معمر",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "garden chives",
+      "fresh chives",
+      "ثوم العروس",
+      "عود الثوم",
+      "ثوم معمر أخضر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lemon-verbena",
+    "canonicalNameEn": "Lemon verbena",
+    "canonicalNameAr": "لويزة",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "verbena",
+      "louisa",
+      "لويزا",
+      "رعي الحمام"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "curry-leaves",
+    "canonicalNameEn": "Curry leaves",
+    "canonicalNameAr": "ورق الكاري",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "sweet neem leaves",
+      "kadhi patta",
+      "أوراق الكاري",
+      "ورق نيم حلو"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lemongrass",
+    "canonicalNameEn": "Lemongrass",
+    "canonicalNameAr": "عشبة الليمون",
+    "category": "herb",
+    "defaultUnit": "piece",
+    "aliases": [
+      "citronella grass",
+      "fever grass",
+      "حشيشة الليمون",
+      "سيترونيلا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "spring-onion",
+    "canonicalNameEn": "Spring onion",
+    "canonicalNameAr": "بصل أخضر",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "scallion",
+      "green onion",
+      "Welsh onion",
+      "بصل ربيعي",
+      "خضرة البصل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "watercress",
+    "canonicalNameEn": "Watercress",
+    "canonicalNameAr": "رشاد",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "garden cress",
+      "water pepper",
+      "رشاد أخضر",
+      "حرف الماء",
+      "القرة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "arugula",
+    "canonicalNameEn": "Arugula",
+    "canonicalNameAr": "جرجير",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "rocket",
+      "garden rocket",
+      "roquette",
+      "جرجير أخضر",
+      "حرف البستان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "marjoram",
+    "canonicalNameEn": "Marjoram",
+    "canonicalNameAr": "مردقوش",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "sweet marjoram",
+      "knotted marjoram",
+      "بردقوش",
+      "مرزنجوش",
+      "مردقوش حلو"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "savory",
+    "canonicalNameEn": "Savory",
+    "canonicalNameAr": "صعتر",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "summer savory",
+      "winter savory",
+      "صعتر صيفي",
+      "صعتر شتوي",
+      "صعتر الحدائق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fenugreek-leaves",
+    "canonicalNameEn": "Fenugreek leaves",
+    "canonicalNameAr": "أوراق الحلبة",
+    "category": "herb",
+    "defaultUnit": "bunch",
+    "aliases": [
+      "fresh fenugreek",
+      "methi leaves",
+      "methi",
+      "حلبة طازجة",
+      "ورق الحلبة"
+    ],
+    "isStaple": false
+  }
+]

@@ -1,0 +1,136 @@
+@import 'tailwindcss';
+
+:root {
+  --canvas: #eef2f9;
+  --canvas-tint: #e3ebfb;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #55637a;
+  --border: #d7dee9;
+  --primary: #2563eb;
+  --primary-press: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --primary-soft: #ebf2fe;
+  /* --primary as *text* on --primary-soft is 4.59:1 — over the bar, but with
+     no room for a future tweak to the tint. Text-weight blue is one step
+     darker so the margin lives in the token, not in luck. */
+  --primary-text: #1d4ed8;
+  --link: #1d4ed8;
+  --success: #047857;
+  --success-soft: #e2f1eb;
+  --warning: #92400e;
+  --warning-soft: #f6ede2;
+  --danger: #b91c1c;
+  --danger-soft: #fbe9e9;
+  --danger-foreground: #ffffff;
+
+  /* The auth hero band. White sheet on deep navy, straight off the reference
+     sign-in shot. Mobile carries the same pair as surfaceInverse/textInverse. */
+  --inverse: #0f172a;
+  --inverse-foreground: #ffffff;
+  --inverse-muted: #a9b8cf;
+
+  /* Latin letter-spacing. Arabic is cursive — letter-spacing forces gaps into
+     the joins — so :root:lang(ar) resets each of these to zero and every
+     `tracking-*` utility follows automatically, with no per-element rules.
+     Only the tiers the app actually renders are defined: web tops out at 24px,
+     so there is no display tier, and there is no caption component. */
+  --track-heading-lg: -0.096px;
+  --track-heading-sm: -0.02px;
+  --track-button: 0.2px;
+
+  line-height: 1.55;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #0b1220;
+    /* Same as --canvas on purpose: a lifted navy canvas puts the #141e33 card
+       at ~1.1:1 and the card disappears. The tint is a light-mode device. */
+    --canvas-tint: #0b1220;
+    --background: #141e33;
+    --foreground: #e8eef9;
+    --muted: #1d2942;
+    --muted-foreground: #9eb0cb;
+    --border: #2c3a57;
+    --primary: #60a5fa;
+    --primary-press: #4a93f0;
+    /* White on this lifted blue is 2.54:1, so button labels go navy (7.36:1). */
+    --primary-foreground: #0b1220;
+    --primary-soft: #22314f;
+    /* Mirror of the light theme: text-weight blue sits one step away from the
+       fill so the margin lives in the token. --primary itself would pass at
+       5.10:1 on --primary-soft; this lifts that to 7.41:1. */
+    --primary-text: #9dc7fc;
+    --link: #8fbefb;
+    --success: #34d399;
+    --success-soft: #12362c;
+    --warning: #e8b24a;
+    --warning-soft: #3e2f1c;
+    --danger: #f87171;
+    --danger-soft: #42222a;
+    /* White on this salmon is 2.77:1, so destructive labels go dark. */
+    --danger-foreground: #0b1220;
+
+    /* Same as --canvas, for the reason --canvas-tint is: the auth card is
+       #141e33, and on any navy band it measures 1.07:1 and disappears. The
+       hero band is a light-mode device; dark mode lets the card float on the
+       canvas, delineated by --border instead. */
+    --inverse: #0b1220;
+    --inverse-foreground: #e8eef9;
+    --inverse-muted: #9eb0cb;
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-canvas-tint: var(--canvas-tint);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-press: var(--primary-press);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-text: var(--primary-text);
+  --color-link: var(--link);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-inverse: var(--inverse);
+  --color-inverse-foreground: var(--inverse-foreground);
+  --color-inverse-muted: var(--inverse-muted);
+
+  --tracking-heading-lg: var(--track-heading-lg);
+  --tracking-heading-sm: var(--track-heading-sm);
+  --tracking-button: var(--track-button);
+
+  --font-sans: var(--font-latin), var(--font-arabic), system-ui, sans-serif;
+}
+
+/* Arabic needs more leading than Latin at the same size, and no tracking.
+   `:root:lang(ar)` outranks the `:root` defaults above on specificity. */
+:root:lang(ar) {
+  --font-sans: var(--font-arabic), system-ui, sans-serif;
+  line-height: 1.85;
+  --track-heading-lg: 0;
+  --track-heading-sm: 0;
+  --track-button: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+/* Direction-implying glyphs mirror in RTL. Applied via <DirectionalIcon>. */
+[dir='rtl'] .dir-flip {
+  transform: scaleX(-1);
+}
+

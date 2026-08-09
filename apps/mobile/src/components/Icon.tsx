@@ -1,0 +1,67 @@
+import { type ComponentProps } from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { type ColorValue, type StyleProp, type TextStyle } from 'react-native';
+
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
+/**
+ * The app's icon set, backed by Ionicons (`@expo/vector-icons`). A single map
+ * keeps every screen decoupled from the underlying glyph names. Directional
+ * icons (chevrons/arrows) are mirrored for RTL by <DirectionalIcon>, never here.
+ */
+export const IONICONS = {
+  home: 'home',
+  kitchen: 'file-tray-stacked',
+  plans: 'calendar',
+  more: 'ellipsis-horizontal',
+  camera: 'camera',
+  barcode: 'barcode',
+  receipt: 'receipt',
+  manual: 'create',
+  plus: 'add',
+  search: 'search',
+  check: 'checkmark',
+  close: 'close',
+  clock: 'time',
+  trash: 'trash',
+  edit: 'pencil',
+  warning: 'warning',
+  flame: 'flame',
+  basket: 'basket',
+  settings: 'settings',
+  user: 'person',
+  household: 'people',
+  play: 'play',
+  apple: 'logo-apple',
+  google: 'logo-google',
+  offline: 'cloud-offline',
+  sync: 'sync',
+  location: 'location',
+  swap: 'swap-horizontal',
+  chevron: 'chevron-forward',
+  chevronDown: 'chevron-down',
+  back: 'chevron-back',
+  arrowForward: 'arrow-forward',
+} satisfies Record<string, IoniconName>;
+
+export type IconName = keyof typeof IONICONS;
+
+export interface IconProps {
+  name: IconName;
+  size?: number;
+  color?: ColorValue;
+  style?: StyleProp<TextStyle>;
+}
+
+export function Icon({ name, size = 18, color, style }: IconProps) {
+  return (
+    <Ionicons
+      name={IONICONS[name]}
+      size={size}
+      color={color}
+      style={style}
+      accessible={false}
+      importantForAccessibility="no"
+    />
+  );
+}

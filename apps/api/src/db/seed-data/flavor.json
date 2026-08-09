@@ -1,0 +1,1682 @@
+[
+  {
+    "slug": "salt",
+    "canonicalNameEn": "Salt",
+    "canonicalNameAr": "ملح",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "table salt",
+      "common salt",
+      "ملح الطعام",
+      "ملح مائدة"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "sea-salt",
+    "canonicalNameEn": "Sea salt",
+    "canonicalNameAr": "ملح البحر",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "fleur de sel",
+      "coarse salt",
+      "ملح خشن",
+      "ملح الصخرة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "black-pepper",
+    "canonicalNameEn": "Black pepper",
+    "canonicalNameAr": "فلفل أسود مطحون",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "ground black pepper",
+      "pepper",
+      "فلفل أسود",
+      "بهار أسود"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "black-peppercorns",
+    "canonicalNameEn": "Black peppercorns",
+    "canonicalNameAr": "حبوب الفلفل الأسود",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole black pepper",
+      "pepper berries",
+      "فلفل أسود حبة",
+      "بزر الفلفل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "white-pepper",
+    "canonicalNameEn": "White pepper",
+    "canonicalNameAr": "فلفل أبيض",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "ground white pepper",
+      "white pepper powder",
+      "فلفل أبيض مطحون",
+      "بهار أبيض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ground-cumin",
+    "canonicalNameEn": "Ground cumin",
+    "canonicalNameAr": "كمون مطحون",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "cumin powder",
+      "كمون",
+      "كمون ناعم",
+      "كامون مطحون"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "cumin-seeds",
+    "canonicalNameEn": "Cumin seeds",
+    "canonicalNameAr": "بذور الكمون",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole cumin",
+      "كمون حبة",
+      "حبة الكمون",
+      "كمون كامل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ground-coriander",
+    "canonicalNameEn": "Ground coriander",
+    "canonicalNameAr": "كزبرة مطحونة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "coriander powder",
+      "كزبرة",
+      "كسبرة مطحونة",
+      "بودرة الكزبرة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "coriander-seeds",
+    "canonicalNameEn": "Coriander seeds",
+    "canonicalNameAr": "بذور الكزبرة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole coriander",
+      "كزبرة حبة",
+      "حبة الكزبرة",
+      "كسبرة حبة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "turmeric",
+    "canonicalNameEn": "Turmeric",
+    "canonicalNameAr": "كركم",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "ground turmeric",
+      "haldi",
+      "كركم مطحون",
+      "عروق الصفر"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "paprika",
+    "canonicalNameEn": "Paprika",
+    "canonicalNameAr": "بابريكا",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "sweet paprika",
+      "red pepper powder",
+      "فلفل أحمر مطحون",
+      "بابريكا حلوة"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "smoked-paprika",
+    "canonicalNameEn": "Smoked paprika",
+    "canonicalNameAr": "بابريكا مدخنة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "pimenton",
+      "smoked red pepper",
+      "فلفل أحمر مدخن",
+      "بهار مدخن"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chili-powder",
+    "canonicalNameEn": "Chili powder",
+    "canonicalNameAr": "بودرة الفلفل الحار",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "chile powder",
+      "hot pepper powder",
+      "فلفل حار مطحون",
+      "مسحوق الشطة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chili-flakes",
+    "canonicalNameEn": "Chili flakes",
+    "canonicalNameAr": "رقائق الفلفل الحار",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "red pepper flakes",
+      "crushed chili",
+      "فلفل أحمر مجروش",
+      "رقائق الشطة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cayenne",
+    "canonicalNameEn": "Cayenne pepper",
+    "canonicalNameAr": "فلفل كايين",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "cayenne",
+      "red cayenne powder",
+      "فلفل حار أحمر",
+      "بودرة الكايين"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ground-cinnamon",
+    "canonicalNameEn": "Ground cinnamon",
+    "canonicalNameAr": "قرفة مطحونة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "cinnamon powder",
+      "قرفة",
+      "دارچين مطحون",
+      "قرفة ناعمة"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "cinnamon-sticks",
+    "canonicalNameEn": "Cinnamon sticks",
+    "canonicalNameAr": "عيدان القرفة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole cinnamon",
+      "cinnamon bark",
+      "قرفة عيدان",
+      "قشر القرفة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cardamom-pods",
+    "canonicalNameEn": "Cardamom pods",
+    "canonicalNameAr": "هيل حبات",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole cardamom",
+      "green cardamom",
+      "هيل أخضر",
+      "حبهان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ground-cardamom",
+    "canonicalNameEn": "Ground cardamom",
+    "canonicalNameAr": "هيل مطحون",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "cardamom powder",
+      "هيل",
+      "حبهان مطحون",
+      "هال مطحون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cloves",
+    "canonicalNameEn": "Cloves",
+    "canonicalNameAr": "قرنفل",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole cloves",
+      "ground cloves",
+      "قرنفل كامل",
+      "مسمار القرنفل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "nutmeg",
+    "canonicalNameEn": "Nutmeg",
+    "canonicalNameAr": "جوزة الطيب",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "ground nutmeg",
+      "mace",
+      "جوز الطيب",
+      "جوزة الطيب المطحونة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "allspice",
+    "canonicalNameEn": "Allspice",
+    "canonicalNameAr": "بهار حلو",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "pimento",
+      "Jamaica pepper",
+      "بهار إفرنجي",
+      "بهارات مشكلة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ground-ginger",
+    "canonicalNameEn": "Ground ginger",
+    "canonicalNameAr": "زنجبيل مطحون",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "ginger powder",
+      "dry ginger",
+      "زنجبيل",
+      "جنجل مطحون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "star-anise",
+    "canonicalNameEn": "Star anise",
+    "canonicalNameAr": "يانسون نجمي",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "Chinese star anise",
+      "يانسون الصين",
+      "بديان",
+      "نجمة اليانسون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "anise",
+    "canonicalNameEn": "Anise seeds",
+    "canonicalNameAr": "يانسون",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "aniseed",
+      "anise",
+      "حبة اليانسون",
+      "ينسون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fennel-seeds",
+    "canonicalNameEn": "Fennel seeds",
+    "canonicalNameAr": "بذور الشمر",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole fennel",
+      "شمر",
+      "شمار",
+      "حبة الشمر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "caraway-seeds",
+    "canonicalNameEn": "Caraway seeds",
+    "canonicalNameAr": "كراوية",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "caraway",
+      "كراوية حبة",
+      "حبة الكراوية",
+      "كمون رومي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fenugreek",
+    "canonicalNameEn": "Fenugreek",
+    "canonicalNameAr": "حلبة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "fenugreek seeds",
+      "methi",
+      "حلبة حبة",
+      "بذور الحلبة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sumac",
+    "canonicalNameEn": "Sumac",
+    "canonicalNameAr": "سماق",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "ground sumac",
+      "sumach",
+      "سماق مطحون",
+      "حمض السماق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "zaatar-blend",
+    "canonicalNameEn": "Za'atar blend",
+    "canonicalNameAr": "زعتر",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "zaatar",
+      "thyme spice mix",
+      "زعتر بلدي",
+      "خلطة الزعتر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "seven-spice",
+    "canonicalNameEn": "Seven spice",
+    "canonicalNameAr": "سبع بهارات",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "Lebanese seven spice",
+      "baharat mix",
+      "خلطة السبع بهارات",
+      "بهار مشكل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "baharat",
+    "canonicalNameEn": "Baharat spice mix",
+    "canonicalNameAr": "بهارات",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "mixed spice",
+      "Arabic spice blend",
+      "خلطة البهارات",
+      "بهار عربي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "kabsa-spice",
+    "canonicalNameEn": "Kabsa spice mix",
+    "canonicalNameAr": "بهارات الكبسة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "kabsa blend",
+      "Saudi spice mix",
+      "خلطة الكبسة",
+      "بهار الأرز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "biryani-mix",
+    "canonicalNameEn": "Biryani spice mix",
+    "canonicalNameAr": "خلطة البرياني",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "biryani masala",
+      "biryani spice",
+      "بهارات البرياني",
+      "مسالة البرياني"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "curry-powder",
+    "canonicalNameEn": "Curry powder",
+    "canonicalNameAr": "مسحوق الكاري",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "curry spice",
+      "كاري",
+      "بودرة الكاري",
+      "خلطة الكاري"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "garam-masala",
+    "canonicalNameEn": "Garam masala",
+    "canonicalNameAr": "غارام ماسالا",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "Indian spice blend",
+      "masala mix",
+      "خلطة غارام ماسالا",
+      "بهارات هندية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ras-el-hanout",
+    "canonicalNameEn": "Ras el hanout",
+    "canonicalNameAr": "رأس الحانوت",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "Moroccan spice blend",
+      "ras al hanout",
+      "خلطة رأس الحانوت",
+      "بهارات مغربية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "dukkah",
+    "canonicalNameEn": "Dukkah",
+    "canonicalNameAr": "دقة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "dukka",
+      "Egyptian nut spice blend",
+      "دقة مصرية",
+      "خلطة الدقة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "saffron",
+    "canonicalNameEn": "Saffron",
+    "canonicalNameAr": "زعفران",
+    "category": "spice",
+    "defaultUnit": "pinch",
+    "aliases": [
+      "saffron threads",
+      "kesar",
+      "زعفران إيراني",
+      "زعفران أصيل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "black-lime",
+    "canonicalNameEn": "Black lime",
+    "canonicalNameAr": "لومي",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "loomi",
+      "dried lime",
+      "ليمون أسود",
+      "نوميه"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mustard-seeds",
+    "canonicalNameEn": "Mustard seeds",
+    "canonicalNameAr": "بذور الخردل",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "whole mustard",
+      "yellow mustard seeds",
+      "حبة الخردل",
+      "خردل حبة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "bay-leaf",
+    "canonicalNameEn": "Bay leaf",
+    "canonicalNameAr": "ورق الغار",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "dried bay leaves",
+      "laurel leaf",
+      "ورق غار",
+      "ورق الدفنة"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "dried-mint",
+    "canonicalNameEn": "Dried mint",
+    "canonicalNameAr": "نعناع مجفف",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "mint flakes",
+      "spearmint dried",
+      "نعناع يابس",
+      "نعنع ناشف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "garlic-powder",
+    "canonicalNameEn": "Garlic powder",
+    "canonicalNameAr": "ثوم بودرة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "garlic granules",
+      "powdered garlic",
+      "مسحوق الثوم",
+      "ثوم مجفف مطحون"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "black-seed",
+    "canonicalNameEn": "Black seed",
+    "canonicalNameAr": "حبة البركة",
+    "category": "spice",
+    "defaultUnit": "g",
+    "aliases": [
+      "nigella seeds",
+      "black cumin",
+      "حبة السوداء",
+      "الحبة السودا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "white-vinegar",
+    "canonicalNameEn": "White vinegar",
+    "canonicalNameAr": "خل أبيض",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "distilled vinegar",
+      "spirit vinegar",
+      "خل",
+      "خل مقطر"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "apple-cider-vinegar",
+    "canonicalNameEn": "Apple cider vinegar",
+    "canonicalNameAr": "خل التفاح",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "ACV",
+      "cider vinegar",
+      "خل تفاح طبيعي",
+      "خل عصير التفاح"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "balsamic-vinegar",
+    "canonicalNameEn": "Balsamic vinegar",
+    "canonicalNameAr": "خل بلسمي",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "balsamic",
+      "Italian balsamic",
+      "خل إيطالي",
+      "خل أسود"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lemon-juice",
+    "canonicalNameEn": "Lemon juice",
+    "canonicalNameAr": "عصير الليمون",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "fresh lemon juice",
+      "bottled lemon juice",
+      "ليمون عصير",
+      "حامض عصير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pomegranate-molasses",
+    "canonicalNameEn": "Pomegranate molasses",
+    "canonicalNameAr": "دبس الرمان",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "pomegranate syrup",
+      "grenadine molasses",
+      "رب الرمان",
+      "عصير رمان مركز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tahini",
+    "canonicalNameEn": "Tahini",
+    "canonicalNameAr": "طحينة",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "sesame tahini",
+      "tahina",
+      "طحينية",
+      "رب السمسم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "soy-sauce",
+    "canonicalNameEn": "Soy sauce",
+    "canonicalNameAr": "صلصة الصويا",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "soya sauce",
+      "light soy sauce",
+      "صوصة الصويا",
+      "صلصة فول الصويا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ketchup",
+    "canonicalNameEn": "Ketchup",
+    "canonicalNameAr": "كاتشب",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "tomato ketchup",
+      "catsup",
+      "كتشب الطماطم",
+      "صلصة الطماطم الحلوة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mayonnaise",
+    "canonicalNameEn": "Mayonnaise",
+    "canonicalNameAr": "مايونيز",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "mayo",
+      "egg mayo",
+      "صلصة المايونيز",
+      "كريمة البيض"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mustard",
+    "canonicalNameEn": "Yellow mustard",
+    "canonicalNameAr": "خردل أصفر",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "American mustard",
+      "mustard sauce",
+      "خردل",
+      "صلصة الخردل"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "dijon-mustard",
+    "canonicalNameEn": "Dijon mustard",
+    "canonicalNameAr": "خردل ديجون",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "French mustard",
+      "whole grain mustard",
+      "خردل فرنسي",
+      "خردل حبيبي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "hot-sauce",
+    "canonicalNameEn": "Hot sauce",
+    "canonicalNameAr": "صلصة حارة",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "chilli sauce",
+      "pepper sauce",
+      "صوص حار",
+      "صلصة الفلفل الحار"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "harissa",
+    "canonicalNameEn": "Harissa paste",
+    "canonicalNameAr": "هريسة",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "harissa sauce",
+      "North African chili paste",
+      "هريسة تونسية",
+      "هريسة مغربية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "shatta",
+    "canonicalNameEn": "Shatta",
+    "canonicalNameAr": "شطة",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "Levantine chili paste",
+      "Egyptian hot sauce",
+      "شطة حمراء",
+      "فلفل حار مجروش"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "toum",
+    "canonicalNameEn": "Toum",
+    "canonicalNameAr": "ثومية",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "garlic sauce",
+      "Lebanese garlic cream",
+      "صلصة الثوم",
+      "كريمة الثوم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "hummus-dip",
+    "canonicalNameEn": "Hummus dip",
+    "canonicalNameAr": "حمص",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "hummus",
+      "chickpea dip",
+      "حمص بالطحينة",
+      "هوموس"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "baba-ganoush",
+    "canonicalNameEn": "Baba ganoush",
+    "canonicalNameAr": "بابا غنوج",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "eggplant dip",
+      "mutabbal",
+      "متبل",
+      "بابا غانوج"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tzatziki",
+    "canonicalNameEn": "Tzatziki",
+    "canonicalNameAr": "صلصة الزبادي بالخيار",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "cucumber yoghurt dip",
+      "cacik",
+      "جاجيك",
+      "زبادي بالخيار والثوم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ranch-dressing",
+    "canonicalNameEn": "Ranch dressing",
+    "canonicalNameAr": "صلصة رانش",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "ranch sauce",
+      "buttermilk ranch",
+      "صلصة المزرعة",
+      "رانش"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "caesar-dressing",
+    "canonicalNameEn": "Caesar dressing",
+    "canonicalNameAr": "صلصة قيصر",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "caesar sauce",
+      "قيصر",
+      "صلصة سيزر",
+      "صلصة السيزر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "vinaigrette",
+    "canonicalNameEn": "Vinaigrette",
+    "canonicalNameAr": "صلصة الخل والزيت",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "French dressing",
+      "oil and vinegar dressing",
+      "تتبيلة الخل",
+      "فينيغريت"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "barbecue-sauce",
+    "canonicalNameEn": "Barbecue sauce",
+    "canonicalNameAr": "صلصة الشواء",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "BBQ sauce",
+      "smoky barbecue",
+      "صلصة باربيكيو",
+      "صلصة الشوي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tomato-sauce",
+    "canonicalNameEn": "Tomato sauce",
+    "canonicalNameAr": "صلصة الطماطم",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "marinara sauce",
+      "pasta sauce",
+      "صلصة الباستا",
+      "صلصة البندورة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pizza-sauce",
+    "canonicalNameEn": "Pizza sauce",
+    "canonicalNameAr": "صلصة البيتزا",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "pizza base sauce",
+      "tomato pizza sauce",
+      "صلصة طماطم البيتزا",
+      "قاعدة البيتزا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pesto",
+    "canonicalNameEn": "Pesto",
+    "canonicalNameAr": "بيستو",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "basil pesto",
+      "green pesto",
+      "صلصة البيستو",
+      "بيستو الريحان"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chili-garlic-sauce",
+    "canonicalNameEn": "Chili garlic sauce",
+    "canonicalNameAr": "صلصة الثوم والفلفل الحار",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "garlic chili paste",
+      "sambal",
+      "صلصة الثوم الحارة",
+      "معجون الفلفل والثوم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sriracha",
+    "canonicalNameEn": "Sriracha",
+    "canonicalNameAr": "سريراشا",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "rooster sauce",
+      "Thai chili sauce",
+      "صلصة سريراشا",
+      "صلصة الفلفل التايلاندية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "thousand-island-dressing",
+    "canonicalNameEn": "Thousand island dressing",
+    "canonicalNameAr": "صلصة الألف جزيرة",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "burger sauce",
+      "pink sauce",
+      "صوص الألف جزيرة",
+      "صلصة وردية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "strawberry-jam",
+    "canonicalNameEn": "Strawberry jam",
+    "canonicalNameAr": "مربى الفراولة",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "strawberry preserve",
+      "fraise jam",
+      "مربى فراولة",
+      "مربى الفريز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "apricot-jam",
+    "canonicalNameEn": "Apricot jam",
+    "canonicalNameAr": "مربى المشمش",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "apricot preserve",
+      "apricot marmalade",
+      "مربى مشمش",
+      "مربى مشمش طبيعي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "fig-jam",
+    "canonicalNameEn": "Fig jam",
+    "canonicalNameAr": "مربى التين",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "fig preserve",
+      "fig conserve",
+      "مربى تين",
+      "مربى التين البلدي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sweet-chili-sauce",
+    "canonicalNameEn": "Sweet chili sauce",
+    "canonicalNameAr": "صلصة الفلفل الحلو",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "thai sweet chilli",
+      "sweet chilli dipping sauce",
+      "صلصة تشيلي حلوة",
+      "شطة حلوة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chocolate-hazelnut-spread",
+    "canonicalNameEn": "Chocolate hazelnut spread",
+    "canonicalNameAr": "كريمة الشوكولاتة والبندق",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "nutella-style spread",
+      "hazelnut cream",
+      "كريمة البندق بالشوكولاتة",
+      "شوكولاتة البندق"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "peanut-butter",
+    "canonicalNameEn": "Peanut butter",
+    "canonicalNameAr": "زبدة الفول السوداني",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "groundnut butter",
+      "peanut spread",
+      "زبدة الفستق السوداني",
+      "كريمة الفول السوداني"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "date-paste",
+    "canonicalNameEn": "Date paste",
+    "canonicalNameAr": "عجوة",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "date spread",
+      "ajwa paste",
+      "معجون التمر",
+      "دبس التمر"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tamarind-paste",
+    "canonicalNameEn": "Tamarind paste",
+    "canonicalNameAr": "معجون التمر الهندي",
+    "category": "condiment",
+    "defaultUnit": "jar",
+    "aliases": [
+      "tamarind concentrate",
+      "imli paste",
+      "تمر هندي معجون",
+      "عصير التمر الهندي المركز"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "worcestershire-sauce",
+    "canonicalNameEn": "Worcestershire-style sauce",
+    "canonicalNameAr": "صلصة وورشستر",
+    "category": "condiment",
+    "defaultUnit": "ml",
+    "aliases": [
+      "Worcestershire sauce",
+      "halal Worcestershire",
+      "صلصة وورشيستر",
+      "صلصة إنجليزية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "chicken-stock-cube",
+    "canonicalNameEn": "Chicken stock cube",
+    "canonicalNameAr": "مرقة الدجاج",
+    "category": "condiment",
+    "defaultUnit": "piece",
+    "aliases": [
+      "chicken bouillon",
+      "chicken broth cube",
+      "مكعب مرق الدجاج",
+      "كيبة الدجاج"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "beef-stock-cube",
+    "canonicalNameEn": "Beef stock cube",
+    "canonicalNameAr": "مرقة اللحم",
+    "category": "condiment",
+    "defaultUnit": "piece",
+    "aliases": [
+      "beef bouillon",
+      "meat broth cube",
+      "مكعب مرق اللحم",
+      "كيبة اللحم"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "vegetable-stock-powder",
+    "canonicalNameEn": "Vegetable stock powder",
+    "canonicalNameAr": "مسحوق مرقة الخضار",
+    "category": "condiment",
+    "defaultUnit": "g",
+    "aliases": [
+      "vegetable bouillon powder",
+      "veggie broth powder",
+      "مسحوق مرق الخضروات",
+      "مرق الخضار"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "water",
+    "canonicalNameEn": "Water",
+    "canonicalNameAr": "ماء",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "drinking water",
+      "plain water",
+      "ماء نقي",
+      "مياه"
+    ],
+    "isStaple": true
+  },
+  {
+    "slug": "sparkling-water",
+    "canonicalNameEn": "Sparkling water",
+    "canonicalNameAr": "ماء فوار",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "carbonated water",
+      "fizzy water",
+      "مياه غازية",
+      "ماء بفقاعات"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "black-tea",
+    "canonicalNameEn": "Black tea",
+    "canonicalNameAr": "شاي أسود",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "loose leaf black tea",
+      "Ceylon tea",
+      "شاي",
+      "شاي عادي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "green-tea",
+    "canonicalNameEn": "Green tea",
+    "canonicalNameAr": "شاي أخضر",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "loose green tea",
+      "Chinese green tea",
+      "شاي أخضر صيني",
+      "شاي ياباني"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mint-tea",
+    "canonicalNameEn": "Mint tea",
+    "canonicalNameAr": "شاي بالنعناع",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "peppermint tea",
+      "Moroccan mint tea",
+      "شاي مغربي",
+      "نعناع للشاي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "karak-tea",
+    "canonicalNameEn": "Karak tea",
+    "canonicalNameAr": "شاي كرك",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "chai karak",
+      "Gulf spiced tea",
+      "شاي بالحليب والبهارات",
+      "كرك"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "hibiscus",
+    "canonicalNameEn": "Hibiscus",
+    "canonicalNameAr": "كركديه",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "roselle",
+      "hibiscus tea",
+      "كركديه مجفف",
+      "زهرة الكركديه"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tamarind-drink",
+    "canonicalNameEn": "Tamarind drink",
+    "canonicalNameAr": "عصير التمر الهندي",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "tamarind juice",
+      "imli drink",
+      "شراب التمر هندي",
+      "تمر هندي بارد"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "arabic-coffee",
+    "canonicalNameEn": "Arabic coffee",
+    "canonicalNameAr": "قهوة عربية",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "qahwa",
+      "Gulf coffee",
+      "قهوة",
+      "قهوة خليجية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "turkish-coffee",
+    "canonicalNameEn": "Turkish coffee",
+    "canonicalNameAr": "قهوة تركية",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "Greek coffee",
+      "Levantine coffee",
+      "قهوة عربية تركية",
+      "قهوة مطحونة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "instant-coffee",
+    "canonicalNameEn": "Instant coffee",
+    "canonicalNameAr": "قهوة فورية",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "soluble coffee",
+      "Nescafe-style coffee",
+      "نسكافيه",
+      "قهوة سريعة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "espresso-beans",
+    "canonicalNameEn": "Espresso beans",
+    "canonicalNameAr": "حبوب الإسبريسو",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "espresso coffee beans",
+      "dark roast beans",
+      "حبوب قهوة مطحونة",
+      "إسبريسو"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "filter-coffee",
+    "canonicalNameEn": "Filter coffee",
+    "canonicalNameAr": "قهوة فلتر",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "drip coffee",
+      "brewed coffee grounds",
+      "قهوة مفلترة",
+      "قهوة أمريكية"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "hot-chocolate-powder",
+    "canonicalNameEn": "Hot chocolate powder",
+    "canonicalNameAr": "مسحوق الشوكولاتة الساخنة",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "drinking chocolate",
+      "cocoa drink mix",
+      "شوكولاتة ساخنة",
+      "كاكاو بالحليب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "orange-juice",
+    "canonicalNameEn": "Orange juice",
+    "canonicalNameAr": "عصير البرتقال",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "fresh orange juice",
+      "OJ",
+      "عصير برتقال طازج",
+      "برتقال عصير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "apple-juice",
+    "canonicalNameEn": "Apple juice",
+    "canonicalNameAr": "عصير التفاح",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "fresh apple juice",
+      "clear apple juice",
+      "عصير تفاح طازج",
+      "تفاح عصير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "mango-juice",
+    "canonicalNameEn": "Mango juice",
+    "canonicalNameAr": "عصير المانجو",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "mango nectar",
+      "mango drink",
+      "عصير مانجو طازج",
+      "مانجو عصير"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "lemonade",
+    "canonicalNameEn": "Lemonade",
+    "canonicalNameAr": "ليموناضة",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "lemon drink",
+      "fresh lemonade",
+      "عصير الليمون بالسكر",
+      "ليمون بارد"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "laban-drink",
+    "canonicalNameEn": "Laban drink",
+    "canonicalNameAr": "لبن",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "ayran",
+      "cultured buttermilk drink",
+      "لبن بارد",
+      "عيران"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "cola",
+    "canonicalNameEn": "Cola",
+    "canonicalNameAr": "كولا",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "cola drink",
+      "carbonated cola",
+      "مشروب الكولا",
+      "بيبسي أو كوكا"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "coconut-water",
+    "canonicalNameEn": "Coconut water",
+    "canonicalNameAr": "ماء جوز الهند",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "coconut drink",
+      "tender coconut water",
+      "ماء النارجيل",
+      "عصير جوز الهند"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "rose-syrup",
+    "canonicalNameEn": "Rose syrup",
+    "canonicalNameAr": "شراب الورد",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "rosewater syrup",
+      "gulab sharbat",
+      "شراب ماء الورد",
+      "شراب الوردة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "tamer-hindi-syrup",
+    "canonicalNameEn": "Tamer hindi syrup",
+    "canonicalNameAr": "شراب التمر الهندي",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "tamarind syrup",
+      "tamarind concentrate drink",
+      "سوبيا تمر هندي",
+      "شربات التمر الهندي"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "jallab",
+    "canonicalNameEn": "Jallab",
+    "canonicalNameAr": "جلاب",
+    "category": "beverage",
+    "defaultUnit": "ml",
+    "aliases": [
+      "grape raisin drink",
+      "Levantine fruit syrup",
+      "جلاب شامي",
+      "شراب الجلاب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "sahlab",
+    "canonicalNameEn": "Sahlab",
+    "canonicalNameAr": "سحلب",
+    "category": "beverage",
+    "defaultUnit": "g",
+    "aliases": [
+      "salep",
+      "orchid root drink powder",
+      "سحلب بودرة",
+      "مشروب السحلب"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "ice",
+    "canonicalNameEn": "Ice",
+    "canonicalNameAr": "ثلج",
+    "category": "other",
+    "defaultUnit": "piece",
+    "aliases": [
+      "ice cubes",
+      "crushed ice",
+      "مكعبات الثلج",
+      "ثلج مجروش"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "halal-gelatin-sheets",
+    "canonicalNameEn": "Halal gelatin sheets",
+    "canonicalNameAr": "ورق جيلاتين حلال",
+    "category": "other",
+    "defaultUnit": "piece",
+    "aliases": [
+      "bovine gelatin sheets",
+      "halal gelatine leaves",
+      "جيلاتين حلال",
+      "ورق الجيلاتين"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "yeast-extract-spread",
+    "canonicalNameEn": "Yeast extract spread",
+    "canonicalNameAr": "معجون الخميرة",
+    "category": "other",
+    "defaultUnit": "jar",
+    "aliases": [
+      "yeast paste",
+      "savory yeast spread",
+      "خميرة مركزة",
+      "مربى الخميرة"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "edible-rose-petals",
+    "canonicalNameEn": "Edible rose petals",
+    "canonicalNameAr": "بتلات الورد الصالحة للأكل",
+    "category": "other",
+    "defaultUnit": "g",
+    "aliases": [
+      "dried rose petals",
+      "food-safe rose petals",
+      "بتلات الورد المجففة",
+      "ورد للطعام"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "corn-flakes",
+    "canonicalNameEn": "Corn flakes",
+    "canonicalNameAr": "رقائق الذرة",
+    "category": "other",
+    "defaultUnit": "g",
+    "aliases": [
+      "breakfast cereal",
+      "cornflakes",
+      "كورن فليكس",
+      "حبوب الإفطار"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "raisins",
+    "canonicalNameEn": "Raisins",
+    "canonicalNameAr": "زبيب",
+    "category": "other",
+    "defaultUnit": "g",
+    "aliases": [
+      "sultanas",
+      "dried grapes",
+      "زبيب أخضر",
+      "كشمش"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "dried-apricots",
+    "canonicalNameEn": "Dried apricots",
+    "canonicalNameAr": "مشمش مجفف",
+    "category": "other",
+    "defaultUnit": "g",
+    "aliases": [
+      "sun-dried apricots",
+      "قمر الدين",
+      "مشمش يابس",
+      "مشمش ناشف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "dried-figs",
+    "canonicalNameEn": "Dried figs",
+    "canonicalNameAr": "تين مجفف",
+    "category": "other",
+    "defaultUnit": "g",
+    "aliases": [
+      "sun-dried figs",
+      "fig fruit dried",
+      "تين يابس",
+      "تين ناشف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "dried-cranberries",
+    "canonicalNameEn": "Dried cranberries",
+    "canonicalNameAr": "توت بري مجفف",
+    "category": "other",
+    "defaultUnit": "g",
+    "aliases": [
+      "craisins",
+      "sweetened dried cranberries",
+      "كرانبيري مجفف",
+      "توت مجفف"
+    ],
+    "isStaple": false
+  },
+  {
+    "slug": "pickled-lemon",
+    "canonicalNameEn": "Pickled lemon",
+    "canonicalNameAr": "ليمون مخلل",
+    "category": "other",
+    "defaultUnit": "jar",
+    "aliases": [
+      "preserved lemon",
+      "salted lemon",
+      "حامض مخلل",
+      "ليمون محفوظ بالملح"
+    ],
+    "isStaple": false
+  }
+]

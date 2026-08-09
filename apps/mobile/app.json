@@ -1,0 +1,73 @@
+{
+  "expo": {
+    "name": "Kitchen AI",
+    "slug": "kitchen-ai",
+    "scheme": "kitchenai",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kitchenai.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Kitchen AI uses the camera to recognise ingredients in your kitchen.",
+        "NSPhotoLibraryUsageDescription": "Kitchen AI reads photos of your kitchen to build your inventory.",
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": false,
+          "UISceneConfigurations": {
+            "UIWindowSceneSessionRoleApplication": [
+              {
+                "UISceneConfigurationName": "Default Configuration",
+                "UISceneDelegateClassName": "$(PRODUCT_MODULE_NAME).SceneDelegate"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "android": {
+      "package": "com.kitchenai.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Kitchen AI uses the camera to recognise ingredients in your kitchen."
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Tajawal-Regular.ttf",
+            "./assets/fonts/Tajawal-Medium.ttf",
+            "./assets/fonts/Tajawal-Bold.ttf"
+          ]
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
