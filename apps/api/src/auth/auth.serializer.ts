@@ -6,6 +6,7 @@ export interface UserRow {
   email: string;
   displayName: string;
   locale: 'en' | 'ar';
+  passwordHash: string | null;
   createdAt: Date;
 }
 
@@ -15,6 +16,7 @@ export function toUser(row: UserRow): User {
     email: row.email,
     displayName: row.displayName,
     locale: row.locale,
+    hasPassword: row.passwordHash !== null,
     createdAt: toIso(row.createdAt),
   };
 }

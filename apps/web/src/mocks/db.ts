@@ -343,6 +343,7 @@ export function seed(): void {
     email: 'chef@example.com',
     displayName: 'Amira',
     locale: 'en',
+    hasPassword: true,
     createdAt: iso(NOW()),
   };
 

@@ -53,6 +53,7 @@ export const mockUser: User = {
   email: 'chef@kitchen.ai',
   displayName: 'Chef',
   locale: 'en',
+  hasPassword: true,
   createdAt: isoDateTime(-120),
 };
 
