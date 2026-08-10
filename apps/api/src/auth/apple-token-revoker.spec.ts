@@ -64,10 +64,10 @@ describe('HttpAppleTokenRevoker', () => {
     const parts = jwt.split('.');
     expect(parts).toHaveLength(3);
 
-    const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+    const header = JSON.parse(Buffer.from(parts[0]!, 'base64url').toString('utf8'));
     expect(header).toMatchObject({ alg: 'ES256', typ: 'JWT', kid: 'KEY1234567' });
 
-    const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    const claims = JSON.parse(Buffer.from(parts[1]!, 'base64url').toString('utf8'));
     expect(claims.iss).toBe('TEAM123456');
     expect(claims.aud).toBe('https://appleid.apple.com');
     // sub must be the clientId passed into the call, not a hardcoded string —
@@ -82,7 +82,7 @@ describe('HttpAppleTokenRevoker', () => {
     // Node's default DER encoding is variable-length (typically 70–72 bytes).
     // Deleting `dsaEncoding: 'ieee-p1363'` from the signing call would produce
     // a longer signature and fail this assertion — that is intentional.
-    const sigBuf = Buffer.from(parts[2], 'base64url');
+    const sigBuf = Buffer.from(parts[2]!, 'base64url');
     expect(sigBuf.length).toBe(64);
 
     // ── cryptographic verification ────────────────────────────────────────

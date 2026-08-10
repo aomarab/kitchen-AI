@@ -14,6 +14,13 @@ export interface VerifiedIdentity {
    * identity token, so it never arrives here.
    */
   name: string | null;
+  /**
+   * The `aud` this token was validated against. Stored with an Apple refresh
+   * token because APPLE_CLIENT_ID holds one id per platform and the revoke
+   * call must present the matching one. Null only in development, where
+   * `assertAudience` tolerates an unset client id.
+   */
+  audience: string | null;
 }
 
 interface AppleJwk {
@@ -112,6 +119,7 @@ export class OAuthService implements OnModuleInit {
       providerAccountId: payload.sub,
       email: isVerifiedEmail(payload.email_verified) ? (payload.email ?? null) : null,
       name: payload.name?.trim() || null,
+      audience: payload.aud ?? null,
     };
   }
 
@@ -158,6 +166,7 @@ export class OAuthService implements OnModuleInit {
       // Apple sends the name once, in the authorization credential, never in
       // the token — so there is nothing to read here.
       name: null,
+      audience: payload.aud ?? null,
     };
   }
 
