@@ -1,4 +1,5 @@
 import type { Locale } from '@kitchen/contracts';
+import { isPluralMessage, type PluralCategory, type PluralMessage } from './plural.js';
 import { en as sharedEn, type Messages as SharedMessages } from './en.js';
 import { ar as sharedAr } from './ar.js';
 import { webEn } from './web.en.js';
@@ -33,13 +34,17 @@ type Join<K, P> = K extends string ? (P extends string ? `${K}.${P}` : K) : neve
 type Paths<T> = T extends string
   ? never
   : {
-      [K in keyof T & string]: T[K] extends string ? K : Join<K, Paths<T[K]>>;
+      [K in keyof T & string]: T[K] extends string | PluralMessage ? K : Join<K, Paths<T[K]>>;
     }[keyof T & string];
 
 /** Every valid message key, e.g. `'plans.generate'` or `'recipe.difficulty.easy'`. */
 export type MessageKey = Paths<Messages>;
 
 export type Interpolations = Record<string, string | number>;
+
+export { plural } from './plural.js';
+export type { PluralCategory, PluralForms, PluralMessage } from './plural.js';
+
 
 /* ------------------------------------------------------------------ */
 /* Direction                                                           */
@@ -61,7 +66,7 @@ export function isRtl(locale: Locale): boolean {
 /* Lookup                                                              */
 /* ------------------------------------------------------------------ */
 
-function resolve(catalog: Messages, key: string): string | undefined {
+function resolve(catalog: Messages, key: string): string | PluralMessage | undefined {
   const value = key
     .split('.')
     .reduce<unknown>(
@@ -69,7 +74,8 @@ function resolve(catalog: Messages, key: string): string | undefined {
         node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined,
       catalog,
     );
-  return typeof value === 'string' ? value : undefined;
+  if (typeof value === 'string' || isPluralMessage(value)) return value;
+  return undefined;
 }
 
 function interpolate(template: string, values?: Interpolations): string {
@@ -80,12 +86,52 @@ function interpolate(template: string, values?: Interpolations): string {
 }
 
 /**
+ * Pick the wording for a count, using the CLDR plural rules for the two
+ * languages this app ships.
+ *
+ * `Intl.PluralRules` is deliberately NOT used. Hermes — the engine the mobile
+ * app actually runs on — does not provide it, and the failure is silent: every
+ * Arabic count above one quietly collapses to the `other` form, printing
+ * `ينتهي خلال 2 يوم` where Arabic requires the dual `يومين`. That was observed on
+ * a real simulator, not assumed. Encoding the rules here also makes web, API and
+ * mobile agree, instead of varying with each runtime's ICU data.
+ *
+ * Arabic (CLDR): 0 zero · 1 one · 2 two · n%100 in 3..10 few ·
+ * n%100 in 11..99 many · everything else (100, 101, fractions) other.
+ * English (CLDR): exactly 1 with no fraction is one; everything else other.
+ */
+function selectCategory(locale: Locale, value: number): PluralCategory {
+  const n = Math.abs(value);
+  if (locale !== 'ar') return n === 1 ? 'one' : 'other';
+  if (!Number.isInteger(n)) return 'other';
+  if (n === 0) return 'zero';
+  if (n === 1) return 'one';
+  if (n === 2) return 'two';
+  const mod100 = n % 100;
+  if (mod100 >= 3 && mod100 <= 10) return 'few';
+  if (mod100 >= 11 && mod100 <= 99) return 'many';
+  return 'other';
+}
+
+function render(locale: Locale, entry: string | PluralMessage, values?: Interpolations): string {
+  if (typeof entry === 'string') return interpolate(entry, values);
+  const raw = values?.[entry.count];
+  const count = typeof raw === 'number' ? raw : Number(raw ?? 0);
+  const category = Number.isFinite(count) ? selectCategory(locale, count) : 'other';
+  // A locale that lacks the selected form falls back to its own `other`, never
+  // to English — a half-Arabic sentence is worse than a slightly blunt one.
+  return interpolate(entry.forms[category] ?? entry.forms.other, values);
+}
+
+/**
  * Translate a key. Falls back to English, then to the key itself, so a UI never
  * renders `undefined`.
  */
 export function translate(locale: Locale, key: MessageKey, values?: Interpolations): string {
-  const template = resolve(catalogs[locale], key) ?? resolve(en, key) ?? key;
-  return interpolate(template, values);
+  const entry = resolve(catalogs[locale], key);
+  if (entry !== undefined) return render(locale, entry, values);
+  const fallback = resolve(en, key);
+  return fallback === undefined ? key : render('en', fallback, values);
 }
 
 export type Translator = (key: MessageKey, values?: Interpolations) => string;

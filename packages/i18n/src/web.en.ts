@@ -8,6 +8,8 @@
  *
  * Every key added here must also be added to `web.ar.ts`, or the build fails.
  */
+import { plural } from './plural.js';
+
 export const webEn = {
   web: {
     nav: {
@@ -113,11 +115,20 @@ export const webEn = {
       manualNamePlaceholder: 'e.g. tomatoes',
       confirmReviewNote: 'Nothing is added until you confirm this list.',
       needsLocation: 'Create a storage location first — items need somewhere to go.',
-      addedToast: '{count} items added to your kitchen',
-      flaggedCount: '{count} rows need a second look',
+      addedToast: plural('count', {
+        one: '{count} item added to your kitchen',
+        other: '{count} items added to your kitchen',
+      }),
+      flaggedCount: plural('count', {
+        one: '{count} row needs a second look',
+        other: '{count} rows need a second look',
+      }),
       noneFlagged: 'Every row looks confident.',
       removeRow: 'Remove row',
-      emptyPhotos: '{count} photo(s) had nothing we could recognise.',
+      emptyPhotos: plural('count', {
+        one: '{count} photo had nothing we could recognise.',
+        other: '{count} photos had nothing we could recognise.',
+      }),
     },
     plans: {
       newPlan: 'New plan',
@@ -144,7 +155,9 @@ export const webEn = {
       cookMode: 'Cook mode',
       exitCookMode: 'Exit cook mode',
       stepCounter: 'Step {current} of {total}',
-      startTimer: 'Start {minutes} min timer',
+      startTimer: plural('minutes', {
+        other: 'Start {minutes} min timer',
+      }),
       prevStep: 'Previous',
       nextStep: 'Next',
       watchOnYoutube: 'Watch on YouTube',
@@ -185,7 +198,10 @@ export const webEn = {
       star: 'Rate {value} out of 5',
       messageLabel: 'Anything you want to add? (optional)',
       messagePlaceholder: 'What went well, or what got in your way?',
-      remaining: '{count} characters left',
+      remaining: plural('count', {
+        one: '{count} character left',
+        other: '{count} characters left',
+      }),
       submit: 'Send feedback',
       successTitle: 'Thank you',
       successBody: 'We read every message. We cannot reply here, but this goes straight to the team.',

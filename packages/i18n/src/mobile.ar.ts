@@ -1,4 +1,5 @@
 import type { MobileMessages } from './mobile.en.js';
+import { plural } from './plural.js';
 
 /** Arabic mobile-only strings. Typed against `mobileEn`, so a gap is a build error. */
 export const mobileAr: MobileMessages = {
@@ -48,7 +49,13 @@ export const mobileAr: MobileMessages = {
       flip: 'قلب الكاميرا',
       fromLibrary: 'اختر من المكتبة',
       addAnother: 'أضف صورة أخرى',
-      photosCount: '{count} صور جاهزة',
+      photosCount: plural('count', {
+        one: 'صورة واحدة جاهزة',
+        two: 'صورتان جاهزتان',
+        few: '{count} صور جاهزة',
+        many: '{count} صورةً جاهزة',
+        other: '{count} صورة جاهزة',
+      }),
       retake: 'إعادة الالتقاط',
       usePhoto: 'استخدام الصورة',
       scanBarcodeHint: 'حاذِ الباركود داخل الإطار.',
@@ -68,8 +75,18 @@ export const mobileAr: MobileMessages = {
     review: {
       hint: 'لا يُحفظ شيء حتى تؤكد. تحقق من الكميات — فنحن نقدّرها من الصورة.',
       remove: 'إزالة',
-      addCount: 'أضف {count} إلى المطبخ',
-      emptyPhotos: '{count} صور لم نتعرف على شيء فيها.',
+      addCount: plural('count', {
+        one: 'أضف واحدًا إلى المطبخ',
+        two: 'أضف اثنين إلى المطبخ',
+        other: 'أضف {count} إلى المطبخ',
+      }),
+      emptyPhotos: plural('count', {
+        one: 'صورة واحدة لم نتعرف على شيء فيها.',
+        two: 'صورتان لم نتعرف على شيء فيهما.',
+        few: '{count} صور لم نتعرف على شيء فيها.',
+        many: '{count} صورةً لم نتعرف على شيء فيها.',
+        other: '{count} صورة لم نتعرف على شيء فيها.',
+      }),
     },
     kitchen: {
       searchPlaceholder: 'ابحث في مطبخك',
@@ -94,7 +111,13 @@ export const mobileAr: MobileMessages = {
       slots: 'الوجبات المطلوب تخطيطها',
       servings: 'عدد الحصص',
       maxCookTime: 'أقصى وقت طهي',
-      minutesValue: '{minutes} دقيقة',
+      minutesValue: plural('minutes', {
+        one: 'دقيقة واحدة',
+        two: 'دقيقتان',
+        few: '{minutes} دقائق',
+        many: '{minutes} دقيقةً',
+        other: '{minutes} دقيقة',
+      }),
       cuisines: 'المطابخ',
       anyCuisine: 'أي مطبخ',
       generateCta: 'إنشاء الخطة',
@@ -144,7 +167,13 @@ export const mobileAr: MobileMessages = {
       star: 'قيّم {value} من ٥',
       messageLabel: 'هل تود إضافة شيء؟ (اختياري)',
       messagePlaceholder: 'ما الذي سار جيدًا، أو ما الذي أعاقك؟',
-      remaining: 'بقي {count} حرفًا',
+      remaining: plural('count', {
+        one: 'بقي حرف واحد',
+        two: 'بقي حرفان',
+        few: 'بقي {count} أحرف',
+        many: 'بقي {count} حرفًا',
+        other: 'بقي {count} حرف',
+      }),
       submit: 'إرسال الملاحظات',
       successTitle: 'شكرًا لك',
       successBody: 'نقرأ كل رسالة. لا يمكننا الرد هنا، لكنها تصل إلى الفريق مباشرة.',
@@ -182,10 +211,20 @@ export const mobileAr: MobileMessages = {
     sync: {
       offlineBanner: 'غير متصل — تُحفظ التغييرات وستتم مزامنتها تلقائياً.',
       backOnline: 'عاد الاتصال',
-      pendingSync: '{count} تغييرات بانتظار المزامنة',
+      pendingSync: plural('count', {
+        one: 'تغيير واحد بانتظار المزامنة',
+        two: 'تغييران بانتظار المزامنة',
+        few: '{count} تغييرات بانتظار المزامنة',
+        many: '{count} تغييرًا بانتظار المزامنة',
+        other: '{count} تغيير بانتظار المزامنة',
+      }),
       syncNow: 'مزامنة الآن',
       reconnect: 'محاولة إعادة الاتصال',
-      failedBanner: 'تعذّرت مزامنة {count} من التغييرات',
+      failedBanner: plural('count', {
+        one: 'تعذّرت مزامنة تغيير واحد',
+        two: 'تعذّرت مزامنة تغييرين',
+        other: 'تعذّرت مزامنة {count} من التغييرات',
+      }),
       failedItem: 'تعذّرت مزامنة تغيير على {name}',
       dismiss: 'تجاهل',
       reasons: {
@@ -198,7 +237,12 @@ export const mobileAr: MobileMessages = {
       title: 'استخدام الذكاء الاصطناعي',
       today: 'استخدام اليوم',
       spentOfBudget: '{spent} من {budget}',
-      callsCount: '{count} طلبات ذكاء اصطناعي اليوم',
+      callsCount: plural('count', {
+        one: 'طلب ذكاء اصطناعي واحد اليوم',
+        two: 'طلبا ذكاء اصطناعي اليوم',
+        few: '{count} طلبات ذكاء اصطناعي اليوم',
+        other: '{count} طلب ذكاء اصطناعي اليوم',
+      }),
     },
     job: {
       buildingPlan: 'جارٍ بناء خطتك…',

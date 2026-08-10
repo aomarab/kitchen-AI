@@ -1,4 +1,5 @@
 import type { WebMessages } from './web.en.js';
+import { plural } from './plural.js';
 
 /** Arabic web-only strings. Typed against `webEn`, so a gap is a build error. */
 export const webAr: WebMessages = {
@@ -106,11 +107,29 @@ export const webAr: WebMessages = {
       manualNamePlaceholder: 'مثال: طماطم',
       confirmReviewNote: 'لا يُضاف شيء حتى تؤكّد هذه القائمة.',
       needsLocation: 'أنشئ موقع تخزين أولاً — فالأصناف تحتاج مكاناً.',
-      addedToast: 'أُضيفت {count} عناصر إلى مطبخك',
-      flaggedCount: '{count} صفوف تحتاج إلى مراجعة',
+      addedToast: plural('count', {
+        one: 'أُضيف عنصر واحد إلى مطبخك',
+        two: 'أُضيف عنصران إلى مطبخك',
+        few: 'أُضيفت {count} عناصر إلى مطبخك',
+        many: 'أُضيف {count} عنصرًا إلى مطبخك',
+        other: 'أُضيف {count} عنصر إلى مطبخك',
+      }),
+      flaggedCount: plural('count', {
+        one: 'صف واحد يحتاج إلى مراجعة',
+        two: 'صفان يحتاجان إلى مراجعة',
+        few: '{count} صفوف تحتاج إلى مراجعة',
+        many: '{count} صفًا يحتاج إلى مراجعة',
+        other: '{count} صف يحتاج إلى مراجعة',
+      }),
       noneFlagged: 'كل الصفوف تبدو موثوقة.',
       removeRow: 'إزالة الصف',
-      emptyPhotos: '{count} صورة لم نتعرّف على أي شيء فيها.',
+      emptyPhotos: plural('count', {
+        one: 'صورة واحدة لم نتعرّف على أي شيء فيها.',
+        two: 'صورتان لم نتعرّف على أي شيء فيهما.',
+        few: '{count} صور لم نتعرّف على أي شيء فيها.',
+        many: '{count} صورةً لم نتعرّف على أي شيء فيها.',
+        other: '{count} صورة لم نتعرّف على أي شيء فيها.',
+      }),
     },
     plans: {
       newPlan: 'خطة جديدة',
@@ -137,7 +156,13 @@ export const webAr: WebMessages = {
       cookMode: 'وضع الطهي',
       exitCookMode: 'إنهاء وضع الطهي',
       stepCounter: 'الخطوة {current} من {total}',
-      startTimer: 'ابدأ مؤقت {minutes} دقيقة',
+      startTimer: plural('minutes', {
+        one: 'ابدأ مؤقت دقيقة واحدة',
+        two: 'ابدأ مؤقت دقيقتين',
+        few: 'ابدأ مؤقت {minutes} دقائق',
+        many: 'ابدأ مؤقت {minutes} دقيقةً',
+        other: 'ابدأ مؤقت {minutes} دقيقة',
+      }),
       prevStep: 'السابق',
       nextStep: 'التالي',
       watchOnYoutube: 'شاهد على يوتيوب',
@@ -178,7 +203,13 @@ export const webAr: WebMessages = {
       star: 'قيّم {value} من ٥',
       messageLabel: 'هل تود إضافة شيء؟ (اختياري)',
       messagePlaceholder: 'ما الذي سار جيدًا، أو ما الذي أعاقك؟',
-      remaining: 'بقي {count} حرفًا',
+      remaining: plural('count', {
+        one: 'بقي حرف واحد',
+        two: 'بقي حرفان',
+        few: 'بقي {count} أحرف',
+        many: 'بقي {count} حرفًا',
+        other: 'بقي {count} حرف',
+      }),
       submit: 'إرسال الملاحظات',
       successTitle: 'شكرًا لك',
       successBody: 'نقرأ كل رسالة. لا يمكننا الرد هنا، لكنها تصل إلى الفريق مباشرة.',

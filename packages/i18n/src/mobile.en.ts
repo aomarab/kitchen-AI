@@ -8,6 +8,8 @@
  *
  * Every key added here must also be added to `mobile.ar.ts`, or the build fails.
  */
+import { plural } from './plural.js';
+
 export const mobileEn = {
   mobile: {
     common: {
@@ -55,7 +57,10 @@ export const mobileEn = {
       flip: 'Flip camera',
       fromLibrary: 'Choose from library',
       addAnother: 'Add another photo',
-      photosCount: '{count} photos ready',
+      photosCount: plural('count', {
+        one: '{count} photo ready',
+        other: '{count} photos ready',
+      }),
       retake: 'Retake',
       usePhoto: 'Use photo',
       scanBarcodeHint: 'Line the barcode up inside the frame.',
@@ -75,8 +80,13 @@ export const mobileEn = {
     review: {
       hint: 'Nothing is saved until you confirm. Check the quantities — we estimate them from the photo.',
       remove: 'Remove',
-      addCount: 'Add {count} to kitchen',
-      emptyPhotos: '{count} photos had nothing to recognise.',
+      addCount: plural('count', {
+        other: 'Add {count} to kitchen',
+      }),
+      emptyPhotos: plural('count', {
+        one: '{count} photo had nothing to recognise.',
+        other: '{count} photos had nothing to recognise.',
+      }),
     },
     kitchen: {
       searchPlaceholder: 'Search your kitchen',
@@ -101,7 +111,9 @@ export const mobileEn = {
       slots: 'Meals to plan',
       servings: 'Servings',
       maxCookTime: 'Max cook time',
-      minutesValue: '{minutes} min',
+      minutesValue: plural('minutes', {
+        other: '{minutes} min',
+      }),
       cuisines: 'Cuisines',
       anyCuisine: 'Any',
       generateCta: 'Generate plan',
@@ -152,7 +164,10 @@ export const mobileEn = {
       star: 'Rate {value} out of 5',
       messageLabel: 'Anything you want to add? (optional)',
       messagePlaceholder: 'What went well, or what got in your way?',
-      remaining: '{count} characters left',
+      remaining: plural('count', {
+        one: '{count} character left',
+        other: '{count} characters left',
+      }),
       submit: 'Send feedback',
       successTitle: 'Thank you',
       successBody: 'We read every message. We cannot reply here, but this goes straight to the team.',
@@ -190,10 +205,16 @@ export const mobileEn = {
     sync: {
       offlineBanner: 'Offline — changes are saved and will sync automatically.',
       backOnline: 'Back online',
-      pendingSync: '{count} changes waiting to sync',
+      pendingSync: plural('count', {
+        one: '{count} change waiting to sync',
+        other: '{count} changes waiting to sync',
+      }),
       syncNow: 'Sync now',
       reconnect: 'Try to reconnect',
-      failedBanner: "{count} changes couldn't be synced",
+      failedBanner: plural('count', {
+        one: "{count} change couldn't be synced",
+        other: "{count} changes couldn't be synced",
+      }),
       failedItem: "Couldn't sync a change to {name}",
       dismiss: 'Dismiss',
       reasons: {
@@ -206,7 +227,10 @@ export const mobileEn = {
       title: 'AI usage',
       today: "Today's usage",
       spentOfBudget: '{spent} of {budget}',
-      callsCount: '{count} AI calls today',
+      callsCount: plural('count', {
+        one: '{count} AI call today',
+        other: '{count} AI calls today',
+      }),
     },
     job: {
       buildingPlan: 'Building your plan…',

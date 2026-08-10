@@ -1,8 +1,13 @@
 import type { Messages } from './en.js';
+import { plural } from './plural.js';
 
 /**
  * Arabic catalog. Typed as `Messages`, so omitting or misspelling a key is a
  * compile error. Translations are written natively rather than transliterated.
+ *
+ * Counted nouns use every form Arabic distinguishes — `يومين` for exactly two
+ * and `يومًا` for 11–99 are different words, not different numbers — so these
+ * entries carry more `plural()` forms than their English counterparts.
  */
 export const ar: Messages = {
   units: {
@@ -114,9 +119,25 @@ export const ar: Messages = {
 
   inventory: {
     title: 'مطبخي',
-    itemCount: '{count} صنف',
-    expiringSoon: '{count} على وشك الانتهاء',
-    expiresIn: 'ينتهي خلال {days} أيام',
+    itemCount: plural('count', {
+      one: 'صنف واحد',
+      two: 'صنفان',
+      few: '{count} أصناف',
+      many: '{count} صنفًا',
+      other: '{count} صنف',
+    }),
+    expiringSoon: plural('count', {
+      one: 'واحد على وشك الانتهاء',
+      two: 'اثنان على وشك الانتهاء',
+      other: '{count} على وشك الانتهاء',
+    }),
+    expiresIn: plural('days', {
+      one: 'ينتهي خلال يوم واحد',
+      two: 'ينتهي خلال يومين',
+      few: 'ينتهي خلال {days} أيام',
+      many: 'ينتهي خلال {days} يومًا',
+      other: 'ينتهي خلال {days} يوم',
+    }),
     expiresToday: 'ينتهي اليوم',
     expired: 'منتهي الصلاحية',
     quantity: 'الكمية',
@@ -149,7 +170,13 @@ export const ar: Messages = {
     parsingReceipt: 'جارٍ قراءة الفاتورة…',
     reviewTitle: 'راجع قبل الإضافة',
     reviewHint: 'تحقق من الكميات — نحن نقدّرها من الصورة.',
-    foundCount: 'تم العثور على {count} صنف',
+    foundCount: plural('count', {
+      one: 'تم العثور على صنف واحد',
+      two: 'تم العثور على صنفين',
+      few: 'تم العثور على {count} أصناف',
+      many: 'تم العثور على {count} صنفًا',
+      other: 'تم العثور على {count} صنف',
+    }),
     nothingFound: 'لم نتمكن من التعرف على أي شيء. جرّب صورة أوضح أو أضف الأصناف يدوياً.',
     addAll: 'إضافة الكل إلى المطبخ',
     lowConfidence: 'دقة منخفضة — يرجى التأكيد',
@@ -176,7 +203,13 @@ export const ar: Messages = {
     regenerate: 'اقترح وجبة أخرى',
     coverage: 'تغطية المخزون',
     fullyCovered: 'كل المكونات متوفرة',
-    missingItems: '{count} مكونات ناقصة',
+    missingItems: plural('count', {
+      one: 'مكوّن واحد ناقص',
+      two: 'مكوّنان ناقصان',
+      few: '{count} مكوّنات ناقصة',
+      many: '{count} مكوّنًا ناقصًا',
+      other: '{count} مكوّن ناقص',
+    }),
     daysCovered: '{covered} من {total} أيام مغطاة من مخزونك',
     empty: 'لا توجد خطة بعد. أنشئ واحدة مما لديك.',
   },
@@ -186,9 +219,27 @@ export const ar: Messages = {
     steps: 'خطوات التحضير',
     videos: 'شاهد الطريقة',
     noVideos: 'لا يوجد فيديو متاح لهذه الوصفة.',
-    prepTime: 'التحضير {minutes} دقيقة',
-    cookTime: 'الطهي {minutes} دقيقة',
-    servings: 'تكفي {count} أشخاص',
+    prepTime: plural('minutes', {
+      one: 'التحضير دقيقة واحدة',
+      two: 'التحضير دقيقتان',
+      few: 'التحضير {minutes} دقائق',
+      many: 'التحضير {minutes} دقيقةً',
+      other: 'التحضير {minutes} دقيقة',
+    }),
+    cookTime: plural('minutes', {
+      one: 'الطهي دقيقة واحدة',
+      two: 'الطهي دقيقتان',
+      few: 'الطهي {minutes} دقائق',
+      many: 'الطهي {minutes} دقيقةً',
+      other: 'الطهي {minutes} دقيقة',
+    }),
+    servings: plural('count', {
+      one: 'تكفي شخصًا واحدًا',
+      two: 'تكفي شخصين',
+      few: 'تكفي {count} أشخاص',
+      many: 'تكفي {count} شخصًا',
+      other: 'تكفي {count} شخص',
+    }),
     inStock: 'متوفر',
     notInStock: 'غير متوفر',
     optional: 'اختياري',
@@ -247,6 +298,12 @@ export const ar: Messages = {
     addAllMissing: 'إضافة كل النواقص إلى قائمة التسوق',
     purchased: 'تم الشراء',
     moveToKitchen: 'نقل المشتريات إلى المطبخ',
-    movedCount: 'تمت إضافة {count} صنف إلى مطبخك',
+    movedCount: plural('count', {
+      one: 'تمت إضافة صنف واحد إلى مطبخك',
+      two: 'تمت إضافة صنفين إلى مطبخك',
+      few: 'تمت إضافة {count} أصناف إلى مطبخك',
+      many: 'تمت إضافة {count} صنفًا إلى مطبخك',
+      other: 'تمت إضافة {count} صنف إلى مطبخك',
+    }),
   },
 };

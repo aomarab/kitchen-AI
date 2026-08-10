@@ -3,12 +3,16 @@
  * catalog is typed against it, so a missing Arabic translation is a build
  * error rather than a runtime `undefined`. See spec §7.
  *
- * Interpolation uses `{name}` placeholders.
+ * Interpolation uses `{name}` placeholders. A message whose wording depends on
+ * a number is declared with `plural()` — see `plural.ts` for why `{count} items`
+ * is not good enough.
  *
  * **Coordinator-owned.** Shared domain strings for all three apps live here.
  * Parallel workstreams must NOT edit this file — web adds to `web.en.ts`,
  * mobile adds to `mobile.en.ts`. Backend workstreams emit `errors.*` keys only.
  */
+import { plural } from './plural.js';
+
 export const en = {
   /** Measurement unit abbreviations, shared by web and mobile. */
   units: {
@@ -120,9 +124,17 @@ export const en = {
 
   inventory: {
     title: 'My Kitchen',
-    itemCount: '{count} items',
-    expiringSoon: '{count} expiring soon',
-    expiresIn: 'Expires in {days} days',
+    itemCount: plural('count', {
+      one: '{count} item',
+      other: '{count} items',
+    }),
+    expiringSoon: plural('count', {
+      other: '{count} expiring soon',
+    }),
+    expiresIn: plural('days', {
+      one: 'Expires in {days} day',
+      other: 'Expires in {days} days',
+    }),
     expiresToday: 'Expires today',
     expired: 'Expired',
     quantity: 'Quantity',
@@ -155,7 +167,10 @@ export const en = {
     parsingReceipt: 'Reading your receipt…',
     reviewTitle: 'Review before adding',
     reviewHint: 'Check the quantities — we estimate them from the photo.',
-    foundCount: 'Found {count} items',
+    foundCount: plural('count', {
+      one: 'Found {count} item',
+      other: 'Found {count} items',
+    }),
     nothingFound: "We couldn't identify anything. Try a clearer photo or add items manually.",
     addAll: 'Add all to kitchen',
     lowConfidence: 'Low confidence — please confirm',
@@ -182,7 +197,10 @@ export const en = {
     regenerate: 'Suggest another',
     coverage: 'Pantry coverage',
     fullyCovered: 'Everything in stock',
-    missingItems: '{count} items missing',
+    missingItems: plural('count', {
+      one: '{count} item missing',
+      other: '{count} items missing',
+    }),
     daysCovered: '{covered} of {total} days covered by your pantry',
     empty: 'No plan yet. Generate one from what you have.',
   },
@@ -192,9 +210,15 @@ export const en = {
     steps: 'Steps',
     videos: 'Watch how',
     noVideos: 'No video available for this recipe.',
-    prepTime: 'Prep {minutes} min',
-    cookTime: 'Cook {minutes} min',
-    servings: 'Serves {count}',
+    prepTime: plural('minutes', {
+      other: 'Prep {minutes} min',
+    }),
+    cookTime: plural('minutes', {
+      other: 'Cook {minutes} min',
+    }),
+    servings: plural('count', {
+      other: 'Serves {count}',
+    }),
     inStock: 'In stock',
     notInStock: 'Not in stock',
     optional: 'Optional',
@@ -255,7 +279,10 @@ export const en = {
     addAllMissing: 'Add all missing to shopping list',
     purchased: 'Purchased',
     moveToKitchen: 'Move purchased to kitchen',
-    movedCount: '{count} items added to your kitchen',
+    movedCount: plural('count', {
+      one: '{count} item added to your kitchen',
+      other: '{count} items added to your kitchen',
+    }),
   },
 };
 
