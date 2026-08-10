@@ -80,6 +80,12 @@ export class HttpYoutubeClient implements YoutubeClient {
     private readonly baseUrl = 'https://www.googleapis.com/youtube/v3',
   ) {}
 
+  // max = 10: search.list costs 100 quota units flat regardless of maxResults,
+  // and videos.list costs 1 unit flat regardless of id count — so max=10 costs
+  // exactly the same 101 units as the old max=3. A wider candidate set matters
+  // because the relevance gate rejects Shorts, music-category videos, non-
+  // embeddable results, and title mismatches; a narrow search can be fully
+  // consumed by rejects, leaving the dish with no video at all.
   async search(query: string, locale: Locale, max = 10): Promise<YoutubeVideo[]> {
     const ids = await this.searchIds(query, locale, max);
     if (ids.length === 0) return [];

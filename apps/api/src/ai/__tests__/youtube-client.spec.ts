@@ -25,6 +25,10 @@ describe('pickThumbnail', () => {
     expect(pickThumbnail({ high: { url: 'high.jpg' } })).toBe('high.jpg');
   });
 
+  it('prefers 16:9 standard over 4:3 high', () => {
+    expect(pickThumbnail({ standard: { url: 'std.jpg' }, high: { url: 'high.jpg' } })).toBe('std.jpg');
+  });
+
   it('returns empty string when there is no thumbnail at all', () => {
     expect(pickThumbnail(undefined)).toBe('');
   });
