@@ -34,6 +34,10 @@ describe('dishKey', () => {
     expect(dishKey('طريقة عمل كبسة دجاج')).toBe(dishKey('كبسة دجاج'));
   });
 
+  it('folds and drops ألذ (tastiest), a common superlative in recipe titles', () => {
+    expect(dishKey('ألذ كبسة دجاج')).toBe(dishKey('كبسة دجاج'));
+  });
+
   it('gives different keys to the two locales, which is why locale is a separate column', () => {
     expect(dishKey('Chicken Kabsa')).not.toBe(dishKey('كبسة دجاج'));
   });
