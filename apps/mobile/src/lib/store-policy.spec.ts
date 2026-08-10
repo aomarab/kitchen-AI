@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { routes } from '@kitchen/contracts';
 
 const SRC = join(__dirname, '..');
 const APP_JSON = join(SRC, '..', 'app.json');
@@ -94,5 +95,28 @@ describe('iOS privacy manifest', () => {
         'NSPrivacyCollectedDataTypePurposeAppFunctionality',
       ]);
     }
+  });
+});
+
+/**
+ * App Store Guideline 5.1.1(v) and Google Play's data-deletion policy both
+ * require in-app account deletion. Removing the route would pass typecheck
+ * and every feature test while making the app rejectable, so it is asserted
+ * here alongside the other store rules.
+ */
+describe('account deletion policy', () => {
+  it('exposes an authenticated account-deletion route', () => {
+    expect(routes.deleteMe).toBeDefined();
+    expect(routes.deleteMe.method).toBe('DELETE');
+    expect(routes.deleteMe.auth).toBe(true);
+  });
+
+  it('is not household-scoped, so a user whose only kitchen is gone can still delete', () => {
+    expect(routes.deleteMe.household).toBe(false);
+  });
+
+  it('ships a screen that reaches it', () => {
+    const screen = readFileSync(join(SRC, 'app', 'settings', 'delete-account.tsx'), 'utf8');
+    expect(screen).toContain('useDeleteAccount');
   });
 });
