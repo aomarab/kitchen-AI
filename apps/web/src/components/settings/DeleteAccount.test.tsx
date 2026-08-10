@@ -111,7 +111,7 @@ describe('DeleteAccount', () => {
   });
 
   it('keeps submit disabled until the confirmation word is typed', async () => {
-    primeApi();
+    primeApi({ user: makeUser({ hasPassword: false }) });
     renderDeleteAccount();
     const submit = await screen.findByRole('button', { name: /delete my account/i });
     expect(submit).toBeDisabled();
@@ -119,6 +119,25 @@ describe('DeleteAccount', () => {
     fireEvent.change(screen.getByLabelText(/type delete to confirm/i), {
       target: { value: 'DELETE' },
     });
+    expect(submit).toBeEnabled();
+  });
+
+  it('keeps submit disabled until a password account also enters its password', async () => {
+    // The contract types password as .min(1), so submitting a blank one is
+    // rejected as VALIDATION_FAILED before the server's friendly
+    // auth.passwordRequired branch can run — the user would see the generic
+    // "some details are not quite right" while deleting their account. Gating
+    // the button keeps the irreversible action behind a complete form instead.
+    primeApi();
+    renderDeleteAccount();
+    const submit = await screen.findByRole('button', { name: /delete my account/i });
+
+    fireEvent.change(screen.getByLabelText(/type delete to confirm/i), {
+      target: { value: 'DELETE' },
+    });
+    expect(submit).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/your password/i), { target: { value: 'pw' } });
     expect(submit).toBeEnabled();
   });
 

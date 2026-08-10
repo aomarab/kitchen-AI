@@ -31,7 +31,7 @@ export default function DeleteAccount() {
   const households = householdsQuery.data;
   const word = deleteConfirmationWord(locale);
   const confirmed = matchesDeleteConfirmation(confirmation, locale);
-  const canSubmit = confirmed && !mutation.isPending;
+  const canSubmit = confirmed && (!user.hasPassword || password.length > 0) && !mutation.isPending;
 
   const submit = () => {
     if (!canSubmit) return;
