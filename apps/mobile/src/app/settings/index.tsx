@@ -3,7 +3,7 @@ import { I18nManager, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { directionFor, type Locale } from '@kitchen/i18n';
-import { Screen, Header, AppText, Button, Card, Chip, Sheet, ToggleRow } from '../../components';
+import { Screen, Header, AppText, Button, Card, Chip, Sheet, ToggleRow, ListRow } from '../../components';
 import { useLocale } from '../../lib/locale';
 import { useSettingsStore } from '../../stores/settings';
 import { spacing } from '../../theme';
@@ -64,6 +64,13 @@ export default function Settings() {
           onValueChange={setShowHijri}
         />
       </Card>
+
+      <ListRow
+        title={t('mobile.feedback.entry')}
+        subtitle={t('mobile.feedback.entryHint')}
+        showChevron
+        onPress={() => router.push('/settings/feedback')}
+      />
 
       <View style={{ gap: spacing.xs }}>
         <AppText variant="label" muted>

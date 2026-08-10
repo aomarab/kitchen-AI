@@ -8,6 +8,13 @@
       "when": 1785089719712,
       "tag": "0000_closed_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786312320661,
+      "tag": "0001_little_stingray",
+      "breakpoints": true
     }
   ]
 }

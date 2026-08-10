@@ -40,6 +40,15 @@ import { getMockLocale } from './runtime';
 
 const u = (path: string) => `${API_URL}${path}`;
 
+/** Matches the API's `encodeCursor`/`decodeCursor`: base64url, unpadded. */
+const encodeMockCursor = (offset: number) =>
+  btoa(String(offset)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+const decodeMockCursor = (cursor: string) => {
+  const padded = cursor.replace(/-/g, '+').replace(/_/g, '/');
+  return Number(atob(padded + '='.repeat((4 - (padded.length % 4)) % 4)));
+};
+
 function err(code: ErrorCode, status: number) {
   return HttpResponse.json({ code, messageKey: `errors.${code}` }, { status });
 }
@@ -512,6 +521,94 @@ export const handlers = [
     db.inventory.push(...created);
     db.shopping = db.shopping.filter((s) => !body.itemIds.includes(s.id));
     return HttpResponse.json(created);
+  }),
+
+  /* ---------- Feedback ---------- */
+  http.post(u('/feedback'), async ({ request }) => {
+    const body = (await request.json()) as {
+      rating: number;
+      message?: string;
+      platform: 'ios' | 'android' | 'web';
+      appVersion: string;
+      locale: Locale;
+    };
+    const record = {
+      id: uuid(),
+      rating: body.rating,
+      message: body.message ?? null,
+      platform: body.platform,
+      appVersion: body.appVersion,
+      locale: body.locale,
+      status: 'new' as const,
+      createdAt: iso(),
+      adminNote: null,
+      reviewedAt: null,
+      submitter: {
+        id: db.user.id,
+        email: db.user.email,
+        displayName: db.user.displayName,
+        locale: db.user.locale,
+        joinedAt: db.user.createdAt,
+      },
+    };
+    db.feedback.unshift(record);
+    return HttpResponse.json({ id: record.id, createdAt: record.createdAt }, { status: 201 });
+  }),
+
+  /* ---------- Admin ---------- */
+  http.get(u('/admin/feedback/stats'), () => {
+    const all = db.feedback;
+    const byStatus = { new: 0, triaged: 0, resolved: 0, wont_fix: 0 };
+    const byRating: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+    for (const item of all) {
+      byStatus[item.status] += 1;
+      byRating[String(item.rating)] = (byRating[String(item.rating)] ?? 0) + 1;
+    }
+    const total = all.length;
+    const averageRating =
+      total === 0
+        ? null
+        : Math.round((all.reduce((sum, i) => sum + i.rating, 0) / total) * 100) / 100;
+    return HttpResponse.json({ total, averageRating, byStatus, byRating });
+  }),
+
+  http.get(u('/admin/feedback'), ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const status = params.get('status');
+    const rating = params.get('rating');
+    const platform = params.get('platform');
+    const limit = Number(params.get('limit') ?? 50);
+    const cursor = params.get('cursor');
+    const offset = cursor ? Number(decodeMockCursor(cursor)) : 0;
+
+    const filtered = db.feedback.filter(
+      (item) =>
+        (!status || item.status === status) &&
+        (!rating || item.rating === Number(rating)) &&
+        (!platform || item.platform === platform),
+    );
+    const page = filtered.slice(offset, offset + limit);
+    const nextCursor = offset + limit < filtered.length ? encodeMockCursor(offset + limit) : null;
+
+    return HttpResponse.json({
+      items: page.map(({ submitter: _submitter, adminNote: _note, reviewedAt: _at, ...rest }) => rest),
+      nextCursor,
+    });
+  }),
+
+  http.get(u('/admin/feedback/:id'), ({ params }) => {
+    const item = db.feedback.find((f) => f.id === params.id);
+    return item ? HttpResponse.json(item) : err('NOT_FOUND', 404);
+  }),
+
+  http.patch(u('/admin/feedback/:id'), async ({ params, request }) => {
+    const item = db.feedback.find((f) => f.id === params.id);
+    if (!item) return err('NOT_FOUND', 404);
+    const body = (await request.json()) as { status?: typeof item.status; adminNote?: string | null };
+    if (body.status !== undefined) item.status = body.status;
+    if (body.adminNote !== undefined) item.adminNote = body.adminNote;
+    item.reviewedAt = iso();
+    return HttpResponse.json(item);
   }),
 
   /* ---------- Usage ---------- */

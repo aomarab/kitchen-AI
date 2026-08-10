@@ -9,6 +9,7 @@ import { CatalogModule } from './catalog/catalog.module.js';
 import { InventoryModule } from './inventory/inventory.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { AiModule } from './ai/ai.module.js';
+import { FeedbackModule } from './feedback/feedback.module.js';
 
 /** Root module. */
 @Module({
@@ -22,6 +23,7 @@ import { AiModule } from './ai/ai.module.js';
     InventoryModule,
     StorageModule,
     AiModule,
+    FeedbackModule,
   ],
   controllers: [HealthController],
 })

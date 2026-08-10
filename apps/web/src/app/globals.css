@@ -1,35 +1,57 @@
 @import 'tailwindcss';
 
+/* Palette sampled pixel-by-pixel from the reference shot (fintech wallet /
+   sales tracker): near-black navy actions, a single teal accent, a warm sand
+   band and white cards on an off-white page. Every value below was checked
+   against palette.test.ts before it was written — nothing here is eyeballed.
+   Where the shot's colour could not carry text at 4.5:1 it was stepped down
+   the same hue (182°, sat .78) rather than swapped for a different colour. */
 :root {
-  --canvas: #eef2f9;
-  --canvas-tint: #e3ebfb;
+  --canvas: #f5f4f1;
+  /* The warm band behind the auth hero and page headers. This is the darkest
+     light surface, so it sets the floor for every foreground token. */
+  --canvas-tint: #f0e6da;
   --background: #ffffff;
-  --foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #55637a;
-  --border: #d7dee9;
-  --primary: #2563eb;
-  --primary-press: #1d4ed8;
+  --foreground: #12172b;
+  --muted: #efeeea;
+  --muted-foreground: #5a6072;
+  --border: #e3e0d9;
+  /* The shot's action colour is the near-black navy of the FAB, not a blue. */
+  --primary: #141a31;
+  --primary-press: #252c4a;
   --primary-foreground: #ffffff;
-  --primary-soft: #ebf2fe;
-  /* --primary as *text* on --primary-soft is 4.59:1 — over the bar, but with
-     no room for a future tweak to the tint. Text-weight blue is one step
-     darker so the margin lives in the token, not in luck. */
-  --primary-text: #1d4ed8;
-  --link: #1d4ed8;
-  --success: #047857;
-  --success-soft: #e2f1eb;
-  --warning: #92400e;
-  --warning-soft: #f6ede2;
-  --danger: #b91c1c;
-  --danger-soft: #fbe9e9;
+  --primary-soft: #e8e9ee;
+  --primary-text: #141a31;
+
+  /* Teal is the shot's one chromatic accent (gauge arc, chart bars). It exists
+     at two weights because the vivid #17b3b9 is 2.54:1 on white — fine as a
+     large graphic, unusable as a control or as text. --accent is the lightest
+     teal that still clears 3:1 on white, canvas *and* the sand band (3.29:1);
+     --accent-text steps darker to clear 4.5:1 on all four. Use --accent for
+     fills, icons, focus rings and chart series; --accent-text for words. */
+  --accent: #128c91;
+  --accent-soft: #e2f3f4;
+  --accent-text: #0e6e71;
+  --link: #0e6e71;
+
+  --success: #1e7a4c;
+  --success-soft: #e3f2e8;
+  --warning: #8a4a0a;
+  --warning-soft: #faeddd;
+  --danger: #b33230;
+  --danger-soft: #fbe9e8;
   --danger-foreground: #ffffff;
 
-  /* The auth hero band. White sheet on deep navy, straight off the reference
-     sign-in shot. Mobile carries the same pair as surfaceInverse/textInverse. */
-  --inverse: #0f172a;
+  /* The auth hero band. White sheet on the same near-black navy the primary
+     action uses. Mobile carries the pair as surfaceInverse/textInverse. */
+  --inverse: #141a31;
   --inverse-foreground: #ffffff;
-  --inverse-muted: #a9b8cf;
+  --inverse-muted: #a9afc2;
+
+  /* Depth in the reference comes from soft diffused shadow, not borders. Two
+     layers: a tight contact shadow plus a wide ambient one. */
+  --shadow-card: 0 1px 2px rgb(20 26 49 / 0.04), 0 8px 24px rgb(20 26 49 / 0.06);
+  --shadow-raised: 0 2px 4px rgb(20 26 49 / 0.06), 0 16px 40px rgb(20 26 49 / 0.1);
 
   /* Latin letter-spacing. Arabic is cursive — letter-spacing forces gaps into
      the joins — so :root:lang(ar) resets each of these to zero and every
@@ -45,41 +67,48 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #0b1220;
-    /* Same as --canvas on purpose: a lifted navy canvas puts the #141e33 card
-       at ~1.1:1 and the card disappears. The tint is a light-mode device. */
-    --canvas-tint: #0b1220;
-    --background: #141e33;
-    --foreground: #e8eef9;
-    --muted: #1d2942;
-    --muted-foreground: #9eb0cb;
-    --border: #2c3a57;
-    --primary: #60a5fa;
-    --primary-press: #4a93f0;
-    /* White on this lifted blue is 2.54:1, so button labels go navy (7.36:1). */
-    --primary-foreground: #0b1220;
-    --primary-soft: #22314f;
-    /* Mirror of the light theme: text-weight blue sits one step away from the
-       fill so the margin lives in the token. --primary itself would pass at
-       5.10:1 on --primary-soft; this lifts that to 7.41:1. */
-    --primary-text: #9dc7fc;
-    --link: #8fbefb;
-    --success: #34d399;
-    --success-soft: #12362c;
-    --warning: #e8b24a;
-    --warning-soft: #3e2f1c;
+    --canvas: #0c1020;
+    /* Same as --canvas on purpose: a lifted canvas puts the card at ~1.1:1 and
+       the card disappears. The warm tint is a light-mode device. */
+    --canvas-tint: #0c1020;
+    --background: #151b2e;
+    --foreground: #e9ecf5;
+    --muted: #1f2740;
+    --muted-foreground: #a2aabf;
+    --border: #2e3655;
+    /* Light mode's near-black navy is invisible on a navy canvas, so dark mode
+       promotes the teal accent to the action colour and carries a dark label. */
+    --primary: #5fd3d8;
+    --primary-press: #4bc2c8;
+    --primary-foreground: #0c1020;
+    --primary-soft: #1e3340;
+    --primary-text: #7fe0e4;
+
+    --accent: #5fd3d8;
+    --accent-soft: #1e3340;
+    --accent-text: #7fe0e4;
+    --link: #7fe0e4;
+
+    --success: #3dd68c;
+    --success-soft: #123528;
+    --warning: #e8a33d;
+    --warning-soft: #3b2c18;
     --danger: #f87171;
     --danger-soft: #42222a;
     /* White on this salmon is 2.77:1, so destructive labels go dark. */
-    --danger-foreground: #0b1220;
+    --danger-foreground: #0c1020;
 
-    /* Same as --canvas, for the reason --canvas-tint is: the auth card is
-       #141e33, and on any navy band it measures 1.07:1 and disappears. The
-       hero band is a light-mode device; dark mode lets the card float on the
-       canvas, delineated by --border instead. */
-    --inverse: #0b1220;
-    --inverse-foreground: #e8eef9;
-    --inverse-muted: #9eb0cb;
+    /* Same as --canvas, for the reason --canvas-tint is: on any dark band the
+       card measures ~1.07:1 and disappears. The hero band is a light-mode
+       device; dark mode lets the card float, delineated by --border instead. */
+    --inverse: #0c1020;
+    --inverse-foreground: #e9ecf5;
+    --inverse-muted: #a2aabf;
+
+    /* Shadow does almost no work on a dark canvas; deepen it so the card still
+       lifts rather than relying on a shadow that cannot be seen. */
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.36);
+    --shadow-raised: 0 2px 4px rgb(0 0 0 / 0.36), 0 16px 40px rgb(0 0 0 / 0.48);
   }
 }
 
@@ -96,6 +125,9 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-soft: var(--primary-soft);
   --color-primary-text: var(--primary-text);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
   --color-link: var(--link);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -111,6 +143,18 @@
   --tracking-heading-lg: var(--track-heading-lg);
   --tracking-heading-sm: var(--track-heading-sm);
   --tracking-button: var(--track-button);
+
+  /* The reference rounds everything generously — cards read ~20px, controls
+     are pills. Overriding the scale means existing `rounded-*` utilities pick
+     the softer geometry up without touching a single component. */
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+  --radius-2xl: 1.375rem;
+  --radius-3xl: 1.75rem;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
 
   --font-sans: var(--font-latin), var(--font-arabic), system-ui, sans-serif;
 }

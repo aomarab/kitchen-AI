@@ -27,6 +27,8 @@ export const IONICONS = {
   edit: 'pencil',
   warning: 'warning',
   flame: 'flame',
+  star: 'star',
+  starOutline: 'star-outline',
   basket: 'basket',
   settings: 'settings',
   user: 'person',

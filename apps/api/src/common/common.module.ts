@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ENV, type Env } from '../config/env.js';
 import { AuthGuard } from './auth.guard.js';
 import { HouseholdGuard } from './household.guard.js';
+import { StaffGuard } from './staff.guard.js';
 
 /**
  * Cross-cutting security primitives shared by every feature module. Registered
@@ -22,7 +23,7 @@ import { HouseholdGuard } from './household.guard.js';
       }),
     }),
   ],
-  providers: [AuthGuard, HouseholdGuard],
-  exports: [AuthGuard, HouseholdGuard, JwtModule],
+  providers: [AuthGuard, HouseholdGuard, StaffGuard],
+  exports: [AuthGuard, HouseholdGuard, StaffGuard, JwtModule],
 })
 export class CommonModule {}

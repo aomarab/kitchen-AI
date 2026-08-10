@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   cuisineSchema,
   dietaryPreferenceSchema,
@@ -16,7 +17,7 @@ import { cuisineKey, dietKey, healthGoalKey } from '../../lib/labels';
 import { cn } from '../../lib/cn';
 import { useProfile, useUpdateProfile } from '../../hooks/settings';
 import { Card, CardHeader, CardTitle } from '../ui/Card';
-import { Button } from '../ui/Button';
+import { Button, buttonClasses } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Input, Field } from '../ui/Input';
 import { LocaleToggle } from '../shell/LocaleToggle';
@@ -184,6 +185,16 @@ export function SettingsView() {
             </Field>
           </section>
         </div>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('web.feedback.entry')}</CardTitle>
+        </CardHeader>
+        <p className="text-sm text-muted-foreground">{t('web.feedback.entryHint')}</p>
+        <Link href="/settings/feedback" className={buttonClasses({ className: 'mt-4' })}>
+          {t('web.feedback.title')}
+        </Link>
       </Card>
     </div>
   );

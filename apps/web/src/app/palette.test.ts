@@ -57,6 +57,25 @@ describe.each(['light', 'dark'] as const)('%s palette', (theme) => {
   });
 
   /**
+   * Teal ships at two weights because the reference's vivid #17b3b9 is 2.54:1
+   * on white — legible as a large graphic, not as a control or as a word.
+   * `--accent` is the fill/icon/focus weight and only has to clear the
+   * non-text bar; `--accent-text` carries prose. Guarding both stops the
+   * vivid value from creeping back in under either name.
+   */
+  it('--accent-text reads on every surface it can land on', () => {
+    for (const bg of [...SURFACES[theme], 'accent-soft']) {
+      expect(ratio('accent-text', bg), `--accent-text on --${bg}`).toBeGreaterThanOrEqual(AA_TEXT);
+    }
+  });
+
+  it('--accent separates as a control on every surface', () => {
+    for (const bg of SURFACES[theme]) {
+      expect(ratio('accent', bg), `--accent on --${bg}`).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    }
+  });
+
+  /**
    * The auth hero inverts the screen, so it needs its own foreground pair —
    * `--foreground` on it is 1.12:1 in light mode. Dark mode collapses the band
    * into the canvas, and these two still have to read there.

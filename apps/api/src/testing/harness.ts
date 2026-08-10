@@ -3,7 +3,7 @@ import { inArray } from 'drizzle-orm';
 import postgres from 'postgres';
 import { randomUUID } from 'node:crypto';
 import { JwtService } from '@nestjs/jwt';
-import type { HouseholdRole } from '@kitchen/contracts';
+import type { HouseholdRole, UserRole } from '@kitchen/contracts';
 import * as schema from '../db/schema.js';
 import { loadEnv, type Env } from '../config/env.js';
 
@@ -31,10 +31,18 @@ export function createTestContext(): TestContext {
   return { env, client, db, jwt };
 }
 
-export async function seedUser(db: TestDatabase, email?: string): Promise<string> {
+export async function seedUser(
+  db: TestDatabase,
+  email?: string,
+  role: UserRole = 'user',
+): Promise<string> {
   const [row] = await db
     .insert(schema.users)
-    .values({ email: email ?? `test+${randomUUID()}@example.com`, displayName: 'Test User' })
+    .values({
+      email: email ?? `test+${randomUUID()}@example.com`,
+      displayName: 'Test User',
+      role,
+    })
     .returning({ id: schema.users.id });
   if (!row) throw new Error('failed to seed user');
   return row.id;

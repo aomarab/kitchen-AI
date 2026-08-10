@@ -64,6 +64,15 @@ import {
   recognitionSessionSchema,
   recognizeRequestSchema,
 } from './ai.js';
+import {
+  feedbackDetailSchema,
+  feedbackStatsSchema,
+  feedbackSummarySchema,
+  listFeedbackQuerySchema,
+  submitFeedbackRequestSchema,
+  submitFeedbackResponseSchema,
+  updateFeedbackRequestSchema,
+} from './feedback.js';
 import { idParamSchema, paginatedSchema, uuidSchema } from './common.js';
 
 /**
@@ -74,12 +83,14 @@ import { idParamSchema, paginatedSchema, uuidSchema } from './common.js';
  * Path params are written as `:name`.
  *   auth      — requires a bearer access token
  *   household — requires the `x-household-id` header
+ *   staff     — requires the authenticated user's global role to be `staff`
  */
 export interface RouteDefinition {
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   path: string;
   auth: boolean;
   household: boolean;
+  staff?: boolean;
   params?: z.ZodTypeAny;
   query?: z.ZodTypeAny;
   body?: z.ZodTypeAny;
@@ -492,6 +503,55 @@ export const routes = {
     auth: true,
     household: true,
     response: aiUsageSummarySchema,
+  },
+
+  /* ---------------- Feedback ---------------- */
+  submitFeedback: {
+    method: 'POST',
+    path: '/feedback',
+    auth: true,
+    household: false,
+    body: submitFeedbackRequestSchema,
+    response: submitFeedbackResponseSchema,
+  },
+
+  /* ---------------- Admin (staff only) ---------------- */
+  // `stats` is declared before `:id` so the literal segment always wins the match.
+  adminFeedbackStats: {
+    method: 'GET',
+    path: '/admin/feedback/stats',
+    auth: true,
+    household: false,
+    staff: true,
+    response: feedbackStatsSchema,
+  },
+  adminListFeedback: {
+    method: 'GET',
+    path: '/admin/feedback',
+    auth: true,
+    household: false,
+    staff: true,
+    query: listFeedbackQuerySchema,
+    response: paginatedSchema(feedbackSummarySchema),
+  },
+  adminGetFeedback: {
+    method: 'GET',
+    path: '/admin/feedback/:id',
+    auth: true,
+    household: false,
+    staff: true,
+    params: idParamSchema,
+    response: feedbackDetailSchema,
+  },
+  adminUpdateFeedback: {
+    method: 'PATCH',
+    path: '/admin/feedback/:id',
+    auth: true,
+    household: false,
+    staff: true,
+    params: idParamSchema,
+    body: updateFeedbackRequestSchema,
+    response: feedbackDetailSchema,
   },
 } as const satisfies Record<string, RouteDefinition>;
 

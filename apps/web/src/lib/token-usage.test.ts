@@ -53,11 +53,18 @@ describe('token usage', () => {
     expect(offenders(/\btext-primary\b(?!-)/, (line) => line === INERT_CHECKBOX)).toEqual([]);
   });
 
+  it('never uses the accent fill as a text colour', () => {
+    // Same defect class as `text-primary`. --accent is the 3:1 control weight
+    // (3.29:1 on the sand band); prose uses --accent-text, which clears 4.5:1
+    // on every surface including the band.
+    expect(offenders(/\btext-accent\b(?!-)/)).toEqual([]);
+  });
+
   it('never tints a surface with an opacity utility', () => {
     // Tailwind v4 compiles `/12` to color-mix(in oklab, ...), which is not the
     // sRGB blend the contrast maths assumes. Tints are solid *-soft tokens, so
     // the measured number is the shipped number.
-    expect(offenders(/\b(?:bg|border)-(?:primary|success|warning|danger)\/\d+/)).toEqual([]);
+    expect(offenders(/\b(?:bg|border)-(?:primary|accent|success|warning|danger)\/\d+/)).toEqual([]);
   });
 
   it('keeps colour in the token file', () => {
