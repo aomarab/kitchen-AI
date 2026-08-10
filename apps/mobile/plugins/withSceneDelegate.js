@@ -8,6 +8,10 @@ const path = require("node:path");
  * ships no such class, so prebuild would otherwise produce an app that launches to a black screen.
  * `AppDelegate` still builds the window and starts React Native; this delegate only adopts that
  * window into the scene UIKit hands us.
+ *
+ * RE-EVALUATE ON EXPO SDK UPGRADE: this plugin writes SceneDelegate.swift unconditionally and
+ * would clobber a template-provided SceneDelegate if Expo ever ships its own. Check the generated
+ * ios/ directory after upgrading the Expo SDK to confirm no conflict.
  */
 const SCENE_DELEGATE = `import UIKit
 
@@ -21,7 +25,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   ) {
     guard let windowScene = scene as? UIWindowScene,
           let appDelegate = UIApplication.shared.delegate as? AppDelegate,
-          let existingWindow = appDelegate.window else { return }
+          let existingWindow = appDelegate.window else {
+      #if DEBUG
+      assertionFailure("SceneDelegate: guard failed — windowScene, AppDelegate, or AppDelegate.window was nil. Re-evaluate after an Expo SDK upgrade.")
+      #endif
+      return
+    }
 
     existingWindow.windowScene = windowScene
     window = existingWindow

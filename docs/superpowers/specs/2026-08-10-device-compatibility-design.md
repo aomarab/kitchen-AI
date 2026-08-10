@@ -100,11 +100,20 @@ must not apply `fontScale` here.
 `maxFontScaleFor(variant)` returns `1.6` for the chrome variants — `button`,
 `label`, `caption` — and `undefined` for the content variants — `display`,
 `title`, `heading`, `body`, `bodyStrong`. Chrome is capped because fixed-height
-rows (button rows, tab bars) cannot accommodate unbounded growth. Content is
+rows (button rows) cannot accommodate unbounded growth. Content is
 uncapped so the user's text-size preference is honoured for long-form reading.
 `undefined` rather than a sentinel like `Infinity` because the value is passed
 to React Native's `maxFontSizeMultiplier` prop, which accepts `null`, `0`, or a
 number `>= 1`; `Infinity` is not legal there.
+
+**Tab bars are not covered by `maxFontScaleFor`.** Tab labels render through
+react-navigation's `BottomTabItem`, not through `AppText`, so they never receive
+a `maxFontSizeMultiplier` cap from this mechanism. The implemented behaviour is:
+`BottomTabItem` sets `allowFontScaling = SUPPORTS_LARGE_CONTENT_VIEWER ? false :
+undefined`. On iOS this disables Dynamic Type scaling entirely for tab labels —
+users get the long-press large-content viewer instead, so the tab bar cannot
+overflow. On Android tab labels scale uncapped; whether they clip at accessibility
+text sizes is unverified and is a named follow-up.
 
 `AppText` imports `maxFontScaleFor` and passes `maxFontSizeMultiplier={maxFontScaleFor(variant)}`
 to the underlying `<Text>` element. It calls `typography(locale)` and applies the returned
