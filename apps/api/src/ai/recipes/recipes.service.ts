@@ -19,12 +19,11 @@ import {
   recipes,
   users,
 } from '../../db/schema.js';
-import { PANTRY_PORT, RESPONSE_CACHE, YOUTUBE_CLIENT } from '../ai.constants.js';
+import { PANTRY_PORT } from '../ai.constants.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { convert } from '../planner/units.js';
-import type { YoutubeClient } from '../clients/clients.interface.js';
-import type { ResponseCachePort } from '../cache/response-cache.js';
 import { toRecipe, type FullRecipeRow } from './recipe-mapper.js';
+import { MediaService } from './media.service.js';
 
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
@@ -33,29 +32,26 @@ export class RecipesService {
   constructor(
     @Inject(DB) private readonly db: Database,
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
-    @Inject(YOUTUBE_CLIENT) private readonly youtube: YoutubeClient,
-    @Inject(RESPONSE_CACHE) private readonly cache: ResponseCachePort,
+    private readonly media: MediaService,
   ) {}
 
   async getRecipe(householdId: string, id: string, requested?: Locale): Promise<Recipe> {
     const row = await this.loadRecipe(householdId, id);
     const locale = requested ?? (row.titleEn ? 'en' : 'ar');
-    const snapshot = await this.pantry.snapshot(householdId);
-    return toRecipe(row, locale, snapshot);
+    const title = locale === 'ar' ? (row.titleAr ?? row.titleEn ?? '') : (row.titleEn ?? row.titleAr ?? '');
+    const [snapshot, dishMediaResult] = await Promise.all([
+      this.pantry.snapshot(householdId),
+      this.media.resolve(title, locale),
+    ]);
+    return toRecipe(row, locale, snapshot, dishMediaResult);
   }
 
-  /**
-   * Recipe videos (spec §5.5). Cached per recipe for 30 days; ids always come
-   * from the YouTube API, never the LLM. When the quota is exhausted the recipe
-   * is served with whatever is cached (possibly nothing) and the fetch is
-   * retried later — the flow never dead-ends.
-   *
-   * Video cache migrated from recipe-keyed (recipeVideos) to dish-keyed
-   * (dishMedia/dishVideos). Implemented by MediaService; this method is
-   * rewired when that lands.
-   */
-  async getVideos(_householdId: string, _id: string, _requested?: Locale): Promise<RecipeVideo[]> {
-    throw new AppError('AI_UNAVAILABLE', 'errors.AI_UNAVAILABLE');
+  async getVideos(householdId: string, id: string, requested?: Locale): Promise<RecipeVideo[]> {
+    const row = await this.loadRecipe(householdId, id);
+    const locale = requested ?? (row.titleEn ? 'en' : 'ar');
+    const title = locale === 'ar' ? (row.titleAr ?? row.titleEn ?? '') : (row.titleEn ?? row.titleAr ?? '');
+    const dishMediaResult = await this.media.resolve(title, locale);
+    return dishMediaResult.videos;
   }
 
   /**

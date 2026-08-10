@@ -19,6 +19,9 @@ import { cloneSnapshot, consumeFromSnapshot } from '../planner/pantry-snapshot.j
 import { validateRecipe } from '../planner/validation.js';
 import type { CatalogIngredientRef, ResolvedRecipe } from '../planner/types.js';
 import { toRecipeSummary, type RecipeRow } from '../recipes/recipe-mapper.js';
+import { dishKey } from '../recipes/dish-key.js';
+import type { DishMedia } from '../recipes/media.service.js';
+import { MediaService } from '../recipes/media.service.js';
 import { PlannerService } from '../planner/planner.service.js';
 
 type EntryWithRecipe = {
@@ -39,6 +42,7 @@ export class PlanService {
     @Inject(DB) private readonly db: Database,
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
     @Inject(PlannerService) private readonly planner: PlannerService,
+    private readonly mediaService: MediaService,
   ) {}
 
   async list(householdId: string, query: ListPlansQuery): Promise<MealPlan[]> {
@@ -55,12 +59,16 @@ export class PlanService {
       orderBy: [desc(mealPlans.startsOn)],
       with: { entries: { with: { recipe: true } } },
     });
-    return rows.map((row) => this.toMealPlan(row));
+    const locale = (rows[0]?.locale as Locale | undefined) ?? 'en';
+    const mediaMap = await this.resolveMediaForPlans(rows as Parameters<typeof this.toMealPlan>[0][], locale);
+    return rows.map((row) => this.toMealPlan(row as Parameters<typeof this.toMealPlan>[0], mediaMap));
   }
 
   async get(householdId: string, id: string): Promise<MealPlan> {
     const row = await this.loadPlan(householdId, id);
-    return this.toMealPlan(row);
+    const locale = (row.locale as Locale) ?? 'en';
+    const mediaMap = await this.resolveMediaForPlans([row], locale);
+    return this.toMealPlan(row, mediaMap);
   }
 
   async remove(householdId: string, id: string): Promise<{ ok: true }> {
@@ -234,11 +242,11 @@ export class PlanService {
     locale: string;
     createdAt: Date;
     entries: EntryWithRecipe[];
-  }): MealPlan {
+  }, mediaMap: Map<string, DishMedia> = new Map()): MealPlan {
     const locale = (row.locale as Locale) ?? 'en';
     const entries = [...row.entries]
       .sort((a, b) => a.date.localeCompare(b.date) || a.position - b.position)
-      .map((e) => this.toEntry(e, locale));
+      .map((e) => this.toEntry(e, locale, mediaMap));
     return {
       id: row.id,
       householdId: row.householdId,
@@ -252,17 +260,34 @@ export class PlanService {
     };
   }
 
-  private toEntry(row: EntryWithRecipe, locale: Locale): MealPlanEntry {
+  private toEntry(row: EntryWithRecipe, locale: Locale, mediaMap: Map<string, DishMedia> = new Map()): MealPlanEntry {
+    const title = locale === 'ar' ? (row.recipe.titleAr ?? row.recipe.titleEn ?? '') : (row.recipe.titleEn ?? row.recipe.titleAr ?? '');
+    const media = mediaMap.get(dishKey(title));
     return {
       id: row.id,
       planId: row.planId,
       date: row.date,
       slot: row.slot,
-      recipe: toRecipeSummary(row.recipe, locale),
+      recipe: toRecipeSummary(row.recipe, locale, media),
       servings: row.servings,
       state: row.state,
       fullyCovered: row.fullyCovered,
     };
+  }
+
+  private async resolveMediaForPlans(
+    rows: { locale: string; entries: EntryWithRecipe[] }[],
+    locale: Locale,
+  ): Promise<Map<string, DishMedia>> {
+    const requests: { title: string; locale: Locale }[] = [];
+    for (const row of rows) {
+      const l = (row.locale as Locale) ?? locale;
+      for (const e of row.entries) {
+        const title = l === 'ar' ? (e.recipe.titleAr ?? e.recipe.titleEn ?? '') : (e.recipe.titleEn ?? e.recipe.titleAr ?? '');
+        if (title) requests.push({ title, locale: l });
+      }
+    }
+    return this.mediaService.resolveMany(requests);
   }
 }
 

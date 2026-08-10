@@ -86,7 +86,7 @@ describe('RecipesService.getRecipe (integration: real loadRecipe path)', () => {
       snapshot: vi.fn().mockResolvedValue({}),
     };
 
-    const service = new RecipesService(ctx.db, mockPantry, {} as never, {} as never);
+    const service = new RecipesService(ctx.db, mockPantry, { resolve: vi.fn().mockResolvedValue({ status: 'none', heroThumbnailUrl: null, videos: [] }) } as never);
 
     // This exercises the real loadRecipe() → database query path.
     // Before the fix (loadRecipe without videos: []), this would crash with:

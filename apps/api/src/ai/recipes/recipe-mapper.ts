@@ -7,12 +7,12 @@ import type {
   RecipeIngredient,
   RecipeStep,
   RecipeSummary,
-  RecipeVideo,
   Unit,
 } from '@kitchen/contracts';
 import { cuisineSchema } from '@kitchen/contracts';
 import { dimensionOf, toBase } from '../planner/units.js';
 import type { PantrySnapshot } from '../planner/types.js';
+import type { DishMedia } from './media.service.js';
 
 type StoredStep = { index: number; text: string; durationMinutes: number | null };
 
@@ -52,18 +52,9 @@ export interface RecipeIngredientRow {
   };
 }
 
-export interface RecipeVideoRow {
-  youtubeId: string;
-  title: string;
-  channel: string;
-  thumbnailUrl: string;
-  durationSeconds: number | null;
-  locale: Locale;
-}
-
 export interface FullRecipeRow extends RecipeRow {
   ingredients: RecipeIngredientRow[];
-  videos: RecipeVideoRow[];
+  videos: never[];
 }
 
 function pickText(locale: Locale, en: string | null, ar: string | null): string {
@@ -97,7 +88,7 @@ function toNutrition(value: Record<string, number> | null): Nutrition | null {
   };
 }
 
-export function toRecipeSummary(row: RecipeRow, locale: Locale): RecipeSummary {
+export function toRecipeSummary(row: RecipeRow, locale: Locale, media?: DishMedia): RecipeSummary {
   return {
     id: row.id,
     title: pickText(locale, row.titleEn, row.titleAr),
@@ -107,18 +98,7 @@ export function toRecipeSummary(row: RecipeRow, locale: Locale): RecipeSummary {
     servings: row.servings,
     difficulty: row.difficulty,
     cuisine: toCuisine(row.cuisine),
-    heroImageUrl: null,
-  };
-}
-
-function toRecipeVideo(row: RecipeVideoRow): RecipeVideo {
-  return {
-    youtubeId: row.youtubeId,
-    title: row.title,
-    channel: row.channel,
-    thumbnailUrl: row.thumbnailUrl,
-    durationSeconds: row.durationSeconds,
-    locale: row.locale,
+    heroImageUrl: media?.heroThumbnailUrl ?? null,
   };
 }
 
@@ -163,7 +143,7 @@ function toRecipeIngredient(
   return base;
 }
 
-export function toRecipe(row: FullRecipeRow, locale: Locale, snapshot?: PantrySnapshot): Recipe {
+export function toRecipe(row: FullRecipeRow, locale: Locale, snapshot?: PantrySnapshot, media?: DishMedia): Recipe {
   const steps = pickSteps(locale, row.stepsEn, row.stepsAr);
   return {
     id: row.id,
@@ -179,8 +159,8 @@ export function toRecipe(row: FullRecipeRow, locale: Locale, snapshot?: PantrySn
     difficulty: row.difficulty,
     cuisine: toCuisine(row.cuisine),
     nutrition: toNutrition(row.nutrition),
-    heroImageUrl: null,
-    videos: row.videos.map(toRecipeVideo),
+    heroImageUrl: media?.heroThumbnailUrl ?? null,
+    videos: media?.videos ?? [],
     generatedBy: row.generatedBy,
     createdAt: row.createdAt.toISOString(),
   };

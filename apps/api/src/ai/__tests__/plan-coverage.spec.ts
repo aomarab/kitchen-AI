@@ -39,7 +39,7 @@ function serviceFor(entries: ReturnType<typeof entry>[], pantry: PantryPort): Pl
       },
     },
   } as unknown as Database;
-  return new PlanService(db, pantry, undefined as never);
+  return new PlanService(db, pantry, undefined as never, { resolveMany: async () => new Map() } as never);
 }
 
 /**

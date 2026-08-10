@@ -83,7 +83,7 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
         AuthGuard,
         HouseholdGuard,
         { provide: JobsService, useValue: new JobsService(store) },
-        { provide: PlanService, useValue: new PlanService(ctx.db, undefined as never, undefined as never) },
+        { provide: PlanService, useValue: new PlanService(ctx.db, undefined as never, undefined as never, { resolveMany: async () => new Map() } as never) },
         {
           provide: RecognitionService,
           useValue: new RecognitionService(
