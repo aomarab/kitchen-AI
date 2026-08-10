@@ -3,7 +3,7 @@ import { AuthHero } from '../../components/auth/AuthHero';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-canvas-tint">
+    <div className="flex min-h-screen flex-col bg-canvas">
       {/* The band and the sheet that overlaps it: `-mt-16` pulls the card up
           over the navy, and the band's `pb-24` reserves the room it takes. */}
       <div className="bg-inverse">

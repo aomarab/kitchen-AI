@@ -153,6 +153,20 @@ describe('tints stay distinguishable from the ground', () => {
     expect(distance(tint.bg, colors.bg), `${tint.name} vs bg`).toBeGreaterThanOrEqual(MIN_DISTANCE);
   });
 
+  /**
+   * The card fill is a surface like any tint, and the one most able to vanish:
+   * `surface` is white, so any move of the ground toward white erases the card
+   * without changing a single foreground. The tint loop above cannot see it —
+   * `surface` is not a tint — which is exactly how a white-on-white page would
+   * have shipped. Web guards the same pair as 'card on page'.
+   */
+  it.each([
+    ['surface', colors.surface],
+    ['surfaceAlt', colors.surfaceAlt],
+  ] as const)('%s is visibly separate from bg', (_name, value) => {
+    expect(distance(value, colors.bg)).toBeGreaterThanOrEqual(MIN_DISTANCE);
+  });
+
   it('rejects a tint that matches the ground', () => {
     expect(distance(colors.bg, colors.bg)).toBe(0);
   });

@@ -29,7 +29,7 @@ export const viewport: Viewport = {
   // they are the one place a palette hex is duplicated. palette.test.ts pins
   // them to --canvas in both themes; they had silently drifted before it did.
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ece3fd' },
+    { media: '(prefers-color-scheme: light)', color: '#f4f4f8' },
     { media: '(prefers-color-scheme: dark)', color: '#120b24' },
   ],
 };

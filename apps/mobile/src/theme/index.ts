@@ -8,12 +8,23 @@ import type { Locale } from '@kitchen/i18n';
  */
 
 export const colors = {
-  /** Sampled from the Meal Planner UI Kit. Its signature is a lavender ground
-   *  with white cards floating on it, rather than white-on-white. */
-  bg: '#ECE3FD',
+  /** The page. Sampled from the requested reference, whose grounds measure
+   *  #eef0f2–#f5f7fb across three screens with pure-white cards on top; this is
+   *  their neutral centre, carrying two units of blue so the violet family
+   *  still owns the screen. Not pure white: a white page and a white card are
+   *  the same surface, and the card stops existing — `palette.spec` holds them
+   *  apart. */
+  bg: '#F4F4F8',
   surface: '#FFFFFF',
-  surfaceAlt: '#F6F0FE',
-  border: '#D9C9F5',
+  /** Deepened when the page went near-white. At #F6F0FE it measured 7.5 from
+   *  the new ground — an `alt` card that had quietly stopped being a card,
+   *  which the surface-separation guard caught on its first run. */
+  surfaceAlt: '#EDE6FB',
+  /** Neutralised when the page went near-white. At the old lavender #D9C9F5 a
+   *  card's outline was more saturated than either surface it sat between, so
+   *  white cards on a near-white page picked up a visible purple fringe. Same
+   *  lightness, violet only as a cast. */
+  border: '#E2DFE9',
   /** The kit sets body copy in pure black. Carrying a little of the violet
    *  into it keeps the screen feeling like one family. */
   text: '#1B1130',
@@ -108,19 +119,22 @@ export const radius = {
 
 /**
  * Depth comes from soft diffused shadow rather than borders. Spread across two
- * layers on iOS; Android gets the matching `elevation`.
+ * layers on iOS; Android gets the matching `elevation`. Opacities were lifted
+ * when the page went near-white: against the old lavender the card's white fill
+ * carried most of the separation on its own and the shadow only had to hint.
+ * White-on-near-white leaves the shadow doing that work alone.
  */
 export const shadow = {
   card: {
     shadowColor: '#1B1130',
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   },
   raised: {
     shadowColor: '#1B1130',
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.14,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 12 },
     elevation: 8,
