@@ -148,4 +148,32 @@ describe('account deletion policy', () => {
     const route = readFileSync(WEB_DELETE_ACCOUNT_ROUTE, 'utf8');
     expect(route, reason).toContain('<DeleteAccount');
   });
+
+  it('keeps test files out of the Expo Router routes directory', () => {
+    // Expo Router turns every file under src/app into a route, so Metro bundles
+    // them into the shipped app. A .spec.ts there drags vitest into the runtime
+    // bundle and the app dies on launch with "Vitest failed to access its
+    // internal state" — a crash no unit test can see, because under vitest the
+    // same file is a perfectly ordinary passing test. Specs live beside the
+    // module they cover (src/lib/foo.spec.ts), never under src/app.
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+        } else if (/\.(spec|test)\.[jt]sx?$/.test(entry)) {
+          offenders.push(full.slice(SRC.length + 1));
+        }
+      }
+    };
+    walk(join(SRC, 'app'));
+    expect(
+      offenders,
+      `Expo Router bundles everything under src/app into the app, so these test ` +
+        `files would ship inside it and crash the app at launch by importing ` +
+        `vitest at runtime. Move them next to the module they test (e.g. ` +
+        `src/lib/<module>.spec.ts): ${offenders.join(', ')}`,
+    ).toEqual([]);
+  });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { HouseholdMember } from '@kitchen/contracts';
-import { successorFor } from '../../lib/successor-for';
+import { successorFor } from './successor-for';
 
 const CURRENT_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
