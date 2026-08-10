@@ -145,4 +145,20 @@ describe('AuthService Apple refresh token capture', () => {
 
     expect(spy).not.toHaveBeenCalled();
   });
+
+  it('still signs in when the database write fails', async () => {
+    const dbUpdateSpy = vi.spyOn(ctx.db, 'update').mockRejectedValueOnce(
+      new Error('connection pool exhausted'),
+    );
+
+    const session = await service.oauthLogin({
+      provider: 'apple',
+      idToken: 'apple.id.token',
+      authorizationCode: 'the-code',
+    });
+    createdUserIds.push(session.user.id);
+
+    dbUpdateSpy.mockRestore();
+    expect(session.tokens.accessToken).toBeTruthy();
+  });
 });

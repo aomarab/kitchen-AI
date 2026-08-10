@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { and, eq, sql } from 'drizzle-orm';
 import type {
   LoginRequest,
@@ -29,6 +29,8 @@ function isUniqueViolation(error: unknown): boolean {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @Inject(DB) private readonly db: Database,
     @Inject(PasswordService) private readonly passwords: PasswordService,
@@ -137,27 +139,34 @@ export class AuthService {
     dto: OAuthLoginRequest,
     identity: VerifiedIdentity,
   ): Promise<void> {
-    if (dto.provider !== 'apple' || !dto.authorizationCode || !identity.audience) return;
-    if (this.env.APPLE_TOKEN_ENC_KEY.trim() === '') return;
+    try {
+      if (dto.provider !== 'apple' || !dto.authorizationCode || !identity.audience) return;
+      if (this.env.APPLE_TOKEN_ENC_KEY.trim() === '') return;
 
-    const refreshToken = await this.appleTokens.exchangeCode(
-      dto.authorizationCode,
-      identity.audience,
-    );
-    if (!refreshToken) return;
-
-    await this.db
-      .update(oauthAccounts)
-      .set({
-        refreshTokenEncrypted: encryptToken(refreshToken, this.env.APPLE_TOKEN_ENC_KEY),
-        revokeClientId: identity.audience,
-      })
-      .where(
-        and(
-          eq(oauthAccounts.provider, 'apple'),
-          eq(oauthAccounts.providerAccountId, identity.providerAccountId),
-        ),
+      const refreshToken = await this.appleTokens.exchangeCode(
+        dto.authorizationCode,
+        identity.audience,
       );
+      if (!refreshToken) return;
+
+      await this.db
+        .update(oauthAccounts)
+        .set({
+          refreshTokenEncrypted: encryptToken(refreshToken, this.env.APPLE_TOKEN_ENC_KEY),
+          revokeClientId: identity.audience,
+        })
+        .where(
+          and(
+            eq(oauthAccounts.provider, 'apple'),
+            eq(oauthAccounts.providerAccountId, identity.providerAccountId),
+          ),
+        );
+    } catch (error) {
+      this.logger.warn(
+        { userId, err: error },
+        'captureAppleRefreshToken failed — sign-in continues without stored token',
+      );
+    }
   }
 
   /**
