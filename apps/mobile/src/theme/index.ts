@@ -8,41 +8,39 @@ import type { Locale } from '@kitchen/i18n';
  */
 
 export const colors = {
-  /** The reference is white-led: the ground is paper, and colour arrives only
-   *  in the tinted cards and the accents. */
-  bg: '#FFFFFF',
+  /** Sampled from the Meal Planner UI Kit. Its signature is a lavender ground
+   *  with white cards floating on it, rather than white-on-white. */
+  bg: '#ECE3FD',
   surface: '#FFFFFF',
-  /** The lavender card tint. Darkest surface, so it sets the contrast floor for
-   *  every foreground token below. */
-  surfaceAlt: '#F6F5FB',
-  border: '#E9E7F2',
-  text: '#2A2A5C',
-  /** The reference's muted grey is #9791B3, which is 3.1:1 on white and fails
-   *  AA for body text. Darkened until it passes while keeping the lilac cast. */
-  textMuted: '#67618C',
+  surfaceAlt: '#F6F0FE',
+  border: '#D9C9F5',
+  /** The kit sets body copy in pure black. Carrying a little of the violet
+   *  into it keeps the screen feeling like one family. */
+  text: '#1B1130',
+  textMuted: '#584D75',
   textInverse: '#FFFFFF',
-  /** The reference's indigo. */
-  primary: '#343375',
-  primaryPressed: '#26254F',
-  primarySoft: '#EFEEF9',
-  // Cook mode inverts the screen, and the indigo on itself is 1:1 — the CTA
-  // fill vanishes entirely. This light teal measures 8.10:1 on surfaceInverse.
-  primaryInverse: '#7FD9D9',
-  /** Teal is the chromatic accent. Mobile's `accent` is used as *text*, so it
-   *  is the 4.5:1 weight; the reference's #479696 is 3.4:1 on white. */
-  accent: '#2C7676',
-  accentSoft: '#EAF4F4',
-  warn: '#8A5209',
-  warnSoft: '#FBF0E0',
-  /** The reference's coral, pulled toward magenta so a white label clears AA. */
+  /** The kit's violet, verbatim: measured at 90% of the CTA fill's interior
+   *  pixels, so this is the real value and not an antialiased edge. */
+  primary: '#814BE3',
+  primaryPressed: '#6229C4',
+  primarySoft: '#F4EDFE',
+  /** Cook mode inverts, where `primary` sits at 1.2:1 and the fill vanishes. */
+  primaryInverse: '#D6C2FF',
+  /** The kit's chart/chat blue is #3478F7, which is 3.1:1 on white and fails
+   *  AA as text. Darkened until it passes while staying the same blue. */
+  accent: '#2F5FD0',
+  accentSoft: '#E7EEFD',
+  /** The kit's amber #F6C855 is a chart fill, far too light to set text in. */
+  warn: '#845309',
+  warnSoft: '#FCF0D9',
   danger: '#B32F51',
   dangerSoft: '#FDECF0',
   success: '#1E7A4C',
   successSoft: '#E4F3EA',
   /** Cook mode runs inverted. Named so the intent survives a palette change. */
-  surfaceInverse: '#2A2A5C',
-  textInverseMuted: '#B6B2D4',
-  overlay: 'rgba(42,42,92,0.45)',
+  surfaceInverse: '#1E1236',
+  textInverseMuted: '#B9A9D9',
+  overlay: 'rgba(27,17,48,0.45)',
 } as const;
 
 /**
@@ -53,23 +51,28 @@ export const colors = {
  * composites against whatever is behind it and the contrast maths stops holding.
  */
 export const tints = [
-  { bg: '#F1EFFA', fg: '#3B3486', name: 'lavender' },
-  { bg: '#E9F4EF', fg: '#1E6B4C', name: 'mint' },
-  { bg: '#FCEDF1', fg: '#9E2F4F', name: 'blush' },
-  { bg: '#EAF2F8', fg: '#245A80', name: 'sky' },
+  { bg: '#DED0FA', fg: '#5B21B6', name: 'lavender' },
+  { bg: '#E6F5EE', fg: '#166B48', name: 'mint' },
+  { bg: '#FCE9F1', fg: '#9C2A5C', name: 'blush' },
+  { bg: '#DCE8FA', fg: '#1F4FA8', name: 'sky' },
 ] as const;
 
 export type Tint = (typeof tints)[number];
 
 /**
- * The hero gradient, indigo running into a deep teal. Every stop — and every
- * colour interpolated between them — stays dark enough that `textInverse`,
- * `textInverseMuted` and `primaryInverse` all clear AA on it; the worst
- * interpolated point measures 5.03:1. The obvious brighter teal (#2C7676, the
- * accent) drops muted text to 2.60:1, so the ramp is deliberately darker than
- * the reference's. `palette.spec` samples the interpolation, not just the stops.
+ * The hero gradient, deep violet running up toward the brand violet. Every
+ * stop — and every colour interpolated between them — stays dark enough that
+ * `textInverse`, `textInverseMuted` and `primaryInverse` all clear AA on it;
+ * the worst interpolated point measures 4.58:1.
+ *
+ * Ending on the kit's own #814BE3 is the tempting move and it does not work:
+ * that violet is light enough to drop `primaryInverse` to 2.79:1, so the ghost
+ * button's label on the hero would fail. The ramp stops at #5320A6, the
+ * lightest violet that still carries all three. `palette.spec` samples the
+ * interpolation rather than the three stops, because a gradient's midpoint can
+ * be lighter than either end it was mixed from.
  */
-export const gradientHero = ['#2A2A5C', '#2A4166', '#124747'] as const;
+export const gradientHero = ['#2E1065', '#3F1C87', '#5320A6'] as const;
 
 /** Rotates the tints down a list so adjacent cards never repeat. Negative
  *  indices wrap forwards rather than falling off the front of the tuple. */
@@ -109,14 +112,14 @@ export const radius = {
  */
 export const shadow = {
   card: {
-    shadowColor: '#2A2A5C',
+    shadowColor: '#1B1130',
     shadowOpacity: 0.06,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   },
   raised: {
-    shadowColor: '#2A2A5C',
+    shadowColor: '#1B1130',
     shadowOpacity: 0.12,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 12 },

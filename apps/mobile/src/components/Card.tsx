@@ -11,7 +11,7 @@ export interface CardProps {
   /** Fills the card with one of the rotating pastel tints from the theme. Takes
    *  precedence over `tone`, and drops the border so the fill reads as the edge. */
   tint?: Tint;
-  /** The hero treatment: an indigo gradient carrying inverse text. */
+  /** The hero treatment: a violet gradient carrying inverse text. */
   gradient?: boolean;
   style?: ViewStyle;
 }
@@ -22,7 +22,7 @@ const TONE: Record<NonNullable<CardProps['tone']>, ViewStyle> = {
   primary: { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft },
 };
 
-/** The reference's feature card runs indigo into a desaturated teal. */
+/** The kit's feature card runs deep violet up into the brand violet. */
 const GRADIENT = gradientHero;
 
 export function Card({

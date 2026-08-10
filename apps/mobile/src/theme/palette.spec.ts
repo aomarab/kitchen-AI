@@ -127,3 +127,33 @@ describe('tintFor wrapping', () => {
     expect(tintFor(1.7).name).toBe(tints[1]!.name);
   });
 });
+
+/**
+ * Contrast guards alone cannot catch a tint that has collapsed into the
+ * background: a card filled with almost exactly `bg` still passes every text
+ * pair, because its foregrounds are unchanged — it simply stops reading as a
+ * card. That happened for real when the ground moved to lavender and the
+ * lavender tint landed 5.0 away from it.
+ *
+ * Euclidean RGB distance is a coarse proxy for perceptibility, but it is the
+ * right shape of check here: mint, blush and sky separate from the ground by
+ * hue rather than lightness, so a luminance-only rule would wrongly demand they
+ * get darker.
+ */
+describe('tints stay distinguishable from the ground', () => {
+  const MIN_DISTANCE = 12;
+
+  function distance(a: string, b: string): number {
+    const toRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const [x, y] = [toRgb(a), toRgb(b)];
+    return Math.hypot(...x.map((c, i) => c - y[i]!));
+  }
+
+  it.each(tints)('$name is visibly separate from bg', (tint) => {
+    expect(distance(tint.bg, colors.bg), `${tint.name} vs bg`).toBeGreaterThanOrEqual(MIN_DISTANCE);
+  });
+
+  it('rejects a tint that matches the ground', () => {
+    expect(distance(colors.bg, colors.bg)).toBe(0);
+  });
+});
