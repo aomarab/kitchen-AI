@@ -39,7 +39,11 @@ export function FeedbackList({ items }: { items: FeedbackSummary[] }) {
                   {new Date(item.createdAt).toLocaleDateString(locale)}
                 </span>
               </div>
-              <p className="mt-2 line-clamp-2 text-sm text-foreground">
+              {/* Feedback is free text in whatever language the user wrote it,
+                  rendered in a page whose direction follows the *reader*. Without
+                  dir="auto" an English message in the Arabic console has its
+                  punctuation thrown to the wrong end. */}
+              <p dir="auto" className="mt-2 line-clamp-2 text-sm text-foreground">
                 {item.message ?? t('web.admin.noMessage')}
               </p>
             </Card>

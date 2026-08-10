@@ -60,6 +60,7 @@ export function FeedbackForm() {
           onChange={(e) => setMessage(e.target.value)}
           maxLength={FEEDBACK_MESSAGE_MAX}
           rows={5}
+          dir="auto"
           placeholder={t('web.feedback.messagePlaceholder')}
           disabled={submit.isPending}
           className="w-full rounded border border-border bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
