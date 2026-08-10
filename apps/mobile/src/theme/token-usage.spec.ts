@@ -77,4 +77,88 @@ describe('mobile source sweep', () => {
         `variant instead. Offending files: ${offenders.join(', ')}`,
     ).toEqual([]);
   });
+
+  /**
+   * `Screen` is the only thing in the app that mounts a KeyboardAvoidingView,
+   * and `Field` is the only thing that renders a TextInput. So a route that
+   * shows a Field without going through Screen — directly, or via AuthLayout,
+   * which wraps one — puts the keyboard over its own input on iOS, where the
+   * window does not resize the way Android's does.
+   *
+   * The check has to follow composition rather than read one file: the capture
+   * fields live in `features/capture/*`, three levels below the route that
+   * mounts them, and the auth screens reach Screen through AuthLayout. So each
+   * route is expanded through its relative imports and judged on the whole
+   * tree, with the wrapper required on the route itself — the top of it.
+   *
+   * This is structural because it cannot be behavioural here: taps cannot be
+   * driven on this machine, so the property is held by construction rather
+   * than by demonstration.
+   */
+  it('renders every text input inside a keyboard-aware Screen', () => {
+    /** Source of `file` plus every file it reaches through relative imports. */
+    const expand = (file: string, seen = new Set<string>()): string => {
+      if (seen.has(file)) return '';
+      seen.add(file);
+      let content: string;
+      try {
+        content = readFileSync(file, 'utf8');
+      } catch {
+        return '';
+      }
+      const imports = [...content.matchAll(/from\s+'(\.[^']*)'/g)].map((m) => m[1]!);
+      const resolved = imports.flatMap((spec) => {
+        const base = join(file, '..', spec);
+        return [`${base}.tsx`, `${base}.ts`, join(base, 'index.tsx'), join(base, 'index.ts')].filter(
+          (candidate) => {
+            try {
+              return statSync(candidate).isFile();
+            } catch {
+              return false;
+            }
+          },
+        );
+      });
+      return content + resolved.map((next) => expand(next, seen)).join('');
+    };
+
+    const routes = sourceFiles().filter((file) => file.includes(join(SRC, 'app')));
+    const offenders = routes
+      .filter((file) => /<Field\b/.test(expand(file)))
+      .filter((file) => !/<(Screen|AuthLayout)\b/.test(readFileSync(file, 'utf8')))
+      .map((file) => relative(SRC, file));
+
+    expect(
+      offenders,
+      'A Field outside Screen/AuthLayout has no KeyboardAvoidingView above it, ' +
+        'so on iOS the keyboard covers the input the user is typing into — the ' +
+        "window does not resize the way Android's does. Wrap the route in " +
+        `Screen. Offending routes: ${offenders.join(', ')}`,
+    ).toEqual([]);
+  });
+
+  /**
+   * The same hole, from the other side: `Sheet` renders in a Modal, which is a
+   * sibling of Screen's KeyboardAvoidingView rather than a child, so a Field
+   * inside a Sheet is unprotected even on a screen that passes the check above.
+   * Today no Sheet holds one. If that changes, the Sheet needs its own
+   * avoidance rather than an exception here.
+   */
+  it('keeps text inputs out of modal sheets', () => {
+    const offenders = sourceFiles()
+      .filter((file) => /\/(app|features)\//.test(file))
+      .filter((file) => {
+        const content = readFileSync(file, 'utf8');
+        const sheet = content.match(/<Sheet\b[\s\S]*?<\/Sheet>/g);
+        return !!sheet?.some((block) => /<Field\b/.test(block));
+      })
+      .map((file) => relative(SRC, file));
+
+    expect(
+      offenders,
+      'A Field inside a Sheet sits in a Modal, outside the KeyboardAvoidingView ' +
+        'that Screen mounts, so the keyboard covers it. Give the Sheet its own ' +
+        `avoidance before adding one. Offending files: ${offenders.join(', ')}`,
+    ).toEqual([]);
+  });
 });
