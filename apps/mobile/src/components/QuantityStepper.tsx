@@ -23,7 +23,7 @@ export function QuantityStepper({
   decrementLabel,
   incrementLabel,
 }: QuantityStepperProps) {
-  const button = (icon: 'plus' | 'close', onPress: () => void, a11y: string) => (
+  const button = (icon: 'plus' | 'minus', onPress: () => void, a11y: string) => (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={a11y}
@@ -45,7 +45,7 @@ export function QuantityStepper({
   );
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-      {button('close', () => onChange(Math.max(min, value - step)), decrementLabel)}
+      {button('minus', () => onChange(Math.max(min, value - step)), decrementLabel)}
       <AppText variant="bodyStrong" style={{ minWidth: 40, textAlign: 'center' }}>
         {label ?? String(value)}
       </AppText>

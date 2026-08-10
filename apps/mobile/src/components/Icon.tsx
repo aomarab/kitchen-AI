@@ -19,6 +19,7 @@ export const IONICONS = {
   receipt: 'receipt-outline',
   manual: 'create-outline',
   plus: 'add',
+  minus: 'remove',
   search: 'search-outline',
   check: 'checkmark',
   close: 'close',
