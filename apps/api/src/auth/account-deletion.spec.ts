@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { applyHouseholdSuccession } from './account-deletion.js';
 import { households, householdMembers, users } from '../db/schema.js';
 import { cleanup, createTestContext, seedHousehold, seedUser, type TestContext } from '../testing/harness.js';
@@ -167,6 +167,48 @@ describe('applyHouseholdSuccession', () => {
 
     expect(remaining.map((row) => row.id)).toEqual([sharedId]);
     expect(remaining[0]?.createdBy).toBe(survivor);
+  });
+
+  it('repoints created_by for a household the creator left but still pins', async () => {
+    const creator = await track(() => seedUser(ctx.db));
+    const survivor = await track(() => seedUser(ctx.db));
+    const householdId = await seedHousehold(ctx.db, creator);
+    householdIds.push(householdId);
+    await addMember(householdId, survivor, 'owner', new Date('2026-04-04T00:00:00Z'));
+    // The creator left: leave() removes their membership row but never
+    // rewrites created_by, so the household still pins the RESTRICT FK to them
+    // and the membership pass never visits it.
+    await ctx.db
+      .delete(householdMembers)
+      .where(and(eq(householdMembers.householdId, householdId), eq(householdMembers.userId, creator)));
+
+    await ctx.db.transaction(async (tx) => {
+      await applyHouseholdSuccession(tx, creator);
+      // Deleting the user inside the same transaction turns a missed repoint
+      // into a real foreign-key violation rather than a soft assertion.
+      await tx.delete(users).where(eq(users.id, creator));
+    });
+
+    const [row] = await ctx.db.select().from(households).where(eq(households.id, householdId));
+    expect(row?.createdBy).toBe(survivor);
+  });
+
+  it('tears down a household the creator abandoned with no members left', async () => {
+    const creator = await track(() => seedUser(ctx.db));
+    const householdId = await seedHousehold(ctx.db, creator);
+    householdIds.push(householdId);
+    // The creator left and no members remain, yet created_by still pins the
+    // household to them via the RESTRICT FK.
+    await ctx.db
+      .delete(householdMembers)
+      .where(and(eq(householdMembers.householdId, householdId), eq(householdMembers.userId, creator)));
+
+    await ctx.db.transaction(async (tx) => {
+      await applyHouseholdSuccession(tx, creator);
+    });
+
+    const rows = await ctx.db.select().from(households).where(eq(households.id, householdId));
+    expect(rows).toEqual([]);
   });
 
   it('does nothing for a user with no households', async () => {
