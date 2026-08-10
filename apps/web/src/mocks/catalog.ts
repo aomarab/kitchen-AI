@@ -66,7 +66,6 @@ export interface RecipeSeed {
   prepMinutes: number;
   cookMinutes: number;
   servings: number;
-  heroSeed: string;
   nutrition: { calories: number; proteinG: number; carbsG: number; fatG: number; fiberG?: number };
   steps: { en: string[]; ar: string[] };
   ingredients: RecipeIngredientSeed[];
@@ -86,7 +85,6 @@ export const RECIPES: RecipeSeed[] = [
     prepMinutes: 20,
     cookMinutes: 45,
     servings: 4,
-    heroSeed: 'kabsa',
     nutrition: { calories: 620, proteinG: 38, carbsG: 74, fatG: 18, fiberG: 4 },
     steps: {
       en: [
@@ -130,7 +128,6 @@ export const RECIPES: RecipeSeed[] = [
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 2,
-    heroSeed: 'shakshuka',
     nutrition: { calories: 310, proteinG: 18, carbsG: 16, fatG: 20, fiberG: 5 },
     steps: {
       en: [
@@ -174,7 +171,6 @@ export const RECIPES: RecipeSeed[] = [
     prepMinutes: 10,
     cookMinutes: 30,
     servings: 4,
-    heroSeed: 'lentil',
     nutrition: { calories: 240, proteinG: 14, carbsG: 38, fatG: 4, fiberG: 9 },
     steps: {
       en: [
@@ -215,7 +211,6 @@ export const RECIPES: RecipeSeed[] = [
     prepMinutes: 15,
     cookMinutes: 0,
     servings: 4,
-    heroSeed: 'hummus',
     nutrition: { calories: 280, proteinG: 10, carbsG: 26, fatG: 16, fiberG: 7 },
     steps: {
       en: [
@@ -255,7 +250,6 @@ export const RECIPES: RecipeSeed[] = [
     prepMinutes: 25,
     cookMinutes: 40,
     servings: 4,
-    heroSeed: 'moussaka',
     nutrition: { calories: 430, proteinG: 26, carbsG: 22, fatG: 26, fiberG: 8 },
     steps: {
       en: [
@@ -299,7 +293,6 @@ export const RECIPES: RecipeSeed[] = [
     prepMinutes: 10,
     cookMinutes: 25,
     servings: 3,
-    heroSeed: 'frittata',
     nutrition: { calories: 330, proteinG: 17, carbsG: 24, fatG: 19, fiberG: 3 },
     steps: {
       en: [

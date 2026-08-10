@@ -37,4 +37,24 @@ describe('mock fixtures', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('does not reference non-existent image domains in recipe fixtures', () => {
+    const repoRoot = join(__dirname, '../../../..');
+    const offenders: string[] = [];
+
+    // Only check the recipe/video fixture files, not handlers.ts which uses it for a different subsystem
+    const recipeFixtures = [
+      'apps/web/src/mocks/catalog.ts',
+      'apps/mobile/src/mocks/data.ts',
+    ];
+
+    for (const relative of recipeFixtures) {
+      const source = readFileSync(join(repoRoot, relative), 'utf8');
+      if (source.includes('images.kitchenai.dev')) {
+        offenders.push(relative);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
 });
