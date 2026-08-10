@@ -19,14 +19,16 @@ import { LoadingState, ErrorState } from '../ui/states';
  * `joinedAt` first, ties broken by the lowest `userId` — so the sentence the
  * user reads matches what deletion will actually do.
  */
-function successorFor(members: HouseholdMember[], currentUserId: string): HouseholdMember | null {
+export function successorFor(members: HouseholdMember[], currentUserId: string): HouseholdMember | null {
   const survivors = members.filter((member) => member.userId !== currentUserId);
   if (survivors.length === 0) return null;
-  return [...survivors].sort(
+  const ranked = [...survivors].sort(
     (a, b) =>
       new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime() ||
       (a.userId < b.userId ? -1 : 1),
-  )[0]!;
+  );
+  const owners = ranked.filter((m) => m.role === 'owner');
+  return owners.length > 0 ? owners[0]! : ranked[0]!;
 }
 
 export function DeleteAccount() {

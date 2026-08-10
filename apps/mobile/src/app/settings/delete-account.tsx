@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { HouseholdMember } from '@kitchen/contracts';
 import { Screen, Header, AppText, Button, Card, Field, LoadingState, ErrorState } from '../../components';
 import { useLocale } from '../../lib/locale';
 import { useMe, useHouseholds } from '../../hooks/profile';
@@ -9,22 +8,7 @@ import { useDeleteAccount } from '../../hooks/account';
 import { deleteConfirmationWord, matchesDeleteConfirmation } from '../../lib/delete-confirmation';
 import { errorMessageKey } from '../../lib/errors';
 import { colors, radius, spacing } from '../../theme';
-
-/**
- * The surviving member a household is handed over to, or `null` when the user is
- * its only member. Mirrors Task 7's server-side rule exactly — earliest
- * `joinedAt` first, ties broken by the lowest `userId` — so the sentence the
- * user reads matches what deletion will actually do.
- */
-function successorFor(members: HouseholdMember[], currentUserId: string): HouseholdMember | null {
-  const survivors = members.filter((member) => member.userId !== currentUserId);
-  if (survivors.length === 0) return null;
-  return [...survivors].sort(
-    (a, b) =>
-      new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime() ||
-      (a.userId < b.userId ? -1 : 1),
-  )[0]!;
-}
+import { successorFor } from '../../lib/successor-for';
 
 export default function DeleteAccount() {
   const { t, locale } = useLocale();
