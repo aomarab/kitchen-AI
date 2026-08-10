@@ -31,12 +31,21 @@ Answer every content question **None**:
 
 Then the capability questions:
 
-- **Unrestricted Web Access — No.** The app opens YouTube recipe videos, but it
-  never embeds an in-app browser or navigates to arbitrary URLs. A video is
-  reached only by a specific video id obtained from the YouTube Data API
+- **Unrestricted Web Access — No.** The app *does* embed a WebView
+  (`react-native-webview`) in `apps/mobile/src/components/YoutubePlayer.tsx`, so
+  this answer rests on how that WebView is constrained, not on its absence. The
+  WebView exists solely to play YouTube recipe videos inline, and navigation
+  inside it is hard-locked to an allowlist of YouTube embed origins: every
+  navigation request passes through
+  `onShouldStartLoadWithRequest={(request) => isAllowedEmbedUrl(request.url)}`,
+  and `isAllowedEmbedUrl` (`apps/mobile/src/lib/youtube.ts`) cancels any URL
+  outside `YOUTUBE_EMBED_ORIGINS` (`youtube-nocookie.com` and `youtube.com`), so
+  the user cannot browse to an arbitrary page. The video is reached only by a
+  specific video id obtained from the YouTube Data API
   (`apps/api/src/ai/clients/http-youtube.client.ts`); the id never comes from
-  the model, and the client opens that one video rather than a browsable web
-  view. Answering "Yes" here would over-rate the app to 17+.
+  the model. The embed is a locked-down video player, not a general-purpose
+  browser, which is why web access is not unrestricted. Answering "Yes" here
+  would over-rate the app to 17+.
 - **Gambling — No.**
 - **User Generated Content — No.** The only content a user creates is feedback
   (a star rating and an optional message), and it is submitted to us privately.
@@ -66,9 +75,11 @@ Interactive-elements / miscellaneous section:
   it is shared *between users*.
 - **Shares user-generated content with other users — No**, for the same reason
   as Apple's UGC answer: feedback is private to us.
-- **Unrestricted internet access — No**, for the same reason as Apple's: only
-  specific YouTube video ids from the Data API are opened, never an arbitrary
-  URL or an in-app browser.
+- **Unrestricted internet access — No**, for the same reason as Apple's: the
+  inline YouTube WebView (`apps/mobile/src/components/YoutubePlayer.tsx`) has its
+  navigation confined to an allowlist of YouTube embed origins by
+  `isAllowedEmbedUrl` (`apps/mobile/src/lib/youtube.ts`), so it plays specific
+  YouTube video ids from the Data API and cannot browse to an arbitrary URL.
 
 **Expected result: Everyone** (and the equivalent regional marks IARC assigns —
 PEGI 3, USK 0, etc.).
@@ -82,6 +93,9 @@ currently enforces. Re-open this file the moment either changes:
   shared notes, comments — the UGC answers flip to "Yes" and Guideline 1.2's
   moderation, reporting and blocking obligations attach. That is a rating and a
   policy change, not a copy change.
-- **If the app ever opens an arbitrary URL or embeds a general web view** — as
-  opposed to a single YouTube video id from the Data API — the unrestricted web
-  access answers flip to "Yes" and the rating rises accordingly.
+- **If the embed's origin allowlist is ever widened, or the WebView is pointed
+  at anything other than a YouTube embed** — that is, if `isAllowedEmbedUrl`
+  (`apps/mobile/src/lib/youtube.ts`) stops confining navigation to the YouTube
+  embed origins, or a general-purpose browser is added anywhere in the app — the
+  unrestricted web access answers flip to "Yes" and the rating rises
+  accordingly.

@@ -1,10 +1,22 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { routes } from '@kitchen/contracts';
 
 const SRC = join(__dirname, '..');
 const APP_JSON = join(SRC, '..', 'app.json');
+const REPO_ROOT = join(SRC, '..', '..', '..');
+const WEB_DELETE_ACCOUNT_ROUTE = join(
+  REPO_ROOT,
+  'apps',
+  'web',
+  'src',
+  'app',
+  '(app)',
+  'settings',
+  'delete-account',
+  'page.tsx',
+);
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -118,5 +130,22 @@ describe('account deletion policy', () => {
   it('ships a screen that reaches it', () => {
     const screen = readFileSync(join(SRC, 'app', 'settings', 'delete-account.tsx'), 'utf8');
     expect(screen).toContain('useDeleteAccount');
+  });
+
+  it('ships the web route behind the declared Google deletion URL', () => {
+    // Google Play's data-deletion policy requires a publicly reachable deletion
+    // URL, and docs/store-listing/data-safety.md declares it as the web route
+    // /settings/delete-account. That URL is backed by this file; deleting or
+    // renaming it 404s the declared URL and silently makes the submission
+    // false, and no typecheck or feature test would catch it — so its existence
+    // and its wiring to the deletion UI are pinned here.
+    const reason =
+      'apps/web/src/app/(app)/settings/delete-account/page.tsx backs the Google ' +
+      'Play account-deletion URL /settings/delete-account declared in ' +
+      'docs/store-listing/data-safety.md; if it is removed or stops rendering ' +
+      '<DeleteAccount /> that URL breaks and the store paperwork becomes false.';
+    expect(existsSync(WEB_DELETE_ACCOUNT_ROUTE), reason).toBe(true);
+    const route = readFileSync(WEB_DELETE_ACCOUNT_ROUTE, 'utf8');
+    expect(route, reason).toContain('<DeleteAccount');
   });
 });
