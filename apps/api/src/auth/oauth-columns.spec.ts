@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { eq } from 'drizzle-orm';
 import { createTestContext, cleanup, seedUser, type TestContext } from '../testing/harness.js';
 import { oauthAccounts } from '../db/schema.js';
 
@@ -19,19 +18,16 @@ describe('oauth_accounts revocation columns', () => {
   });
 
   it('stores and reads back the encrypted token and its client id', async () => {
-    await ctx.db.insert(oauthAccounts).values({
-      userId,
-      provider: 'apple',
-      providerAccountId: randomUUID(),
-      refreshTokenEncrypted: 'iv.tag.data',
-      revokeClientId: 'ai.kitchen.app',
-    });
-
     const [row] = await ctx.db
-      .select()
-      .from(oauthAccounts)
-      .where(eq(oauthAccounts.userId, userId))
-      .limit(1);
+      .insert(oauthAccounts)
+      .values({
+        userId,
+        provider: 'apple',
+        providerAccountId: randomUUID(),
+        refreshTokenEncrypted: 'iv.tag.data',
+        revokeClientId: 'ai.kitchen.app',
+      })
+      .returning();
 
     expect(row?.refreshTokenEncrypted).toBe('iv.tag.data');
     expect(row?.revokeClientId).toBe('ai.kitchen.app');
