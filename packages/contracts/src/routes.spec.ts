@@ -18,7 +18,7 @@ describe('deleteMe route', () => {
 });
 
 describe('userSchema', () => {
-  it('reports password presence so a client knows whether to ask for one', () => {
+  it('accepts hasPassword: true and round-trips it', () => {
     const parsed = userSchema.parse({
       id: '11111111-1111-4111-8111-111111111111',
       email: 'chef@example.com',
@@ -28,5 +28,42 @@ describe('userSchema', () => {
       createdAt: '2026-01-01T00:00:00.000Z',
     });
     expect(parsed.hasPassword).toBe(true);
+  });
+
+  it('accepts hasPassword: false and round-trips it', () => {
+    const parsed = userSchema.parse({
+      id: '11111111-1111-4111-8111-111111111111',
+      email: 'chef@example.com',
+      displayName: 'Amira',
+      locale: 'en',
+      hasPassword: false,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    expect(parsed.hasPassword).toBe(false);
+  });
+
+  it('rejects missing hasPassword — field is required', () => {
+    expect(() => {
+      userSchema.parse({
+        id: '11111111-1111-4111-8111-111111111111',
+        email: 'chef@example.com',
+        displayName: 'Amira',
+        locale: 'en',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      });
+    }).toThrow();
+  });
+
+  it('rejects non-boolean hasPassword — field must be a boolean', () => {
+    expect(() => {
+      userSchema.parse({
+        id: '11111111-1111-4111-8111-111111111111',
+        email: 'chef@example.com',
+        displayName: 'Amira',
+        locale: 'en',
+        hasPassword: 'true',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      });
+    }).toThrow();
   });
 });
