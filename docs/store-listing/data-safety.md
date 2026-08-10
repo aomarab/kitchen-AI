@@ -34,11 +34,17 @@ Functionality**:
 - **Other User Content** (User Content) — the feedback message
 - **Product Interaction** (Usage Data) — the feedback rating
 
-These must match `apps/mobile/ios/KitchenAI/PrivacyInfo.xcprivacy` entry for
-entry; the manifest and the console answers are checked against each other, and
-a disagreement is a rejection. The manifest declares the same five types with
-`NSPrivacyCollectedDataTypeLinked = true` and
-`NSPrivacyCollectedDataTypeTracking = false`.
+These must match the privacy manifest entry for entry; the manifest and the
+console answers are checked against each other, and a disagreement is a
+rejection.
+
+The manifest is declared in **`apps/mobile/app.json`** under
+`expo.ios.privacyManifests` — not in `apps/mobile/ios/KitchenAI/PrivacyInfo.xcprivacy`.
+That file is `expo prebuild` output and is gitignored, so an edit made there is
+erased by the next prebuild. Expo merges the config into the generated file,
+preserving the required-reason API entries the pods contribute.
+`apps/mobile/src/lib/store-policy.spec.ts` asserts the declared set, so adding a
+new kind of collected data fails the build until this document is updated too.
 
 ## Play Console — Data safety
 
