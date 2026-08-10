@@ -101,4 +101,14 @@ describe("app.config", () => {
       "expo-apple-authentication",
     );
   });
+
+  it("keeps the SceneDelegate plugin that prevents a black-screen launch", async () => {
+    // `app.json` names `$(PRODUCT_MODULE_NAME).SceneDelegate` in
+    // UIApplicationSceneManifest. Expo's template ships no such class, so if
+    // this plugin is removed `expo prebuild` silently produces an app that
+    // launches to a black screen — every test, typecheck and lint still passes.
+    expect((await buildConfig()).plugins).toContain(
+      "./plugins/withSceneDelegate",
+    );
+  });
 });

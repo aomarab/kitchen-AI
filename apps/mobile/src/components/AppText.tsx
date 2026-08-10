@@ -1,5 +1,11 @@
 import { Text, type TextProps, type TextStyle } from 'react-native';
-import { colors, typography, type ColorToken, type TypographyVariant } from '../theme';
+import {
+  colors,
+  maxFontScaleFor,
+  typography,
+  type ColorToken,
+  type TypographyVariant,
+} from '../theme';
 import { useLocale } from '../lib/locale';
 import { resolveFontFamily, useFontStore } from '../lib/fonts';
 
@@ -39,5 +45,5 @@ export function AppText({
     ...(fontFamily ? null : { fontWeight: token.fontWeight }),
     ...(center ? { textAlign: 'center' } : null),
   };
-  return <Text style={[base, style]} {...rest} />;
+  return <Text style={[base, style]} maxFontSizeMultiplier={maxFontScaleFor(variant)} {...rest} />;
 }

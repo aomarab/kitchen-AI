@@ -33,7 +33,7 @@ Spec: `docs/superpowers/specs/2026-08-10-device-compatibility-design.md`.
 | ---- | -------------- | ---- |
 | `apps/mobile/src/theme/index.ts` | Modify: `typography()` becomes scale-aware; new `maxFontScaleFor()` | 1 |
 | `apps/mobile/src/theme/typography.spec.ts` | Modify: add scaling cases alongside the existing tracking assertions | 1 |
-| `apps/mobile/src/components/AppText.tsx` | Modify: read live `fontScale`, pass matching `maxFontSizeMultiplier` | 2 |
+| `apps/mobile/src/components/AppText.tsx` | Modify: add `maxFontSizeMultiplier={maxFontScaleFor(variant)}` to the underlying `<Text>` | 2 |
 | `apps/mobile/src/app/recipe/[id]/cook.tsx` | Modify: remove the hard-coded `fontSize`/`lineHeight` that bypasses scaling | 2 |
 | `apps/mobile/src/theme/token-usage.spec.ts` | Create: mobile source sweep — raw `lineHeight`, undersized touch targets | 2, 5 |
 | `apps/mobile/src/theme/layout.ts` | Create: `TABLET_BREAKPOINT`, `MAX_CONTENT_WIDTH`, `contentMaxWidth()` | 3 |
@@ -47,24 +47,24 @@ Spec: `docs/superpowers/specs/2026-08-10-device-compatibility-design.md`.
 
 ---
 
-### Task 1: Scale-aware typography
+### Task 1: Typography with chrome caps
 
-The core bug. React Native multiplies `fontSize` by the system font scale but leaves an explicitly-set absolute `lineHeight` alone, so today's `lineHeight` — computed from the *base* size — stays fixed while the glyphs grow, and the text clips. This task makes the line box a function of the scale. It is pure: no component changes, so nothing renders differently yet.
+Export `maxFontScaleFor()` from the theme and update `typography()` to include chrome variants in the scale calculation. The actual scaling is applied by React Native at render time; the theme provides the cap that `AppText` passes as `maxFontSizeMultiplier`. This task is pure: no component changes yet.
 
 **Files:**
-- Modify: `apps/mobile/src/theme/index.ts:104-138`
-- Test: `apps/mobile/src/theme/typography.spec.ts`
+- Modify: `apps/mobile/src/theme/index.ts:104-160`
+- Modify: `apps/mobile/src/theme/typography.spec.ts`
 
 **Interfaces:**
 - Consumes: nothing from earlier tasks.
 - Produces:
-  - `typography(locale: Locale, fontScale?: number): Record<TypographyVariant, TextStyleToken>` — `fontScale` defaults to `1`.
   - `maxFontScaleFor(variant: TypographyVariant): number | undefined` — `1.6` for chrome, `undefined` for content.
+  - `typography(locale: Locale): Record<TypographyVariant, TextStyleToken>` — unchanged signature and return values.
   - Both exported from `src/theme/index.ts`. Task 2 imports both.
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Write the failing test**
 
-Append to `apps/mobile/src/theme/typography.spec.ts`. Leave the four existing tests exactly as they are — they call `typography('en')` with one argument, and the fact that they keep passing untouched is the proof that the new parameter is additive.
+Append to `apps/mobile/src/theme/typography.spec.ts`. Leave the four existing tests exactly as they are — they call `typography('en')` and they will continue to pass.
 
 Change the import line at the top of the file to pull in the new function:
 
@@ -75,55 +75,6 @@ import { maxFontScaleFor, typography } from './index';
 Then append:
 
 ```ts
-describe('typography under font scaling', () => {
-  it('is unchanged at the default scale', () => {
-    // The regression guard for the entire device-compatibility change: a phone
-    // at the default text size must render exactly as it did before scaling
-    // existed. If this fails, the change is visible on every screen.
-    expect(typography('en', 1)).toEqual(typography('en'));
-    expect(typography('en').body.lineHeight).toBe(Math.round(16 * 1.35));
-    expect(typography('ar').body.lineHeight).toBe(Math.round(16 * 1.7));
-  });
-
-  it('grows the line box with the text', () => {
-    // React Native scales fontSize by the system font scale but does NOT scale
-    // an absolute lineHeight, so the line box must be pre-multiplied here or
-    // large text is clipped by a box sized for small text.
-    expect(typography('en', 2).body.lineHeight).toBe(Math.round(16 * 2 * 1.35));
-    expect(typography('en', 1.5).heading.lineHeight).toBe(Math.round(18 * 1.5 * 1.35));
-  });
-
-  it('caps chrome so pills and labels cannot explode', () => {
-    // iOS reaches ~3.1x at the largest accessibility sizes. A button label at
-    // 3.1x breaks every row in the app, so chrome stops at 1.6x.
-    expect(typography('en', 3.1).button.lineHeight).toBe(Math.round(16 * 1.6 * 1.35));
-    expect(typography('en', 3.1).label.lineHeight).toBe(Math.round(14 * 1.6 * 1.35));
-    expect(typography('en', 3.1).caption.lineHeight).toBe(Math.round(12 * 1.6 * 1.35));
-  });
-
-  it('leaves content uncapped so long-form text honours the setting fully', () => {
-    expect(typography('en', 3.1).body.lineHeight).toBe(Math.round(16 * 3.1 * 1.35));
-    expect(typography('en', 3.1).display.lineHeight).toBe(Math.round(28 * 3.1 * 1.35));
-  });
-
-  it('keeps the Arabic factor at every scale', () => {
-    expect(typography('ar', 2).body.lineHeight).toBe(Math.round(16 * 2 * 1.7));
-    expect(typography('ar', 2).body.lineHeight).toBeGreaterThan(
-      typography('en', 2).body.lineHeight,
-    );
-  });
-
-  it('never letter-spaces Arabic at any scale', () => {
-    for (const [variant, token] of Object.entries(typography('ar', 3.1))) {
-      expect(token.letterSpacing, variant).toBe(0);
-    }
-  });
-
-  it('shrinks the line box when the user reduces text size', () => {
-    expect(typography('en', 0.85).body.lineHeight).toBe(Math.round(16 * 0.85 * 1.35));
-  });
-});
-
 describe('maxFontScaleFor', () => {
   it('caps the chrome variants', () => {
     expect(maxFontScaleFor('button')).toBe(1.6);
@@ -149,95 +100,14 @@ describe('maxFontScaleFor', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `pnpm --filter @kitchen/mobile exec vitest run src/theme/typography.spec.ts`
-
-Expected: FAIL. The import of `maxFontScaleFor` does not resolve, so the whole file errors.
-
-- [ ] **Step 3: Implement the scaling**
-
-In `apps/mobile/src/theme/index.ts`, immediately after the `SCALE` constant and the `TypographyVariant` type, add the classification, then replace the body of `typography`:
-
-```ts
-export type TypographyVariant = keyof typeof SCALE;
-
-/**
- * How far each tier may scale with the system font size.
- *
- * Chrome — pill buttons, field labels, badges — sits in fixed-height rows, so
- * it stops at 1.6x. Content is uncapped: at the largest accessibility sizes the
- * user has asked for very large text and long-form copy should give it to them.
- */
-const CHROME_MAX_FONT_SCALE = 1.6;
-const CHROME_VARIANTS: readonly TypographyVariant[] = ['button', 'label', 'caption'];
-
-/**
- * Returned straight to React Native's `maxFontSizeMultiplier`, which accepts
- * `null`, `0`, or a number `>= 1` — hence `undefined` for uncapped rather than
- * a sentinel like `Infinity`, which that prop rejects.
- */
-export function maxFontScaleFor(variant: TypographyVariant): number | undefined {
-  return CHROME_VARIANTS.includes(variant) ? CHROME_MAX_FONT_SCALE : undefined;
-}
-
-export function typography(
-  locale: Locale,
-  fontScale = 1,
-): Record<TypographyVariant, TextStyleToken> {
-  const isArabic = locale === 'ar';
-  const factor = isArabic ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;
-  const out = {} as Record<TypographyVariant, TextStyleToken>;
-  for (const key of Object.keys(SCALE) as TypographyVariant[]) {
-    const entry = SCALE[key]!;
-    const cap = maxFontScaleFor(key);
-    // React Native scales `fontSize` itself, but not an absolute `lineHeight`,
-    // so the line box is pre-multiplied by the same scale the text will get.
-    const effectiveScale = Math.min(fontScale, cap ?? fontScale);
-    out[key] = {
-      fontSize: entry.fontSize,
-      fontWeight: entry.fontWeight,
-      lineHeight: Math.round(entry.fontSize * effectiveScale * factor),
-      letterSpacing: isArabic ? 0 : entry.letterSpacing,
-    };
-  }
-  return out;
-}
-```
-
-`fontSize` deliberately stays at the base value: React Native applies the scale at render time. Only the line box is pre-multiplied here.
-
-- [ ] **Step 4: Run the tests to verify they pass**
-
-Run: `pnpm --filter @kitchen/mobile exec vitest run src/theme/typography.spec.ts`
-Expected: PASS, including the four pre-existing tracking tests, unmodified.
-
-- [ ] **Step 5: Verify the guard has teeth**
-
-Temporarily change `effectiveScale` to the constant `1`:
-
-```ts
-const effectiveScale = 1;
-```
-
-Run: `pnpm --filter @kitchen/mobile exec vitest run src/theme/typography.spec.ts`
-Expected: FAIL — "grows the line box with the text" and the cap tests fail, while "is unchanged at the default scale" still passes.
-
-Restore `const effectiveScale = Math.min(fontScale, cap ?? fontScale);` and re-run to confirm PASS.
-
-- [ ] **Step 6: Typecheck and commit**
-
-```bash
-pnpm --filter @kitchen/mobile typecheck
-git add apps/mobile/src/theme/index.ts apps/mobile/src/theme/typography.spec.ts
-git commit -m "feat(mobile): scale line-height with the system font size"
 ```
 
 ---
 
-### Task 2: Wire AppText to the live font scale
+### Task 2: Wire AppText to the chrome caps
 
-`AppText` is the only text primitive in the app, so this single file delivers Task 1's maths to every screen. It also fixes the one place that bypasses the type system entirely, and adds the guard that stops it happening again.
+`AppText` is the only text primitive in the app. This task adds the `maxFontSizeMultiplier` cap so chrome (buttons, labels) stops growing at 1.6× while content text honors the full user preference. It also fixes the one place that bypasses the type system entirely, and adds the guard that stops it happening again.
 
 **Files:**
 - Modify: `apps/mobile/src/components/AppText.tsx`
@@ -245,7 +115,7 @@ git commit -m "feat(mobile): scale line-height with the system font size"
 - Create: `apps/mobile/src/theme/token-usage.spec.ts`
 
 **Interfaces:**
-- Consumes: `typography(locale, fontScale?)` and `maxFontScaleFor(variant)` from Task 1.
+- Consumes: `maxFontScaleFor(variant)` from Task 1.
 - Produces: nothing new for later tasks. Task 5 appends a second test to `token-usage.spec.ts`.
 
 - [ ] **Step 1: Write the failing guard test**
@@ -321,12 +191,12 @@ The `display` variant is 28pt against the hard-coded 30pt — a 2pt reduction at
 Run: `pnpm --filter @kitchen/mobile exec vitest run src/theme/token-usage.spec.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Wire AppText to the live scale**
+- [ ] **Step 5: Wire maxFontSizeMultiplier to AppText**
 
-In `apps/mobile/src/components/AppText.tsx`, change the import to pull in `useWindowDimensions` and `maxFontScaleFor`:
+In `apps/mobile/src/components/AppText.tsx`, change the import to pull in `maxFontScaleFor`:
 
 ```tsx
-import { Text, useWindowDimensions, type TextProps, type TextStyle } from 'react-native';
+import { Text, type TextProps, type TextStyle } from 'react-native';
 import {
   colors,
   maxFontScaleFor,
@@ -336,13 +206,13 @@ import {
 } from '../theme';
 ```
 
-Inside the component, read the live scale and use it:
+Inside the component, call `typography()` with the locale and set the matching cap on the
+rendered element:
 
 ```tsx
   const { locale } = useLocale();
-  const { fontScale } = useWindowDimensions();
   const fontsLoaded = useFontStore((state) => state.loaded);
-  const token = typography(locale, fontScale)[variant]!;
+  const token = typography(locale)[variant]!;
 ```
 
 And set the matching cap on the rendered element. `{...rest}` stays last so a
@@ -352,7 +222,10 @@ caller can still override it deliberately:
   return <Text style={[base, style]} maxFontSizeMultiplier={maxFontScaleFor(variant)} {...rest} />;
 ```
 
-`useWindowDimensions` re-renders on change, so the app responds live when the user changes their text size in Settings without a relaunch.
+This tells React Native to cap the rendered text size at `1.6×` for chrome variants
+(buttons, labels, captions) but to apply the user's full text size preference to content
+variants (body, heading, etc.). React Native handles applying the `fontScale` at render time
+for both `fontSize` and the `lineHeight` that `typography()` computed.
 
 - [ ] **Step 6: Run the full mobile suite**
 
@@ -881,9 +754,16 @@ There is no iPhone SE in this Xcode's simulator set; iPhone 17e is the smallest 
 
 On each device, capture a screenshot and confirm:
 
-1. **Phones are unchanged.** Compare the two iPhones against the pre-change appearance. Any visible difference on a phone at the default text size is a defect — the `fontScale: 1` test asserts this should be impossible.
-2. **iPad centres rather than stretches.** Content sits in a 640pt column with the background either side, in both orientations. Rotate with `xcrun simctl ui <UDID> orientation landscape` — if it stays portrait, Task 4 did not take effect and the app needs a clean rebuild.
-3. **Large text does not clip.** Raise the text size to the maximum accessibility setting via Settings → Accessibility → Display & Text Size → Larger Text. Check `home`, a recipe, and **cook mode** specifically, since that screen was the one bypassing the type scale. Text must reflow, not overlap or truncate. Text that looks wildly over-spaced instead means the line box is being double-scaled and Task 1's premise is wrong for this RN version — report it rather than patching around it.
+1. **Phones are unchanged.** Compare the two iPhones against the pre-change appearance. Any visible difference on a phone at the default text size is a defect — the pinning test `typography('en').body.lineHeight === 22` and the simulator screenshots are the evidence that baseline rendering is untouched.
+2. **iPad centres rather than stretches.** Content sits in a 640pt column with the background either side, in both orientations. Verify the orientation configuration by inspecting the built `Info.plist`:
+
+```bash
+/usr/libexec/PlistBuddy -c "Print :UISupportedInterfaceOrientations~ipad" \
+  "$(xcrun simctl get_app_container <UDID> com.kitchenai.app)/Info.plist"
+```
+
+This must print all four orientations. The plain `:UISupportedInterfaceOrientations` key (without `~ipad`) must print only the two portrait values. This verifies Task 4 took effect. (The simulator GUI cannot rotate from the command line, so this is a structural check; manual interactive rotation in the simulator UI confirms the layout responds correctly.)
+3. **Large text does not clip.** Use the scriptable Dynamic Type setting: `xcrun simctl ui <UDID> content_size accessibility-extra-extra-extra-large`, then relaunch the app. Check `home`, a recipe, and **cook mode** specifically, since that screen was the one bypassing the type scale. Text must reflow without clipping or excessive gaps. At 3.1× text scaling on iPhone 17 Pro Max, an earlier implementation double-scaled the line box, producing enormous vertical gaps that pushed content off-screen. That defect was observed in the branch state at commit `5ea8b80`; the double-scaling premise was disproven, and the multiplication was removed in `dc63793`. Restore the text size to `large` after verification. (Manual steps like focusing a field or toggling to Arabic cannot be automated via `simctl`, which has no tap primitive — those remain interactive checks.)
 4. **The keyboard does not cover the field.** Focus the password field on sign-in on the smallest phone. The field stays visible, and there is no dead gap between content and keyboard (that gap is the `SafeAreaView` + `KeyboardAvoidingView` double-padding risk from Task 5).
 
 - [ ] **Step 4: Repeat the large-text and iPad checks in Arabic**
@@ -922,11 +802,11 @@ git commit -m "fix(mobile): <what the simulator check found>"
 
 **Deviation from the spec, deliberate:**
 
-- §5.4 states `theme/typography.spec.ts` "must be updated for the new signature". It does not: `fontScale` has a default of `1`, so every existing call compiles and returns identical values. Leaving those four tests untouched is stronger evidence of additivity than editing them, so the plan keeps them as they are and adds new cases alongside. The spec sentence is now inaccurate and is corrected in the same commit as this plan.
+- §5.4 states `theme/typography.spec.ts` "must be updated for the new signature". The signature never changed: it remained `typography(locale)` throughout. The four existing tests call it with one argument and remain valid; no changes to `typography.spec.ts` were needed. Tests that were later written for a two-argument `fontScale` parameter were removed in `dc63793` when that premise was disproven on the simulator. The spec sentence is now accurate and has been corrected.
 - §4.4 specifies `height` as the Android `KeyboardAvoidingView` behaviour. The plan uses `undefined` on Android instead, because Expo defaults `android.softwareKeyboardLayoutMode` to `"resize"`, so Android already shrinks the window; adding `height` on top double-adjusts. iOS keeps `padding` as specified. The spec is corrected to match.
 
 **Discovered during planning, added to scope:** `app/recipe/[id]/cook.tsx:64` hard-codes `fontSize: 30, lineHeight: 44`, a live instance of the exact bug this project fixes, on the screen where large text matters most. Fixed in Task 2 Step 3.
 
 **Placeholder scan:** no TBD, TODO, "handle edge cases", or "similar to Task N". Every code step carries the actual code.
 
-**Type consistency:** `typography(locale, fontScale?)`, `maxFontScaleFor(variant)`, `contentMaxWidth(width)`, `TABLET_BREAKPOINT`, `MAX_CONTENT_WIDTH` are named identically in the tasks that define them (1, 3) and the tasks that consume them (2, 3, 5). `token-usage.spec.ts` is created in Task 2 and appended to in Task 5, sharing the `sourceFiles()` helper and the `describe` block.
+**Type consistency:** `typography(locale)`, `maxFontScaleFor(variant)`, `contentMaxWidth(width)`, `TABLET_BREAKPOINT`, `MAX_CONTENT_WIDTH` are named identically in the tasks that define them (1, 3) and the tasks that consume them (2, 3, 5). `token-usage.spec.ts` is created in Task 2 and appended to in Task 5, sharing the `sourceFiles()` helper and the `describe` block.

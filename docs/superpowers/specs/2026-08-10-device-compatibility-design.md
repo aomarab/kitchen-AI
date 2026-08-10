@@ -12,7 +12,7 @@ Four concrete defects follow from that, each verified in the current source:
 | # | Defect | Evidence |
 | - | ------ | -------- |
 | 1 | `app.json` declares `"supportsTablet": true` while locking `"orientation": "portrait"`. The app tells Apple it is an iPad app, then refuses to rotate. iPad review exercises rotation. | `apps/mobile/app.json:7,12` |
-| 2 | Text clips at large Dynamic Type sizes. `typography()` computes an absolute `lineHeight` from the *base* `fontSize`. React Native multiplies `fontSize` by the system font scale but leaves an explicitly-set absolute `lineHeight` alone, so the glyphs grow and the line box does not. | `apps/mobile/src/theme/index.ts:133` |
+| 2 | Chrome grows unbounded at large Dynamic Type sizes, pushing content off-screen. Buttons, labels, and captions expand with the user's text preference, breaking the layout before the content text even has room to scale. | `apps/mobile/src/theme/index.ts:133` |
 | 3 | `QuantityStepper` renders a 40×40 control, below the 44pt (Apple) and 48dp (Android) minimum touch target. | `apps/mobile/src/components/QuantityStepper.tsx:33-34` |
 | 4 | There is no keyboard avoidance anywhere, so on short devices the keyboard can cover the field being typed into. | no `KeyboardAvoidingView` in `apps/mobile/src` |
 
@@ -84,47 +84,57 @@ broken, which is within the stated goal.
 
 ### 4.2 Typography scaling
 
-`theme/index.ts` gains a scale-aware signature:
+`theme/index.ts` exports:
 
 ```
-typography(locale: Locale, fontScale?: number): Record<TypographyVariant, TextStyleToken>
-```
-
-`lineHeight` becomes `round(fontSize × effectiveScale × factor)`, where
-`factor` stays `1.35` Latin / `1.7` Arabic and
-
-```
-effectiveScale = min(fontScale, maxFontScaleFor(variant) ?? fontScale)
-```
-
-```
+typography(locale: Locale): Record<TypographyVariant, TextStyleToken>
 maxFontScaleFor(variant: TypographyVariant): number | undefined
 ```
 
-returns `1.6` for the chrome variants — `button`, `label`, `caption` — and
-`undefined` for the content variants — `display`, `title`, `heading`, `body`,
-`bodyStrong`. `undefined` rather than a sentinel like `Infinity` because the
-value is passed straight to React Native's `maxFontSizeMultiplier`, which
-accepts `null`, `0`, or a number `>= 1`; `Infinity` is not a legal value there.
+`typography()` computes `lineHeight` as `round(fontSize × factor)`, where
+`factor` is `1.35` Latin / `1.7` Arabic. React Native 0.86 automatically scales
+both `fontSize` and an explicitly-set `lineHeight` by the system font scale at
+render time, so `typography()` returns unscaled base values — it does not and
+must not apply `fontScale` here.
 
-`AppText` reads `fontScale` from `useWindowDimensions()` and passes
-`maxFontScaleFor(variant)` as `maxFontSizeMultiplier` on the underlying `Text`,
-so the cap that limits the rendered glyphs and the cap used to compute the line
-box are always the same number. A divergence between those two is exactly the
-clipping bug being fixed, so they are derived from one function rather than
-written twice.
+`maxFontScaleFor(variant)` returns `1.6` for the chrome variants — `button`,
+`label`, `caption` — and `undefined` for the content variants — `display`,
+`title`, `heading`, `body`, `bodyStrong`. Chrome is capped because fixed-height
+rows (button rows) cannot accommodate unbounded growth. Content is
+uncapped so the user's text-size preference is honoured for long-form reading.
+`undefined` rather than a sentinel like `Infinity` because the value is passed
+to React Native's `maxFontSizeMultiplier` prop, which accepts `null`, `0`, or a
+number `>= 1`; `Infinity` is not legal there.
 
-`fontScale` defaults to `1`, which makes the parameter additive: every existing
-caller keeps its current output.
+**Tab bars are not covered by `maxFontScaleFor`.** Tab labels render through
+react-navigation's `BottomTabItem`, not through `AppText`, so they never receive
+a `maxFontSizeMultiplier` cap from this mechanism. The implemented behaviour is:
+`BottomTabItem` sets `allowFontScaling = SUPPORTS_LARGE_CONTENT_VIEWER ? false :
+undefined`. On iOS this disables Dynamic Type scaling entirely for tab labels —
+users get the long-press large-content viewer instead, so the tab bar cannot
+overflow. On Android tab labels scale uncapped; whether they clip at accessibility
+text sizes is unverified and is a named follow-up.
 
-This rests on one platform behaviour worth stating explicitly, because the fix
-is wrong if it is not true: React Native scales `fontSize` by the system font
-scale automatically, but does **not** scale an explicitly-set `lineHeight`.
-Were `lineHeight` also scaled automatically, multiplying by `fontScale` here
-would double-scale it. The visual check at the largest text size in §5.3 is
-what confirms this empirically on the RN version actually in use, and a
-double-scaled line box is obvious on sight — text becomes wildly over-spaced
-rather than clipped.
+`AppText` imports `maxFontScaleFor` and passes `maxFontSizeMultiplier={maxFontScaleFor(variant)}`
+to the underlying `<Text>` element. It calls `typography(locale)` and applies the returned
+`fontSize`, `lineHeight`, `letterSpacing`, and `color` from the theme. This cap is the
+*only* scale-related thing applied in the theme — it is enforced at render time by React
+Native when it applies the system font scale.
+
+This rests on one platform behaviour worth stating explicitly: React Native 0.86
+scales both `fontSize` and an explicitly-set `lineHeight` by the system font scale
+at render time. Because `typography()` returns unscaled base values, the only
+scale-related thing the theme exports is `maxFontScaleFor()`, which is consumed as
+`maxFontSizeMultiplier` on the `<Text>` element. This enforces the cap at render
+time, when RN applies the scale, not by pre-multiplying into the line-height value.
+
+**Correction (verified on simulator, 2026-08-10).** An earlier revision of this spec
+claimed React Native does not scale an explicitly-set absolute `lineHeight`. That is
+false for RN 0.86: it scales `lineHeight` just as it scales `fontSize`. Pre-multiplying
+by `fontScale` therefore double-scaled the line box and pushed content off screen at
+accessibility text sizes. The multiplication was removed in `dc63793`. The durable
+Dynamic Type fix on this branch is `maxFontScaleFor`, which caps chrome growth at 1.6×
+while leaving content text uncapped.
 
 ### 4.3 Fluid layout
 
@@ -185,14 +195,15 @@ that cannot be expressed that way is pinned by a source-scanning guard.
 
 | Case | Expected |
 | ---- | -------- |
-| `fontScale: 1` | Output identical to the current values, variant by variant |
-| `('en', 2)` body | `lineHeight` doubles |
-| `('en', 3.1)` button | Pinned at the `1.6` cap |
-| `('ar', 2)` body | Uses the `1.7` factor, not `1.35` |
-| `('ar', 2)` any | `letterSpacing` still `0` |
+| `typography('en')` body | `lineHeight` is `round(16 × 1.35)` = `22` |
+| `typography('ar')` body | `lineHeight` is `round(16 × 1.7)` = `27` |
+| `typography('en')` button | Text is 16pt; `maxFontScaleFor('button')` is `1.6` |
+| `typography('ar')` any | `letterSpacing` is `0` |
 
-The `fontScale: 1` case is the regression guard for the whole change: it is
-what proves the phone rendering is unchanged.
+The core tests for `typography(locale)` assert fixed values like `Math.round(16 × 1.35)`
+for body text, and these values do not change across this work — `typography()` returns
+unscaled base values, so the tests simply pass unchanged. That unchanged-test-suite
+is the evidence that the implementation is correct.
 
 `maxFontScaleFor`: `1.6` for each chrome variant, `undefined` for each content
 variant, asserted per variant so adding a variant without classifying it fails.
@@ -231,13 +242,14 @@ centers rather than stretching.
 
 ### 5.4 Existing tests
 
-`src/theme/typography.spec.ts` calls `typography(locale)` with one argument.
-Because `fontScale` carries a default of `1`, those calls keep compiling and
-keep returning identical values, so the file needs **no** change — and leaving
-it untouched is stronger evidence that the parameter is additive than editing
-it would be. Its assertions — Latin tracking present, Arabic tracking zero —
-are preserved, not relaxed. The same applies to `theme/palette.spec.ts` and the
-web token guards, which this work does not touch.
+`src/theme/typography.spec.ts` calls `typography(locale)` with one argument and
+will continue to pass unchanged, because `typography()` returns unscaled base values.
+The four existing tests assert specific `lineHeight` values — e.g. `Math.round(16 × 1.35)` —
+and those assertions remain true. Leaving them untouched is stronger evidence that the
+new `maxFontScaleFor()` function is a pure addition than editing them would be. The
+test assertions — Latin tracking present, Arabic tracking zero — are preserved, not relaxed.
+The same applies to `theme/palette.spec.ts` and the web token guards, which this work
+does not touch.
 
 ### 5.5 A gap the tests cannot close
 
@@ -254,7 +266,7 @@ suite, broken app.
 | ---- | ---------- |
 | Android is unverified — no SDK on the build machine | §4.2–§4.4 are shared React Native code that cannot diverge by platform; §4.1 is declarative config. Android verification is a named follow-up, not a silent assumption. |
 | The API 36 large-screen orientation behaviour may not apply on older Android | Failure mode is an Android tablet that stays portrait: degraded, not broken, and within the goal |
-| `Screen` is used by every screen, so a mistake there is global | Contained by the `fontScale: 1` and phone-width assertions, which prove phone output is unchanged |
+| `Screen` is used by every screen, so a mistake there is global | Contained by the phone-width assertions in `apps/mobile/src/theme/layout.spec.ts`, which prove phone output is unchanged |
 | `KeyboardAvoidingView` double-pads when combined with `SafeAreaView` | Platform-specific configuration plus a mandatory visual check on the shortest device |
 | Dense screens remain tight at the largest text sizes | Accepted. This work fixes clipping; it does not redesign dense screens. |
 

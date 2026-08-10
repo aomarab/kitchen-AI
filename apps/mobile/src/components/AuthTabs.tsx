@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { AppText } from './AppText';
 import { useFormat } from '../hooks/useFormat';
-import { colors, radius, spacing } from '../theme';
+import { colors, hitSlop, radius, spacing } from '../theme';
 
 const TABS = [
   { path: '/sign-in', label: 'auth.signIn' },
@@ -37,6 +37,7 @@ export function AuthTabs() {
             key={tab.path}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
+            hitSlop={hitSlop}
             onPress={() => {
               if (!active) router.replace(tab.path);
             }}

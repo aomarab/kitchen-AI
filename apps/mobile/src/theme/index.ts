@@ -121,6 +121,25 @@ const SCALE = {
 
 export type TypographyVariant = keyof typeof SCALE;
 
+/**
+ * How far each tier may scale with the system font size.
+ *
+ * Chrome — pill buttons, field labels, badges — sits in fixed-height rows, so
+ * it stops at 1.6x. Content is uncapped: at the largest accessibility sizes the
+ * user has asked for very large text and long-form copy should give it to them.
+ */
+const CHROME_MAX_FONT_SCALE = 1.6;
+const CHROME_VARIANTS: readonly TypographyVariant[] = ['button', 'label', 'caption'];
+
+/**
+ * Returned straight to React Native's `maxFontSizeMultiplier`, which accepts
+ * `null`, `0`, or a number `>= 1` — hence `undefined` for uncapped rather than
+ * a sentinel like `Infinity`, which that prop rejects.
+ */
+export function maxFontScaleFor(variant: TypographyVariant): number | undefined {
+  return CHROME_VARIANTS.includes(variant) ? CHROME_MAX_FONT_SCALE : undefined;
+}
+
 export function typography(locale: Locale): Record<TypographyVariant, TextStyleToken> {
   const isArabic = locale === 'ar';
   const factor = isArabic ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;

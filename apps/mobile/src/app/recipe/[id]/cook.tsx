@@ -61,7 +61,7 @@ export default function CookMode() {
               })}
             />
           ) : null}
-          <AppText variant="display" style={{ color: colors.textInverse, fontSize: 30, lineHeight: 44 }}>
+          <AppText variant="display" style={{ color: colors.textInverse }}>
             {current.text}
           </AppText>
         </View>

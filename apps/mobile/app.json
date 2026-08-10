@@ -59,6 +59,12 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Kitchen AI uses the camera to recognise ingredients in your kitchen.",
         "NSPhotoLibraryUsageDescription": "Kitchen AI reads photos of your kitchen to build your inventory.",
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
         "UIApplicationSceneManifest": {
           "UIApplicationSupportsMultipleScenes": false,
           "UISceneConfigurations": {
@@ -109,7 +115,8 @@
           ]
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withSceneDelegate"
     ],
     "experiments": {
       "typedRoutes": true
