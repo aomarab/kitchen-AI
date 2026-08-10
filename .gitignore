@@ -35,3 +35,6 @@ apps/mobile/android/local.properties
 *.keystore
 !debug.keystore
 *.hprof
+
+# Playwright MCP scratch output
+.playwright-mcp/
