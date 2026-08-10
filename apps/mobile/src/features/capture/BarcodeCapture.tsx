@@ -8,7 +8,7 @@ import { CameraGate } from './CameraGate';
 import { useFormat } from '../../hooks/useFormat';
 import { useBarcodeLookup } from '../../hooks/capture';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
-import { unitLabel } from '../../lib/format';
+import { locationLabel, unitLabel } from '../../lib/format';
 import { radius, spacing } from '../../theme';
 
 type Lookup = RouteResponse<'lookupBarcode'>;
@@ -126,7 +126,7 @@ export function BarcodeCapture() {
               {(locations.data ?? []).map((loc) => (
                 <Chip
                   key={loc.id}
-                  label={loc.name}
+                  label={locationLabel(t, loc)}
                   selected={locationId === loc.id}
                   onPress={() => setLocationId(loc.id)}
                 />

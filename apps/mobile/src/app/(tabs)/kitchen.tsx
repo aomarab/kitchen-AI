@@ -17,7 +17,7 @@ import {
 import type { BadgeTone } from '../../components/Badge';
 import { useFormat } from '../../hooks/useFormat';
 import { useInventory, useLocations } from '../../hooks/inventory';
-import { ingredientName, formatMeasure, formatExpiryLabel } from '../../lib/format';
+import { ingredientName, formatMeasure, formatExpiryLabel, locationLabel } from '../../lib/format';
 import { expiryStatus, type ExpiryStatus } from '../../lib/expiry';
 import { spacing } from '../../theme';
 
@@ -74,7 +74,7 @@ export default function Kitchen() {
           contentContainerStyle={{ gap: spacing.sm }}
           renderItem={({ item: loc }) => (
             <Chip
-              label={loc ? loc.name : t('common.all')}
+              label={loc ? locationLabel(t, loc) : t('common.all')}
               selected={loc ? locationId === loc.id : locationId === undefined}
               onPress={() => setLocationId(loc?.id)}
             />

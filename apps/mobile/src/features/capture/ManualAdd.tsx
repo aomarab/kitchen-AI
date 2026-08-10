@@ -6,7 +6,7 @@ import { AppText, Button, Card, Chip, Field, ListRow, QuantityStepper } from '..
 import { useFormat } from '../../hooks/useFormat';
 import { useSearchIngredients } from '../../hooks/profile';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
-import { ingredientName, unitLabel } from '../../lib/format';
+import { ingredientName, locationLabel, unitLabel } from '../../lib/format';
 import { isValidExpiryInput } from '../../lib/expiry';
 import { errorMessageKey } from '../../lib/errors';
 import { colors, spacing } from '../../theme';
@@ -118,7 +118,7 @@ export function ManualAdd() {
             {(locations.data ?? []).map((loc) => (
               <Chip
                 key={loc.id}
-                label={loc.name}
+                label={locationLabel(t, loc)}
                 selected={locationId === loc.id}
                 onPress={() => setLocationId(loc.id)}
               />

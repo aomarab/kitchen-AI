@@ -26,7 +26,7 @@ import {
   useDeleteInventoryItem,
   useAdjustQuantity,
 } from '../../hooks/inventory';
-import { ingredientName, unitLabel, formatExpiryLabel } from '../../lib/format';
+import { ingredientName, unitLabel, formatExpiryLabel, locationLabel } from '../../lib/format';
 import { expiryStatus, isValidExpiryInput, type ExpiryStatus } from '../../lib/expiry';
 import { errorMessageKey } from '../../lib/errors';
 import { colors } from '../../theme';
@@ -151,7 +151,7 @@ export default function ItemDetail() {
             {(locations.data ?? []).map((loc) => (
               <Chip
                 key={loc.id}
-                label={loc.name}
+                label={locationLabel(t, loc)}
                 selected={locationId === loc.id}
                 onPress={() => setDraftLocation(loc.id)}
               />

@@ -6,7 +6,7 @@ import {
   type MessageKey,
   type Translator,
 } from '@kitchen/i18n';
-import type { Ingredient, Unit } from '@kitchen/contracts';
+import type { Ingredient, StorageLocation, Unit } from '@kitchen/contracts';
 import { daysUntilExpiry } from './expiry';
 
 export interface NumeralPrefs {
@@ -35,6 +35,18 @@ export function formatQty(locale: Locale, value: number, prefs: NumeralPrefs = {
 
 export function unitLabel(t: Translator, unit: Unit): string {
   return t(`units.${unit}` as MessageKey);
+}
+
+/**
+ * Storage location name in the active language.
+ *
+ * The row carries a `name` the API stores, but that name is seeded in English,
+ * so rendering it directly left `Fridge` / `Freezer` sitting untranslated in the
+ * Arabic UI. Labelling by `type` matches the web client (`lib/labels.ts`) and
+ * the project rule that the server never sends user-facing prose.
+ */
+export function locationLabel(t: Translator, location: Pick<StorageLocation, 'type'>): string {
+  return t(`inventory.locations.${location.type}` as MessageKey);
 }
 
 /** e.g. `2 kg`, `٣ قطعة`. Direction of the surrounding text handles ordering. */

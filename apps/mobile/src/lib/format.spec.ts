@@ -2,8 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { createTranslator, directionFor, isRtl } from '@kitchen/i18n';
 import { ApiError } from '@kitchen/api-client';
 import { errorMessageKey } from '../lib/errors';
-import { unitSchema, type Unit } from '@kitchen/contracts';
-import { formatExpiryLabel, ingredientName, localizedName, unitLabel } from '../lib/format';
+import { unitSchema, storageLocationTypeSchema, type Unit } from '@kitchen/contracts';
+import {
+  formatExpiryLabel,
+  ingredientName,
+  localizedName,
+  locationLabel,
+  unitLabel,
+} from '../lib/format';
 
 const NOW = new Date('2026-07-26T12:00:00');
 
@@ -70,5 +76,27 @@ describe('unit labels', () => {
       expect(unitLabel(ar, unit), unit).not.toBe(`units.${unit}`);
       expect(unitLabel(ar, unit), unit).not.toBe(unitLabel(en, unit));
     }
+  });
+});
+
+describe('storage location labels', () => {
+  // The server stores a location's `name` as seeded English prose. Mobile used to
+  // render it raw, so Arabic users saw "Fridge" next to Arabic item names.
+  it('translates every contract location type in both languages', () => {
+    const en = createTranslator('en');
+    const ar = createTranslator('ar');
+    for (const type of storageLocationTypeSchema.options) {
+      const location = { type };
+      expect(locationLabel(en, location), type).not.toBe(`inventory.locations.${type}`);
+      expect(locationLabel(ar, location), type).not.toBe(`inventory.locations.${type}`);
+      expect(locationLabel(ar, location), type).not.toBe(locationLabel(en, location));
+    }
+  });
+
+  it('ignores the server-supplied name', () => {
+    const t = createTranslator('ar');
+    expect(locationLabel(t, { type: 'fridge', name: 'Fridge' } as never)).toBe(
+      locationLabel(t, { type: 'fridge' }),
+    );
   });
 });

@@ -11,7 +11,7 @@ import {
   isLowConfidence,
   type ReviewRow,
 } from '../../lib/capture';
-import { localizedName, unitLabel } from '../../lib/format';
+import { localizedName, locationLabel, unitLabel } from '../../lib/format';
 import { colors, spacing } from '../../theme';
 
 export interface ReviewListProps {
@@ -92,7 +92,7 @@ export function ReviewList({ session, source, locations, submitting, onConfirm }
                   {locations.map((loc) => (
                     <Chip
                       key={loc.id}
-                      label={loc.name}
+                      label={locationLabel(t, loc)}
                       selected={row.locationId === loc.id}
                       onPress={() => update(row.tempId, { locationId: loc.id })}
                     />
