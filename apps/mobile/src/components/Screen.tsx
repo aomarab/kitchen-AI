@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   View,
   useWindowDimensions,
@@ -46,22 +48,30 @@ export function Screen({
   const constrain: ViewStyle = maxWidth ? { maxWidth, width: '100%', alignSelf: 'center' } : {};
   return (
     <SafeAreaView edges={edges} style={[{ flex: 1, backgroundColor: colors.bg }, style]}>
-      {scroll ? (
-        <ScrollView
-          contentContainerStyle={[pad, { flexGrow: 1 }, constrain, contentStyle]}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} /> : undefined
-          }
-        >
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[{ flex: 1 }, pad, constrain, contentStyle]}>{children}</View>
-      )}
-      {footer ? (
-        <View style={[{ padding: spacing.lg, paddingTop: spacing.sm }, constrain]}>{footer}</View>
-      ) : null}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        // Expo sets Android's softwareKeyboardLayoutMode to "resize", so Android
+        // already shrinks the window for the keyboard. Adding a behavior on top
+        // of that double-adjusts and pushes content off-screen.
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {scroll ? (
+          <ScrollView
+            contentContainerStyle={[pad, { flexGrow: 1 }, constrain, contentStyle]}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} /> : undefined
+            }
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[{ flex: 1 }, pad, constrain, contentStyle]}>{children}</View>
+        )}
+        {footer ? (
+          <View style={[{ padding: spacing.lg, paddingTop: spacing.sm }, constrain]}>{footer}</View>
+        ) : null}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
