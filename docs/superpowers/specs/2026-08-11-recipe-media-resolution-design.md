@@ -228,18 +228,29 @@ Single entry point for recipe imagery: renders `AppImage` when `heroImageUrl` is
 present, else the placeholder. Replaces the four hand-rolled null-guards, so the
 fallback cannot be forgotten at a new call site.
 
-The placeholder is a cuisine glyph over a tone chosen by hashing `dish_key` into
-a fixed list of **token names** — `bg-primary-soft`, `bg-accent-soft`,
-`bg-info-soft`, `bg-success-soft`. Referencing tokens by name keeps
-`token-usage.test.ts` satisfied, which rejects hex literals outside the token
-files and opacity tints where a solid `*-soft` token exists.
+The placeholder is the dish title over a tone chosen by hashing `dish_key` into
+a fixed list of **token names**. Only two pairs qualify: `bg-primary-soft` with
+`text-primary-text`, and `bg-accent-soft` with `text-accent-text`. Those are the
+only soft fills in `globals.css` that carry a validated text counterpart —
+`success-soft`, `warning-soft` and `danger-soft` have no `-text` token, and
+there is no `info-soft` at all, so a tone built on them would have no contrast
+guarantee. Referencing tokens by name keeps `token-usage.test.ts` satisfied,
+which rejects hex literals outside the token files and opacity tints where a
+solid `*-soft` token exists.
+
+The title carries the meaning, so it is the visible content and the tone is
+decoration; the accessible label states the photo is missing rather than
+leaving a screen reader to infer it from a bare string.
 
 Call sites updated: `RecipeView`, `RecipesIndex`, `PlanDetail`, `EntrySheet`.
 
 ### `apps/mobile/src/components/RecipeThumb.tsx` — new
 
 The same component against `theme/index.ts` tokens, used wherever mobile renders
-recipe imagery.
+recipe imagery. Mobile draws from the existing four-entry `tints` tuple, each
+entry already pairing `bg` with a `palette.spec`-validated `fg`. The tone hash
+lives in `apps/mobile/src/lib/recipe-tone.ts` so it is importable from a
+node-environment spec.
 
 ## Quota
 
@@ -280,32 +291,45 @@ API, `apps/api/src/ai/recipes/__tests__/`:
   rejected; a genuine match scores above threshold; generic-word-only overlap is
   rejected; category 26 and matching audio language rank a candidate above an
   equal-coverage rival.
+
+API, `apps/api/src/ai/__tests__/` — alongside the existing service-level suites,
+replacing `recipe-videos.spec.ts`:
+
 - `dish-media.spec.ts` — two households requesting the same dish trigger **one**
   search; a stored `none` does not re-search; an outage with nothing stored does
   **not** persist `none`; an outage with stale rows serves them; `resolved_at`
-  is renewed rather than frozen.
-- `http-youtube.client.spec.ts` — the hardened query parameters are sent; ISO-8601
+  is renewed rather than frozen. This is an **integration** spec against the live
+  Postgres at `DATABASE_URL`: `persistMatch` runs in a transaction, and a faked
+  Drizzle builder chain would assert the mock rather than the behaviour.
+- `youtube-client.spec.ts` — the hardened query parameters are sent; ISO-8601
   durations parse, including hours; a `videos.list` failure raises
   `YoutubeUnavailableError`.
 
 Web, `apps/web/src/`:
 
 - `RecipeThumb.test.tsx` — image when present, placeholder when null, stable
-  tone for a given `dish_key`.
+  tone for a given `dish_key`, and the placeholder's accessible label localized
+  in both languages.
 - Existing palette and `token-usage` guards must stay green unmodified. They are
   not to be relaxed to accommodate the placeholder.
 
 Mobile, `apps/mobile/src/`:
 
-- `recipe-thumb.spec.ts` — tone selection is deterministic and every tone
-  resolves to a real theme token.
+- `lib/recipe-tone.spec.ts` — tone selection is deterministic and every tone
+  resolves to a real theme token. The tone helper lives in `lib/` rather than
+  beside the component because mobile's Vitest runs `environment: 'node'` over
+  `src/**/*.spec.ts`, and importing a component would pull in `react-native`,
+  which does not parse there.
 
 ## Internationalisation
 
-Placeholder text is the dish title itself, already localized on the recipe. Any
-new string (e.g. an accessibility label for the placeholder) is added to
-`web.en.ts`/`web.ar.ts` and `mobile.en.ts`/`mobile.ar.ts`, never to the shared
-catalogue, per the append-only namespace rule.
+Placeholder text is the dish title itself, already localized on the recipe. The
+placeholder also carries an accessible label — `web.recipe.noPhoto` and
+`mobile.recipe.noPhoto` — added to `web.en.ts`/`web.ar.ts` and
+`mobile.en.ts`/`mobile.ar.ts` respectively, never to the shared catalogue, per
+the append-only namespace rule. Both nest under their app's existing top-level
+key; `index.ts` merges catalogues with a shallow spread, so a *top-level*
+`recipe` key in either file would silently replace the shared `recipe` block.
 
 The placeholder uses logical properties only, so it mirrors under RTL without a
 special case.
