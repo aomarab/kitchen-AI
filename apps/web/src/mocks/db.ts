@@ -71,7 +71,7 @@ interface InternalJob {
 }
 
 interface DbShape {
-  user: User;
+  user: User | null;
   household: Household;
   profile: Profile;
   ingredientsByKey: Map<string, Ingredient>;

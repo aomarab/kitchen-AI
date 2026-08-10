@@ -73,7 +73,15 @@ function makeSession(
   locale: Locale,
   householdIds: string[] = [db.household.id],
 ): Session {
-  db.user = { ...db.user, email, displayName, locale };
+  const existing = db.user;
+  db.user = {
+    id: existing?.id ?? uuid(),
+    email,
+    displayName,
+    locale,
+    hasPassword: existing?.hasPassword ?? true,
+    createdAt: existing?.createdAt ?? iso(),
+  };
   return {
     user: db.user,
     tokens: { accessToken: `mock.${uuid()}`, refreshToken: `mock.${uuid()}`, expiresIn: 900 },
@@ -150,20 +158,29 @@ export const handlers = [
   }),
   http.post(u('/auth/login'), async ({ request }) => {
     const body = (await request.json()) as LoginRequest;
-    return HttpResponse.json(makeSession(body.email, db.user.displayName, db.user.locale));
+    return HttpResponse.json(makeSession(body.email, db.user?.displayName ?? 'Chef', db.user?.locale ?? 'en'));
   }),
   http.post(u('/auth/oauth'), async () =>
-    HttpResponse.json(makeSession(db.user.email, db.user.displayName, db.user.locale)),
+    HttpResponse.json(
+      makeSession(db.user?.email ?? 'chef@example.com', db.user?.displayName ?? 'Chef', db.user?.locale ?? 'en'),
+    ),
   ),
   http.post(u('/auth/refresh'), async () =>
     HttpResponse.json({ accessToken: `mock.${uuid()}`, refreshToken: `mock.${uuid()}`, expiresIn: 900 }),
   ),
   http.post(u('/auth/logout'), async () => HttpResponse.json({ ok: true })),
-  http.get(u('/me'), async () => HttpResponse.json(db.user)),
+  http.get(u('/me'), async () => (db.user ? HttpResponse.json(db.user) : err('UNAUTHENTICATED', 401))),
   http.patch(u('/me'), async ({ request }) => {
     const body = (await request.json()) as UpdateMeRequest;
-    db.user = { ...db.user, ...body };
+    const current = db.user;
+    if (!current) return err('UNAUTHENTICATED', 401);
+    db.user = { ...current, ...body };
     return HttpResponse.json(db.user);
+  }),
+  http.delete(u('/me'), async () => {
+    // A deleted account must not still resolve; GET /me now 401s once null.
+    db.user = null;
+    return HttpResponse.json({ ok: true });
   }),
 
   /* ---------- Households & profile ---------- */
@@ -532,6 +549,8 @@ export const handlers = [
       appVersion: string;
       locale: Locale;
     };
+    const author = db.user;
+    if (!author) return err('UNAUTHENTICATED', 401);
     const record = {
       id: uuid(),
       rating: body.rating,
@@ -544,11 +563,11 @@ export const handlers = [
       adminNote: null,
       reviewedAt: null,
       submitter: {
-        id: db.user.id,
-        email: db.user.email,
-        displayName: db.user.displayName,
-        locale: db.user.locale,
-        joinedAt: db.user.createdAt,
+        id: author.id,
+        email: author.email,
+        displayName: author.displayName,
+        locale: author.locale,
+        joinedAt: author.createdAt,
       },
     };
     db.feedback.unshift(record);
