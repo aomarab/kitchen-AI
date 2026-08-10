@@ -8,38 +8,41 @@ import type { Locale } from '@kitchen/i18n';
  */
 
 export const colors = {
-  bg: '#F5F4F1',
+  /** The reference is white-led: the ground is paper, and colour arrives only
+   *  in the tinted cards and the accents. */
+  bg: '#FFFFFF',
   surface: '#FFFFFF',
-  /** The warm sand band from the reference. Darkest surface, so it sets the
-   *  contrast floor for every foreground token below. */
-  surfaceAlt: '#F0E6DA',
-  border: '#E3E0D9',
-  text: '#12172B',
-  textMuted: '#5A6072',
+  /** The lavender card tint. Darkest surface, so it sets the contrast floor for
+   *  every foreground token below. */
+  surfaceAlt: '#F6F5FB',
+  border: '#E9E7F2',
+  text: '#2A2A5C',
+  /** The reference's muted grey is #9791B3, which is 3.1:1 on white and fails
+   *  AA for body text. Darkened until it passes while keeping the lilac cast. */
+  textMuted: '#67618C',
   textInverse: '#FFFFFF',
-  /** The reference's action colour is the near-black navy of the FAB. */
-  primary: '#141A31',
-  primaryPressed: '#252C4A',
-  primarySoft: '#E8E9EE',
-  // Cook mode inverts the screen, and #141A31 on itself is 1:1 — the CTA fill
-  // vanishes entirely. This light teal measures 10.16:1 on surfaceInverse both
-  // as a ghost label and as a fill carrying a dark label (10.50:1).
-  primaryInverse: '#6FD7DB',
-  /** Teal is the one chromatic accent. Mobile's `accent` is used as *text*, so
-   *  it is the 4.5:1 weight; the vivid #17B3B9 from the shot is 2.5:1 on white
-   *  and would fail on every surface. */
-  accent: '#0E6E71',
-  accentSoft: '#E2F3F4',
-  warn: '#8A4A0A',
-  warnSoft: '#FAEDDD',
-  danger: '#B33230',
-  dangerSoft: '#FBE9E8',
+  /** The reference's indigo. */
+  primary: '#343375',
+  primaryPressed: '#26254F',
+  primarySoft: '#EFEEF9',
+  // Cook mode inverts the screen, and the indigo on itself is 1:1 — the CTA
+  // fill vanishes entirely. This light teal measures 8.10:1 on surfaceInverse.
+  primaryInverse: '#7FD9D9',
+  /** Teal is the chromatic accent. Mobile's `accent` is used as *text*, so it
+   *  is the 4.5:1 weight; the reference's #479696 is 3.4:1 on white. */
+  accent: '#2C7676',
+  accentSoft: '#EAF4F4',
+  warn: '#8A5209',
+  warnSoft: '#FBF0E0',
+  /** The reference's coral, pulled toward magenta so a white label clears AA. */
+  danger: '#B32F51',
+  dangerSoft: '#FDECF0',
   success: '#1E7A4C',
-  successSoft: '#E3F2E8',
+  successSoft: '#E4F3EA',
   /** Cook mode runs inverted. Named so the intent survives a palette change. */
-  surfaceInverse: '#141A31',
-  textInverseMuted: '#A9AFC2',
-  overlay: 'rgba(20,26,49,0.45)',
+  surfaceInverse: '#2A2A5C',
+  textInverseMuted: '#B6B2D4',
+  overlay: 'rgba(42,42,92,0.45)',
 } as const;
 
 export type ColorToken = keyof typeof colors;
@@ -72,15 +75,15 @@ export const radius = {
  */
 export const shadow = {
   card: {
-    shadowColor: '#141A31',
-    shadowOpacity: 0.08,
+    shadowColor: '#2A2A5C',
+    shadowOpacity: 0.06,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   },
   raised: {
-    shadowColor: '#141A31',
-    shadowOpacity: 0.14,
+    shadowColor: '#2A2A5C',
+    shadowOpacity: 0.12,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 12 },
     elevation: 8,
