@@ -103,6 +103,7 @@ export const jobTypeEnum = pgEnum('job_type', [
   'video.fetch',
 ]);
 export const jobStatusEnum = pgEnum('job_status', ['queued', 'running', 'done', 'failed']);
+export const dishMediaStatusEnum = pgEnum('dish_media_status', ['matched', 'none']);
 
 /* ------------------------------------------------------------------ */
 /* Identity                                                            */
@@ -376,22 +377,46 @@ export const recipeIngredients = pgTable(
   ],
 );
 
-export const recipeVideos = pgTable(
-  'recipe_videos',
+/**
+ * Resolved media for one dish in one language.
+ *
+ * Keyed by dish rather than recipe: recipes are household-scoped, so the same
+ * dish is a distinct row per household and a recipe-keyed cache spent a fresh
+ * 100-unit YouTube search on every one of them. Keyed by dish, the first
+ * household to open a recipe resolves it for everybody.
+ *
+ * `status = 'none'` IS the negative cache — a dish YouTube has nothing for must
+ * be remembered, or every request re-runs the search. It replaces the separate
+ * Redis empty-answer key, and unlike that key it survives a cache flush.
+ */
+export const dishMedia = pgTable(
+  'dish_media',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    recipeId: uuid('recipe_id')
-      .notNull()
-      .references(() => recipes.id, { onDelete: 'cascade' }),
+    dishKey: text('dish_key').notNull(),
+    locale: localeEnum('locale').notNull(),
+    status: dishMediaStatusEnum('status').notNull(),
+    heroYoutubeId: text('hero_youtube_id'),
+    heroThumbnailUrl: text('hero_thumbnail_url'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.dishKey, table.locale] })],
+);
+
+/** The ranked video list for a dish. `rank` 0 is the match the hero came from. */
+export const dishVideos = pgTable(
+  'dish_videos',
+  {
+    dishKey: text('dish_key').notNull(),
+    locale: localeEnum('locale').notNull(),
     youtubeId: text('youtube_id').notNull(),
     title: text('title').notNull(),
     channel: text('channel').notNull(),
     thumbnailUrl: text('thumbnail_url').notNull(),
-    durationSeconds: integer('duration_seconds'),
-    locale: localeEnum('locale').notNull(),
+    durationSeconds: integer('duration_seconds').notNull(),
+    rank: integer('rank').notNull(),
     fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [uniqueIndex('recipe_video_key').on(table.recipeId, table.youtubeId)],
+  (table) => [primaryKey({ columns: [table.dishKey, table.locale, table.youtubeId] })],
 );
 
 /* ------------------------------------------------------------------ */
@@ -622,11 +647,6 @@ export const inventoryEventsRelations = relations(inventoryEvents, ({ one }) => 
 
 export const recipesRelations = relations(recipes, ({ many }) => ({
   ingredients: many(recipeIngredients),
-  videos: many(recipeVideos),
-}));
-
-export const recipeVideosRelations = relations(recipeVideos, ({ one }) => ({
-  recipe: one(recipes, { fields: [recipeVideos.recipeId], references: [recipes.id] }),
 }));
 
 export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
@@ -665,7 +685,8 @@ export const schema = {
   inventoryEvents,
   recipes,
   recipeIngredients,
-  recipeVideos,
+  dishMedia,
+  dishVideos,
   mealPlans,
   mealPlanEntries,
   shoppingListItems,
@@ -681,7 +702,6 @@ export const schema = {
   inventoryEventsRelations,
   recipesRelations,
   recipeIngredientsRelations,
-  recipeVideosRelations,
   mealPlansRelations,
   mealPlanEntriesRelations,
   feedbackRelations,

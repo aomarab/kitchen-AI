@@ -63,7 +63,7 @@ export interface RecipeVideoRow {
 
 export interface FullRecipeRow extends RecipeRow {
   ingredients: RecipeIngredientRow[];
-  videos: RecipeVideoRow[];
+  videos?: RecipeVideoRow[];
 }
 
 function pickText(locale: Locale, en: string | null, ar: string | null): string {
@@ -180,7 +180,7 @@ export function toRecipe(row: FullRecipeRow, locale: Locale, snapshot?: PantrySn
     cuisine: toCuisine(row.cuisine),
     nutrition: toNutrition(row.nutrition),
     heroImageUrl: null,
-    videos: row.videos.map(toRecipeVideo),
+    videos: (row.videos ?? []).map(toRecipeVideo),
     generatedBy: row.generatedBy,
     createdAt: row.createdAt.toISOString(),
   };
