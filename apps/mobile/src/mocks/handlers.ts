@@ -143,6 +143,9 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     };
     return HttpResponse.json(db.user);
   },
+  // Real backend returns the shared `{ ok: true }` envelope; a 204/null body
+  // would fail the client's response validation (`emptyResponse`).
+  deleteMe: okEmpty,
 
   /* ---- Households & profile ---- */
   listHouseholds: () => HttpResponse.json([db.household]),
