@@ -29,6 +29,19 @@ function createBrowserTokenStore(): TokenStore {
   };
 }
 
+const browserTokenStore = createBrowserTokenStore();
+
+/**
+ * Wipes the persisted token pair from localStorage. Account deletion must call
+ * this: clearing the in-memory session store leaves `kitchen_tokens` behind,
+ * so a deleted account's credentials would otherwise survive in browser
+ * storage. Inert during server rendering — the store's own `window` guard
+ * makes it SSR-safe.
+ */
+export function clearStoredTokens(): void {
+  browserTokenStore.set(null);
+}
+
 /**
  * Single typed client for the whole app. Points at `API_URL`, which the MSW
  * layer serves in dev and tests. Household-scoped routes read the acting
@@ -37,7 +50,7 @@ function createBrowserTokenStore(): TokenStore {
  */
 export const api = createApiClient({
   baseUrl: API_URL,
-  tokenStore: createBrowserTokenStore(),
+  tokenStore: browserTokenStore,
   getHouseholdId: () => useSession.getState().householdId,
   onAuthExpired: () => useSession.getState().clear(),
 });

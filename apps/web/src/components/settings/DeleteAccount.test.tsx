@@ -7,9 +7,13 @@ import { LocaleProvider } from '../../lib/locale';
 import { useSession } from '../../stores/session';
 import { DeleteAccount } from './DeleteAccount';
 
-const { call, replace } = vi.hoisted(() => ({ call: vi.fn(), replace: vi.fn() }));
+const { call, replace, clearStoredTokens } = vi.hoisted(() => ({
+  call: vi.fn(),
+  replace: vi.fn(),
+  clearStoredTokens: vi.fn(),
+}));
 
-vi.mock('../../lib/api', () => ({ api: { call } }));
+vi.mock('../../lib/api', () => ({ api: { call }, clearStoredTokens }));
 vi.mock('../../mocks/provider', () => ({ useMocksReady: () => true }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
 
@@ -102,6 +106,7 @@ describe('DeleteAccount', () => {
   beforeEach(() => {
     call.mockReset();
     replace.mockClear();
+    clearStoredTokens.mockClear();
     useSession.setState({ status: 'loading', user: null, householdId: null, householdIds: [] });
   });
 
@@ -156,6 +161,10 @@ describe('DeleteAccount', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).not.toContain('auth.');
     expect(alert.textContent).toMatch(/email or password/i);
+
+    // A failed deletion must not wipe credentials — the account still exists, so
+    // clearing its tokens would sign out a user who is still valid.
+    expect(clearStoredTokens).not.toHaveBeenCalled();
   });
 
   it('sends the password and, on success, clears the session and redirects to sign-in', async () => {
@@ -184,5 +193,10 @@ describe('DeleteAccount', () => {
     // localStorage); a cleared session is signalled by `user` returning to null.
     expect(useSession.getState().user).toBeNull();
     expect(useSession.getState().status).toBe('unauthenticated');
+
+    // The persisted token pair lives in localStorage, not the session store, so
+    // deletion must wipe it explicitly or a deleted account's credentials
+    // survive in the browser (App Store 5.1.1(v) / Play data-deletion policy).
+    expect(clearStoredTokens).toHaveBeenCalled();
   });
 });

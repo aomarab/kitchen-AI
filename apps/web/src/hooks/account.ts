@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { DeleteMeRequest } from '@kitchen/contracts';
-import { api } from '../lib/api';
+import { api, clearStoredTokens } from '../lib/api';
 import { useSession } from '../stores/session';
 import { useMocksReady } from '../mocks/provider';
 
@@ -35,10 +35,14 @@ export function useDeleteAccount() {
   return useMutation({
     mutationFn: (body: DeleteMeRequest) => api.call('deleteMe', { body }),
     onSuccess: () => {
-      // The account is gone; anything cached about it is now a lie. Locale and
-      // appearance are deliberately left alone — they are device preferences,
-      // and resetting them would flip an Arabic user to English mid-flow.
+      // The account is gone; anything cached about it is now a lie. The
+      // persisted token pair lives in localStorage, separate from the in-memory
+      // session store, so it must be wiped explicitly or a deleted account's
+      // credentials survive in the browser. Locale and appearance are
+      // deliberately left alone — they are device preferences, and resetting
+      // them would flip an Arabic user to English mid-flow.
       clearSession();
+      clearStoredTokens();
       queryClient.clear();
     },
   });
