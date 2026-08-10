@@ -28,52 +28,14 @@ describe('typography', () => {
   });
 });
 
-describe('typography under font scaling', () => {
-  it('is unchanged at the default scale', () => {
-    // The regression guard for the entire device-compatibility change: a phone
-    // at the default text size must render exactly as it did before scaling
-    // existed. If this fails, the change is visible on every screen.
-    expect(typography('en', 1)).toEqual(typography('en'));
+describe('typography line height', () => {
+  it('leaves lineHeight unscaled, because React Native already scales it', () => {
+    // RN 0.86 scales an absolute lineHeight along with fontSize. Multiplying it by
+    // the font scale here would scale it twice: verified on the simulator at the
+    // maximum accessibility text size, where it pushed the whole sign-in form off
+    // screen. AppText caps growth with maxFontSizeMultiplier instead.
     expect(typography('en').body.lineHeight).toBe(Math.round(16 * 1.35));
     expect(typography('ar').body.lineHeight).toBe(Math.round(16 * 1.7));
-  });
-
-  it('grows the line box with the text', () => {
-    // React Native scales fontSize by the system font scale but does NOT scale
-    // an absolute lineHeight, so the line box must be pre-multiplied here or
-    // large text is clipped by a box sized for small text.
-    expect(typography('en', 2).body.lineHeight).toBe(Math.round(16 * 2 * 1.35));
-    expect(typography('en', 1.5).heading.lineHeight).toBe(Math.round(18 * 1.5 * 1.35));
-  });
-
-  it('caps chrome so pills and labels cannot explode', () => {
-    // iOS reaches ~3.1x at the largest accessibility sizes. A button label at
-    // 3.1x breaks every row in the app, so chrome stops at 1.6x.
-    expect(typography('en', 3.1).button.lineHeight).toBe(Math.round(16 * 1.6 * 1.35));
-    expect(typography('en', 3.1).label.lineHeight).toBe(Math.round(14 * 1.6 * 1.35));
-    expect(typography('en', 3.1).caption.lineHeight).toBe(Math.round(12 * 1.6 * 1.35));
-  });
-
-  it('leaves content uncapped so long-form text honours the setting fully', () => {
-    expect(typography('en', 3.1).body.lineHeight).toBe(Math.round(16 * 3.1 * 1.35));
-    expect(typography('en', 3.1).display.lineHeight).toBe(Math.round(28 * 3.1 * 1.35));
-  });
-
-  it('keeps the Arabic factor at every scale', () => {
-    expect(typography('ar', 2).body.lineHeight).toBe(Math.round(16 * 2 * 1.7));
-    expect(typography('ar', 2).body.lineHeight).toBeGreaterThan(
-      typography('en', 2).body.lineHeight,
-    );
-  });
-
-  it('never letter-spaces Arabic at any scale', () => {
-    for (const [variant, token] of Object.entries(typography('ar', 3.1))) {
-      expect(token.letterSpacing, variant).toBe(0);
-    }
-  });
-
-  it('shrinks the line box when the user reduces text size', () => {
-    expect(typography('en', 0.85).body.lineHeight).toBe(Math.round(16 * 0.85 * 1.35));
   });
 });
 

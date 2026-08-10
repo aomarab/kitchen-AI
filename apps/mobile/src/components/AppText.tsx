@@ -1,4 +1,4 @@
-import { Text, useWindowDimensions, type TextProps, type TextStyle } from 'react-native';
+import { Text, type TextProps, type TextStyle } from 'react-native';
 import {
   colors,
   maxFontScaleFor,
@@ -30,9 +30,8 @@ export function AppText({
   ...rest
 }: AppTextProps) {
   const { locale } = useLocale();
-  const { fontScale } = useWindowDimensions();
   const fontsLoaded = useFontStore((state) => state.loaded);
-  const token = typography(locale, fontScale)[variant]!;
+  const token = typography(locale)[variant]!;
   const resolvedColor = color ? colors[color] : muted ? colors.textMuted : colors.text;
   const fontFamily = resolveFontFamily(locale, fontsLoaded, token.fontWeight);
   const base: TextStyle = {

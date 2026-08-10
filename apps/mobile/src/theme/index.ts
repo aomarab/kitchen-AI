@@ -140,23 +140,16 @@ export function maxFontScaleFor(variant: TypographyVariant): number | undefined 
   return CHROME_VARIANTS.includes(variant) ? CHROME_MAX_FONT_SCALE : undefined;
 }
 
-export function typography(
-  locale: Locale,
-  fontScale = 1,
-): Record<TypographyVariant, TextStyleToken> {
+export function typography(locale: Locale): Record<TypographyVariant, TextStyleToken> {
   const isArabic = locale === 'ar';
   const factor = isArabic ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;
   const out = {} as Record<TypographyVariant, TextStyleToken>;
   for (const key of Object.keys(SCALE) as TypographyVariant[]) {
     const entry = SCALE[key]!;
-    const cap = maxFontScaleFor(key);
-    // React Native scales `fontSize` itself, but not an absolute `lineHeight`,
-    // so the line box is pre-multiplied by the same scale the text will get.
-    const effectiveScale = Math.min(fontScale, cap ?? fontScale);
     out[key] = {
       fontSize: entry.fontSize,
       fontWeight: entry.fontWeight,
-      lineHeight: Math.round(entry.fontSize * effectiveScale * factor),
+      lineHeight: Math.round(entry.fontSize * factor),
       letterSpacing: isArabic ? 0 : entry.letterSpacing,
     };
   }
