@@ -1,5 +1,11 @@
-import { Text, type TextProps, type TextStyle } from 'react-native';
-import { colors, typography, type ColorToken, type TypographyVariant } from '../theme';
+import { Text, useWindowDimensions, type TextProps, type TextStyle } from 'react-native';
+import {
+  colors,
+  maxFontScaleFor,
+  typography,
+  type ColorToken,
+  type TypographyVariant,
+} from '../theme';
 import { useLocale } from '../lib/locale';
 import { resolveFontFamily, useFontStore } from '../lib/fonts';
 
@@ -24,8 +30,9 @@ export function AppText({
   ...rest
 }: AppTextProps) {
   const { locale } = useLocale();
+  const { fontScale } = useWindowDimensions();
   const fontsLoaded = useFontStore((state) => state.loaded);
-  const token = typography(locale)[variant]!;
+  const token = typography(locale, fontScale)[variant]!;
   const resolvedColor = color ? colors[color] : muted ? colors.textMuted : colors.text;
   const fontFamily = resolveFontFamily(locale, fontsLoaded, token.fontWeight);
   const base: TextStyle = {
@@ -39,5 +46,5 @@ export function AppText({
     ...(fontFamily ? null : { fontWeight: token.fontWeight }),
     ...(center ? { textAlign: 'center' } : null),
   };
-  return <Text style={[base, style]} {...rest} />;
+  return <Text style={[base, style]} maxFontSizeMultiplier={maxFontScaleFor(variant)} {...rest} />;
 }
