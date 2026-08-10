@@ -115,7 +115,7 @@ export const RECIPES: RecipeSeed[] = [
       { ref: 'salt', quantity: 8, unit: 'g' },
     ],
     videos: [
-      { youtubeId: 'dQw4w9WgXcQ', en: 'The Best Chicken Kabsa', ar: 'أفضل كبسة دجاج', channel: 'Gulf Kitchen', durationSeconds: 742 },
+      { youtubeId: 'Xtspw022mb4', en: 'The Best Chicken Kabsa', ar: 'أفضل كبسة دجاج', channel: 'The White Plate', durationSeconds: 742 },
     ],
   },
   {
@@ -159,7 +159,7 @@ export const RECIPES: RecipeSeed[] = [
       { ref: 'salt', quantity: 4, unit: 'g' },
     ],
     videos: [
-      { youtubeId: 'oHg5SJYRHA0', en: 'Easy Shakshuka in 20 Minutes', ar: 'شكشوكة سهلة في 20 دقيقة', channel: 'Levant Eats', durationSeconds: 388 },
+      { youtubeId: 'FUXpoUG_cXk', en: 'Easy Shakshuka in 20 Minutes', ar: 'شكشوكة سهلة في 20 دقيقة', channel: 'The Cooking Foodie', durationSeconds: 388 },
     ],
   },
   {
@@ -200,7 +200,7 @@ export const RECIPES: RecipeSeed[] = [
       { ref: 'salt', quantity: 5, unit: 'g' },
     ],
     videos: [
-      { youtubeId: 'kJQP7kiw5Fk', en: 'Classic Red Lentil Soup', ar: 'شوربة عدس أحمر كلاسيكية', channel: 'Home Cooking', durationSeconds: 275 },
+      { youtubeId: 'xGEr3FPUJ84', en: 'Classic Red Lentil Soup', ar: 'شوربة عدس أحمر كلاسيكية', channel: 'Nico\'s Recipes', durationSeconds: 275 },
     ],
   },
   {
@@ -240,7 +240,7 @@ export const RECIPES: RecipeSeed[] = [
       { ref: 'salt', quantity: 4, unit: 'g' },
     ],
     videos: [
-      { youtubeId: 'e-ORhEE9VVg', en: 'Smoothest Hummus at Home', ar: 'أنعم حمص في البيت', channel: 'Mezze Master', durationSeconds: 402 },
+      { youtubeId: 'GbxnB53IExY', en: 'Smoothest Hummus at Home', ar: 'أنعم حمص في البيت', channel: 'Downshiftology', durationSeconds: 402 },
     ],
   },
   {
@@ -284,7 +284,7 @@ export const RECIPES: RecipeSeed[] = [
       { ref: 'salt', quantity: 6, unit: 'g' },
     ],
     videos: [
-      { youtubeId: 'fLexgOxsZu0', en: 'Baked Eggplant Moussaka', ar: 'مسقعة باذنجان بالفرن', channel: 'Cairo Table', durationSeconds: 515 },
+      { youtubeId: 'XXxJbivD3k0', en: 'Baked Eggplant Moussaka', ar: 'مسقعة باذنجان بالفرن', channel: 'The Mediterranean Dish', durationSeconds: 515 },
     ],
   },
   {
@@ -324,7 +324,7 @@ export const RECIPES: RecipeSeed[] = [
       { ref: 'pepper', quantity: 2, unit: 'g' },
     ],
     videos: [
-      { youtubeId: '9bZkp7q19f0', en: 'Fluffy Potato Frittata', ar: 'عجة بطاطس هشة', channel: 'Brunch Club', durationSeconds: 331 },
+      { youtubeId: 'UaRsVKsc7qA', en: 'Fluffy Potato Frittata', ar: 'عجة بطاطس هشة', channel: 'SoDelicious', durationSeconds: 331 },
     ],
   },
 ];

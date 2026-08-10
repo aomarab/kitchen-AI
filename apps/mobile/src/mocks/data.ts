@@ -265,7 +265,7 @@ const RECIPE_DEFS: RecipeDef[] = [
     prepMinutes: 15,
     cookMinutes: 35,
     servings: 4,
-    heroImageUrl: 'https://images.kitchenai.dev/recipes/chicken-rice.jpg',
+    heroImageUrl: 'https://i.ytimg.com/vi/Xtspw022mb4/hqdefault.jpg',
     nutrition: { calories: 540, proteinG: 38, carbsG: 60, fatG: 14, fiberG: 3 },
     title: { en: 'Chicken & Rice', ar: 'دجاج بالأرز' },
     description: {
@@ -302,9 +302,9 @@ const RECIPE_DEFS: RecipeDef[] = [
     ],
     videos: [
       {
-        youtubeId: 'dQw4w9WgXcQ',
+        youtubeId: 'Xtspw022mb4',
         title: 'One-Pot Chicken and Rice',
-        channel: 'Kitchen Basics',
+        channel: 'The White Plate',
         thumbnailUrl: 'https://images.kitchenai.dev/videos/chicken-rice-1.jpg',
         durationSeconds: 612,
         locale: 'en',
@@ -326,7 +326,7 @@ const RECIPE_DEFS: RecipeDef[] = [
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 3,
-    heroImageUrl: 'https://images.kitchenai.dev/recipes/shakshuka.jpg',
+    heroImageUrl: 'https://i.ytimg.com/vi/FUXpoUG_cXk/hqdefault.jpg',
     nutrition: { calories: 320, proteinG: 18, carbsG: 16, fatG: 20, fiberG: 4 },
     title: { en: 'Shakshuka', ar: 'شكشوكة' },
     description: {
@@ -376,7 +376,7 @@ const RECIPE_DEFS: RecipeDef[] = [
     prepMinutes: 15,
     cookMinutes: 40,
     servings: 4,
-    heroImageUrl: 'https://images.kitchenai.dev/recipes/lemon-potatoes.jpg',
+    heroImageUrl: 'https://i.ytimg.com/vi/Xq5R-BXXsfQ/hqdefault.jpg',
     nutrition: { calories: 280, proteinG: 6, carbsG: 44, fatG: 10, fiberG: 5 },
     title: { en: 'Lemon Herb Potatoes', ar: 'بطاطس بالليمون والأعشاب' },
     description: {

@@ -95,8 +95,14 @@ interface DbShape {
 
 export const db = {} as DbShape;
 
-function heroFor(seed: RecipeSeed): string {
-  return `https://picsum.photos/seed/kitchen-${seed.heroSeed}/1200/800`;
+/**
+ * The hero is the recipe's own top video thumbnail — the same rule the real
+ * pipeline uses, so mock mode and production cannot drift. Recipes with no
+ * video return null and exercise the placeholder.
+ */
+function heroFor(seed: RecipeSeed): string | null {
+  const first = seed.videos[0];
+  return first ? `https://i.ytimg.com/vi/${first.youtubeId}/hqdefault.jpg` : null;
 }
 
 function projectVideos(seed: RecipeSeed, locale: Locale): RecipeVideo[] {

@@ -11,7 +11,7 @@ export class MockYoutubeClient implements YoutubeClient {
   async search(query: string, locale: Locale, max = 3): Promise<YoutubeVideo[]> {
     const suffix = locale === 'ar' ? 'بالعربي' : 'Recipe';
     const channel = locale === 'ar' ? 'مطبخ' : 'Kitchen Channel';
-    const ids = ['dQw4w9WgXcQ', 'M7lc1UVf-VE', '9bZkp7q19f0'];
+    const ids = ['Xtspw022mb4', 'FUXpoUG_cXk', 'xGEr3FPUJ84'];
     const count = Math.min(max, 2);
     return Array.from({ length: count }, (_, i) => ({
       youtubeId: ids[i]!,
