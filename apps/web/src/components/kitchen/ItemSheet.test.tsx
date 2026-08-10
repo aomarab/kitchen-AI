@@ -126,13 +126,19 @@ describe('ItemSheet', () => {
   /**
    * A brand is a proper noun in whatever script it was registered in, so an
    * Arabic brand shown in the English UI (or the reverse) must resolve its own
-   * direction — otherwise punctuation and digits jump to the wrong end.
+   * direction — otherwise punctuation and digits jump to the wrong end. It is
+   * isolated rather than given `dir="auto"`, which would additionally flip the
+   * paragraph's alignment and strand the brand at the opposite edge from the
+   * name it sits under.
    */
-  it('renders a brand in its own direction, not the reader’s', () => {
+  it('isolates a brand’s direction without flipping its alignment', () => {
     renderSheet(makeItem('a', { brand: 'المراعي' }));
 
     const shown = screen.getByText('المراعي');
-    expect(shown).toHaveAttribute('dir', 'auto');
+    expect(shown.tagName).toBe('BDI');
+    expect(shown.closest('p')).not.toHaveAttribute('dir');
+    // The editable field is a different case: a text input should show the
+    // typed value in its own direction, alignment included.
     expect(screen.getByLabelText(/brand/i)).toHaveAttribute('dir', 'auto');
   });
 

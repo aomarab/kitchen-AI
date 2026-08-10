@@ -62,10 +62,14 @@ function ItemSheetBody({ item, onClose }: { item: InventoryItem; onClose: () => 
         <div>
           <h3 className="text-xl font-semibold tracking-heading-sm">{name}</h3>
           {item.brand ? (
-            // A brand is a proper noun in whatever script it was registered in,
-            // so it is not necessarily in the reader's direction.
-            <p className="mt-1 text-sm text-muted-foreground" dir="auto">
-              {item.brand}
+            // A brand is a proper noun in whatever script it was registered in.
+            // `<bdi>` isolates its direction so a Latin brand reads correctly
+            // inside Arabic prose, while alignment stays with the surrounding
+            // block — `dir="auto"` here would also flip the paragraph's
+            // alignment, stranding the brand at the opposite edge from the name
+            // it describes.
+            <p className="mt-1 text-sm text-muted-foreground">
+              <bdi>{item.brand}</bdi>
             </p>
           ) : null}
           <div className="mt-2 flex flex-wrap gap-2">
