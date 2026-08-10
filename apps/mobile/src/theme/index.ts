@@ -8,39 +8,79 @@ import type { Locale } from '@kitchen/i18n';
  */
 
 export const colors = {
-  bg: '#F5F4F1',
+  /** Sampled from the Meal Planner UI Kit. Its signature is a lavender ground
+   *  with white cards floating on it, rather than white-on-white. */
+  bg: '#ECE3FD',
   surface: '#FFFFFF',
-  /** The warm sand band from the reference. Darkest surface, so it sets the
-   *  contrast floor for every foreground token below. */
-  surfaceAlt: '#F0E6DA',
-  border: '#E3E0D9',
-  text: '#12172B',
-  textMuted: '#5A6072',
+  surfaceAlt: '#F6F0FE',
+  border: '#D9C9F5',
+  /** The kit sets body copy in pure black. Carrying a little of the violet
+   *  into it keeps the screen feeling like one family. */
+  text: '#1B1130',
+  textMuted: '#584D75',
   textInverse: '#FFFFFF',
-  /** The reference's action colour is the near-black navy of the FAB. */
-  primary: '#141A31',
-  primaryPressed: '#252C4A',
-  primarySoft: '#E8E9EE',
-  // Cook mode inverts the screen, and #141A31 on itself is 1:1 — the CTA fill
-  // vanishes entirely. This light teal measures 10.16:1 on surfaceInverse both
-  // as a ghost label and as a fill carrying a dark label (10.50:1).
-  primaryInverse: '#6FD7DB',
-  /** Teal is the one chromatic accent. Mobile's `accent` is used as *text*, so
-   *  it is the 4.5:1 weight; the vivid #17B3B9 from the shot is 2.5:1 on white
-   *  and would fail on every surface. */
-  accent: '#0E6E71',
-  accentSoft: '#E2F3F4',
-  warn: '#8A4A0A',
-  warnSoft: '#FAEDDD',
-  danger: '#B33230',
-  dangerSoft: '#FBE9E8',
+  /** The kit's violet, verbatim: measured at 90% of the CTA fill's interior
+   *  pixels, so this is the real value and not an antialiased edge. */
+  primary: '#814BE3',
+  primaryPressed: '#6229C4',
+  primarySoft: '#F4EDFE',
+  /** Cook mode inverts, where `primary` sits at 1.2:1 and the fill vanishes. */
+  primaryInverse: '#D6C2FF',
+  /** The kit's chart/chat blue is #3478F7, which is 3.1:1 on white and fails
+   *  AA as text. Darkened until it passes while staying the same blue. */
+  accent: '#2F5FD0',
+  accentSoft: '#E7EEFD',
+  /** The kit's amber #F6C855 is a chart fill, far too light to set text in. */
+  warn: '#845309',
+  warnSoft: '#FCF0D9',
+  danger: '#B32F51',
+  dangerSoft: '#FDECF0',
   success: '#1E7A4C',
-  successSoft: '#E3F2E8',
+  successSoft: '#E4F3EA',
   /** Cook mode runs inverted. Named so the intent survives a palette change. */
-  surfaceInverse: '#141A31',
-  textInverseMuted: '#A9AFC2',
-  overlay: 'rgba(20,26,49,0.45)',
+  surfaceInverse: '#1E1236',
+  textInverseMuted: '#B9A9D9',
+  overlay: 'rgba(27,17,48,0.45)',
 } as const;
+
+/**
+ * The reference fills cards with low-saturation tints rather than white, and
+ * rotates through them down a list. Each tint carries its own foreground so a
+ * caller never has to guess which text colour clears AA on it — `palette.spec`
+ * asserts every pair. Solid colours, never an opacity tint: a translucent fill
+ * composites against whatever is behind it and the contrast maths stops holding.
+ */
+export const tints = [
+  { bg: '#DED0FA', fg: '#5B21B6', name: 'lavender' },
+  { bg: '#E6F5EE', fg: '#166B48', name: 'mint' },
+  { bg: '#FCE9F1', fg: '#9C2A5C', name: 'blush' },
+  { bg: '#DCE8FA', fg: '#1F4FA8', name: 'sky' },
+] as const;
+
+export type Tint = (typeof tints)[number];
+
+/**
+ * The hero gradient, deep violet running up toward the brand violet. Every
+ * stop — and every colour interpolated between them — stays dark enough that
+ * `textInverse`, `textInverseMuted` and `primaryInverse` all clear AA on it;
+ * the worst interpolated point measures 4.58:1.
+ *
+ * Ending on the kit's own #814BE3 is the tempting move and it does not work:
+ * that violet is light enough to drop `primaryInverse` to 2.79:1, so the ghost
+ * button's label on the hero would fail. The ramp stops at #5320A6, the
+ * lightest violet that still carries all three. `palette.spec` samples the
+ * interpolation rather than the three stops, because a gradient's midpoint can
+ * be lighter than either end it was mixed from.
+ */
+export const gradientHero = ['#2E1065', '#3F1C87', '#5320A6'] as const;
+
+/** Rotates the tints down a list so adjacent cards never repeat. Negative
+ *  indices wrap forwards rather than falling off the front of the tuple. */
+export function tintFor(index: number): Tint {
+  const count = tints.length;
+  const wrapped = ((Math.trunc(index) % count) + count) % count;
+  return tints[wrapped] ?? tints[0];
+}
 
 export type ColorToken = keyof typeof colors;
 
@@ -72,15 +112,15 @@ export const radius = {
  */
 export const shadow = {
   card: {
-    shadowColor: '#141A31',
-    shadowOpacity: 0.08,
+    shadowColor: '#1B1130',
+    shadowOpacity: 0.06,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
   },
   raised: {
-    shadowColor: '#141A31',
-    shadowOpacity: 0.14,
+    shadowColor: '#1B1130',
+    shadowOpacity: 0.12,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 12 },
     elevation: 8,

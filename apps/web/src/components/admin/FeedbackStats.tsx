@@ -19,11 +19,13 @@ export function FeedbackStats({ stats }: { stats: Stats }) {
       </Card>
       <Card className="p-4">
         <p className="text-xs text-muted-foreground">{t('web.admin.average')}</p>
-        <p className="text-2xl font-semibold">
-          {stats.averageRating === null
-            ? t('web.admin.noAverage')
-            : formatNumber(locale, stats.averageRating)}
-        </p>
+        {/* The empty state is a sentence, not a number: rendering it at the
+            metric size wraps it over three lines and stretches the whole row. */}
+        {stats.averageRating === null ? (
+          <p className="pt-1 text-sm text-muted-foreground">{t('web.admin.noAverage')}</p>
+        ) : (
+          <p className="text-2xl font-semibold">{formatNumber(locale, stats.averageRating)}</p>
+        )}
       </Card>
       {STATUSES.map((status) => (
         <Card key={status} className="p-4">

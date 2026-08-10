@@ -454,7 +454,101 @@ export function seed(): void {
 
   db.jobs = new Map();
   db.recognitions = new Map();
-  db.feedback = [];
+  db.feedback = seedFeedback();
+}
+
+/**
+ * The admin console is reachable by URL only and mock state does not survive a
+ * reload, so an empty seed left it permanently empty in mock mode — every
+ * filter, the detail view and the triage flow were unreachable without first
+ * submitting in the same page session. This spread covers all four statuses,
+ * both locales, all three platforms and the no-message case, so the list,
+ * filters and stats all have something to show.
+ */
+function seedFeedback(): FeedbackDetail[] {
+  const submitter = {
+    id: USER_ID,
+    email: 'chef@example.com',
+    displayName: 'Amira',
+    locale: 'en' as const,
+    joinedAt: iso(NOW()),
+  };
+  const yusuf = {
+    id: '33333333-3333-4333-8333-333333333333',
+    email: 'yusuf@example.com',
+    displayName: 'Yusuf',
+    locale: 'ar' as const,
+    joinedAt: iso(NOW()),
+  };
+  const ago = (hours: number) => iso(new Date(NOW().getTime() - hours * 3_600_000));
+
+  return [
+    {
+      id: uuid(),
+      rating: 5,
+      message: 'Scanning a receipt and having the pantry fill itself is the whole app for me.',
+      platform: 'ios',
+      appVersion: '1.4.0',
+      locale: 'en',
+      status: 'new',
+      createdAt: ago(3),
+      adminNote: null,
+      reviewedAt: null,
+      submitter,
+    },
+    {
+      id: uuid(),
+      rating: 2,
+      message: 'تواريخ الانتهاء صعبة التعديل على الهاتف، وأحتاج لتغييرها كثيرًا.',
+      platform: 'android',
+      appVersion: '1.4.0',
+      locale: 'ar',
+      status: 'triaged',
+      createdAt: ago(28),
+      adminNote: 'Reproduced on a small screen — the stepper targets are too tight.',
+      reviewedAt: ago(20),
+      submitter: yusuf,
+    },
+    {
+      id: uuid(),
+      rating: 4,
+      message: 'Weekly plans are great. I would like to exclude a recipe I have just cooked.',
+      platform: 'web',
+      appVersion: '1.3.2',
+      locale: 'en',
+      status: 'resolved',
+      createdAt: ago(74),
+      adminNote: 'Shipped in 1.4 — recently-cooked recipes are now deprioritised.',
+      reviewedAt: ago(50),
+      submitter,
+    },
+    {
+      id: uuid(),
+      rating: 1,
+      message: 'Please add a barcode scanner for every product sold in the world.',
+      platform: 'ios',
+      appVersion: '1.2.0',
+      locale: 'en',
+      status: 'wont_fix',
+      createdAt: ago(120),
+      adminNote: 'Out of scope — we cover Open Food Facts and fall back to manual entry.',
+      reviewedAt: ago(96),
+      submitter: yusuf,
+    },
+    {
+      id: uuid(),
+      rating: 3,
+      message: null,
+      platform: 'web',
+      appVersion: '1.4.0',
+      locale: 'en',
+      status: 'new',
+      createdAt: ago(9),
+      adminNote: null,
+      reviewedAt: null,
+      submitter,
+    },
+  ];
 }
 
 function buildWeeklyPlan(): InternalPlan {

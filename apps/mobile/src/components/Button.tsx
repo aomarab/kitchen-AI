@@ -31,7 +31,7 @@ const FG: Record<ButtonVariant, string> = {
   secondary: colors.text,
   ghost: colors.primary,
   danger: colors.textInverse,
-  // The lifted aubergine is light, so its label is dark: 7.72:1.
+  // The lifted violet is light, so its label is dark.
   primaryInverse: colors.text,
   ghostInverse: colors.primaryInverse,
 };

@@ -48,7 +48,8 @@ export function FeedbackDetail({ id }: { id: string }) {
           </span>
         </CardHeader>
 
-        <p className="whitespace-pre-wrap text-sm text-foreground">
+        {/* The reader's direction is not the author's — see FeedbackList. */}
+        <p dir="auto" className="whitespace-pre-wrap text-sm text-foreground">
           {item.message ?? t('web.admin.noMessage')}
         </p>
 
@@ -93,6 +94,7 @@ export function FeedbackDetail({ id }: { id: string }) {
             value={draftNote}
             onChange={(e) => setNote(e.target.value)}
             rows={4}
+            dir="auto"
             placeholder={t('web.admin.adminNotePlaceholder')}
             className="w-full rounded border border-border bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />

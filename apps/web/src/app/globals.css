@@ -1,57 +1,66 @@
 @import 'tailwindcss';
 
-/* Palette sampled pixel-by-pixel from the reference shot (fintech wallet /
-   sales tracker): near-black navy actions, a single teal accent, a warm sand
-   band and white cards on an off-white page. Every value below was checked
-   against palette.test.ts before it was written — nothing here is eyeballed.
-   Where the shot's colour could not carry text at 4.5:1 it was stepped down
-   the same hue (182°, sat .78) rather than swapped for a different colour. */
+/* Palette sampled pixel-by-pixel from the Meal Planner UI kit: a violet action
+   colour, a lavender page, white cards and a deep-violet hero band. Matches
+   apps/mobile/src/theme/index.ts so the two clients read as one product.
+   Every value below was checked against palette.test.ts before it was written
+   — nothing here is eyeballed. Where the kit's colour could not carry text at
+   4.5:1 it was stepped down the same hue rather than swapped for another. */
 :root {
-  --canvas: #f5f4f1;
-  /* The warm band behind the auth hero and page headers. This is the darkest
-     light surface, so it sets the floor for every foreground token. */
-  --canvas-tint: #f0e6da;
+  /* The kit's lavender ground, used verbatim. */
+  --canvas: #ece3fd;
+  /* The band behind the auth hero and page headers. This is the darkest light
+     surface, so it sets the floor for every foreground token. */
+  --canvas-tint: #ded0fa;
   --background: #ffffff;
-  --foreground: #12172b;
-  --muted: #efeeea;
-  --muted-foreground: #5a6072;
-  --border: #e3e0d9;
-  /* The shot's action colour is the near-black navy of the FAB, not a blue. */
-  --primary: #141a31;
-  --primary-press: #252c4a;
+  --foreground: #1b1130;
+  /* Deeper and greyer than the page. A paler lavender lands ~9 RGB units from
+     --canvas and a `bg-muted` chip stops reading as a chip; a purer one lands
+     ~11 from --canvas-tint, which is the secondary button's rest state, so its
+     hover stops registering. This value clears --canvas, --canvas-tint,
+     --background and --primary-soft. Contrast cannot see any of that — see the
+     separation test. */
+  --muted: #e5d5ee;
+  --muted-foreground: #584d75;
+  --border: #d9c9f5;
+  /* The kit's action violet, used verbatim. */
+  --primary: #814be3;
+  --primary-press: #6229c4;
   --primary-foreground: #ffffff;
-  --primary-soft: #e8e9ee;
-  --primary-text: #141a31;
+  --primary-soft: #f4edfe;
+  /* --primary is a fill: as a word it is 4.11:1 on white, so prose steps to
+     the pressed violet, which clears 4.5:1 on white, canvas and the tint. */
+  --primary-text: #6229c4;
 
-  /* Teal is the shot's one chromatic accent (gauge arc, chart bars). It exists
-     at two weights because the vivid #17b3b9 is 2.54:1 on white — fine as a
-     large graphic, unusable as a control or as text. --accent is the lightest
-     teal that still clears 3:1 on white, canvas *and* the sand band (3.29:1);
-     --accent-text steps darker to clear 4.5:1 on all four. Use --accent for
-     fills, icons, focus rings and chart series; --accent-text for words. */
-  --accent: #128c91;
-  --accent-soft: #e2f3f4;
-  --accent-text: #0e6e71;
-  --link: #0e6e71;
+  /* The kit's secondary accent is the blue of its charts and chat bubbles,
+     #3478f7 — 3.1:1 on white, so usable as a graphic but not as a control or
+     a word. --accent is the fill/icon/focus weight and only clears the 3:1
+     bar; --accent-text steps darker to clear 4.5:1 on every surface. */
+  --accent: #2f5fd0;
+  --accent-soft: #e7eefd;
+  --accent-text: #2a53b8;
+  --link: #2a53b8;
 
   --success: #1e7a4c;
-  --success-soft: #e3f2e8;
-  --warning: #8a4a0a;
-  --warning-soft: #faeddd;
-  --danger: #b33230;
-  --danger-soft: #fbe9e8;
+  --success-soft: #e4f3ea;
+  /* The kit's amber #f6c855 is a chart fill — 1.7:1 on white. Warning text
+     takes the same hue at a legible weight. */
+  --warning: #845309;
+  --warning-soft: #fcf0d9;
+  --danger: #b32f51;
+  --danger-soft: #fdecf0;
   --danger-foreground: #ffffff;
 
-  /* The auth hero band. White sheet on the same near-black navy the primary
-     action uses. Mobile carries the pair as surfaceInverse/textInverse. */
-  --inverse: #141a31;
+  /* The auth hero band, matching mobile's gradient origin. Mobile carries the
+     pair as surfaceInverse/textInverse. */
+  --inverse: #2e1065;
   --inverse-foreground: #ffffff;
-  --inverse-muted: #a9afc2;
+  --inverse-muted: #b9a9d9;
 
   /* Depth in the reference comes from soft diffused shadow, not borders. Two
      layers: a tight contact shadow plus a wide ambient one. */
-  --shadow-card: 0 1px 2px rgb(20 26 49 / 0.04), 0 8px 24px rgb(20 26 49 / 0.06);
-  --shadow-raised: 0 2px 4px rgb(20 26 49 / 0.06), 0 16px 40px rgb(20 26 49 / 0.1);
+  --shadow-card: 0 1px 2px rgb(27 17 48 / 0.04), 0 8px 24px rgb(27 17 48 / 0.06);
+  --shadow-raised: 0 2px 4px rgb(27 17 48 / 0.06), 0 16px 40px rgb(27 17 48 / 0.1);
 
   /* Latin letter-spacing. Arabic is cursive — letter-spacing forces gaps into
      the joins — so :root:lang(ar) resets each of these to zero and every
@@ -67,27 +76,28 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #0c1020;
+    --canvas: #120b24;
     /* Same as --canvas on purpose: a lifted canvas puts the card at ~1.1:1 and
-       the card disappears. The warm tint is a light-mode device. */
-    --canvas-tint: #0c1020;
-    --background: #151b2e;
-    --foreground: #e9ecf5;
-    --muted: #1f2740;
-    --muted-foreground: #a2aabf;
-    --border: #2e3655;
-    /* Light mode's near-black navy is invisible on a navy canvas, so dark mode
-       promotes the teal accent to the action colour and carries a dark label. */
-    --primary: #5fd3d8;
-    --primary-press: #4bc2c8;
-    --primary-foreground: #0c1020;
-    --primary-soft: #1e3340;
-    --primary-text: #7fe0e4;
+       the card disappears. The tint band is a light-mode device. */
+    --canvas-tint: #120b24;
+    --background: #1d1435;
+    --foreground: #efeaf8;
+    --muted: #2a1f47;
+    --muted-foreground: #b0a6c8;
+    --border: #3a2c5c;
+    /* The kit's #814be3 is 2.6:1 on this canvas — an action nobody can find.
+       Dark mode lifts the same hue until it clears the bar and carries a dark
+       label, exactly as the light mode's violet carries a white one. */
+    --primary: #c4a6ff;
+    --primary-press: #b18ef7;
+    --primary-foreground: #120b24;
+    --primary-soft: #33245c;
+    --primary-text: #d6c2ff;
 
-    --accent: #5fd3d8;
-    --accent-soft: #1e3340;
-    --accent-text: #7fe0e4;
-    --link: #7fe0e4;
+    --accent: #8fb4ff;
+    --accent-soft: #22305a;
+    --accent-text: #a8c6ff;
+    --link: #a8c6ff;
 
     --success: #3dd68c;
     --success-soft: #123528;
@@ -96,14 +106,14 @@
     --danger: #f87171;
     --danger-soft: #42222a;
     /* White on this salmon is 2.77:1, so destructive labels go dark. */
-    --danger-foreground: #0c1020;
+    --danger-foreground: #120b24;
 
     /* Same as --canvas, for the reason --canvas-tint is: on any dark band the
        card measures ~1.07:1 and disappears. The hero band is a light-mode
        device; dark mode lets the card float, delineated by --border instead. */
-    --inverse: #0c1020;
-    --inverse-foreground: #e9ecf5;
-    --inverse-muted: #a2aabf;
+    --inverse: #120b24;
+    --inverse-foreground: #efeaf8;
+    --inverse-muted: #b0a6c8;
 
     /* Shadow does almost no work on a dark canvas; deepen it so the card still
        lifts rather than relying on a shadow that cannot be seen. */

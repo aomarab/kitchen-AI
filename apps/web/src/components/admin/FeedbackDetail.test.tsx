@@ -140,4 +140,20 @@ describe('FeedbackDetail', () => {
       }),
     );
   });
+
+  /**
+   * The console renders in the *reader's* direction, but feedback is written in
+   * whatever language the author chose. Without `dir="auto"` an English message
+   * read in the Arabic console has its full stop thrown to the left-hand end,
+   * and a mixed-script message reorders. The browser resolves this from the
+   * first strong character, so the only thing to guard is that we ask it to.
+   */
+  it('lets each message resolve its own direction', async () => {
+    call.mockResolvedValue(DETAIL);
+    renderDetail();
+
+    const message = await screen.findByText(DETAIL.message!);
+    expect(message).toHaveAttribute('dir', 'auto');
+    expect(screen.getByRole('textbox')).toHaveAttribute('dir', 'auto');
+  });
 });

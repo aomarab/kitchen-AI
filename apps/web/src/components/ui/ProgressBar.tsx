@@ -20,9 +20,9 @@ export function ProgressBar({
       aria-label={label}
       className={cn('h-2 w-full overflow-hidden rounded-full bg-muted', className)}
     >
-      {/* Teal is the reference's data-viz colour — the gauge and the chart bars.
-          A progress fill is a non-text component, so --accent (3.41:1 on white,
-          3.10:1 on canvas) is the correct weight rather than --accent-text. */}
+      {/* Blue is the kit's data-viz colour — its charts and chat bubbles. A
+          progress fill is a non-text component, so --accent (5.72:1 on white,
+          4.11:1 on the --muted track) is the correct weight, not --accent-text. */}
       <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
     </div>
   );

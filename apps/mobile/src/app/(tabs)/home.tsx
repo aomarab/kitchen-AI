@@ -1,13 +1,22 @@
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Screen, AppText, Card, Button, Badge, ListRow, LoadingState } from '../../components';
+import {
+  Screen,
+  AppText,
+  Card,
+  Button,
+  Badge,
+  ListRow,
+  LoadingState,
+  Icon,
+} from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { usePlans } from '../../hooks/plans';
 import { useInventory } from '../../hooks/inventory';
 import { ingredientName, formatExpiryLabel, formatMinutes } from '../../lib/format';
 import { todayISODate } from '../../lib/expiry';
-import { colors, radius, spacing } from '../../theme';
+import { colors, radius, spacing, tintFor } from '../../theme';
 
 function ProgressBar({ ratio }: { ratio: number }) {
   return (
@@ -53,14 +62,16 @@ export default function Home() {
     <Screen scroll refreshing={plansQuery.isRefetching} onRefresh={() => void plansQuery.refetch()}>
       <AppText variant="title">{t('mobile.home.greeting')}</AppText>
 
-      <Card tone="primary">
-        <AppText variant="label" color="primary">
+      <Card gradient>
+        <AppText variant="label" color="primaryInverse">
           {t('mobile.home.tonightTitle')}
         </AppText>
         {tonight ? (
           <>
-            <AppText variant="heading">{tonight.recipe.title}</AppText>
-            <AppText variant="caption" muted>
+            <AppText variant="heading" color="textInverse">
+              {tonight.recipe.title}
+            </AppText>
+            <AppText variant="caption" color="textInverseMuted">
               {t('recipe.cookTime', {
                 minutes: formatMinutes(locale, tonight.recipe.cookMinutes, prefs),
               })}
@@ -70,19 +81,20 @@ export default function Home() {
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
               <Button
                 title={t('mobile.home.viewRecipe')}
+                variant="primaryInverse"
                 onPress={() => router.push(`/recipe/${tonight.recipe.id}`)}
                 fullWidth={false}
               />
               <Button
                 title={t('mobile.home.cook')}
-                variant="secondary"
+                variant="ghostInverse"
                 onPress={() => router.push(`/recipe/${tonight.recipe.id}/cook`)}
                 fullWidth={false}
               />
             </View>
           </>
         ) : (
-          <AppText muted>{t('mobile.home.tonightEmpty')}</AppText>
+          <AppText color="textInverseMuted">{t('mobile.home.tonightEmpty')}</AppText>
         )}
       </Card>
 
@@ -103,9 +115,10 @@ export default function Home() {
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              {expiring.slice(0, 8).map((item) => (
+              {expiring.slice(0, 8).map((item, index) => (
                 <Card
                   key={item.id}
+                  tint={tintFor(index)}
                   onPress={() => router.push(`/item/${item.id}`)}
                   style={{ width: 150 }}
                 >
@@ -143,19 +156,19 @@ export default function Home() {
         <AppText variant="heading">{t('mobile.home.quickAdd')}</AppText>
         <ListRow
           title={t('capture.photo')}
-          leading={<AppText>{'\u{1F4F7}'}</AppText>}
+          leading={<Icon name="camera" size={22} color={colors.primary} />}
           showChevron
           onPress={() => router.push('/capture?method=photo')}
         />
         <ListRow
           title={t('capture.barcode')}
-          leading={<AppText>{'\u{1F4CA}'}</AppText>}
+          leading={<Icon name="barcode" size={22} color={colors.primary} />}
           showChevron
           onPress={() => router.push('/capture?method=barcode')}
         />
         <ListRow
           title={t('capture.receipt')}
-          leading={<AppText>{'\u{1F9FE}'}</AppText>}
+          leading={<Icon name="receipt" size={22} color={colors.primary} />}
           showChevron
           onPress={() => router.push('/capture?method=receipt')}
         />
