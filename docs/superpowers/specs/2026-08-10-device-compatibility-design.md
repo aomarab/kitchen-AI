@@ -20,6 +20,13 @@ The app also contains no `useWindowDimensions`, no `Dimensions`, and no
 font-scale caps, so there is currently no mechanism by which any layout can
 respond to the size of the screen it is on.
 
+Defect #2 already has a live instance beyond the shared theme.
+`src/app/recipe/[id]/cook.tsx:64` hard-codes `fontSize: 30, lineHeight: 44` on
+the cook-mode step text, bypassing the type scale entirely: at 2× Dynamic Type
+React Native renders 60pt glyphs inside a 44pt line box. Cook mode is read at
+arm's length with busy hands, which makes it the worst screen in the app to
+carry unscalable text.
+
 Two things are already correct and are load-bearing for this design: `Screen`
 applies safe-area insets through `SafeAreaView`, and `AppText` is the only text
 primitive in the app. Every typography fix therefore lands in one file.
@@ -146,10 +153,14 @@ home indicator once an iPad can rotate.
 
 `QuantityStepper` moves from a fixed `40×40` to `44×44`.
 
-`Screen` wraps its content in a `KeyboardAvoidingView` configured per platform
-(`padding` on iOS, `height` on Android). This is the one change with a genuine
-interaction risk — combined carelessly with `SafeAreaView` it double-pads — so
-it carries a mandatory visual check on the shortest supported device.
+`Screen` wraps its content in a `KeyboardAvoidingView` using `padding`
+behaviour on iOS and **no** behaviour on Android. Expo defaults
+`android.softwareKeyboardLayoutMode` to `"resize"`, so Android already shrinks
+the window for the keyboard; setting a behaviour on top of that double-adjusts
+and pushes content off-screen. This is the one change with a genuine
+interaction risk — combined carelessly with `SafeAreaView` it double-pads on
+iOS too — so it carries a mandatory visual check on the shortest supported
+device.
 
 ## 5. Testing
 
@@ -211,7 +222,7 @@ done:
 
 | Device | Text size | Locales |
 | ------ | --------- | ------- |
-| iPhone SE (smallest) | default, largest | en, ar |
+| iPhone 17e (smallest available) | default, largest | en, ar |
 | iPhone 17 Pro Max | default, largest | en, ar |
 | iPad | default, largest | en, ar |
 
@@ -220,11 +231,22 @@ centers rather than stretching.
 
 ### 5.4 Existing tests
 
-`src/theme/typography.spec.ts` calls `typography(locale)` and must be updated
-for the new signature. Its existing assertions — Latin tracking present,
-Arabic tracking zero — are preserved, not relaxed. The same applies to
-`theme/palette.spec.ts` and the web token guards, which this work does not
-touch.
+`src/theme/typography.spec.ts` calls `typography(locale)` with one argument.
+Because `fontScale` carries a default of `1`, those calls keep compiling and
+keep returning identical values, so the file needs **no** change — and leaving
+it untouched is stronger evidence that the parameter is additive than editing
+it would be. Its assertions — Latin tracking present, Arabic tracking zero —
+are preserved, not relaxed. The same applies to `theme/palette.spec.ts` and the
+web token guards, which this work does not touch.
+
+### 5.5 A gap the tests cannot close
+
+The pure functions are tested and `Screen` consumes them, but no mobile test
+can observe that `Screen` is actually wired to `contentMaxWidth` — hard-coding
+the cap leaves every unit test green. That gap is why §5.3 is part of the
+definition of done rather than a nicety, and it is the same class of gap that
+let a spec file ship inside the app bundle earlier in this project: green
+suite, broken app.
 
 ## 6. Risks
 
