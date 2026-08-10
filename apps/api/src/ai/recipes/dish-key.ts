@@ -21,8 +21,8 @@ export const GENERIC_TOKENS: ReadonlySet<string> = new Set([
   'a', 'an', 'the', 'and', 'with', 'to', 'for', 'in', 'of',
   'recipe', 'recipes', 'easy', 'quick', 'best', 'homemade', 'how', 'make',
   'style', 'authentic', 'traditional', 'perfect', 'simple', 'classic',
-  'ال', 'مع', 'في', 'من', 'على',
-  'وصفه', 'وصفات', 'طريقه', 'عمل', 'سهله', 'سهل', 'سريقه', 'سريع',
+  'ال', 'مع', 'في', 'من', 'علي',
+  'وصفه', 'وصفات', 'طريقه', 'عمل', 'سهله', 'سهل', 'سريعه', 'سريع',
   'الذ', 'افضل', 'بالبيت', 'منزلي', 'اصليه', 'تحضير',
 ]);
 

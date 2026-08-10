@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dishKey, normalizeTokens } from '../dish-key.js';
+import { dishKey, normalizeTokens, GENERIC_TOKENS } from '../dish-key.js';
 
 describe('dishKey', () => {
   it('lowercases and joins content tokens', () => {
@@ -46,5 +46,21 @@ describe('dishKey', () => {
 describe('normalizeTokens', () => {
   it('returns content tokens without generic words', () => {
     expect(normalizeTokens('The Best Chicken Kabsa Recipe').sort()).toEqual(['chicken', 'kabsa']);
+  });
+});
+
+describe('GENERIC_TOKENS invariant', () => {
+  it('every token is already in its folded form (folding is a no-op)', () => {
+    const unfolded: string[] = [];
+    for (const token of GENERIC_TOKENS) {
+      const result = normalizeTokens(token);
+      if (result.length > 0) {
+        unfolded.push(token);
+      }
+    }
+    if (unfolded.length > 0) {
+      expect.fail(`These tokens are not yet folded and survive normalizeTokens (generic filtering fails): ${unfolded.join(', ')}`);
+    }
+    expect(unfolded.length).toBe(0);
   });
 });
