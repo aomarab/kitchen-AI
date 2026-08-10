@@ -15,6 +15,13 @@
       "when": 1786312320661,
       "tag": "0001_little_stingray",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786356194589,
+      "tag": "0002_brown_greymalkin",
+      "breakpoints": true
     }
   ]
 }
