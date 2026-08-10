@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { contrast, readTokens, type Theme } from '../lib/contrast';
+import { channels, contrast, readTokens, type Theme } from '../lib/contrast';
 
 const CSS = readFileSync(fileURLToPath(new URL('./globals.css', import.meta.url)), 'utf8');
 
@@ -57,11 +57,11 @@ describe.each(['light', 'dark'] as const)('%s palette', (theme) => {
   });
 
   /**
-   * Teal ships at two weights because the reference's vivid #17b3b9 is 2.54:1
-   * on white — legible as a large graphic, not as a control or as a word.
-   * `--accent` is the fill/icon/focus weight and only has to clear the
-   * non-text bar; `--accent-text` carries prose. Guarding both stops the
-   * vivid value from creeping back in under either name.
+   * The accent ships at two weights because the kit's vivid blue #3478f7 is
+   * 3.1:1 on white — legible as a large graphic, not as a control or as a
+   * word. `--accent` is the fill/icon/focus weight and only has to clear the
+   * non-text bar; `--accent-text` carries prose. Guarding both stops the vivid
+   * value from creeping back in under either name.
    */
   it('--accent-text reads on every surface it can land on', () => {
     for (const bg of [...SURFACES[theme], 'accent-soft']) {
@@ -77,12 +77,76 @@ describe.each(['light', 'dark'] as const)('%s palette', (theme) => {
 
   /**
    * The auth hero inverts the screen, so it needs its own foreground pair —
-   * `--foreground` on it is 1.12:1 in light mode. Dark mode collapses the band
+   * `--foreground` on it is 1.15:1 in light mode. Dark mode collapses the band
    * into the canvas, and these two still have to read there.
    */
   it('the inverted hero band carries readable text', () => {
     expect(ratio('inverse-foreground', 'inverse'), 'title').toBeGreaterThanOrEqual(AA_TEXT);
     expect(ratio('inverse-muted', 'inverse'), 'subtitle').toBeGreaterThanOrEqual(AA_TEXT);
+  });
+});
+
+/**
+ * Contrast cannot see a surface that has collapsed into the one behind it: a
+ * chip filled with almost exactly `--canvas` still passes every text pair,
+ * because its foregrounds are unchanged — it simply stops reading as a chip.
+ * That is not hypothetical; it is how the mobile lavender tint shipped broken.
+ *
+ * Euclidean RGB distance is a coarse perceptibility proxy, but it is the right
+ * shape of check here: these surfaces separate by hue as much as by lightness,
+ * so a luminance rule would wrongly demand each one gets darker than the last.
+ *
+ * Only pairs that actually stack or transition are listed. Dark mode collapses
+ * --canvas-tint and --inverse into --canvas on purpose, so neither appears.
+ */
+describe.each(['light', 'dark'] as const)('%s surfaces stay distinguishable', (theme) => {
+  const tokens = readTokens(CSS, theme);
+  const MIN_DISTANCE = 12;
+
+  const PAIRS: Record<Theme, readonly (readonly [string, string, string])[]> = {
+    light: [
+      ['background', 'canvas', 'card on page'],
+      ['canvas-tint', 'canvas', 'hero band on page'],
+      ['muted', 'canvas', 'chip on page'],
+      ['muted', 'background', 'chip on card'],
+      ['muted', 'canvas-tint', 'secondary button hover on its rest state'],
+      ['muted', 'primary-soft', 'nav hover against nav active'],
+    ],
+    dark: [
+      ['background', 'canvas', 'card on page'],
+      ['muted', 'canvas', 'chip on page'],
+      ['muted', 'background', 'chip on card'],
+      ['muted', 'primary-soft', 'nav hover against nav active'],
+    ],
+  };
+
+  const distance = (a: string, b: string): number => {
+    const [x, y] = [channels(tokens[a]!), channels(tokens[b]!)];
+    return Math.hypot(...x.map((c, i) => c - y[i]!));
+  };
+
+  it.each(PAIRS[theme])('--%s separates from --%s (%s)', (a, b) => {
+    expect(distance(a, b), `--${a} vs --${b}`).toBeGreaterThanOrEqual(MIN_DISTANCE);
+  });
+});
+
+/**
+ * `viewport.themeColor` is serialised into a <meta> tag, so it cannot read a
+ * CSS variable and is the one place a palette hex is duplicated. It drifted
+ * unnoticed through a previous palette change — the light value named a blue
+ * that was not in the palette at all — because nothing compared the two.
+ */
+describe('browser chrome matches the palette', () => {
+  const LAYOUT = readFileSync(fileURLToPath(new URL('./layout.tsx', import.meta.url)), 'utf8');
+
+  const themeColor = (scheme: Theme): string => {
+    const match = new RegExp(`prefers-color-scheme: ${scheme}\\)', color: '(#[0-9a-f]{6})'`).exec(LAYOUT);
+    if (!match?.[1]) throw new Error(`no ${scheme} themeColor found in layout.tsx`);
+    return match[1];
+  };
+
+  it.each(['light', 'dark'] as const)('%s themeColor equals --canvas', (theme) => {
+    expect(themeColor(theme)).toBe(readTokens(CSS, theme)['canvas']);
   });
 });
 

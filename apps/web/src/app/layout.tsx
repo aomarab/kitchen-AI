@@ -25,9 +25,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Next serialises these into <meta>, which cannot read a CSS variable, so
+  // they are the one place a palette hex is duplicated. palette.test.ts pins
+  // them to --canvas in both themes; they had silently drifted before it did.
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#eef2f9' },
-    { media: '(prefers-color-scheme: dark)', color: '#0b1220' },
+    { media: '(prefers-color-scheme: light)', color: '#ece3fd' },
+    { media: '(prefers-color-scheme: dark)', color: '#120b24' },
   ],
 };
 
