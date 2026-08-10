@@ -27,7 +27,9 @@ export function FeedbackDetail({ id }: { id: string }) {
   const item = query.data;
   const draftStatus = status ?? item.status;
   const draftNote = note ?? item.adminNote ?? '';
-  const dirty = draftStatus !== item.status || draftNote !== (item.adminNote ?? '');
+  const statusDirty = draftStatus !== item.status;
+  const noteDirty = draftNote !== (item.adminNote ?? '');
+  const dirty = statusDirty || noteDirty;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
@@ -105,7 +107,16 @@ export function FeedbackDetail({ id }: { id: string }) {
         <div className="flex items-center gap-3">
           <Button
             disabled={!dirty || update.isPending}
-            onClick={() => update.mutate({ status: draftStatus, adminNote: draftNote })}
+            onClick={() =>
+              update.mutate({
+                ...(statusDirty ? { status: draftStatus } : {}),
+                // Only send a field the reviewer actually touched. The API
+                // writes any key that is not `undefined`, so sending the
+                // untouched note back as '' would overwrite a null note with
+                // an empty string — two different states in the schema.
+                ...(noteDirty ? { adminNote: draftNote.trim() === '' ? null : draftNote } : {}),
+              })
+            }
           >
             {t('web.admin.save')}
           </Button>

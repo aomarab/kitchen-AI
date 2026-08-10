@@ -62,4 +62,16 @@ describe('AdminGate', () => {
     expect(screen.queryByText('console')).not.toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
+
+  it('offers a retry on a transport failure instead of claiming no access', async () => {
+    call.mockRejectedValue(new Error('network down'));
+    renderGate();
+
+    // A timeout is not the server saying "not staff". Showing the forbidden
+    // copy here would strand a legitimate admin on a dead end.
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.queryByText(/access/i)).not.toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
 });

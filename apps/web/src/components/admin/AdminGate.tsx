@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ApiError } from '@kitchen/api-client';
 import { useLocale } from '../../lib/locale';
 import { useFeedbackStats } from '../../hooks/admin';
-import { Spinner } from '../ui/states';
+import { ErrorState, Spinner } from '../ui/states';
 
 /**
  * Not a security boundary — `StaffGuard` on the API is. This only decides what
@@ -16,6 +16,11 @@ export function AdminGate({ children }: { children: ReactNode }) {
   const { t } = useLocale();
   const probe = useFeedbackStats();
   const error = probe.error;
+  // A transport failure is not an answer. Only the server saying FORBIDDEN
+  // means "not staff"; a timeout or a 500 must stay retryable, or a blip
+  // becomes an unrecoverable access-denied screen.
+  const denied =
+    error instanceof ApiError && (error.code === 'FORBIDDEN' || error.code === 'UNAUTHENTICATED');
 
   useEffect(() => {
     if (!(error instanceof ApiError)) return;
@@ -24,6 +29,14 @@ export function AdminGate({ children }: { children: ReactNode }) {
   }, [error, router]);
 
   if (probe.isSuccess) return <>{children}</>;
+
+  if (probe.isError && !denied) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <ErrorState error={error} onRetry={() => void probe.refetch()} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center gap-3 text-sm text-muted-foreground">

@@ -97,4 +97,47 @@ describe('FeedbackDetail', () => {
     await waitFor(() => expect(screen.getByText(DETAIL.message!)).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: /reply/i })).not.toBeInTheDocument();
   });
+
+  it('does not overwrite an untouched note when only the status changes', async () => {
+    call.mockImplementation((name: string) =>
+      name === 'adminGetFeedback'
+        ? Promise.resolve(DETAIL)
+        : Promise.resolve({ ...DETAIL, status: 'triaged' }),
+    );
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByRole('combobox')).toBeInTheDocument());
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'triaged' } });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    // The API writes any key that is not `undefined`, so an untouched note must
+    // be absent from the body — sending '' would clobber a null note.
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('adminUpdateFeedback', {
+        params: { id: 'f1' },
+        body: { status: 'triaged' },
+      }),
+    );
+  });
+
+  it('clears a note back to null rather than to an empty string', async () => {
+    const withNote = { ...DETAIL, adminNote: 'Old note.' };
+    call.mockImplementation((name: string) =>
+      name === 'adminGetFeedback'
+        ? Promise.resolve(withNote)
+        : Promise.resolve({ ...withNote, adminNote: null }),
+    );
+    renderDetail();
+
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('Old note.'));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '  ' } });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('adminUpdateFeedback', {
+        params: { id: 'f1' },
+        body: { adminNote: null },
+      }),
+    );
+  });
 });

@@ -199,7 +199,7 @@ export const webAr: WebMessages = {
       loadMore: 'تحميل المزيد',
       empty: 'لا توجد ملاحظات تطابق هذه الفلاتر.',
       backToList: 'العودة إلى الملاحظات',
-      submitter: 'أرسلها',
+      submitter: 'المُرسِل',
       joined: 'انضم في {date}',
       submittedOn: 'أُرسلت في {date}',
       noMessage: 'بلا رسالة — تقييم فقط.',
