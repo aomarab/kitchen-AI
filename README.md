@@ -74,6 +74,16 @@ pnpm dev
 
 Health check: `curl http://localhost:3333/health`
 
+`pnpm dev` serves the web app on 3100, the API on 3333 and Metro on 8081. If a
+port is taken, override it — `WEB_PORT=3111 pnpm dev`, or `EXPO_PORT` for Metro.
+Both are declared in `turbo.json`; turbo runs in strict env mode and silently
+drops variables that are not, so a new one has to be added there to reach a task.
+
+A Metro already serving this project is reused rather than treated as an error,
+because `expo start` asks about a busy port interactively and turbo, having no
+terminal to answer with, would otherwise fail the whole run — taking the web app
+and API down with it.
+
 ## Everyday commands
 
 | Command                        | Does                                                              |

@@ -16,8 +16,16 @@
     "GOOGLE_CLIENT_ID",
     "APPLE_CLIENT_ID",
     "NEXT_PUBLIC_API_URL",
-    "EXPO_PUBLIC_API_URL"
+    "NEXT_PUBLIC_API_MOCK",
+    "NEXT_PUBLIC_APP_VERSION",
+    "EXPO_PUBLIC_API_URL",
+    "EXPO_PUBLIC_USE_MOCKS",
+    "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID",
+    "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID",
+    "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID",
+    "AI_MOCK"
   ],
+  "globalPassThroughEnv": ["WEB_PORT", "EXPO_PORT"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
