@@ -77,6 +77,7 @@ export const ar: Messages = {
     continueWithApple: 'المتابعة عبر Apple',
     continueWithGoogle: 'المتابعة عبر Google',
     invalidCredentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+    passwordRequired: 'أدخل كلمة المرور للمتابعة.',
     emailTaken: 'هذا البريد الإلكتروني مسجّل بالفعل.',
     passwordRules: {
       tooShort: 'استخدم ١٠ أحرف على الأقل.',

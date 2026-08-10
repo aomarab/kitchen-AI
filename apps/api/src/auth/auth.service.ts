@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { and, eq, sql } from 'drizzle-orm';
 import type {
+  DeleteMeRequest,
   LoginRequest,
   OAuthLoginRequest,
   RegisterRequest,
@@ -18,7 +19,8 @@ import { OAuthService, type VerifiedIdentity } from './oauth.service.js';
 import { toUser, type UserRow } from './auth.serializer.js';
 import { APPLE_TOKEN_REVOKER } from './auth.constants.js';
 import { type AppleTokenRevoker } from './apple-token-revoker.js';
-import { encryptToken } from './token-crypto.js';
+import { encryptToken, decryptToken } from './token-crypto.js';
+import { applyHouseholdSuccession } from './account-deletion.js';
 import { ENV, type Env } from '../config/env.js';
 
 function isUniqueViolation(error: unknown): boolean {
@@ -125,6 +127,63 @@ export class AuthService {
       .returning();
     if (!row) throw AppError.notFound();
     return toUser(row);
+  }
+
+  /**
+   * Irreversibly deletes the account. Required by App Store Guideline
+   * 5.1.1(v) and Google Play's data-deletion policy.
+   *
+   * Ordering matters: revoke first, outside the transaction. Network I/O
+   * inside a transaction holds row locks for the length of a third-party
+   * round trip, and revoking after a successful delete would mean losing the
+   * token permanently on any failure. Revoking first has the only recoverable
+   * failure mode — the user re-links Apple and tries again.
+   */
+  async deleteAccount(userId: string, dto: DeleteMeRequest): Promise<void> {
+    const [user] = await this.db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user) throw AppError.notFound();
+
+    if (user.passwordHash !== null) {
+      if (!dto.password) throw AppError.unauthenticated('auth.passwordRequired');
+      const ok = await this.passwords.verify(dto.password, user.passwordHash);
+      // Reuse the existing key rather than minting one that distinguishes
+      // "wrong password" from "no such account" in a new place.
+      if (!ok) throw AppError.unauthenticated('auth.invalidCredentials');
+    }
+
+    await this.revokeAppleTokens(userId);
+
+    await this.db.transaction(async (tx) => {
+      await applyHouseholdSuccession(tx, userId);
+      await tx.delete(users).where(eq(users.id, userId));
+    });
+  }
+
+  /**
+   * Best-effort. A revoke failure is logged and ignored: blocking a user's
+   * account deletion on an Apple outage would itself violate the guideline
+   * the revoke exists to satisfy.
+   */
+  private async revokeAppleTokens(userId: string): Promise<void> {
+    if (this.env.APPLE_TOKEN_ENC_KEY.trim() === '') return;
+
+    const links = await this.db
+      .select()
+      .from(oauthAccounts)
+      .where(and(eq(oauthAccounts.userId, userId), eq(oauthAccounts.provider, 'apple')));
+
+    for (const link of links) {
+      if (!link.refreshTokenEncrypted || !link.revokeClientId) continue;
+      const token = decryptToken(link.refreshTokenEncrypted, this.env.APPLE_TOKEN_ENC_KEY);
+      // A null here means a rotated or wrong key. Treated exactly like "no
+      // token": skip the revoke, delete anyway.
+      if (!token) continue;
+      try {
+        await this.appleTokens.revoke(token, link.revokeClientId);
+      } catch (error) {
+        this.logger.warn(`Apple revoke failed for user ${userId}: ${String(error)}`);
+      }
+    }
   }
 
   /**

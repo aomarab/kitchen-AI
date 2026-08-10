@@ -83,6 +83,7 @@ export const en = {
     continueWithApple: 'Continue with Apple',
     continueWithGoogle: 'Continue with Google',
     invalidCredentials: 'Incorrect email or password.',
+    passwordRequired: 'Enter your password to continue.',
     emailTaken: 'That email is already registered.',
     passwordRules: {
       tooShort: 'Use at least 10 characters.',

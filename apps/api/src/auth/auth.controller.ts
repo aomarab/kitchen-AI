@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Inject, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Patch, Post, UseGuards } from '@nestjs/common';
 import {
+  deleteMeRequestSchema,
   loginRequestSchema,
   oauthLoginRequestSchema,
   refreshRequestSchema,
   registerRequestSchema,
   updateMeRequestSchema,
+  type DeleteMeRequest,
   type LoginRequest,
   type OAuthLoginRequest,
   type RefreshRequest,
@@ -58,6 +60,16 @@ export class AuthController {
   @UseGuards(AuthGuard)
   getMe(@CurrentUser() user: AuthUser): Promise<User> {
     return this.auth.me(user.userId);
+  }
+
+  @Delete('me')
+  @UseGuards(AuthGuard)
+  async deleteMe(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodPipe(deleteMeRequestSchema)) body: DeleteMeRequest,
+  ): Promise<{ ok: true }> {
+    await this.auth.deleteAccount(user.userId, body);
+    return { ok: true };
   }
 
   @Patch('me')
