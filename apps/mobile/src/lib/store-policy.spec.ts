@@ -177,3 +177,45 @@ describe('account deletion policy', () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * Device compatibility, as promised to the App Store.
+ *
+ * Declaring `supportsTablet` while locking the app to portrait is a rejection
+ * risk: iPad review rotates the device. The two settings are therefore pinned
+ * together — whichever one a future change touches, this fails until the other
+ * agrees with it.
+ */
+describe('device compatibility policy', () => {
+  const config = JSON.parse(readFileSync(APP_JSON, 'utf8')) as {
+    expo: {
+      orientation?: string;
+      ios?: { supportsTablet?: boolean; infoPlist?: Record<string, unknown> };
+    };
+  };
+
+  it('claims iPad support', () => {
+    expect(config.expo.ios?.supportsTablet).toBe(true);
+  });
+
+  it('keeps phones portrait', () => {
+    // Phones stay portrait deliberately: there are no landscape phone layouts.
+    expect(config.expo.orientation).toBe('portrait');
+  });
+
+  it('lets the iPad rotate, because it claims iPad support', () => {
+    const reason =
+      'app.json sets ios.supportsTablet: true, so the App Store treats this as ' +
+      'an iPad app and review will rotate the device. iOS reads the ~ipad ' +
+      'variant only on iPad, which is what keeps phones portrait while letting ' +
+      'the iPad turn. Without both landscape entries the app is portrait-locked ' +
+      'on iPad and can be rejected.';
+    const ipad = config.expo.ios?.infoPlist?.['UISupportedInterfaceOrientations~ipad'];
+    expect(ipad, reason).toEqual([
+      'UIInterfaceOrientationPortrait',
+      'UIInterfaceOrientationPortraitUpsideDown',
+      'UIInterfaceOrientationLandscapeLeft',
+      'UIInterfaceOrientationLandscapeRight',
+    ]);
+  });
+});
