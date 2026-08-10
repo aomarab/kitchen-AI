@@ -55,10 +55,7 @@ export class RecipesService {
    * rewired when that lands.
    */
   async getVideos(_householdId: string, _id: string, _requested?: Locale): Promise<RecipeVideo[]> {
-    throw new Error(
-      'Recipe videos not yet implemented with dish-keyed cache. ' +
-      'Awaiting MediaService implementation.'
-    );
+    throw new AppError('AI_UNAVAILABLE', 'errors.AI_UNAVAILABLE');
   }
 
   /**
@@ -226,7 +223,10 @@ export class RecipesService {
     if (!row || (row.householdId !== null && row.householdId !== householdId)) {
       throw AppError.notFound('errors.NOT_FOUND');
     }
-    return row as unknown as FullRecipeRow;
+    return {
+      ...(row as unknown as FullRecipeRow),
+      videos: [],
+    };
   }
 
   async localeFor(userId: string): Promise<Locale> {
