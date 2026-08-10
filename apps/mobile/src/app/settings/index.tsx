@@ -72,6 +72,13 @@ export default function Settings() {
         onPress={() => router.push('/settings/feedback')}
       />
 
+      <ListRow
+        title={t('mobile.deleteAccount.link')}
+        titleColor="danger"
+        showChevron
+        onPress={() => router.push('/settings/delete-account')}
+      />
+
       <View style={{ gap: spacing.xs }}>
         <AppText variant="label" muted>
           {t('mobile.settings.about')}

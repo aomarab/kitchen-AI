@@ -196,6 +196,19 @@ export function SettingsView() {
           {t('web.feedback.title')}
         </Link>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('web.deleteAccount.title')}</CardTitle>
+        </CardHeader>
+        <p className="text-sm text-muted-foreground">{t('web.deleteAccount.intro')}</p>
+        <Link
+          href="/settings/delete-account"
+          className="mt-4 inline-flex w-fit items-center text-sm font-semibold text-danger hover:underline"
+        >
+          {t('web.deleteAccount.link')}
+        </Link>
+      </Card>
     </div>
   );
 }

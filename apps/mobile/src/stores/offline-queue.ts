@@ -10,7 +10,7 @@ import {
   type QueueOwner,
   type RejectedEvent,
 } from '../lib/event-queue';
-import { readJson, writeJson } from '../lib/storage';
+import { readJson, writeJson, removeJson } from '../lib/storage';
 
 const PERSIST_KEY = 'offline_events';
 
@@ -32,6 +32,13 @@ interface OfflineQueueState {
   resolve: (response: Pick<SyncEventsResponse, 'applied' | 'duplicate' | 'rejected'>) => void;
   /** Acknowledge and clear a surfaced sync failure. */
   dismissRejected: (clientEventId: string) => void;
+  /**
+   * Empty the queue in memory *and* on disk. Sign-out deliberately keeps queued
+   * events (the same user returns), but account deletion must drop them: the
+   * account is gone, so replaying its writes on reconnect would hit a dead
+   * account — or attach to whoever signs in next on this device.
+   */
+  clear: () => Promise<void>;
   hydrate: () => Promise<void>;
 }
 
@@ -69,6 +76,11 @@ export const useOfflineQueue = create<OfflineQueueState>((set, get) => ({
     const rejected = get().rejected.filter((r) => r.event.clientEventId !== clientEventId);
     set({ rejected });
     persist(get().events, rejected);
+  },
+
+  clear: async () => {
+    set({ events: [], rejected: [] });
+    await removeJson(PERSIST_KEY);
   },
 
   hydrate: async () => {

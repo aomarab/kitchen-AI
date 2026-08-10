@@ -71,7 +71,7 @@ interface InternalJob {
 }
 
 interface DbShape {
-  user: User;
+  user: User | null;
   household: Household;
   profile: Profile;
   ingredientsByKey: Map<string, Ingredient>;
@@ -343,6 +343,7 @@ export function seed(): void {
     email: 'chef@example.com',
     displayName: 'Amira',
     locale: 'en',
+    hasPassword: true,
     createdAt: iso(NOW()),
   };
 

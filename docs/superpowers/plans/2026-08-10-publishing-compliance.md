@@ -20,6 +20,7 @@
 - Drizzle `numeric` comes back as a string and timestamps as `Date`. Convert via `common/serialization.ts` (`toIso`, `toNumber`).
 - Schema changes: edit `apps/api/src/db/schema.ts`, then `pnpm db:generate`, and commit the generated SQL under `apps/api/drizzle/`. **Never hand-write a migration.**
 - `packages/i18n/src/en.ts` is the key-set source of truth; `ar.ts` is typed against it, so a missing Arabic string is a build error. Namespaces are append-only: shared `en.ts`/`ar.ts`, web `web.{en,ar}.ts`, mobile `mobile.{en,ar}.ts`. Backend contributes shared `auth.*`/`errors.*` keys only.
+- **The catalogs are nested objects, not flat dotted keys.** `auth: { invalidCredentials: '…' }`, not `'auth.invalidCredentials': '…'`. The dotted strings you see in `t('web.feedback.title')` and in `AppError` message keys are *lookup paths* into that nesting. Add entries as nested objects; reference them with dotted paths.
 - **No physical-direction styles.** ESLint rejects `ml-*`, `pl-*`, `left-*`, `text-left`, `border-l-*`, `rounded-l-*` in web string literals and `marginLeft`, `left`, `borderRightColor` style keys on mobile. Use `ms/me`, `ps/pe`, `start/end`, `text-start`, `marginStart`.
 - **No new design tokens and no hex literals** outside `apps/web/src/app/globals.css` and `apps/mobile/src/theme/index.ts`. `token-usage.test.ts` sweeps for them. Use the existing `danger` / `dangerSoft` tokens and the existing `danger` Button variant.
 - **`beforeEach`/`afterEach` must use a block body.** `beforeEach(() => x.mockReset())` implicitly returns the mock, which Vitest registers as a teardown callback and invokes after every test. This has already cost this project two debugging sessions. Write `beforeEach(() => { x.mockReset(); })`.
@@ -1643,16 +1644,18 @@ Expected: FAIL — `service.deleteAccount` is not a function.
 
 - [ ] **Step 3: Add the i18n key**
 
-In `packages/i18n/src/en.ts`, next to `'auth.invalidCredentials'`:
+The catalogs are **nested objects**, not flat dotted keys — `messageKey` strings are dotted paths that resolve *against* that nesting. Add the key inside the existing `auth` object.
+
+In `packages/i18n/src/en.ts`, inside `auth`, next to `invalidCredentials`:
 
 ```ts
-  'auth.passwordRequired': 'Enter your password to continue.',
+    passwordRequired: 'Enter your password to continue.',
 ```
 
-In `packages/i18n/src/ar.ts`:
+In `packages/i18n/src/ar.ts`, in the same position inside `auth`:
 
 ```ts
-  'auth.passwordRequired': 'أدخل كلمة المرور للمتابعة.',
+    passwordRequired: 'أدخل كلمة المرور للمتابعة.',
 ```
 
 - [ ] **Step 4: Implement `deleteAccount`**
@@ -1672,7 +1675,7 @@ In `apps/api/src/auth/auth.service.ts`:
    */
   async deleteAccount(userId: string, dto: DeleteMeRequest): Promise<void> {
     const [user] = await this.db.select().from(users).where(eq(users.id, userId)).limit(1);
-    if (!user) throw AppError.notFound('errors.notFound');
+    if (!user) throw AppError.notFound();
 
     if (user.passwordHash !== null) {
       if (!dto.password) throw AppError.unauthenticated('auth.passwordRequired');
@@ -1859,39 +1862,47 @@ If `db.user` is not nullable in `apps/web/src/mocks/db.ts`, widen its type to `U
 
 - [ ] **Step 6: Add the i18n strings**
 
-Append to `packages/i18n/src/web.en.ts`:
+The catalogs are **nested objects**, not flat dotted keys. Add a `deleteAccount` object inside the top-level `web` object, next to the existing `feedback` object.
+
+In `packages/i18n/src/web.en.ts`:
 
 ```ts
-  'web.deleteAccount.link': 'Delete account',
-  'web.deleteAccount.title': 'Delete your account',
-  'web.deleteAccount.intro':
-    'This permanently deletes your account, your profile, your saved preferences and your feedback. It cannot be undone.',
-  'web.deleteAccount.householdsTitle': 'What happens to your kitchens',
-  'web.deleteAccount.handover': '{household} will be handed over to {successor}.',
-  'web.deleteAccount.destroy': '{household} and everything in it will be deleted.',
-  'web.deleteAccount.confirmLabel': 'Type {word} to confirm',
-  'web.deleteAccount.passwordLabel': 'Your password',
-  'web.deleteAccount.submit': 'Delete my account',
-  'web.deleteAccount.cancel': 'Cancel',
-  'web.deleteAccount.working': 'Deleting…',
+    deleteAccount: {
+      link: 'Delete account',
+      title: 'Delete your account',
+      intro:
+        'This permanently deletes your account, your profile, your saved preferences and your feedback. It cannot be undone.',
+      householdsTitle: 'What happens to your kitchens',
+      handover: '{household} will be handed over to {successor}.',
+      destroy: '{household} and everything in it will be deleted.',
+      confirmLabel: 'Type {word} to confirm',
+      passwordLabel: 'Your password',
+      submit: 'Delete my account',
+      cancel: 'Cancel',
+      working: 'Deleting…',
+    },
 ```
 
-Append the matching keys with the same names to `packages/i18n/src/web.ar.ts`:
+In `packages/i18n/src/web.ar.ts`, in the same position:
 
 ```ts
-  'web.deleteAccount.link': 'حذف الحساب',
-  'web.deleteAccount.title': 'حذف حسابك',
-  'web.deleteAccount.intro':
-    'سيؤدي هذا إلى حذف حسابك وملفك الشخصي وتفضيلاتك وملاحظاتك نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
-  'web.deleteAccount.householdsTitle': 'ماذا سيحدث لمطابخك',
-  'web.deleteAccount.handover': 'سيتم نقل {household} إلى {successor}.',
-  'web.deleteAccount.destroy': 'سيتم حذف {household} وكل ما فيه.',
-  'web.deleteAccount.confirmLabel': 'اكتب {word} للتأكيد',
-  'web.deleteAccount.passwordLabel': 'كلمة المرور',
-  'web.deleteAccount.submit': 'حذف حسابي',
-  'web.deleteAccount.cancel': 'إلغاء',
-  'web.deleteAccount.working': 'جارٍ الحذف…',
+    deleteAccount: {
+      link: 'حذف الحساب',
+      title: 'حذف حسابك',
+      intro:
+        'سيؤدي هذا إلى حذف حسابك وملفك الشخصي وتفضيلاتك وملاحظاتك نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+      householdsTitle: 'ماذا سيحدث لمطابخك',
+      handover: 'سيتم نقل {household} إلى {successor}.',
+      destroy: 'سيتم حذف {household} وكل ما فيه.',
+      confirmLabel: 'اكتب {word} للتأكيد',
+      passwordLabel: 'كلمة المرور',
+      submit: 'حذف حسابي',
+      cancel: 'إلغاء',
+      working: 'جارٍ الحذف…',
+    },
 ```
+
+Components reference these with the dotted path (`t('web.deleteAccount.title')`) — the dots are a lookup path into the nested object, not part of any key.
 
 - [ ] **Step 7: Write the failing component test**
 
@@ -2241,38 +2252,44 @@ In `apps/mobile/src/mocks/handlers.ts`, add to the `resolvers` record:
 
 - [ ] **Step 9: Add the i18n strings**
 
-Append to `packages/i18n/src/mobile.en.ts`:
+The catalogs are **nested objects**, not flat dotted keys. Add a `deleteAccount` object inside the top-level `mobile` object, next to the existing `feedback` object.
+
+In `packages/i18n/src/mobile.en.ts`:
 
 ```ts
-  'mobile.deleteAccount.link': 'Delete account',
-  'mobile.deleteAccount.title': 'Delete your account',
-  'mobile.deleteAccount.intro':
-    'This permanently deletes your account, your profile, your saved preferences and your feedback. It cannot be undone.',
-  'mobile.deleteAccount.householdsTitle': 'What happens to your kitchens',
-  'mobile.deleteAccount.handover': '{household} will be handed over to {successor}.',
-  'mobile.deleteAccount.destroy': '{household} and everything in it will be deleted.',
-  'mobile.deleteAccount.confirmLabel': 'Type {word} to confirm',
-  'mobile.deleteAccount.passwordLabel': 'Your password',
-  'mobile.deleteAccount.submit': 'Delete my account',
-  'mobile.deleteAccount.cancel': 'Cancel',
-  'mobile.deleteAccount.working': 'Deleting…',
+    deleteAccount: {
+      link: 'Delete account',
+      title: 'Delete your account',
+      intro:
+        'This permanently deletes your account, your profile, your saved preferences and your feedback. It cannot be undone.',
+      householdsTitle: 'What happens to your kitchens',
+      handover: '{household} will be handed over to {successor}.',
+      destroy: '{household} and everything in it will be deleted.',
+      confirmLabel: 'Type {word} to confirm',
+      passwordLabel: 'Your password',
+      submit: 'Delete my account',
+      cancel: 'Cancel',
+      working: 'Deleting…',
+    },
 ```
 
-Append to `packages/i18n/src/mobile.ar.ts`:
+In `packages/i18n/src/mobile.ar.ts`, in the same position:
 
 ```ts
-  'mobile.deleteAccount.link': 'حذف الحساب',
-  'mobile.deleteAccount.title': 'حذف حسابك',
-  'mobile.deleteAccount.intro':
-    'سيؤدي هذا إلى حذف حسابك وملفك الشخصي وتفضيلاتك وملاحظاتك نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
-  'mobile.deleteAccount.householdsTitle': 'ماذا سيحدث لمطابخك',
-  'mobile.deleteAccount.handover': 'سيتم نقل {household} إلى {successor}.',
-  'mobile.deleteAccount.destroy': 'سيتم حذف {household} وكل ما فيه.',
-  'mobile.deleteAccount.confirmLabel': 'اكتب {word} للتأكيد',
-  'mobile.deleteAccount.passwordLabel': 'كلمة المرور',
-  'mobile.deleteAccount.submit': 'حذف حسابي',
-  'mobile.deleteAccount.cancel': 'إلغاء',
-  'mobile.deleteAccount.working': 'جارٍ الحذف…',
+    deleteAccount: {
+      link: 'حذف الحساب',
+      title: 'حذف حسابك',
+      intro:
+        'سيؤدي هذا إلى حذف حسابك وملفك الشخصي وتفضيلاتك وملاحظاتك نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+      householdsTitle: 'ماذا سيحدث لمطابخك',
+      handover: 'سيتم نقل {household} إلى {successor}.',
+      destroy: 'سيتم حذف {household} وكل ما فيه.',
+      confirmLabel: 'اكتب {word} للتأكيد',
+      passwordLabel: 'كلمة المرور',
+      submit: 'حذف حسابي',
+      cancel: 'إلغاء',
+      working: 'جارٍ الحذف…',
+    },
 ```
 
 - [ ] **Step 10: Write the screen**

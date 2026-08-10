@@ -62,3 +62,30 @@ describe('environment contract', () => {
     },
   );
 });
+
+describe('Apple revocation configuration', () => {
+  it('defaults to the mock revoker, so the API boots with no Apple credentials', () => {
+    const env = loadEnv(prodBase);
+    expect(env.APPLE_REVOKE_MOCK).toBe(true);
+  });
+
+  it('refuses to boot in production with a live revoker and no key material', () => {
+    expect(() =>
+      loadEnv({ ...prodBase, NODE_ENV: 'production', APPLE_REVOKE_MOCK: 'false' }),
+    ).toThrow();
+  });
+
+  it('refuses an encryption key that is not 32 bytes', () => {
+    expect(() =>
+      loadEnv({
+        ...prodBase,
+        NODE_ENV: 'production',
+        APPLE_REVOKE_MOCK: 'false',
+        APPLE_TEAM_ID: 'TEAM123456',
+        APPLE_KEY_ID: 'KEY1234567',
+        APPLE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\nx\n-----END PRIVATE KEY-----',
+        APPLE_TOKEN_ENC_KEY: Buffer.alloc(16).toString('base64'),
+      }),
+    ).toThrow();
+  });
+});

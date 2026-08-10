@@ -132,6 +132,17 @@ export const oauthAccounts = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     provider: oauthProviderEnum('provider').notNull(),
     providerAccountId: text('provider_account_id').notNull(),
+    /**
+     * Apple refresh token, AES-256-GCM ciphertext (see `auth/token-crypto.ts`).
+     * Null for Google, and for Apple links created before revocation shipped.
+     */
+    refreshTokenEncrypted: text('refresh_token_encrypted'),
+    /**
+     * The `aud` the identity token was validated against. APPLE_CLIENT_ID is a
+     * comma-separated list because Apple uses the bundle id natively and the
+     * Services ID on the web; the revoke call must present the right one.
+     */
+    revokeClientId: text('revoke_client_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

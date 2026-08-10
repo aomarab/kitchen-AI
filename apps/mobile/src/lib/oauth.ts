@@ -57,7 +57,16 @@ export function isAppleCancellation(error: unknown): boolean {
   );
 }
 
-async function requestAppleToken(): Promise<string | null> {
+export interface OAuthCredential {
+  idToken: string;
+  /**
+   * Apple only. Single-use, expires in minutes, and is the only way to obtain
+   * the refresh token that account deletion revokes (App Store 5.1.1(v)).
+   */
+  authorizationCode?: string;
+}
+
+async function requestAppleToken(): Promise<OAuthCredential | null> {
   if (!(await AppleAuthentication.isAvailableAsync())) {
     throw new OAuthUnavailableError('apple', 'not supported on this device');
   }
@@ -78,10 +87,13 @@ async function requestAppleToken(): Promise<string | null> {
   if (!credential.identityToken) {
     throw new OAuthUnavailableError('apple', 'no identity token returned');
   }
-  return credential.identityToken;
+  return {
+    idToken: credential.identityToken,
+    authorizationCode: credential.authorizationCode ?? undefined,
+  };
 }
 
-async function requestGoogleToken(): Promise<string | null> {
+async function requestGoogleToken(): Promise<OAuthCredential | null> {
   const clientId = googleClientId();
   if (!clientId) {
     throw new OAuthUnavailableError('google', 'no client id configured for this platform');
@@ -116,7 +128,7 @@ async function requestGoogleToken(): Promise<string | null> {
   if (!tokens.idToken) {
     throw new OAuthUnavailableError('google', 'no id token returned');
   }
-  return tokens.idToken;
+  return { idToken: tokens.idToken };
 }
 
 /**
@@ -129,7 +141,9 @@ async function requestGoogleToken(): Promise<string | null> {
  * same fixture token the mock handlers expect is returned instead. This is the
  * `EXPO_PUBLIC_USE_MOCKS` switch every other network path already follows.
  */
-export async function requestIdentityToken(provider: OAuthProvider): Promise<string | null> {
-  if (usingMocks) return `mock-${provider}-token`;
+export async function requestIdentityToken(
+  provider: OAuthProvider,
+): Promise<OAuthCredential | null> {
+  if (usingMocks) return { idToken: `mock-${provider}-token` };
   return provider === 'apple' ? requestAppleToken() : requestGoogleToken();
 }

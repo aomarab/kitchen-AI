@@ -1,6 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { and, eq, sql } from 'drizzle-orm';
 import type {
+  DeleteMeRequest,
   LoginRequest,
   OAuthLoginRequest,
   RegisterRequest,
@@ -16,6 +17,11 @@ import { PasswordService } from './password.service.js';
 import { TokenService } from './token.service.js';
 import { OAuthService, type VerifiedIdentity } from './oauth.service.js';
 import { toUser, type UserRow } from './auth.serializer.js';
+import { APPLE_TOKEN_REVOKER } from './auth.constants.js';
+import { type AppleTokenRevoker } from './apple-token-revoker.js';
+import { encryptToken, decryptToken } from './token-crypto.js';
+import { applyHouseholdSuccession } from './account-deletion.js';
+import { ENV, type Env } from '../config/env.js';
 
 function isUniqueViolation(error: unknown): boolean {
   return (
@@ -25,11 +31,15 @@ function isUniqueViolation(error: unknown): boolean {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @Inject(DB) private readonly db: Database,
     @Inject(PasswordService) private readonly passwords: PasswordService,
     @Inject(TokenService) private readonly tokens: TokenService,
     @Inject(OAuthService) private readonly oauth: OAuthService,
+    @Inject(APPLE_TOKEN_REVOKER) private readonly appleTokens: AppleTokenRevoker,
+    @Inject(ENV) private readonly env: Env,
   ) {}
 
   async register(dto: RegisterRequest): Promise<Session> {
@@ -89,6 +99,8 @@ export class AuthService {
       ? await this.requireUser(existingLink.userId)
       : await this.linkOrCreateOAuthUser(dto, identity);
 
+    await this.captureAppleRefreshToken(userRow.id, dto, identity);
+
     const tokens = await this.tokens.issue(userRow.id);
     return { user: toUser(userRow), tokens, householdIds: await this.householdIds(userRow.id) };
   }
@@ -115,6 +127,105 @@ export class AuthService {
       .returning();
     if (!row) throw AppError.notFound();
     return toUser(row);
+  }
+
+  /**
+   * Irreversibly deletes the account. Required by App Store Guideline
+   * 5.1.1(v) and Google Play's data-deletion policy.
+   *
+   * Ordering matters: revoke first, outside the transaction. Network I/O
+   * inside a transaction holds row locks for the length of a third-party
+   * round trip, and revoking after a successful delete would mean losing the
+   * token permanently on any failure. Revoking first has the only recoverable
+   * failure mode — the user re-links Apple and tries again.
+   */
+  async deleteAccount(userId: string, dto: DeleteMeRequest): Promise<void> {
+    const [user] = await this.db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user) throw AppError.notFound();
+
+    if (user.passwordHash !== null) {
+      if (!dto.password) throw AppError.unauthenticated('auth.passwordRequired');
+      const ok = await this.passwords.verify(dto.password, user.passwordHash);
+      // Reuse the existing key rather than minting one that distinguishes
+      // "wrong password" from "no such account" in a new place.
+      if (!ok) throw AppError.unauthenticated('auth.invalidCredentials');
+    }
+
+    await this.revokeAppleTokens(userId);
+
+    await this.db.transaction(async (tx) => {
+      await applyHouseholdSuccession(tx, userId);
+      await tx.delete(users).where(eq(users.id, userId));
+    });
+  }
+
+  /**
+   * Best-effort. A revoke failure is logged and ignored: blocking a user's
+   * account deletion on an Apple outage would itself violate the guideline
+   * the revoke exists to satisfy.
+   */
+  private async revokeAppleTokens(userId: string): Promise<void> {
+    if (this.env.APPLE_TOKEN_ENC_KEY.trim() === '') return;
+
+    const links = await this.db
+      .select()
+      .from(oauthAccounts)
+      .where(and(eq(oauthAccounts.userId, userId), eq(oauthAccounts.provider, 'apple')));
+
+    for (const link of links) {
+      if (!link.refreshTokenEncrypted || !link.revokeClientId) continue;
+      const token = decryptToken(link.refreshTokenEncrypted, this.env.APPLE_TOKEN_ENC_KEY);
+      // A null here means a rotated or wrong key. Treated exactly like "no
+      // token": skip the revoke, delete anyway.
+      if (!token) continue;
+      try {
+        await this.appleTokens.revoke(token, link.revokeClientId);
+      } catch (error) {
+        this.logger.warn(`Apple revoke failed for user ${userId}: ${String(error)}`);
+      }
+    }
+  }
+
+  /**
+   * Apple's authorization code is single-use and expires in about five
+   * minutes, so it can only be exchanged here, at sign-in. Everything is
+   * best-effort: a failure leaves us unable to revoke at deletion time, which
+   * is bad, but breaking authentication to protect a deletion-time nicety
+   * would be worse.
+   */
+  private async captureAppleRefreshToken(
+    userId: string,
+    dto: OAuthLoginRequest,
+    identity: VerifiedIdentity,
+  ): Promise<void> {
+    try {
+      if (dto.provider !== 'apple' || !dto.authorizationCode || !identity.audience) return;
+      if (this.env.APPLE_TOKEN_ENC_KEY.trim() === '') return;
+
+      const refreshToken = await this.appleTokens.exchangeCode(
+        dto.authorizationCode,
+        identity.audience,
+      );
+      if (!refreshToken) return;
+
+      await this.db
+        .update(oauthAccounts)
+        .set({
+          refreshTokenEncrypted: encryptToken(refreshToken, this.env.APPLE_TOKEN_ENC_KEY),
+          revokeClientId: identity.audience,
+        })
+        .where(
+          and(
+            eq(oauthAccounts.provider, 'apple'),
+            eq(oauthAccounts.providerAccountId, identity.providerAccountId),
+          ),
+        );
+    } catch (error) {
+      this.logger.warn(
+        { userId, err: error },
+        'captureAppleRefreshToken failed — sign-in continues without stored token',
+      );
+    }
   }
 
   /**

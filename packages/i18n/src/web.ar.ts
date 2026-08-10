@@ -185,6 +185,20 @@ export const webAr: WebMessages = {
       another: 'إرسال ملاحظات أخرى',
       privacyNote: 'نستلم تقييمك ورسالتك وإصدار التطبيق ولغتك.',
     },
+    deleteAccount: {
+      link: 'حذف الحساب',
+      title: 'حذف حسابك',
+      intro:
+        'سيؤدي هذا إلى حذف حسابك وملفك الشخصي وتفضيلاتك وملاحظاتك نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+      householdsTitle: 'ماذا سيحدث لمطابخك',
+      handover: 'سيتم نقل {household} إلى {successor}.',
+      destroy: 'سيتم حذف {household} وكل ما فيه.',
+      confirmLabel: 'اكتب {word} للتأكيد',
+      passwordLabel: 'كلمة المرور',
+      submit: 'حذف حسابي',
+      cancel: 'إلغاء',
+      working: 'جارٍ الحذف…',
+    },
     admin: {
       title: 'الإدارة',
       feedbackTitle: 'ملاحظات المنتج',

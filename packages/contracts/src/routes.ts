@@ -7,6 +7,7 @@ import {
   sessionSchema,
   tokenPairSchema,
   updateMeRequestSchema,
+  deleteMeRequestSchema,
   userSchema,
 } from './auth.js';
 import {
@@ -148,6 +149,17 @@ export const routes = {
     auth: true,
     household: false,
     response: userSchema,
+  },
+  deleteMe: {
+    method: 'DELETE',
+    path: '/me',
+    auth: true,
+    // Deletion spans every household the user belongs to, and their last
+    // household may be deleted by the call itself. Requiring x-household-id
+    // would make deletion impossible for exactly the users who need it.
+    household: false,
+    body: deleteMeRequestSchema,
+    response: emptyResponse,
   },
   updateMe: {
     method: 'PATCH',

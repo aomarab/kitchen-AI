@@ -33,9 +33,15 @@ export function useOAuthSignIn() {
   const setSession = useAuthStore((state) => state.setSession);
   return useMutation({
     mutationFn: async (provider: OAuthProvider): Promise<Session | null> => {
-      const idToken = await requestIdentityToken(provider);
-      if (idToken === null) return null;
-      return api.call('oauthLogin', { body: { provider, idToken } });
+      const credential = await requestIdentityToken(provider);
+      if (credential === null) return null;
+      return api.call('oauthLogin', {
+        body: {
+          provider,
+          idToken: credential.idToken,
+          authorizationCode: credential.authorizationCode,
+        },
+      });
     },
     onSuccess: (session) => {
       if (session) setSession(session);

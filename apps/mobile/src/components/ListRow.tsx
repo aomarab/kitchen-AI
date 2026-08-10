@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, View, type ViewStyle } from 'react-native';
 import { AppText } from './AppText';
 import { DirectionalIcon } from './DirectionalIcon';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, type ColorToken } from '../theme';
 
 export interface ListRowProps {
   title: string;
@@ -12,6 +12,8 @@ export interface ListRowProps {
   onPress?: () => void;
   showChevron?: boolean;
   accessibilityLabel?: string;
+  /** Tints the title; used for destructive rows. Defaults to the text colour. */
+  titleColor?: ColorToken;
   style?: ViewStyle;
 }
 
@@ -28,6 +30,7 @@ export function ListRow({
   onPress,
   showChevron,
   accessibilityLabel,
+  titleColor,
   style,
 }: ListRowProps) {
   const content = (
@@ -49,7 +52,9 @@ export function ListRow({
     >
       {leading}
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="bodyStrong">{title}</AppText>
+        <AppText variant="bodyStrong" color={titleColor}>
+          {title}
+        </AppText>
         {subtitle ? (
           <AppText variant="caption" muted>
             {subtitle}

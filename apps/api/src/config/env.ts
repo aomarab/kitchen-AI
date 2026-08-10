@@ -42,6 +42,21 @@ const envSchema = z.object({
    */
   GOOGLE_CLIENT_ID: z.string().default(''),
   APPLE_CLIENT_ID: z.string().default(''),
+  /**
+   * When true, Apple token exchange and revocation use recorded fakes instead
+   * of calling Apple. Mirrors AI_MOCK, and defaults the same way, so the whole
+   * system runs offline with no Apple developer credentials.
+   */
+  APPLE_REVOKE_MOCK: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
+  APPLE_TEAM_ID: z.string().default(''),
+  APPLE_KEY_ID: z.string().default(''),
+  /** Contents of the Apple `.p8` private key used to sign the client secret. */
+  APPLE_PRIVATE_KEY: z.string().default(''),
+  /** Base64, 32 bytes decoded. Encrypts the stored Apple refresh token. */
+  APPLE_TOKEN_ENC_KEY: z.string().default(''),
 
   OPENAI_API_KEY: z.string().default(''),
   OPENAI_MODEL_PLANNING: z.string().default('gpt-5'),
@@ -82,6 +97,35 @@ const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
         code: z.ZodIssueCode.custom,
         path: [key],
         message: 'is required in production to pin the ID token audience',
+      });
+    }
+  }
+  // Without these the revoker cannot sign a client secret, and the stored
+  // token cannot be decrypted — so deletion would silently stop revoking,
+  // which is the exact guideline violation this feature exists to avoid.
+  if (env.NODE_ENV === 'production' && !env.APPLE_REVOKE_MOCK) {
+    for (const key of [
+      'APPLE_TEAM_ID',
+      'APPLE_KEY_ID',
+      'APPLE_PRIVATE_KEY',
+      'APPLE_TOKEN_ENC_KEY',
+    ] as const) {
+      if (env[key].trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: 'is required when APPLE_REVOKE_MOCK is false',
+        });
+      }
+    }
+    if (
+      env.APPLE_TOKEN_ENC_KEY.trim() !== '' &&
+      Buffer.from(env.APPLE_TOKEN_ENC_KEY, 'base64').length !== 32
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['APPLE_TOKEN_ENC_KEY'],
+        message: 'must decode to exactly 32 bytes (AES-256)',
       });
     }
   }

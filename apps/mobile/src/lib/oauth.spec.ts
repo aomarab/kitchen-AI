@@ -76,8 +76,8 @@ describe('requestIdentityToken under mocks', () => {
   it('returns the fixture token the mock handlers expect, without touching the providers', async () => {
     usingMocks.value = true;
 
-    await expect(requestIdentityToken('apple')).resolves.toBe('mock-apple-token');
-    await expect(requestIdentityToken('google')).resolves.toBe('mock-google-token');
+    await expect(requestIdentityToken('apple')).resolves.toEqual({ idToken: 'mock-apple-token' });
+    await expect(requestIdentityToken('google')).resolves.toEqual({ idToken: 'mock-google-token' });
     expect(signInAsync).not.toHaveBeenCalled();
     expect(promptAsync).not.toHaveBeenCalled();
   });
@@ -88,7 +88,20 @@ describe('requestIdentityToken with Apple', () => {
     isAvailableAsync.mockResolvedValue(true);
     signInAsync.mockResolvedValue({ identityToken: 'apple.id.token' });
 
-    await expect(requestIdentityToken('apple')).resolves.toBe('apple.id.token');
+    await expect(requestIdentityToken('apple')).resolves.toEqual({ idToken: 'apple.id.token' });
+  });
+
+  it('forwards the authorization code, which is what deletion later revokes', async () => {
+    isAvailableAsync.mockResolvedValue(true);
+    signInAsync.mockResolvedValue({
+      identityToken: 'apple.id.token',
+      authorizationCode: 'apple-auth-code',
+    });
+
+    await expect(requestIdentityToken('apple')).resolves.toEqual({
+      idToken: 'apple.id.token',
+      authorizationCode: 'apple-auth-code',
+    });
   });
 
   it('resolves to null when the sheet is dismissed, so the UI reports nothing', async () => {
@@ -126,7 +139,7 @@ describe('requestIdentityToken with Google', () => {
     promptAsync.mockResolvedValue({ type: 'success', params: { code: 'auth-code' } });
     exchangeCodeAsync.mockResolvedValue({ idToken: 'google.id.token' });
 
-    await expect(requestIdentityToken('google')).resolves.toBe('google.id.token');
+    await expect(requestIdentityToken('google')).resolves.toEqual({ idToken: 'google.id.token' });
     expect(exchangeCodeAsync).toHaveBeenCalledWith(
       expect.objectContaining({
         code: 'auth-code',

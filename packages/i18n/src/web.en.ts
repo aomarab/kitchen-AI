@@ -192,6 +192,20 @@ export const webEn = {
       another: 'Send more feedback',
       privacyNote: 'We receive your rating, your message, your app version and your language.',
     },
+    deleteAccount: {
+      link: 'Delete account',
+      title: 'Delete your account',
+      intro:
+        'This permanently deletes your account, your profile, your saved preferences and your feedback. It cannot be undone.',
+      householdsTitle: 'What happens to your kitchens',
+      handover: '{household} will be handed over to {successor}.',
+      destroy: '{household} and everything in it will be deleted.',
+      confirmLabel: 'Type {word} to confirm',
+      passwordLabel: 'Your password',
+      submit: 'Delete my account',
+      cancel: 'Cancel',
+      working: 'Deleting…',
+    },
     admin: {
       title: 'Admin',
       feedbackTitle: 'Product feedback',

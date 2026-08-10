@@ -73,6 +73,7 @@ describe('OAuthService audience pinning', () => {
       providerAccountId: 'google-sub-123',
       email: 'user@example.com',
       name: null,
+      audience: 'my-client.apps.googleusercontent.com',
     });
   });
 

@@ -10,6 +10,12 @@ export const userSchema = z.object({
   email: z.string().email(),
   displayName: z.string().min(1).max(80),
   locale: localeSchema,
+  /**
+   * Whether the account has a password. Derived from `password_hash`, never the
+   * hash itself. Clients need it to decide whether account deletion should ask
+   * for a password: an OAuth-only account has none to re-enter.
+   */
+  hasPassword: z.boolean(),
   createdAt: isoDateTimeSchema,
 });
 export type User = z.infer<typeof userSchema>;
@@ -63,6 +69,13 @@ export const oauthLoginRequestSchema = z.object({
   provider: oauthProviderSchema,
   /** Identity token from the native SDK, or authorization code from the web flow. */
   idToken: z.string().min(1),
+  /**
+   * Apple's single-use authorization code, sent only by the native Apple flow.
+   * Exchanged at sign-in for a refresh token, which is what account deletion
+   * later revokes (App Store Guideline 5.1.1(v)). Optional: the web flow and
+   * older mobile builds do not send it.
+   */
+  authorizationCode: z.string().min(1).optional(),
   locale: localeSchema.optional(),
 });
 export type OAuthLoginRequest = z.infer<typeof oauthLoginRequestSchema>;
@@ -71,6 +84,12 @@ export const refreshRequestSchema = z.object({
   refreshToken: z.string().min(1),
 });
 export type RefreshRequest = z.infer<typeof refreshRequestSchema>;
+
+export const deleteMeRequestSchema = z.object({
+  /** Required when the account has a password. Absent for OAuth-only accounts. */
+  password: z.string().min(1).optional(),
+});
+export type DeleteMeRequest = z.infer<typeof deleteMeRequestSchema>;
 
 export const updateMeRequestSchema = z
   .object({
