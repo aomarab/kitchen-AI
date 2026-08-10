@@ -65,6 +65,9 @@ from its own data. A wrong image is worse than no image.
 - **`hero_image_key` is left alone.** It keeps its S3 object-key meaning for a
   possible future user-photo feature. Resolved media is joined, never
   denormalized onto `recipes`, so it cannot drift.
+- **`dish_key` is derived, not stored.** It is a pure function of title and
+  locale, so storing it would add a migration and a stale-key failure mode for
+  no gain.
 - **`packages/contracts` does not change.** `heroImageUrl` is already
   `string | null` and the video shape is unchanged, so no cross-cutting
   coordination is required.
@@ -145,17 +148,19 @@ exercises the gate rather than bypassing it.
 
 ### `apps/api/src/db/schema.ts` — edited
 
-`recipes` gains `dishKey: text('dish_key')`, indexed, written on insert by the
-recipe writer.
+`recipes` is **unchanged**. `dishKey()` is pure and cheap, so the key is derived
+from the recipe's title on demand rather than stored: no migration on `recipes`,
+no nullable column, no backfill, and no write-back on a read path.
 
-Rows that predate the column are **not** backfilled: Arabic folding is not
-practical in SQL, so the column stays nullable and `MediaService` computes the
-key on read when it is null, writing it back on the way through. Existing
-recipes therefore resolve media normally on first open instead of silently
-losing it, and the backfill happens as a side effect of use.
+Deriving it also means a later change to the normalizer re-resolves every dish
+consistently, where a stored key would silently mismatch. Orphaned `dish_media`
+rows from an older normalizer are harmless and age out with the 30-day TTL.
 
-`recipe_videos` is replaced by two tables. It is a pure cache, so the migration
-drops and rebuilds it; no user data exists in it.
+List reads compute a key per recipe and fetch media with a single
+`WHERE (dish_key, locale) IN (…)`, so this stays one query.
+
+`recipe_videos` is replaced by two new tables. It is a pure cache, so the
+migration drops and rebuilds it; no user data exists in it.
 
 ```
 dish_media          PK (dish_key, locale)
@@ -210,9 +215,9 @@ the default it is today.
 ### `apps/api/src/ai/recipes/recipe-mapper.ts` — edited
 
 Both mappers take an optional resolved `DishMedia` and set
-`heroImageUrl: media?.heroThumbnailUrl ?? null`. Recipe reads join `dish_media`
-on `(dish_key, locale)`; list reads join too, which costs nothing extra because
-they are already one query.
+`heroImageUrl: media?.heroThumbnailUrl ?? null`. Reads derive each recipe's key
+and look media up by `(dish_key, locale)`; list reads batch those into one
+lookup, so a list still costs a fixed number of queries.
 
 A list therefore shows real images for dishes some household has already opened,
 and placeholders for the rest. No list render ever triggers a search.
@@ -278,8 +283,7 @@ API, `apps/api/src/ai/recipes/__tests__/`:
 - `dish-media.spec.ts` — two households requesting the same dish trigger **one**
   search; a stored `none` does not re-search; an outage with nothing stored does
   **not** persist `none`; an outage with stale rows serves them; `resolved_at`
-  is renewed rather than frozen; a recipe with a null `dish_key` resolves and
-  has the key written back.
+  is renewed rather than frozen.
 - `http-youtube.client.spec.ts` — the hardened query parameters are sent; ISO-8601
   durations parse, including hours; a `videos.list` failure raises
   `YoutubeUnavailableError`.
