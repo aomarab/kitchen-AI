@@ -163,6 +163,8 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
   },
   leaveHousehold: okEmpty,
   getProfile: () => HttpResponse.json(db.profile),
+  submitFeedback: () =>
+    HttpResponse.json({ id: crypto.randomUUID(), createdAt: new Date().toISOString() }, { status: 201 }),
   updateProfile: async ({ request }) => {
     const body = await readBody(request);
     db.profile = { ...db.profile, ...(body as object) };

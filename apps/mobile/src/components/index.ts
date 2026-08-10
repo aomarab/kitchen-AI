@@ -20,5 +20,6 @@ export { QuantityStepper } from './QuantityStepper';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';
 export { Sheet } from './Sheet';
+export { StarRating } from './StarRating';
 export { EmptyState, ErrorState, LoadingState } from './States';
 export { ToggleRow } from './ToggleRow';
