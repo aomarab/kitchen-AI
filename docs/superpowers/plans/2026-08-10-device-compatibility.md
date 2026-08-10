@@ -755,8 +755,15 @@ There is no iPhone SE in this Xcode's simulator set; iPhone 17e is the smallest 
 On each device, capture a screenshot and confirm:
 
 1. **Phones are unchanged.** Compare the two iPhones against the pre-change appearance. Any visible difference on a phone at the default text size is a defect — the pinning test `typography('en').body.lineHeight === 22` and the simulator screenshots are the evidence that baseline rendering is untouched.
-2. **iPad centres rather than stretches.** Content sits in a 640pt column with the background either side, in both orientations. Rotate with `xcrun simctl ui <UDID> orientation landscape` — if it stays portrait, Task 4 did not take effect and the app needs a clean rebuild.
-3. **Large text does not clip.** Raise the text size to the maximum accessibility setting via Settings → Accessibility → Display & Text Size → Larger Text. Check `home`, a recipe, and **cook mode** specifically, since that screen was the one bypassing the type scale. Text must reflow, not overlap or truncate. Text that looks wildly over-spaced instead means the line box is being double-scaled and Task 1's premise is wrong for this RN version — report it rather than patching around it.
+2. **iPad centres rather than stretches.** Content sits in a 640pt column with the background either side, in both orientations. Verify the orientation configuration by inspecting the built `Info.plist`:
+
+```bash
+/usr/libexec/PlistBuddy -c "Print :UISupportedInterfaceOrientations~ipad" \
+  "$(xcrun simctl get_app_container <UDID> com.kitchenai.app)/Info.plist"
+```
+
+This must print all four orientations. The plain `:UISupportedInterfaceOrientations` key (without `~ipad`) must print only the two portrait values. This verifies Task 4 took effect. (The simulator GUI cannot rotate from the command line, so this is a structural check; manual interactive rotation in the simulator UI confirms the layout responds correctly.)
+3. **Large text does not clip.** Use the scriptable Dynamic Type setting: `xcrun simctl ui <UDID> content_size accessibility-extra-extra-extra-large`, then relaunch the app. Check `home`, a recipe, and **cook mode** specifically, since that screen was the one bypassing the type scale. Text must reflow without clipping or excessive gaps. At 3.1× text scaling on iPhone 17 Pro Max, an earlier implementation double-scaled the line box, producing enormous vertical gaps that pushed content off-screen. That defect was observed in commit `dc63793`, the double-scaling premise was disproven, and the multiplication was removed. Restore the text size to `large` after verification. (Manual steps like focusing a field or toggling to Arabic cannot be automated via `simctl`, which has no tap primitive — those remain interactive checks.)
 4. **The keyboard does not cover the field.** Focus the password field on sign-in on the smallest phone. The field stays visible, and there is no dead gap between content and keyboard (that gap is the `SafeAreaView` + `KeyboardAvoidingView` double-padding risk from Task 5).
 
 - [ ] **Step 4: Repeat the large-text and iPad checks in Arabic**
