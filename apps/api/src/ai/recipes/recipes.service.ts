@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
   Locale,
@@ -16,15 +16,14 @@ import {
   inventoryItems,
   mealPlanEntries,
   mealPlans,
-  recipeVideos,
   recipes,
   users,
 } from '../../db/schema.js';
-import { PANTRY_PORT, RESPONSE_CACHE, VIDEO_CACHE_TTL_DAYS, YOUTUBE_CLIENT } from '../ai.constants.js';
+import { PANTRY_PORT, RESPONSE_CACHE, YOUTUBE_CLIENT } from '../ai.constants.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { convert } from '../planner/units.js';
-import { YoutubeUnavailableError, type YoutubeClient } from '../clients/clients.interface.js';
-import { hashKey, type ResponseCachePort } from '../cache/response-cache.js';
+import type { YoutubeClient } from '../clients/clients.interface.js';
+import type { ResponseCachePort } from '../cache/response-cache.js';
 import { toRecipe, type FullRecipeRow } from './recipe-mapper.js';
 
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
@@ -50,76 +49,16 @@ export class RecipesService {
    * from the YouTube API, never the LLM. When the quota is exhausted the recipe
    * is served with whatever is cached (possibly nothing) and the fetch is
    * retried later — the flow never dead-ends.
+   *
+   * Video cache migrated from recipe-keyed (recipeVideos) to dish-keyed
+   * (dishMedia/dishVideos). Implemented by MediaService; this method is
+   * rewired when that lands.
    */
-  async getVideos(householdId: string, id: string, requested?: Locale): Promise<RecipeVideo[]> {
-    const row = await this.loadRecipe(householdId, id);
-    const locale = requested ?? (row.titleEn ? 'en' : 'ar');
-    const title = locale === 'ar' ? row.titleAr ?? row.titleEn ?? '' : row.titleEn ?? row.titleAr ?? '';
-
-    const freshCutoff = new Date(Date.now() - VIDEO_CACHE_TTL_DAYS * 86_400_000);
-    const fresh = await this.db
-      .select()
-      .from(recipeVideos)
-      .where(and(eq(recipeVideos.recipeId, id), gte(recipeVideos.fetchedAt, freshCutoff)))
-      .orderBy(desc(recipeVideos.fetchedAt));
-    if (fresh.length > 0) return fresh.map(toVideo);
-
-    // "No rows" is indistinguishable from "never searched", so a recipe YouTube
-    // has nothing for would re-run search.list on every single request — 100
-    // quota units each, against a daily allowance of 10,000. Remember the empty
-    // answer explicitly.
-    const emptyKey = hashKey('recipe-videos-empty', { recipeId: id, locale });
-    if (await this.cache.get<true>(emptyKey)) return [];
-
-    try {
-      const results = await this.youtube.search(title, locale);
-      if (results.length === 0) {
-        await this.cache.set(emptyKey, true, VIDEO_CACHE_TTL_DAYS * 86_400);
-        return [];
-      }
-      const now = new Date();
-      for (const v of results) {
-        await this.db
-          .insert(recipeVideos)
-          .values({
-            recipeId: id,
-            youtubeId: v.youtubeId,
-            title: v.title,
-            channel: v.channel,
-            thumbnailUrl: v.thumbnailUrl,
-            durationSeconds: v.durationSeconds,
-            locale,
-          })
-          // Renew fetchedAt, don't skip. `fetchedAt` only defaults on insert,
-          // so doing nothing on conflict froze it at the first search: for a
-          // popular recipe whose top results never change, the freshness
-          // window could never reopen and every request past day 30 spent
-          // another 100 quota units, forever.
-          .onConflictDoUpdate({
-            target: [recipeVideos.recipeId, recipeVideos.youtubeId],
-            set: {
-              title: v.title,
-              channel: v.channel,
-              thumbnailUrl: v.thumbnailUrl,
-              durationSeconds: v.durationSeconds,
-              locale,
-              fetchedAt: now,
-            },
-          });
-      }
-      return results.map((v) => ({ ...v, locale }));
-    } catch (err) {
-      if (err instanceof YoutubeUnavailableError) {
-        // Degrade: serve any cached videos (even stale), else none.
-        const stale = await this.db
-          .select()
-          .from(recipeVideos)
-          .where(eq(recipeVideos.recipeId, id))
-          .orderBy(desc(recipeVideos.fetchedAt));
-        return stale.map(toVideo);
-      }
-      throw err;
-    }
+  async getVideos(_householdId: string, _id: string, _requested?: Locale): Promise<RecipeVideo[]> {
+    throw new Error(
+      'Recipe videos not yet implemented with dish-keyed cache. ' +
+      'Awaiting MediaService implementation.'
+    );
   }
 
   /**
@@ -282,7 +221,6 @@ export class RecipesService {
       where: eq(recipes.id, id),
       with: {
         ingredients: { with: { ingredient: true } },
-        videos: true,
       },
     });
     if (!row || (row.householdId !== null && row.householdId !== householdId)) {
@@ -299,22 +237,4 @@ export class RecipesService {
       .limit(1);
     return (row?.locale as Locale | undefined) ?? 'en';
   }
-}
-
-function toVideo(row: {
-  youtubeId: string;
-  title: string;
-  channel: string;
-  thumbnailUrl: string;
-  durationSeconds: number | null;
-  locale: Locale;
-}): RecipeVideo {
-  return {
-    youtubeId: row.youtubeId,
-    title: row.title,
-    channel: row.channel,
-    thumbnailUrl: row.thumbnailUrl,
-    durationSeconds: row.durationSeconds,
-    locale: row.locale,
-  };
 }
