@@ -45,6 +45,40 @@ export const colors = {
   overlay: 'rgba(42,42,92,0.45)',
 } as const;
 
+/**
+ * The reference fills cards with low-saturation tints rather than white, and
+ * rotates through them down a list. Each tint carries its own foreground so a
+ * caller never has to guess which text colour clears AA on it — `palette.spec`
+ * asserts every pair. Solid colours, never an opacity tint: a translucent fill
+ * composites against whatever is behind it and the contrast maths stops holding.
+ */
+export const tints = [
+  { bg: '#F1EFFA', fg: '#3B3486', name: 'lavender' },
+  { bg: '#E9F4EF', fg: '#1E6B4C', name: 'mint' },
+  { bg: '#FCEDF1', fg: '#9E2F4F', name: 'blush' },
+  { bg: '#EAF2F8', fg: '#245A80', name: 'sky' },
+] as const;
+
+export type Tint = (typeof tints)[number];
+
+/**
+ * The hero gradient, indigo running into a deep teal. Every stop — and every
+ * colour interpolated between them — stays dark enough that `textInverse`,
+ * `textInverseMuted` and `primaryInverse` all clear AA on it; the worst
+ * interpolated point measures 5.03:1. The obvious brighter teal (#2C7676, the
+ * accent) drops muted text to 2.60:1, so the ramp is deliberately darker than
+ * the reference's. `palette.spec` samples the interpolation, not just the stops.
+ */
+export const gradientHero = ['#2A2A5C', '#2A4166', '#124747'] as const;
+
+/** Rotates the tints down a list so adjacent cards never repeat. Negative
+ *  indices wrap forwards rather than falling off the front of the tuple. */
+export function tintFor(index: number): Tint {
+  const count = tints.length;
+  const wrapped = ((Math.trunc(index) % count) + count) % count;
+  return tints[wrapped] ?? tints[0];
+}
+
 export type ColorToken = keyof typeof colors;
 
 export const spacing = {

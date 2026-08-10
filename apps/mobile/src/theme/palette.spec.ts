@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { colors } from './index';
+import { colors, gradientHero, tintFor, tints } from './index';
 import { contrast } from './contrast';
 
 const AA_TEXT = 4.5;
@@ -59,5 +59,71 @@ describe('mobile palette', () => {
     expect(contrast(colors.primaryInverse, colors.surfaceInverse), 'ghostInverse label').toBeGreaterThanOrEqual(AA_TEXT);
     expect(contrast(colors.primaryInverse, colors.surfaceInverse), 'primaryInverse fill').toBeGreaterThanOrEqual(AA_NON_TEXT);
     expect(contrast(colors.text, colors.primaryInverse), 'primaryInverse label').toBeGreaterThanOrEqual(AA_TEXT);
+  });
+});
+
+/**
+ * The tinted cards are the reference's main device, and they are the easiest
+ * place for contrast to rot: a designer nudges a fill lighter, the label stays,
+ * and the pair silently drops below AA. Each tint therefore ships with its own
+ * foreground, and all three text colours that can land on it are asserted.
+ */
+describe('card tints', () => {
+  it.each(tints)('$name carries its own foreground', (tint) => {
+    expect(contrast(tint.fg, tint.bg), `${tint.name} fg`).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it.each(tints)('$name reads with the standard text colours', (tint) => {
+    expect(contrast(colors.text, tint.bg), `${tint.name} text`).toBeGreaterThanOrEqual(AA_TEXT);
+    expect(contrast(colors.textMuted, tint.bg), `${tint.name} muted`).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it('rotates without repeating a neighbour', () => {
+    for (let i = 0; i < tints.length * 2; i += 1) {
+      expect(tintFor(i).name, `index ${i}`).not.toBe(tintFor(i + 1).name);
+    }
+  });
+});
+
+/**
+ * A gradient is not two colours, it is every colour between them — and the
+ * interpolated middle can be lighter than either endpoint. Checking only the
+ * declared stops is the trap here, so this samples the ramp densely.
+ */
+describe('hero gradient', () => {
+  const INVERSE_FOREGROUNDS = [
+    ['textInverse', colors.textInverse],
+    ['textInverseMuted', colors.textInverseMuted],
+    ['primaryInverse', colors.primaryInverse],
+  ] as const;
+
+  function sampleRamp(): string[] {
+    const toRgb = (hex: string) =>
+      [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
+    const stops = gradientHero.map(toRgb);
+    const out: string[] = [];
+    for (let seg = 0; seg < stops.length - 1; seg += 1) {
+      const [a, b] = [stops[seg]!, stops[seg + 1]!];
+      for (let step = 0; step <= 40; step += 1) {
+        const t = step / 40;
+        const mixed = a.map((channel, i) => Math.round(channel + (b[i]! - channel) * t));
+        out.push(`#${mixed.map((c) => c.toString(16).padStart(2, '0')).join('')}`);
+      }
+    }
+    return out;
+  }
+
+  it.each(INVERSE_FOREGROUNDS)('%s clears AA across the whole ramp', (_name, fg) => {
+    for (const stop of sampleRamp()) {
+      expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(AA_TEXT);
+    }
+  });
+});
+
+describe('tintFor wrapping', () => {
+  it('wraps negative and fractional indices back into the tuple', () => {
+    expect(tintFor(-1).name).toBe(tints[tints.length - 1]!.name);
+    expect(tintFor(-tints.length).name).toBe(tints[0].name);
+    expect(tintFor(1.7).name).toBe(tints[1]!.name);
   });
 });
