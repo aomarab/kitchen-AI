@@ -115,7 +115,8 @@
           ]
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withSceneDelegate"
     ],
     "experiments": {
       "typedRoutes": true
