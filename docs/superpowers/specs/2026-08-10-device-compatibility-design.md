@@ -12,7 +12,7 @@ Four concrete defects follow from that, each verified in the current source:
 | # | Defect | Evidence |
 | - | ------ | -------- |
 | 1 | `app.json` declares `"supportsTablet": true` while locking `"orientation": "portrait"`. The app tells Apple it is an iPad app, then refuses to rotate. iPad review exercises rotation. | `apps/mobile/app.json:7,12` |
-| 2 | Text clips at large Dynamic Type sizes. `typography()` computes an absolute `lineHeight` from the *base* `fontSize`. React Native multiplies `fontSize` by the system font scale but leaves an explicitly-set absolute `lineHeight` alone, so the glyphs grow and the line box does not. | `apps/mobile/src/theme/index.ts:133` |
+| 2 | Chrome grows unbounded at large Dynamic Type sizes, pushing content off-screen. Buttons, labels, and captions expand with the user's text preference, breaking the layout before the content text even has room to scale. | `apps/mobile/src/theme/index.ts:133` |
 | 3 | `QuantityStepper` renders a 40×40 control, below the 44pt (Apple) and 48dp (Android) minimum touch target. | `apps/mobile/src/components/QuantityStepper.tsx:33-34` |
 | 4 | There is no keyboard avoidance anywhere, so on short devices the keyboard can cover the field being typed into. | no `KeyboardAvoidingView` in `apps/mobile/src` |
 
@@ -97,6 +97,8 @@ typography(locale: Locale, fontScale?: number): Record<TypographyVariant, TextSt
 effectiveScale = min(fontScale, maxFontScaleFor(variant) ?? fontScale)
 ```
 
+React Native applies `fontScale` automatically to `fontSize` (and as of RN 0.86, also to an explicitly-set `lineHeight`), so the `effectiveScale` calculation here pre-computes the capped scale so both the rendered text size and the pre-multiplied line box use the same number.
+
 ```
 maxFontScaleFor(variant: TypographyVariant): number | undefined
 ```
@@ -119,12 +121,20 @@ caller keeps its current output.
 
 This rests on one platform behaviour worth stating explicitly, because the fix
 is wrong if it is not true: React Native scales `fontSize` by the system font
-scale automatically, but does **not** scale an explicitly-set `lineHeight`.
-Were `lineHeight` also scaled automatically, multiplying by `fontScale` here
-would double-scale it. The visual check at the largest text size in §5.3 is
-what confirms this empirically on the RN version actually in use, and a
-double-scaled line box is obvious on sight — text becomes wildly over-spaced
-rather than clipped.
+scale automatically, and as of RN 0.86, also scales an explicitly-set `lineHeight`
+by the same scale. Pre-multiplying the line box by `fontScale` here ensures the line
+box is capped consistently with the text — if RN did not scale `lineHeight`,
+multiplying here would double-scale it, producing enormous vertical gaps that push
+content off-screen at accessibility sizes. This is verified in commit `dc63793` with
+visual tests on an iPhone 17 Pro Max at 3.1× text scaling.
+
+**Correction (verified on simulator, 2026-08-10).** An earlier revision of this spec
+claimed React Native does not scale an explicitly-set absolute `lineHeight`. That is
+false for RN 0.86: it scales `lineHeight` just as it scales `fontSize`. Pre-multiplying
+by `fontScale` therefore double-scaled the line box and pushed content off screen at
+accessibility text sizes. The multiplication was removed in `dc63793`. The durable
+Dynamic Type fix on this branch is `maxFontScaleFor`, which caps chrome growth at 1.6×
+while leaving content text uncapped.
 
 ### 4.3 Fluid layout
 

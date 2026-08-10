@@ -49,7 +49,7 @@ Spec: `docs/superpowers/specs/2026-08-10-device-compatibility-design.md`.
 
 ### Task 1: Scale-aware typography
 
-The core bug. React Native multiplies `fontSize` by the system font scale but leaves an explicitly-set absolute `lineHeight` alone, so today's `lineHeight` — computed from the *base* size — stays fixed while the glyphs grow, and the text clips. This task makes the line box a function of the scale. It is pure: no component changes, so nothing renders differently yet.
+The core bug. At large Dynamic Type sizes, chrome — pill buttons, field labels, badges — grows unbounded and pushes content off-screen. The `typography()` function computes `lineHeight` based on the *base* `fontSize`. React Native 0.86 scales both `fontSize` and an explicitly-set `lineHeight` by the system font scale, but without a cap on chrome, the layout breaks before the content text even has room to scale. This task caps chrome growth at 1.6× while leaving content uncapped. It is pure: no component changes, so nothing renders differently yet.
 
 **Files:**
 - Modify: `apps/mobile/src/theme/index.ts:104-138`
@@ -86,9 +86,9 @@ describe('typography under font scaling', () => {
   });
 
   it('grows the line box with the text', () => {
-    // React Native scales fontSize by the system font scale but does NOT scale
-    // an absolute lineHeight, so the line box must be pre-multiplied here or
-    // large text is clipped by a box sized for small text.
+    // React Native scales both `fontSize` and an explicitly-set `lineHeight`
+    // by the system font scale, so the line box is pre-multiplied by the same
+    // scale the text gets to ensure they are capped consistently.
     expect(typography('en', 2).body.lineHeight).toBe(Math.round(16 * 2 * 1.35));
     expect(typography('en', 1.5).heading.lineHeight).toBe(Math.round(18 * 1.5 * 1.35));
   });
@@ -191,8 +191,9 @@ export function typography(
   for (const key of Object.keys(SCALE) as TypographyVariant[]) {
     const entry = SCALE[key]!;
     const cap = maxFontScaleFor(key);
-    // React Native scales `fontSize` itself, but not an absolute `lineHeight`,
-    // so the line box is pre-multiplied by the same scale the text will get.
+    // React Native scales both `fontSize` and an explicitly-set `lineHeight`
+    // by the system font scale, so the line box is pre-multiplied here to
+    // ensure it is capped consistently with the rendered text size.
     const effectiveScale = Math.min(fontScale, cap ?? fontScale);
     out[key] = {
       fontSize: entry.fontSize,
@@ -205,7 +206,7 @@ export function typography(
 }
 ```
 
-`fontSize` deliberately stays at the base value: React Native applies the scale at render time. Only the line box is pre-multiplied here.
+`fontSize` deliberately stays at the base value: React Native applies the scale at render time. The line box is pre-multiplied here to track that scaling consistently, and the cap computed by `maxFontScaleFor()` is passed to the text element so both use the same number.
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
