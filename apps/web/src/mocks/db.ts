@@ -1,4 +1,5 @@
 import type {
+  FeedbackDetail,
   Household,
   Ingredient,
   InventoryItem,
@@ -84,6 +85,12 @@ interface DbShape {
   shopping: ShoppingListItem[];
   jobs: Map<string, InternalJob>;
   recognitions: Map<string, ReturnType<typeof buildRecognitionSession>>;
+  /**
+   * Stores the whole `FeedbackDetail` even though `POST /feedback` only returns
+   * a receipt, because the admin handlers read this same array — that is what
+   * makes feedback submitted in mock mode show up in the admin console.
+   */
+  feedback: FeedbackDetail[];
 }
 
 export const db = {} as DbShape;
@@ -446,6 +453,7 @@ export function seed(): void {
 
   db.jobs = new Map();
   db.recognitions = new Map();
+  db.feedback = [];
 }
 
 function buildWeeklyPlan(): InternalPlan {

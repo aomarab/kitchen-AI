@@ -514,6 +514,38 @@ export const handlers = [
     return HttpResponse.json(created);
   }),
 
+  /* ---------- Feedback ---------- */
+  http.post(u('/feedback'), async ({ request }) => {
+    const body = (await request.json()) as {
+      rating: number;
+      message?: string;
+      platform: 'ios' | 'android' | 'web';
+      appVersion: string;
+      locale: Locale;
+    };
+    const record = {
+      id: uuid(),
+      rating: body.rating,
+      message: body.message ?? null,
+      platform: body.platform,
+      appVersion: body.appVersion,
+      locale: body.locale,
+      status: 'new' as const,
+      createdAt: iso(),
+      adminNote: null,
+      reviewedAt: null,
+      submitter: {
+        id: db.user.id,
+        email: db.user.email,
+        displayName: db.user.displayName,
+        locale: db.user.locale,
+        joinedAt: db.user.createdAt,
+      },
+    };
+    db.feedback.unshift(record);
+    return HttpResponse.json({ id: record.id, createdAt: record.createdAt }, { status: 201 });
+  }),
+
   /* ---------- Usage ---------- */
   http.get(u('/ai/usage'), async () =>
     HttpResponse.json({
