@@ -5,7 +5,12 @@ export interface YoutubeVideo {
   title: string;
   channel: string;
   thumbnailUrl: string;
-  durationSeconds: number | null;
+  /** Always known: sourced from `videos.list`, which the client always calls. */
+  durationSeconds: number;
+  /** YouTube category id. '10' is Music and is always wrong for a recipe. */
+  categoryId: string | null;
+  defaultAudioLanguage: string | null;
+  embeddable: boolean;
 }
 
 /**

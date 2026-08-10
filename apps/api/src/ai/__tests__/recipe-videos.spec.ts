@@ -65,6 +65,9 @@ describe('RecipeVideos (spec §5.5 — quota exhaustion never dead-ends)', () =>
             channel: 'Chef',
             thumbnailUrl: 'https://img/x.jpg',
             durationSeconds: 300,
+            categoryId: '26',
+            defaultAudioLanguage: 'en',
+            embeddable: true,
           },
         ];
       },
@@ -145,6 +148,9 @@ describe('RecipeVideos freshness window', () => {
             channel: 'Chef',
             thumbnailUrl: 'https://img/x.jpg',
             durationSeconds: 300,
+            categoryId: '26',
+            defaultAudioLanguage: 'en',
+            embeddable: true,
           },
         ];
       },
