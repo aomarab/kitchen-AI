@@ -127,6 +127,7 @@ export const en = {
     expired: 'Expired',
     quantity: 'Quantity',
     unit: 'Unit',
+    brand: 'Brand',
     location: 'Location',
     expiryDate: 'Expiry date',
     addItem: 'Add item',

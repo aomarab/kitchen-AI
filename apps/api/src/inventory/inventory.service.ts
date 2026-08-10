@@ -34,6 +34,7 @@ interface AddStockInput {
   locationId: string;
   quantity: number;
   unit: InventoryItem['unit'];
+  brand: string | null;
   expiresAt: string | null;
   source: InventoryItem['source'];
   confidence: number | null;
@@ -51,6 +52,16 @@ function earlierDate(a: string | null, b: string | null): string | null {
   if (!a) return b;
   if (!b) return a;
   return a <= b ? a : b;
+}
+
+/**
+ * A slot pools stock, so it can only claim a brand while every addition agrees.
+ * Adding Al Marai milk to unbranded milk does not make the older stock Al
+ * Marai, and overwriting with the newest brand would mislabel what is already
+ * there — so any disagreement, in either direction, resolves to null ("mixed").
+ */
+function mergeBrand(existing: string | null, incoming: string | null): string | null {
+  return existing === incoming ? existing : null;
 }
 
 @Injectable()
@@ -133,6 +144,7 @@ export class InventoryService {
           locationId: input.locationId,
           quantity: input.quantity,
           unit: input.unit,
+          brand: input.brand,
           expiresAt: input.expiresAt,
           source: input.source,
           confidence: input.confidence,
@@ -190,6 +202,7 @@ export class InventoryService {
       if (dto.locationId !== undefined) patch.locationId = dto.locationId;
       if (dto.unit !== undefined) patch.unit = finalUnit;
       if (dto.expiresAt !== undefined) patch.expiresAt = dto.expiresAt;
+      if (dto.brand !== undefined) patch.brand = dto.brand;
       if (dto.quantity !== undefined || (dto.unit && dto.unit !== current.unit)) {
         patch.quantity = numeric(finalQuantity);
       }
@@ -372,6 +385,7 @@ export class InventoryService {
         .update(inventoryItems)
         .set({
           quantity: sql`greatest(${inventoryItems.quantity} + ${numeric(deltaInItemUnit)}::numeric, 0)`,
+          brand: mergeBrand(match.brand, input.brand),
           expiresAt: earlierDate(match.expiresAt, input.expiresAt),
           updatedAt: new Date(),
         })
@@ -395,6 +409,7 @@ export class InventoryService {
         locationId: input.locationId,
         quantity: numeric(input.quantity),
         unit: input.unit,
+        brand: input.brand,
         expiresAt: input.expiresAt,
         source: input.source,
         confidence: input.confidence === null ? null : numeric(input.confidence),

@@ -51,6 +51,7 @@ export function BarcodeCapture() {
           locationId,
           quantity,
           unit,
+          brand: result.brand,
           expiresAt: null,
           source: 'barcode',
           confidence: result.match?.confidence ?? null,

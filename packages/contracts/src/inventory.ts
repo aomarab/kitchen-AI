@@ -38,6 +38,12 @@ export const inventoryItemSchema = z.object({
   id: uuidSchema,
   householdId: uuidSchema,
   ingredient: ingredientSchema,
+  /**
+   * Manufacturer, when a barcode lookup supplied one. Null also means "no
+   * single brand": a slot pools stock, so it keeps a brand only while every
+   * addition agrees on it.
+   */
+  brand: z.string().nullable(),
   locationId: uuidSchema,
   quantity: quantitySchema,
   unit: unitSchema,
@@ -71,6 +77,8 @@ export const inventoryItemInputSchema = z.object({
    * one, and files it under both languages for every household.
    */
   rawNameAr: z.string().min(1).max(120).optional(),
+  /** Manufacturer from a barcode lookup, when the scan produced one. */
+  brand: z.string().min(1).max(120).nullable().default(null),
   locationId: uuidSchema,
   quantity: quantitySchema,
   unit: unitSchema,
@@ -92,6 +100,8 @@ export const updateInventoryItemRequestSchema = z
     quantity: quantitySchema,
     unit: unitSchema,
     expiresAt: isoDateSchema.nullable(),
+    /** `null` clears a brand the lookup got wrong, or labels a pooled slot. */
+    brand: z.string().min(1).max(120).nullable(),
   })
   .partial();
 export type UpdateInventoryItemRequest = z.infer<typeof updateInventoryItemRequestSchema>;

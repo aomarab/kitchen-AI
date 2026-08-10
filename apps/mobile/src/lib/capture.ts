@@ -82,6 +82,9 @@ export function buildInventoryInputs(
       locationId: row.locationId,
       quantity: row.quantity,
       unit: row.unit,
+      // Photo recognition identifies ingredients, not packaging, so it never
+      // yields a brand — only the barcode path does.
+      brand: null,
       expiresAt: row.expiresAt,
       source,
       confidence: row.confidence,

@@ -36,10 +36,15 @@ export function useDeleteInventoryItem() {
 export function useUpdateInventoryItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: string; expiresAt?: string | null; quantity?: number }) =>
+    mutationFn: (input: {
+      id: string;
+      expiresAt?: string | null;
+      quantity?: number;
+      brand?: string | null;
+    }) =>
       api.call('updateInventoryItem', {
         params: { id: input.id },
-        body: { quantity: input.quantity, expiresAt: input.expiresAt },
+        body: { quantity: input.quantity, expiresAt: input.expiresAt, brand: input.brand },
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory'] }),
   });

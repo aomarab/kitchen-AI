@@ -121,6 +121,7 @@ export const ar: Messages = {
     expired: 'منتهي الصلاحية',
     quantity: 'الكمية',
     unit: 'الوحدة',
+    brand: 'العلامة التجارية',
     location: 'مكان التخزين',
     expiryDate: 'تاريخ الانتهاء',
     addItem: 'إضافة صنف',

@@ -28,6 +28,7 @@ function ItemSheetBody({ item, onClose }: { item: InventoryItem; onClose: () => 
   const remove = useDeleteInventoryItem();
   const [quantity, setQuantity] = useState(String(item.quantity));
   const [expiresAt, setExpiresAt] = useState(item.expiresAt ?? '');
+  const [brand, setBrand] = useState(item.brand ?? '');
 
   const name = localizedName(locale, {
     en: item.ingredient.canonicalNameEn,
@@ -48,6 +49,8 @@ function ItemSheetBody({ item, onClose }: { item: InventoryItem; onClose: () => 
         // `null` clears the date; `undefined` would leave the old one in place,
         // making an expiry impossible to remove once set.
         expiresAt: expiresAt === '' ? null : expiresAt,
+        // Same reasoning: an empty field clears a brand the lookup got wrong.
+        brand: brand.trim() === '' ? null : brand.trim(),
       },
       { onSuccess: onClose },
     );
@@ -58,6 +61,13 @@ function ItemSheetBody({ item, onClose }: { item: InventoryItem; onClose: () => 
       <div className="flex flex-col gap-5">
         <div>
           <h3 className="text-xl font-semibold tracking-heading-sm">{name}</h3>
+          {item.brand ? (
+            // A brand is a proper noun in whatever script it was registered in,
+            // so it is not necessarily in the reader's direction.
+            <p className="mt-1 text-sm text-muted-foreground" dir="auto">
+              {item.brand}
+            </p>
+          ) : null}
           <div className="mt-2 flex flex-wrap gap-2">
             {location ? <Badge tone="info">{t(locationKey(location.type))}</Badge> : null}
             <Badge tone={info.tone === 'danger' ? 'danger' : info.tone === 'warning' ? 'warning' : 'neutral'}>
@@ -90,6 +100,16 @@ function ItemSheetBody({ item, onClose }: { item: InventoryItem; onClose: () => 
             type="date"
             value={expiresAt}
             onChange={(e) => setExpiresAt(e.target.value)}
+          />
+        </Field>
+
+        <Field label={t('inventory.brand')} htmlFor="item-brand">
+          <Input
+            id="item-brand"
+            dir="auto"
+            maxLength={120}
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
           />
         </Field>
 

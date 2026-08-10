@@ -31,6 +31,7 @@ function itemInput(overrides: Partial<InventoryItemInput> & Pick<InventoryItemIn
     ingredientId: null,
     quantity: 1,
     unit: 'kg',
+    brand: null,
     expiresAt: null,
     source: 'manual',
     confidence: null,
@@ -53,6 +54,9 @@ describe('InventoryService (live DB)', () => {
   let ingD: string;
   let ingE: string;
   let ingF: string;
+  let ingG: string;
+  let ingH: string;
+  let ingI: string;
 
   beforeAll(async () => {
     ctx = createTestContext();
@@ -72,9 +76,9 @@ describe('InventoryService (live DB)', () => {
     // whenever anything else wrote to `ingredients` — a parallel suite creating
     // a row, or an embedding backfill rewriting the heap, was enough to make
     // two of them the same ingredient and turn bulkCreate into a merge.
-    seededIngredients = await seedIngredients(ctx.db, 6);
-    [ingA, ingB, ingC, ingD, ingE, ingF] = seededIngredients as [
-      string, string, string, string, string, string,
+    seededIngredients = await seedIngredients(ctx.db, 9);
+    [ingA, ingB, ingC, ingD, ingE, ingF, ingG, ingH, ingI] = seededIngredients as [
+      string, string, string, string, string, string, string, string, string,
     ];
   });
 
@@ -110,6 +114,86 @@ describe('InventoryService (live DB)', () => {
       }),
       'VALIDATION_FAILED',
     );
+  });
+
+  it('keeps a brand while every addition to the slot agrees, then drops it', async () => {
+    const [created] = await service.bulkCreate(hhA, userId, {
+      items: [
+        itemInput({
+          ingredientId: ingG,
+          locationId: locA,
+          quantity: 1,
+          unit: 'l',
+          brand: 'Al Marai',
+          source: 'barcode',
+        }),
+      ],
+    });
+    expect(created!.brand).toBe('Al Marai');
+
+    const [same] = await service.bulkCreate(hhA, userId, {
+      items: [
+        itemInput({ ingredientId: ingG, locationId: locA, quantity: 1, unit: 'l', brand: 'Al Marai' }),
+      ],
+    });
+    expect(same!.id).toBe(created!.id);
+    expect(same!.brand).toBe('Al Marai');
+
+    // A second brand now shares the slot, so the row can no longer claim either.
+    const [mixed] = await service.bulkCreate(hhA, userId, {
+      items: [
+        itemInput({ ingredientId: ingG, locationId: locA, quantity: 1, unit: 'l', brand: 'Nadec' }),
+      ],
+    });
+    expect(mixed!.id).toBe(created!.id);
+    expect(mixed!.brand).toBeNull();
+    // The pooling rule must not disturb the quantity ledger.
+    expect(mixed!.quantity).toBe(3);
+  });
+
+  it('does not label pooled stock with a brand that arrived later', async () => {
+    const [created] = await service.bulkCreate(hhA, userId, {
+      items: [itemInput({ ingredientId: ingH, locationId: locA, quantity: 2, unit: 'piece' })],
+    });
+    expect(created!.brand).toBeNull();
+
+    // The existing two units are not Al Marai, so adopting the incoming brand
+    // would mislabel them.
+    const [merged] = await service.bulkCreate(hhA, userId, {
+      items: [
+        itemInput({
+          ingredientId: ingH,
+          locationId: locA,
+          quantity: 1,
+          unit: 'piece',
+          brand: 'Al Marai',
+        }),
+      ],
+    });
+    expect(merged!.id).toBe(created!.id);
+    expect(merged!.brand).toBeNull();
+  });
+
+  it('corrects and clears a brand through update', async () => {
+    const [created] = await service.bulkCreate(hhA, userId, {
+      items: [
+        itemInput({
+          ingredientId: ingI,
+          locationId: locA,
+          quantity: 1,
+          unit: 'piece',
+          brand: 'Al Wadi',
+        }),
+      ],
+    });
+
+    const corrected = await service.update(hhA, userId, created!.id, { brand: 'Al Wadi' });
+    expect(corrected.brand).toBe('Al Wadi');
+    // Quantity must be untouched by a metadata-only edit.
+    expect(corrected.quantity).toBe(1);
+
+    const cleared = await service.update(hhA, userId, created!.id, { brand: null });
+    expect(cleared.brand).toBeNull();
   });
 
   it('applies a sync event once and reports a replayed clientEventId as duplicate', async () => {

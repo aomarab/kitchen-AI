@@ -276,6 +276,7 @@ interface InventorySeed {
   expiresInDays: number | null;
   source: InventoryItem['source'];
   confidence: number | null;
+  brand?: string;
 }
 
 const INVENTORY_SEED: InventorySeed[] = [
@@ -283,7 +284,7 @@ const INVENTORY_SEED: InventorySeed[] = [
   { key: 'tomato', location: 'fridge', quantity: 5, expiresInDays: 2, source: 'photo', confidence: 0.71 },
   { key: 'onion', location: 'pantry', quantity: 6, expiresInDays: 40, source: 'manual', confidence: null },
   { key: 'garlic', location: 'pantry', quantity: 12, expiresInDays: null, source: 'manual', confidence: null },
-  { key: 'eggs', location: 'fridge', quantity: 8, expiresInDays: 6, source: 'barcode', confidence: 0.95 },
+  { key: 'eggs', location: 'fridge', quantity: 8, expiresInDays: 6, source: 'barcode', confidence: 0.95, brand: 'Al Marai' },
   { key: 'yogurt', location: 'fridge', quantity: 500, expiresInDays: 1, source: 'receipt', confidence: 0.58 },
   { key: 'rice', location: 'pantry', quantity: 1000, expiresInDays: null, source: 'manual', confidence: null },
   { key: 'oliveOil', location: 'pantry', quantity: 750, expiresInDays: null, source: 'manual', confidence: null },
@@ -292,7 +293,7 @@ const INVENTORY_SEED: InventorySeed[] = [
   { key: 'cumin', location: 'spice_rack', quantity: 80, expiresInDays: null, source: 'manual', confidence: null },
   { key: 'lentils', location: 'pantry', quantity: 400, expiresInDays: null, source: 'manual', confidence: null },
   { key: 'chickpeas', location: 'pantry', quantity: 400, expiresInDays: 90, source: 'receipt', confidence: 0.9 },
-  { key: 'tahini', location: 'pantry', quantity: 300, expiresInDays: 30, source: 'barcode', confidence: 0.93 },
+  { key: 'tahini', location: 'pantry', quantity: 300, expiresInDays: 30, source: 'barcode', confidence: 0.93, brand: 'Al Wadi' },
   { key: 'lemon', location: 'fridge', quantity: 4, expiresInDays: 8, source: 'photo', confidence: 0.77 },
   { key: 'parsley', location: 'fridge', quantity: 1, expiresInDays: 3, source: 'photo', confidence: 0.64 },
   { key: 'potato', location: 'pantry', quantity: 6, expiresInDays: 25, source: 'manual', confidence: null },
@@ -422,6 +423,7 @@ export function seed(): void {
       id: uuid(),
       householdId: DEFAULT_HOUSEHOLD_ID,
       ingredient,
+      brand: s.brand ?? null,
       locationId: locByType.get(s.location)!,
       quantity: s.quantity,
       unit: ingredient.defaultUnit,

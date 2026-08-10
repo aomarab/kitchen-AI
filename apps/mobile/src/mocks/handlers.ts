@@ -255,6 +255,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
         id: nextId(),
         householdId: db.household.id,
         ingredient,
+        brand: (input.brand as string | null) ?? null,
         locationId: String(input.locationId ?? db.locations[0]!.id),
         quantity: Number(input.quantity ?? 1),
         unit: (input.unit as InventoryItem['unit']) ?? ingredient.defaultUnit,
@@ -282,6 +283,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     if (body.unit) item.unit = body.unit as InventoryItem['unit'];
     if (body.locationId) item.locationId = String(body.locationId);
     if (body.expiresAt !== undefined) item.expiresAt = body.expiresAt as string | null;
+    if (body.brand !== undefined) item.brand = body.brand as string | null;
     item.updatedAt = isoDateTime(0);
     return HttpResponse.json(item);
   },
@@ -524,6 +526,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
         id: nextId(),
         householdId: db.household.id,
         ingredient,
+        brand: null,
         locationId,
         quantity: shop.quantity,
         unit: shop.unit,

@@ -26,6 +26,7 @@ export interface InventoryItemRow {
   locationId: string;
   quantity: string;
   unit: Unit;
+  brand: string | null;
   expiresAt: string | null;
   source: InventoryItem['source'];
   confidence: string | null;
@@ -39,6 +40,7 @@ export function toInventoryItem(item: InventoryItemRow, ingredient: IngredientRo
     id: item.id,
     householdId: item.householdId,
     ingredient: toIngredient(ingredient),
+    brand: item.brand,
     locationId: item.locationId,
     quantity: toNumber(item.quantity),
     unit: item.unit,

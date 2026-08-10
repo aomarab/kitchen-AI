@@ -102,6 +102,9 @@ export function ReviewList({
           locationId: r.locationId,
           quantity: r.quantity,
           unit: r.unit,
+          // Photo recognition identifies ingredients, not packaging, so it
+          // never yields a brand — only the barcode path does.
+          brand: null,
           expiresAt: r.expiresAt,
           source,
           confidence: r.confidence,

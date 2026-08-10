@@ -22,6 +22,13 @@
       "when": 1786356194589,
       "tag": "0002_brown_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786390107075,
+      "tag": "0003_aromatic_marauders",
+      "breakpoints": true
     }
   ]
 }

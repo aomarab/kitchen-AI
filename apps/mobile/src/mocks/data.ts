@@ -186,11 +186,12 @@ interface ItemSeed {
   expiresInDays: number | null;
   source: InventoryItem['source'];
   confidence?: number | null;
+  brand?: string;
 }
 
 const ITEM_SEEDS: ItemSeed[] = [
   { key: 'chicken', quantity: 0.8, unit: 'kg', location: FRIDGE, expiresInDays: 1, source: 'photo', confidence: 0.82 },
-  { key: 'yogurt', quantity: 500, unit: 'ml', location: FRIDGE, expiresInDays: 2, source: 'barcode' },
+  { key: 'yogurt', quantity: 500, unit: 'ml', location: FRIDGE, expiresInDays: 2, source: 'barcode', brand: 'Al Marai' },
   { key: 'parsley', quantity: 1, unit: 'bunch', location: FRIDGE, expiresInDays: 0, source: 'photo', confidence: 0.55 },
   { key: 'tomato', quantity: 6, unit: 'piece', location: FRIDGE, expiresInDays: 4, source: 'photo', confidence: 0.9 },
   { key: 'eggs', quantity: 10, unit: 'piece', location: FRIDGE, expiresInDays: 12, source: 'manual' },
@@ -211,6 +212,7 @@ export function buildInventory(): InventoryItem[] {
       id: mockId(`17e${index}`),
       householdId: HOUSEHOLD_ID,
       ingredient,
+      brand: seed.brand ?? null,
       locationId: seed.location,
       quantity: seed.quantity,
       unit: seed.unit,

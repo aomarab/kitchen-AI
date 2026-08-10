@@ -61,6 +61,7 @@ export default function ItemDetail() {
   const [draftUnit, setDraftUnit] = useState<Unit | null>(null);
   const [draftLocation, setDraftLocation] = useState<string | null>(null);
   const [draftExpiry, setDraftExpiry] = useState<string | null>(null);
+  const [draftBrand, setDraftBrand] = useState<string | null>(null);
 
   if (itemQuery.isLoading) {
     return (
@@ -90,10 +91,12 @@ export default function ItemDetail() {
   const unit = draftUnit ?? item.unit;
   const locationId = draftLocation ?? item.locationId;
   const expiresAt = draftExpiry ?? item.expiresAt ?? '';
+  const brand = draftBrand ?? item.brand ?? '';
   const expiryValid = isValidExpiryInput(expiresAt);
   const dirty =
     unit !== item.unit ||
     locationId !== item.locationId ||
+    (brand.trim() || null) !== (item.brand ?? null) ||
     (expiresAt || null) !== (item.expiresAt ?? null);
 
   const onAdjust = (next: number) => {
@@ -104,7 +107,12 @@ export default function ItemDetail() {
 
   const save = () => {
     if (!expiryValid) return;
-    update.mutate({ locationId, unit, expiresAt: expiresAt.trim() ? expiresAt.trim() : null });
+    update.mutate({
+      locationId,
+      unit,
+      brand: brand.trim() ? brand.trim() : null,
+      expiresAt: expiresAt.trim() ? expiresAt.trim() : null,
+    });
   };
 
   const expiryLabel = formatExpiryLabel(t, locale, item.expiresAt, prefs);
@@ -161,6 +169,15 @@ export default function ItemDetail() {
             ))}
           </View>
         </View>
+
+        <Field
+          label={t('inventory.brand')}
+          value={brand}
+          onChangeText={setDraftBrand}
+          maxLength={120}
+          autoCapitalize="words"
+          autoCorrect={false}
+        />
 
         <Field
           label={t('inventory.expiryDate')}

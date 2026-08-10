@@ -273,6 +273,12 @@ export const inventoryItems = pgTable(
     /** Materialized current state; the source of truth is `inventory_events`. */
     quantity: numeric('quantity', { precision: 12, scale: 3 }).notNull(),
     unit: unitEnum('unit').notNull(),
+    /**
+     * Manufacturer from a barcode lookup. Deliberately not part of
+     * `inventory_unique_slot`: two brands of the same ingredient in one place
+     * stay a single pooled row, and the column goes null when they disagree.
+     */
+    brand: text('brand'),
     expiresAt: date('expires_at'),
     source: inventorySourceEnum('source').notNull(),
     confidence: numeric('confidence', { precision: 4, scale: 3 }),

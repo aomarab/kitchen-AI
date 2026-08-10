@@ -30,6 +30,7 @@ function makeItem(id: string, overrides: Partial<InventoryItem> = {}): Inventory
     },
     quantity: 4,
     unit: 'piece',
+    brand: null,
     expiresAt: '2026-08-01',
     source: 'manual',
     confidence: null,
@@ -106,6 +107,33 @@ describe('ItemSheet', () => {
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
     expect(updateMutate).not.toHaveBeenCalled();
+  });
+
+  it('shows a brand and lets an empty field clear one the lookup got wrong', () => {
+    renderSheet(makeItem('a', { brand: 'Al Marai' }));
+
+    expect(screen.getByLabelText<HTMLInputElement>(/brand/i).value).toBe('Al Marai');
+
+    fireEvent.change(screen.getByLabelText(/brand/i), { target: { value: '  ' } });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(updateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ brand: null }),
+      expect.anything(),
+    );
+  });
+
+  /**
+   * A brand is a proper noun in whatever script it was registered in, so an
+   * Arabic brand shown in the English UI (or the reverse) must resolve its own
+   * direction — otherwise punctuation and digits jump to the wrong end.
+   */
+  it('renders a brand in its own direction, not the reader’s', () => {
+    renderSheet(makeItem('a', { brand: 'المراعي' }));
+
+    const shown = screen.getByText('المراعي');
+    expect(shown).toHaveAttribute('dir', 'auto');
+    expect(screen.getByLabelText(/brand/i)).toHaveAttribute('dir', 'auto');
   });
 
   it('renders nothing when no item is selected', () => {
