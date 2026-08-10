@@ -569,12 +569,23 @@ export function scoreCandidate(
   if (dishTokens.length === 0) return null;
 
   const videoTokens = new Set(normalizeTokens(candidate.title));
-  const matched = dishTokens.filter((token) => videoTokens.has(token));
+
+  // Arabic writes the definite article as a prefix, so `الدجاج` and `دجاج` are
+  // the same ingredient. GENERIC_TOKENS drops a standalone `ال` but cannot see
+  // it as a prefix, so strip it on both sides before comparing.
+  const stripArticle = (token: string) => (token.startsWith('ال') ? token.slice(2) : token);
+  const videoTokensCanonical = new Set(Array.from(videoTokens).map(stripArticle));
+  const matched = dishTokens.filter((token) => videoTokensCanonical.has(stripArticle(token)));
 
   // MIN_COVERAGE is above zero, so clearing it already guarantees at least one
   // distinctive token matched; no separate check is needed.
+  //
+  // The comparison is `<=`, not `<`: strictly more than half the dish's
+  // distinctive words must appear. "Chicken Kabsa" vs "Chicken Shawarma" is
+  // exactly 0.5, and admitting that is the wrong-but-plausible match this whole
+  // gate exists to reject.
   const coverage = matched.length / dishTokens.length;
-  if (coverage < MIN_COVERAGE) return null;
+  if (coverage <= MIN_COVERAGE) return null;
 
   let score = coverage;
   if (candidate.categoryId === HOWTO_CATEGORY_ID) score += HOWTO_BONUS;
