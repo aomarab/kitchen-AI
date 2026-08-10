@@ -37,3 +37,19 @@
 
 ## Concerns
 - `pnpm lint` completed with an existing web warning in `apps/web/src/components/shell/PantryRail.tsx`; unrelated to this task.
+
+## Fix addendum — atomic update/read-back
+- `AdminFeedbackService.update()` now runs the write and joined read inside one `db.transaction(...)`.
+- The shared joined-read logic was extracted into `loadDetail(...)`/`toDetail(...)` and reused by `get()` and `update()`; no query block was duplicated.
+- Added admin-spec coverage for `PATCH`ing a missing id (404), full detail payload on success, and a transactional race probe that stubs `loadDetail()` to schedule a concurrent delete.
+
+### Verification
+- `VITE_CJS_IGNORE_WARNING=true pnpm --filter @kitchen/api exec vitest run src/feedback/admin-feedback.spec.ts`
+  - `✓ src/feedback/admin-feedback.spec.ts (14 tests) 382ms`
+- `VITE_CJS_IGNORE_WARNING=true pnpm --filter @kitchen/api exec vitest run src/feedback/feedback.spec.ts`
+  - `✓ src/feedback/feedback.spec.ts (11 tests) 199ms`
+- `pnpm --filter @kitchen/api lint`
+  - `> @kitchen/api@0.1.0 lint /Users/aomr/projects/kitchen/apps/api`
+  - `> eslint src`
+- `pnpm typecheck`
+  - `Tasks: 9 successful, 9 total`

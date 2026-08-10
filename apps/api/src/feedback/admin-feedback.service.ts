@@ -16,6 +16,12 @@ import { toIso, toNumber } from '../common/serialization.js';
 
 /** Row shape shared by the list and detail queries. */
 type FeedbackRow = typeof feedback.$inferSelect;
+type FeedbackReadClient = Pick<Database, 'select'>;
+
+type FeedbackDetailRow = {
+  item: FeedbackRow;
+  submitter: typeof users.$inferSelect;
+};
 
 function toSummary(row: FeedbackRow): FeedbackSummary {
   return {
@@ -27,6 +33,21 @@ function toSummary(row: FeedbackRow): FeedbackSummary {
     locale: row.locale,
     status: row.status,
     createdAt: toIso(row.createdAt),
+  };
+}
+
+function toDetail(row: FeedbackDetailRow): FeedbackDetail {
+  return {
+    ...toSummary(row.item),
+    adminNote: row.item.adminNote,
+    reviewedAt: row.item.reviewedAt ? toIso(row.item.reviewedAt) : null,
+    submitter: {
+      id: row.submitter.id,
+      email: row.submitter.email,
+      displayName: row.submitter.displayName,
+      locale: row.submitter.locale,
+      joinedAt: toIso(row.submitter.createdAt),
+    },
   };
 }
 
@@ -55,27 +76,7 @@ export class AdminFeedbackService {
   }
 
   async get(id: string): Promise<FeedbackDetail> {
-    const [row] = await this.db
-      .select({ item: feedback, submitter: users })
-      .from(feedback)
-      .innerJoin(users, eq(users.id, feedback.userId))
-      .where(eq(feedback.id, id))
-      .limit(1);
-
-    if (!row) throw AppError.notFound();
-
-    return {
-      ...toSummary(row.item),
-      adminNote: row.item.adminNote,
-      reviewedAt: row.item.reviewedAt ? toIso(row.item.reviewedAt) : null,
-      submitter: {
-        id: row.submitter.id,
-        email: row.submitter.email,
-        displayName: row.submitter.displayName,
-        locale: row.submitter.locale,
-        joinedAt: toIso(row.submitter.createdAt),
-      },
-    };
+    return this.loadDetail(this.db, id);
   }
 
   /**
@@ -83,20 +84,22 @@ export class AdminFeedbackService {
    * there is no reply channel in v1.
    */
   async update(reviewerId: string, id: string, body: UpdateFeedbackRequest): Promise<FeedbackDetail> {
-    const [updated] = await this.db
-      .update(feedback)
-      .set({
-        ...(body.status !== undefined ? { status: body.status } : {}),
-        ...(body.adminNote !== undefined ? { adminNote: body.adminNote } : {}),
-        reviewedBy: reviewerId,
-        reviewedAt: new Date(),
-      })
-      .where(eq(feedback.id, id))
-      .returning({ id: feedback.id });
+    return this.db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(feedback)
+        .set({
+          ...(body.status !== undefined ? { status: body.status } : {}),
+          ...(body.adminNote !== undefined ? { adminNote: body.adminNote } : {}),
+          reviewedBy: reviewerId,
+          reviewedAt: new Date(),
+        })
+        .where(eq(feedback.id, id))
+        .returning({ id: feedback.id });
 
-    if (!updated) throw AppError.notFound();
+      if (!updated) throw AppError.notFound();
 
-    return this.get(id);
+      return this.loadDetail(tx, updated.id);
+    });
   }
 
   async stats(): Promise<FeedbackStats> {
@@ -137,5 +140,18 @@ export class AdminFeedbackService {
       byStatus,
       byRating,
     };
+  }
+
+  private async loadDetail(db: FeedbackReadClient, id: string): Promise<FeedbackDetail> {
+    const [row] = await db
+      .select({ item: feedback, submitter: users })
+      .from(feedback)
+      .innerJoin(users, eq(users.id, feedback.userId))
+      .where(eq(feedback.id, id))
+      .limit(1);
+
+    if (!row) throw AppError.notFound();
+
+    return toDetail(row);
   }
 }
