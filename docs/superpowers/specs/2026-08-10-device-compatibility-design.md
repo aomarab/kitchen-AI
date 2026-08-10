@@ -84,49 +84,39 @@ broken, which is within the stated goal.
 
 ### 4.2 Typography scaling
 
-`theme/index.ts` gains a scale-aware signature:
+`theme/index.ts` exports:
 
 ```
-typography(locale: Locale, fontScale?: number): Record<TypographyVariant, TextStyleToken>
-```
-
-`lineHeight` becomes `round(fontSize × effectiveScale × factor)`, where
-`factor` stays `1.35` Latin / `1.7` Arabic and
-
-```
-effectiveScale = min(fontScale, maxFontScaleFor(variant) ?? fontScale)
-```
-
-React Native applies `fontScale` automatically to `fontSize` (and as of RN 0.86, also to an explicitly-set `lineHeight`), so the `effectiveScale` calculation here pre-computes the capped scale so both the rendered text size and the pre-multiplied line box use the same number.
-
-```
+typography(locale: Locale): Record<TypographyVariant, TextStyleToken>
 maxFontScaleFor(variant: TypographyVariant): number | undefined
 ```
 
-returns `1.6` for the chrome variants — `button`, `label`, `caption` — and
-`undefined` for the content variants — `display`, `title`, `heading`, `body`,
-`bodyStrong`. `undefined` rather than a sentinel like `Infinity` because the
-value is passed straight to React Native's `maxFontSizeMultiplier`, which
-accepts `null`, `0`, or a number `>= 1`; `Infinity` is not a legal value there.
+`typography()` computes `lineHeight` as `round(fontSize × factor)`, where
+`factor` is `1.35` Latin / `1.7` Arabic. React Native 0.86 automatically scales
+both `fontSize` and an explicitly-set `lineHeight` by the system font scale at
+render time, so `typography()` returns unscaled base values — it does not and
+must not apply `fontScale` here.
+
+`maxFontScaleFor(variant)` returns `1.6` for the chrome variants — `button`,
+`label`, `caption` — and `undefined` for the content variants — `display`,
+`title`, `heading`, `body`, `bodyStrong`. Chrome is capped because fixed-height
+rows (button rows, tab bars) cannot accommodate unbounded growth. Content is
+uncapped so the user's text-size preference is honoured for long-form reading.
+`undefined` rather than a sentinel like `Infinity` because the value is passed
+to React Native's `maxFontSizeMultiplier` prop, which accepts `null`, `0`, or a
+number `>= 1`; `Infinity` is not legal there.
 
 `AppText` reads `fontScale` from `useWindowDimensions()` and passes
-`maxFontScaleFor(variant)` as `maxFontSizeMultiplier` on the underlying `Text`,
-so the cap that limits the rendered glyphs and the cap used to compute the line
-box are always the same number. A divergence between those two is exactly the
-clipping bug being fixed, so they are derived from one function rather than
-written twice.
+`maxFontScaleFor(variant)` as `maxFontSizeMultiplier` on the underlying `Text`.
+This cap is the *only* scale-related thing applied in the theme — it is enforced
+at render time, not pre-multiplied into the line-height value.
 
-`fontScale` defaults to `1`, which makes the parameter additive: every existing
-caller keeps its current output.
-
-This rests on one platform behaviour worth stating explicitly, because the fix
-is wrong if it is not true: React Native scales `fontSize` by the system font
-scale automatically, and as of RN 0.86, also scales an explicitly-set `lineHeight`
-by the same scale. Pre-multiplying the line box by `fontScale` here ensures the line
-box is capped consistently with the text — if RN did not scale `lineHeight`,
-multiplying here would double-scale it, producing enormous vertical gaps that push
-content off-screen at accessibility sizes. This is verified in commit `dc63793` with
-visual tests on an iPhone 17 Pro Max at 3.1× text scaling.
+This rests on one platform behaviour worth stating explicitly: React Native 0.86
+scales both `fontSize` and an explicitly-set `lineHeight` by the system font scale
+at render time. Because `typography()` returns unscaled base values, the only
+scale-related thing the theme exports is `maxFontScaleFor()`, which is consumed as
+`maxFontSizeMultiplier` on the `<Text>` element. This enforces the cap at render
+time, when RN applies the scale, not by pre-multiplying into the line-height value.
 
 **Correction (verified on simulator, 2026-08-10).** An earlier revision of this spec
 claimed React Native does not scale an explicitly-set absolute `lineHeight`. That is
@@ -195,14 +185,15 @@ that cannot be expressed that way is pinned by a source-scanning guard.
 
 | Case | Expected |
 | ---- | -------- |
-| `fontScale: 1` | Output identical to the current values, variant by variant |
-| `('en', 2)` body | `lineHeight` doubles |
-| `('en', 3.1)` button | Pinned at the `1.6` cap |
-| `('ar', 2)` body | Uses the `1.7` factor, not `1.35` |
-| `('ar', 2)` any | `letterSpacing` still `0` |
+| `typography('en')` body | `lineHeight` is `round(16 × 1.35)` = `22` |
+| `typography('ar')` body | `lineHeight` is `round(16 × 1.7)` = `27` |
+| `typography('en')` button | Text is 16pt; `maxFontScaleFor('button')` is `1.6` |
+| `typography('ar')` any | `letterSpacing` is `0` |
 
-The `fontScale: 1` case is the regression guard for the whole change: it is
-what proves the phone rendering is unchanged.
+The core tests for `typography(locale)` assert fixed values like `Math.round(16 × 1.35)`
+for body text, and these values do not change across this work — `typography()` returns
+unscaled base values, so the tests simply pass unchanged. That unchanged-test-suite
+is the evidence that the implementation is correct.
 
 `maxFontScaleFor`: `1.6` for each chrome variant, `undefined` for each content
 variant, asserted per variant so adding a variant without classifying it fails.
@@ -241,13 +232,14 @@ centers rather than stretching.
 
 ### 5.4 Existing tests
 
-`src/theme/typography.spec.ts` calls `typography(locale)` with one argument.
-Because `fontScale` carries a default of `1`, those calls keep compiling and
-keep returning identical values, so the file needs **no** change — and leaving
-it untouched is stronger evidence that the parameter is additive than editing
-it would be. Its assertions — Latin tracking present, Arabic tracking zero —
-are preserved, not relaxed. The same applies to `theme/palette.spec.ts` and the
-web token guards, which this work does not touch.
+`src/theme/typography.spec.ts` calls `typography(locale)` with one argument and
+will continue to pass unchanged, because `typography()` returns unscaled base values.
+The four existing tests assert specific `lineHeight` values — e.g. `Math.round(16 × 1.35)` —
+and those assertions remain true. Leaving them untouched is stronger evidence that the
+new `maxFontScaleFor()` function is a pure addition than editing them would be. The
+test assertions — Latin tracking present, Arabic tracking zero — are preserved, not relaxed.
+The same applies to `theme/palette.spec.ts` and the web token guards, which this work
+does not touch.
 
 ### 5.5 A gap the tests cannot close
 

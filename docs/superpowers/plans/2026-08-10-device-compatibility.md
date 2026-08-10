@@ -47,24 +47,24 @@ Spec: `docs/superpowers/specs/2026-08-10-device-compatibility-design.md`.
 
 ---
 
-### Task 1: Scale-aware typography
+### Task 1: Typography with chrome caps
 
-The core bug. At large Dynamic Type sizes, chrome — pill buttons, field labels, badges — grows unbounded and pushes content off-screen. The `typography()` function computes `lineHeight` based on the *base* `fontSize`. React Native 0.86 scales both `fontSize` and an explicitly-set `lineHeight` by the system font scale, but without a cap on chrome, the layout breaks before the content text even has room to scale. This task caps chrome growth at 1.6× while leaving content uncapped. It is pure: no component changes, so nothing renders differently yet.
+Export `maxFontScaleFor()` from the theme and update `typography()` to include chrome variants in the scale calculation. The actual scaling is applied by React Native at render time; the theme provides the cap that `AppText` passes as `maxFontSizeMultiplier`. This task is pure: no component changes yet.
 
 **Files:**
-- Modify: `apps/mobile/src/theme/index.ts:104-138`
-- Test: `apps/mobile/src/theme/typography.spec.ts`
+- Modify: `apps/mobile/src/theme/index.ts:104-160`
+- Modify: `apps/mobile/src/theme/typography.spec.ts`
 
 **Interfaces:**
 - Consumes: nothing from earlier tasks.
 - Produces:
-  - `typography(locale: Locale, fontScale?: number): Record<TypographyVariant, TextStyleToken>` — `fontScale` defaults to `1`.
   - `maxFontScaleFor(variant: TypographyVariant): number | undefined` — `1.6` for chrome, `undefined` for content.
+  - `typography(locale: Locale): Record<TypographyVariant, TextStyleToken>` — unchanged signature and return values.
   - Both exported from `src/theme/index.ts`. Task 2 imports both.
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Write the failing test**
 
-Append to `apps/mobile/src/theme/typography.spec.ts`. Leave the four existing tests exactly as they are — they call `typography('en')` with one argument, and the fact that they keep passing untouched is the proof that the new parameter is additive.
+Append to `apps/mobile/src/theme/typography.spec.ts`. Leave the four existing tests exactly as they are — they call `typography('en')` and they will continue to pass.
 
 Change the import line at the top of the file to pull in the new function:
 
@@ -75,55 +75,6 @@ import { maxFontScaleFor, typography } from './index';
 Then append:
 
 ```ts
-describe('typography under font scaling', () => {
-  it('is unchanged at the default scale', () => {
-    // The regression guard for the entire device-compatibility change: a phone
-    // at the default text size must render exactly as it did before scaling
-    // existed. If this fails, the change is visible on every screen.
-    expect(typography('en', 1)).toEqual(typography('en'));
-    expect(typography('en').body.lineHeight).toBe(Math.round(16 * 1.35));
-    expect(typography('ar').body.lineHeight).toBe(Math.round(16 * 1.7));
-  });
-
-  it('grows the line box with the text', () => {
-    // React Native scales both `fontSize` and an explicitly-set `lineHeight`
-    // by the system font scale, so the line box is pre-multiplied by the same
-    // scale the text gets to ensure they are capped consistently.
-    expect(typography('en', 2).body.lineHeight).toBe(Math.round(16 * 2 * 1.35));
-    expect(typography('en', 1.5).heading.lineHeight).toBe(Math.round(18 * 1.5 * 1.35));
-  });
-
-  it('caps chrome so pills and labels cannot explode', () => {
-    // iOS reaches ~3.1x at the largest accessibility sizes. A button label at
-    // 3.1x breaks every row in the app, so chrome stops at 1.6x.
-    expect(typography('en', 3.1).button.lineHeight).toBe(Math.round(16 * 1.6 * 1.35));
-    expect(typography('en', 3.1).label.lineHeight).toBe(Math.round(14 * 1.6 * 1.35));
-    expect(typography('en', 3.1).caption.lineHeight).toBe(Math.round(12 * 1.6 * 1.35));
-  });
-
-  it('leaves content uncapped so long-form text honours the setting fully', () => {
-    expect(typography('en', 3.1).body.lineHeight).toBe(Math.round(16 * 3.1 * 1.35));
-    expect(typography('en', 3.1).display.lineHeight).toBe(Math.round(28 * 3.1 * 1.35));
-  });
-
-  it('keeps the Arabic factor at every scale', () => {
-    expect(typography('ar', 2).body.lineHeight).toBe(Math.round(16 * 2 * 1.7));
-    expect(typography('ar', 2).body.lineHeight).toBeGreaterThan(
-      typography('en', 2).body.lineHeight,
-    );
-  });
-
-  it('never letter-spaces Arabic at any scale', () => {
-    for (const [variant, token] of Object.entries(typography('ar', 3.1))) {
-      expect(token.letterSpacing, variant).toBe(0);
-    }
-  });
-
-  it('shrinks the line box when the user reduces text size', () => {
-    expect(typography('en', 0.85).body.lineHeight).toBe(Math.round(16 * 0.85 * 1.35));
-  });
-});
-
 describe('maxFontScaleFor', () => {
   it('caps the chrome variants', () => {
     expect(maxFontScaleFor('button')).toBe(1.6);
@@ -149,89 +100,7 @@ describe('maxFontScaleFor', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `pnpm --filter @kitchen/mobile exec vitest run src/theme/typography.spec.ts`
-
-Expected: FAIL. The import of `maxFontScaleFor` does not resolve, so the whole file errors.
-
-- [ ] **Step 3: Implement the scaling**
-
-In `apps/mobile/src/theme/index.ts`, immediately after the `SCALE` constant and the `TypographyVariant` type, add the classification, then replace the body of `typography`:
-
-```ts
-export type TypographyVariant = keyof typeof SCALE;
-
-/**
- * How far each tier may scale with the system font size.
- *
- * Chrome — pill buttons, field labels, badges — sits in fixed-height rows, so
- * it stops at 1.6x. Content is uncapped: at the largest accessibility sizes the
- * user has asked for very large text and long-form copy should give it to them.
- */
-const CHROME_MAX_FONT_SCALE = 1.6;
-const CHROME_VARIANTS: readonly TypographyVariant[] = ['button', 'label', 'caption'];
-
-/**
- * Returned straight to React Native's `maxFontSizeMultiplier`, which accepts
- * `null`, `0`, or a number `>= 1` — hence `undefined` for uncapped rather than
- * a sentinel like `Infinity`, which that prop rejects.
- */
-export function maxFontScaleFor(variant: TypographyVariant): number | undefined {
-  return CHROME_VARIANTS.includes(variant) ? CHROME_MAX_FONT_SCALE : undefined;
-}
-
-export function typography(
-  locale: Locale,
-  fontScale = 1,
-): Record<TypographyVariant, TextStyleToken> {
-  const isArabic = locale === 'ar';
-  const factor = isArabic ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;
-  const out = {} as Record<TypographyVariant, TextStyleToken>;
-  for (const key of Object.keys(SCALE) as TypographyVariant[]) {
-    const entry = SCALE[key]!;
-    const cap = maxFontScaleFor(key);
-    // React Native scales both `fontSize` and an explicitly-set `lineHeight`
-    // by the system font scale, so the line box is pre-multiplied here to
-    // ensure it is capped consistently with the rendered text size.
-    const effectiveScale = Math.min(fontScale, cap ?? fontScale);
-    out[key] = {
-      fontSize: entry.fontSize,
-      fontWeight: entry.fontWeight,
-      lineHeight: Math.round(entry.fontSize * effectiveScale * factor),
-      letterSpacing: isArabic ? 0 : entry.letterSpacing,
-    };
-  }
-  return out;
-}
-```
-
-`fontSize` deliberately stays at the base value: React Native applies the scale at render time. The line box is pre-multiplied here to track that scaling consistently, and the cap computed by `maxFontScaleFor()` is passed to the text element so both use the same number.
-
-- [ ] **Step 4: Run the tests to verify they pass**
-
-Run: `pnpm --filter @kitchen/mobile exec vitest run src/theme/typography.spec.ts`
-Expected: PASS, including the four pre-existing tracking tests, unmodified.
-
-- [ ] **Step 5: Verify the guard has teeth**
-
-Temporarily change `effectiveScale` to the constant `1`:
-
-```ts
-const effectiveScale = 1;
-```
-
-Run: `pnpm --filter @kitchen/mobile exec vitest run src/theme/typography.spec.ts`
-Expected: FAIL — "grows the line box with the text" and the cap tests fail, while "is unchanged at the default scale" still passes.
-
-Restore `const effectiveScale = Math.min(fontScale, cap ?? fontScale);` and re-run to confirm PASS.
-
-- [ ] **Step 6: Typecheck and commit**
-
-```bash
-pnpm --filter @kitchen/mobile typecheck
-git add apps/mobile/src/theme/index.ts apps/mobile/src/theme/typography.spec.ts
-git commit -m "feat(mobile): scale line-height with the system font size"
 ```
 
 ---
@@ -246,7 +115,7 @@ git commit -m "feat(mobile): scale line-height with the system font size"
 - Create: `apps/mobile/src/theme/token-usage.spec.ts`
 
 **Interfaces:**
-- Consumes: `typography(locale, fontScale?)` and `maxFontScaleFor(variant)` from Task 1.
+- Consumes: `maxFontScaleFor(variant)` from Task 1.
 - Produces: nothing new for later tasks. Task 5 appends a second test to `token-usage.spec.ts`.
 
 - [ ] **Step 1: Write the failing guard test**
@@ -322,12 +191,12 @@ The `display` variant is 28pt against the hard-coded 30pt — a 2pt reduction at
 Run: `pnpm --filter @kitchen/mobile exec vitest run src/theme/token-usage.spec.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Wire AppText to the live scale**
+- [ ] **Step 5: Wire maxFontSizeMultiplier to AppText**
 
-In `apps/mobile/src/components/AppText.tsx`, change the import to pull in `useWindowDimensions` and `maxFontScaleFor`:
+In `apps/mobile/src/components/AppText.tsx`, change the import to pull in `maxFontScaleFor`:
 
 ```tsx
-import { Text, useWindowDimensions, type TextProps, type TextStyle } from 'react-native';
+import { Text, type TextProps, type TextStyle } from 'react-native';
 import {
   colors,
   maxFontScaleFor,
@@ -337,13 +206,13 @@ import {
 } from '../theme';
 ```
 
-Inside the component, read the live scale and use it:
+Inside the component, call `typography()` with the locale and set the matching cap on the
+rendered element:
 
 ```tsx
   const { locale } = useLocale();
-  const { fontScale } = useWindowDimensions();
   const fontsLoaded = useFontStore((state) => state.loaded);
-  const token = typography(locale, fontScale)[variant]!;
+  const token = typography(locale)[variant]!;
 ```
 
 And set the matching cap on the rendered element. `{...rest}` stays last so a
@@ -353,7 +222,10 @@ caller can still override it deliberately:
   return <Text style={[base, style]} maxFontSizeMultiplier={maxFontScaleFor(variant)} {...rest} />;
 ```
 
-`useWindowDimensions` re-renders on change, so the app responds live when the user changes their text size in Settings without a relaunch.
+This tells React Native to cap the rendered text size at `1.6×` for chrome variants
+(buttons, labels, captions) but to apply the user's full text size preference to content
+variants (body, heading, etc.). React Native handles applying the `fontScale` at render time
+for both `fontSize` and the `lineHeight` that `typography()` computed.
 
 - [ ] **Step 6: Run the full mobile suite**
 
