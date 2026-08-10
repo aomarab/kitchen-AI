@@ -33,7 +33,7 @@ Spec: `docs/superpowers/specs/2026-08-10-device-compatibility-design.md`.
 | ---- | -------------- | ---- |
 | `apps/mobile/src/theme/index.ts` | Modify: `typography()` becomes scale-aware; new `maxFontScaleFor()` | 1 |
 | `apps/mobile/src/theme/typography.spec.ts` | Modify: add scaling cases alongside the existing tracking assertions | 1 |
-| `apps/mobile/src/components/AppText.tsx` | Modify: read live `fontScale`, pass matching `maxFontSizeMultiplier` | 2 |
+| `apps/mobile/src/components/AppText.tsx` | Modify: add `maxFontSizeMultiplier={maxFontScaleFor(variant)}` to the underlying `<Text>` | 2 |
 | `apps/mobile/src/app/recipe/[id]/cook.tsx` | Modify: remove the hard-coded `fontSize`/`lineHeight` that bypasses scaling | 2 |
 | `apps/mobile/src/theme/token-usage.spec.ts` | Create: mobile source sweep — raw `lineHeight`, undersized touch targets | 2, 5 |
 | `apps/mobile/src/theme/layout.ts` | Create: `TABLET_BREAKPOINT`, `MAX_CONTENT_WIDTH`, `contentMaxWidth()` | 3 |
@@ -105,9 +105,9 @@ describe('maxFontScaleFor', () => {
 
 ---
 
-### Task 2: Wire AppText to the live font scale
+### Task 2: Wire AppText to the chrome caps
 
-`AppText` is the only text primitive in the app, so this single file delivers Task 1's maths to every screen. It also fixes the one place that bypasses the type system entirely, and adds the guard that stops it happening again.
+`AppText` is the only text primitive in the app. This task adds the `maxFontSizeMultiplier` cap so chrome (buttons, labels) stops growing at 1.6× while content text honors the full user preference. It also fixes the one place that bypasses the type system entirely, and adds the guard that stops it happening again.
 
 **Files:**
 - Modify: `apps/mobile/src/components/AppText.tsx`
@@ -754,7 +754,7 @@ There is no iPhone SE in this Xcode's simulator set; iPhone 17e is the smallest 
 
 On each device, capture a screenshot and confirm:
 
-1. **Phones are unchanged.** Compare the two iPhones against the pre-change appearance. Any visible difference on a phone at the default text size is a defect — the `fontScale: 1` test asserts this should be impossible.
+1. **Phones are unchanged.** Compare the two iPhones against the pre-change appearance. Any visible difference on a phone at the default text size is a defect — the pinning test `typography('en').body.lineHeight === 22` and the simulator screenshots are the evidence that baseline rendering is untouched.
 2. **iPad centres rather than stretches.** Content sits in a 640pt column with the background either side, in both orientations. Rotate with `xcrun simctl ui <UDID> orientation landscape` — if it stays portrait, Task 4 did not take effect and the app needs a clean rebuild.
 3. **Large text does not clip.** Raise the text size to the maximum accessibility setting via Settings → Accessibility → Display & Text Size → Larger Text. Check `home`, a recipe, and **cook mode** specifically, since that screen was the one bypassing the type scale. Text must reflow, not overlap or truncate. Text that looks wildly over-spaced instead means the line box is being double-scaled and Task 1's premise is wrong for this RN version — report it rather than patching around it.
 4. **The keyboard does not cover the field.** Focus the password field on sign-in on the smallest phone. The field stays visible, and there is no dead gap between content and keyboard (that gap is the `SafeAreaView` + `KeyboardAvoidingView` double-padding risk from Task 5).
@@ -795,11 +795,11 @@ git commit -m "fix(mobile): <what the simulator check found>"
 
 **Deviation from the spec, deliberate:**
 
-- §5.4 states `theme/typography.spec.ts` "must be updated for the new signature". It does not: `fontScale` has a default of `1`, so every existing call compiles and returns identical values. Leaving those four tests untouched is stronger evidence of additivity than editing them, so the plan keeps them as they are and adds new cases alongside. The spec sentence is now inaccurate and is corrected in the same commit as this plan.
+- §5.4 states `theme/typography.spec.ts` "must be updated for the new signature". The signature never changed: it remained `typography(locale)` throughout. The four existing tests call it with one argument and remain valid; no changes to `typography.spec.ts` were needed. Tests that were later written for a two-argument `fontScale` parameter were removed in `dc63793` when that premise was disproven on the simulator. The spec sentence is now accurate and has been corrected.
 - §4.4 specifies `height` as the Android `KeyboardAvoidingView` behaviour. The plan uses `undefined` on Android instead, because Expo defaults `android.softwareKeyboardLayoutMode` to `"resize"`, so Android already shrinks the window; adding `height` on top double-adjusts. iOS keeps `padding` as specified. The spec is corrected to match.
 
 **Discovered during planning, added to scope:** `app/recipe/[id]/cook.tsx:64` hard-codes `fontSize: 30, lineHeight: 44`, a live instance of the exact bug this project fixes, on the screen where large text matters most. Fixed in Task 2 Step 3.
 
 **Placeholder scan:** no TBD, TODO, "handle edge cases", or "similar to Task N". Every code step carries the actual code.
 
-**Type consistency:** `typography(locale, fontScale?)`, `maxFontScaleFor(variant)`, `contentMaxWidth(width)`, `TABLET_BREAKPOINT`, `MAX_CONTENT_WIDTH` are named identically in the tasks that define them (1, 3) and the tasks that consume them (2, 3, 5). `token-usage.spec.ts` is created in Task 2 and appended to in Task 5, sharing the `sourceFiles()` helper and the `describe` block.
+**Type consistency:** `typography(locale)`, `maxFontScaleFor(variant)`, `contentMaxWidth(width)`, `TABLET_BREAKPOINT`, `MAX_CONTENT_WIDTH` are named identically in the tasks that define them (1, 3) and the tasks that consume them (2, 3, 5). `token-usage.spec.ts` is created in Task 2 and appended to in Task 5, sharing the `sourceFiles()` helper and the `describe` block.

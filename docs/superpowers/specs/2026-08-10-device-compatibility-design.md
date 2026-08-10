@@ -106,10 +106,11 @@ uncapped so the user's text-size preference is honoured for long-form reading.
 to React Native's `maxFontSizeMultiplier` prop, which accepts `null`, `0`, or a
 number `>= 1`; `Infinity` is not legal there.
 
-`AppText` reads `fontScale` from `useWindowDimensions()` and passes
-`maxFontScaleFor(variant)` as `maxFontSizeMultiplier` on the underlying `Text`.
-This cap is the *only* scale-related thing applied in the theme — it is enforced
-at render time, not pre-multiplied into the line-height value.
+`AppText` imports `maxFontScaleFor` and passes `maxFontSizeMultiplier={maxFontScaleFor(variant)}`
+to the underlying `<Text>` element. It calls `typography(locale)` and applies the returned
+`fontSize`, `lineHeight`, `letterSpacing`, and `color` from the theme. This cap is the
+*only* scale-related thing applied in the theme — it is enforced at render time by React
+Native when it applies the system font scale.
 
 This rests on one platform behaviour worth stating explicitly: React Native 0.86
 scales both `fontSize` and an explicitly-set `lineHeight` by the system font scale
@@ -256,7 +257,7 @@ suite, broken app.
 | ---- | ---------- |
 | Android is unverified — no SDK on the build machine | §4.2–§4.4 are shared React Native code that cannot diverge by platform; §4.1 is declarative config. Android verification is a named follow-up, not a silent assumption. |
 | The API 36 large-screen orientation behaviour may not apply on older Android | Failure mode is an Android tablet that stays portrait: degraded, not broken, and within the goal |
-| `Screen` is used by every screen, so a mistake there is global | Contained by the `fontScale: 1` and phone-width assertions, which prove phone output is unchanged |
+| `Screen` is used by every screen, so a mistake there is global | Contained by the phone-width assertions in `apps/mobile/src/theme/layout.spec.ts`, which prove phone output is unchanged |
 | `KeyboardAvoidingView` double-pads when combined with `SafeAreaView` | Platform-specific configuration plus a mandatory visual check on the shortest device |
 | Dense screens remain tight at the largest text sizes | Accepted. This work fixes clipping; it does not redesign dense screens. |
 
