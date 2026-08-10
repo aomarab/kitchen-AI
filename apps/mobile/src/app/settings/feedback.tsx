@@ -17,6 +17,7 @@ export default function Feedback() {
   const submit = useSubmitFeedback();
   const [rating, setRating] = useState(0);
   const [message, setMessage] = useState('');
+  const trimmedMessage = message.trim();
 
   if (submit.isSuccess) {
     return (
@@ -63,9 +64,11 @@ export default function Feedback() {
       </AppText>
 
       {submit.isError ? (
-        <AppText variant="caption" style={{ color: colors.danger }}>
-          {t(errorMessageKey(submit.error))}
-        </AppText>
+        <View accessibilityLiveRegion="polite">
+          <AppText variant="caption" accessibilityRole="alert" style={{ color: colors.danger }}>
+            {t(errorMessageKey(submit.error))}
+          </AppText>
+        </View>
       ) : null}
 
       <Button
@@ -76,7 +79,7 @@ export default function Feedback() {
         onPress={() =>
           submit.mutate({
             rating,
-            message: message.trim() ? message.trim() : undefined,
+            message: trimmedMessage ? trimmedMessage : undefined,
             platform: currentPlatform(),
             appVersion: currentAppVersion(),
             locale,
