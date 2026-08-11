@@ -12,6 +12,55 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+
+    # Most API specs are integration tests that talk to a real Postgres, and the
+    # AI module registers BullMQ queues against Redis as soon as AppModule is
+    # compiled. Without both services `pnpm test` cannot pass, so CI provisions
+    # the same versions docker-compose.yml uses locally.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: kitchen
+          POSTGRES_PASSWORD: kitchen
+          POSTGRES_DB: kitchen
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kitchen -d kitchen"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgres://kitchen:kitchen@localhost:5432/kitchen
+      REDIS_URL: redis://localhost:6379
+      # S3 is never contacted in tests (the storage port is mocked, and presigning
+      # is offline), but config/env.ts validates these at boot and refuses to
+      # start without them.
+      S3_ENDPOINT: http://localhost:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: kitchen-photos
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: 'true'
+      JWT_SECRET: ci-secret-not-used-in-production
+      AI_MOCK: 'true'
+      PAYMENTS_MOCK: 'true'
+      APPLE_REVOKE_MOCK: 'true'
+      NEXT_PUBLIC_API_MOCK: 'true'
+      EXPO_PUBLIC_USE_MOCKS: 'true'
+
     steps:
       - uses: actions/checkout@v4
 
@@ -35,6 +84,32 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      # vitest.setup.ts bootstraps from the repo-root .env, which is not
+      # committed. Materialise one from the job env so tests and the migration
+      # scripts read the same configuration they do locally.
+      - name: Write .env for tests
+        run: |
+          {
+            echo "DATABASE_URL=$DATABASE_URL"
+            echo "REDIS_URL=$REDIS_URL"
+            echo "S3_ENDPOINT=$S3_ENDPOINT"
+            echo "S3_REGION=$S3_REGION"
+            echo "S3_BUCKET=$S3_BUCKET"
+            echo "S3_ACCESS_KEY=$S3_ACCESS_KEY"
+            echo "S3_SECRET_KEY=$S3_SECRET_KEY"
+            echo "S3_FORCE_PATH_STYLE=$S3_FORCE_PATH_STYLE"
+            echo "JWT_SECRET=$JWT_SECRET"
+            echo "AI_MOCK=$AI_MOCK"
+            echo "PAYMENTS_MOCK=$PAYMENTS_MOCK"
+            echo "APPLE_REVOKE_MOCK=$APPLE_REVOKE_MOCK"
+          } > .env
+
+      - name: Migrate database
+        run: pnpm db:migrate
+
+      - name: Seed ingredient catalog
+        run: pnpm db:seed
 
       - name: Test
         run: pnpm test
