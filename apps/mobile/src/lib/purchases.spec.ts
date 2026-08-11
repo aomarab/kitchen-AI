@@ -63,6 +63,14 @@ describe('mockPurchases', () => {
     const { mockPurchases } = await load();
     await expect(mockPurchases.purchase('credits_300')).resolves.toBeDefined();
   });
+
+  it('reports no store price offline so the screen shows the contract fallback', async () => {
+    // The mock has no storefront, so `getPrice` must resolve to null (not throw,
+    // not touch the native SDK) — that null is what makes the screen fall back
+    // to the contract price formatted for the active locale.
+    const { mockPurchases } = await load();
+    await expect(mockPurchases.getPrice('credits_300')).resolves.toBeNull();
+  });
 });
 
 describe('isCancelled', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CREDIT_COSTS } from '@kitchen/contracts';
-import { canAfford, costOf, creditsShort, totalCredits } from './credits';
+import { canAfford, costOf, creditsShort, displayPrice, totalCredits } from './credits';
 
 const balance = {
   freeBalance: 10,
@@ -65,5 +65,32 @@ describe('creditsShort', () => {
   it('counts a negative paid balance against the shortfall', () => {
     // free 10, paid -8 → total 2; a 4-credit daily plan is 2 short.
     expect(creditsShort({ freeBalance: 10, paidBalance: -8 }, 'plan.daily')).toBe(2);
+  });
+});
+
+describe('displayPrice', () => {
+  it('prefers the store price when the port returns one', () => {
+    // The store price is the amount the user is actually charged, so it wins
+    // over the app's contract fallback whenever it is available.
+    expect(displayPrice('£3.99', 'US$4.99')).toBe('£3.99');
+  });
+
+  it('falls back to the contract price when the store returns null', () => {
+    expect(displayPrice(null, 'US$4.99')).toBe('US$4.99');
+  });
+
+  it('passes a non-USD, non-Latin-digit store price through verbatim', () => {
+    // The store already localized this to Saudi riyals with Eastern Arabic
+    // digits and RTL marks. If anyone "helpfully" runs it through Intl or parses
+    // a number out of it, this exact-equality check breaks — which is the point.
+    const saudi = '‏٤٫٩٩ ر.س.‏';
+    expect(displayPrice(saudi, 'US$4.99')).toBe(saudi);
+    expect(displayPrice('SAR 18.99', 'US$4.99')).toBe('SAR 18.99');
+  });
+
+  it('keeps an empty-string store price rather than swapping in the fallback', () => {
+    // Only `null` means "no store price"; an empty string is still a store
+    // answer, so `??` (not `||`) must be used.
+    expect(displayPrice('', 'US$4.99')).toBe('');
   });
 });

@@ -17,6 +17,7 @@ const INTENT = {
 function port(result: PurchaseResult | (() => Promise<PurchaseResult>)): PurchasesPort {
   return {
     purchase: vi.fn(async () => (typeof result === 'function' ? result() : result)),
+    getPrice: vi.fn(async () => null),
   };
 }
 

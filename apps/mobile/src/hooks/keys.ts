@@ -21,4 +21,5 @@ export const qk = {
   recognition: (id: string) => ['recognition', id] as const,
   aiUsage: ['aiUsage'] as const,
   credits: ['credits'] as const,
+  creditPackPrices: ['credits', 'pack-prices'] as const,
 } as const;

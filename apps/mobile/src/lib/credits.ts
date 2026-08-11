@@ -36,3 +36,17 @@ export function canAfford(balance: BalanceLike, action: CreditAction): boolean {
 export function creditsShort(balance: BalanceLike, action: CreditAction): number {
   return Math.max(0, CREDIT_COSTS[action] - totalCredits(balance));
 }
+
+/**
+ * The price to show for a credit pack. Prefers the store's own price string,
+ * which is already localized to the user's storefront currency (SAR, AED, GBP…)
+ * and is the amount they will actually be charged; falls back to the contract's
+ * price formatted for the active locale only when the store has none to give
+ * (mock mode, offline, or the product missing from the offering).
+ *
+ * The store string is returned untouched — reformatting or reparsing it would
+ * reintroduce the very bug this fixes: showing a price the store never charges.
+ */
+export function displayPrice(storePrice: string | null, fallbackPrice: string): string {
+  return storePrice ?? fallbackPrice;
+}

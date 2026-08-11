@@ -21,6 +21,15 @@ export type PurchaseResult = StorePurchase | { cancelled: true };
  */
 export interface PurchasesPort {
   purchase(productId: string): Promise<PurchaseResult>;
+  /**
+   * The store's own price for a product, already localized to the user's
+   * storefront currency and formatting, or `null` when there is no store price
+   * to show (mock mode, offline, or the product is missing from the offering).
+   * The string is returned exactly as the store gives it and must be shown
+   * verbatim — the whole point is that the storefront, not the app, decides the
+   * currency and the amount.
+   */
+  getPrice(productId: string): Promise<string | null>;
 }
 
 export function isCancelled(result: PurchaseResult): result is { cancelled: true } {
@@ -41,29 +50,45 @@ export const mockPurchases: PurchasesPort = {
   async purchase(productId: string): Promise<PurchaseResult> {
     return { storeTransactionId: `mock-txn-${productId}-${Date.now()}`, store: activeStore() };
   },
+  /**
+   * There is no real storefront offline, so the mock reports "no store price".
+   * The screen then shows the contract's `priceUsd` formatted for the active
+   * locale, which is exactly the pre-store display — and keeps this path off the
+   * native SDK so it runs in Expo Go, the Simulator and node tests.
+   */
+  async getPrice(): Promise<string | null> {
+    return null;
+  },
 };
 
 /**
- * Real RevenueCat purchase.
+ * Loads the RevenueCat SDK and resolves the offering package for a product.
  *
  * `react-native-purchases` is a native module that is absent from Expo Go and
  * would crash the app on startup if imported eagerly, so it is pulled in with a
  * dynamic `import()` **inside this function body** — reached only when mocks are
- * off. Nothing at module scope references it. See the plan's Expo Go constraint.
+ * off. Nothing at module scope references it (not even its types). See the
+ * plan's Expo Go constraint.
  */
+async function loadPackage(productId: string) {
+  const { default: Purchases } = await import('react-native-purchases');
+
+  const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
+  if (apiKey && !(await Purchases.isConfigured())) {
+    Purchases.configure({ apiKey });
+  }
+
+  const offerings = await Purchases.getOfferings();
+  const pkg = Object.values(offerings.all)
+    .flatMap((offering) => offering.availablePackages)
+    .find((candidate) => candidate.product.identifier === productId);
+  return { Purchases, pkg };
+}
+
+/** Real RevenueCat adapter — reached only when mocks are off. */
 export const nativePurchases: PurchasesPort = {
   async purchase(productId: string): Promise<PurchaseResult> {
-    const { default: Purchases } = await import('react-native-purchases');
-
-    const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
-    if (apiKey && !(await Purchases.isConfigured())) {
-      Purchases.configure({ apiKey });
-    }
-
-    const offerings = await Purchases.getOfferings();
-    const pkg = Object.values(offerings.all)
-      .flatMap((offering) => offering.availablePackages)
-      .find((candidate) => candidate.product.identifier === productId);
+    const { Purchases, pkg } = await loadPackage(productId);
     if (!pkg) {
       throw new Error(`No store package configured for product ${productId}`);
     }
@@ -75,6 +100,15 @@ export const nativePurchases: PurchasesPort = {
       if ((error as { userCancelled?: boolean }).userCancelled) return { cancelled: true };
       throw error;
     }
+  },
+
+  async getPrice(productId: string): Promise<string | null> {
+    const { pkg } = await loadPackage(productId);
+    // `priceString` is already localized to the storefront currency and
+    // formatting (e.g. "٤٫٩٩ ر.س.‏", "£3.99"). Return it verbatim — never
+    // reformat it, never run it through `Intl`, never parse a number out of it,
+    // or the app would show a price that differs from what the store charges.
+    return pkg?.product.priceString ?? null;
   },
 };
 

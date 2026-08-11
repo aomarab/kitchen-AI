@@ -15,10 +15,10 @@ import {
   Icon,
 } from '../components';
 import { useFormat } from '../hooks/useFormat';
-import { useCredits } from '../hooks/credits';
+import { useCredits, usePackPrices } from '../hooks/credits';
 import { qk } from '../hooks/keys';
 import { buyCredits } from '../lib/purchase';
-import { canAfford, creditsShort } from '../lib/credits';
+import { canAfford, creditsShort, displayPrice } from '../lib/credits';
 import { formatQty, formatUsd } from '../lib/format';
 import { colors, radius, spacing } from '../theme';
 
@@ -43,6 +43,7 @@ export default function BuyCreditsScreen() {
   const action = actionParam(params.action);
 
   const credits = useCredits();
+  const packPrices = usePackPrices();
   const [busyProduct, setBusyProduct] = useState<string | null>(null);
   const [notice, setNotice] = useState<'credited' | 'pending' | null>(null);
 
@@ -121,7 +122,10 @@ export default function BuyCreditsScreen() {
                       })}
                     </AppText>
                     <AppText variant="caption" muted>
-                      {formatUsd(locale, pack.priceUsd, prefs)}
+                      {displayPrice(
+                        packPrices.data?.[pack.productId] ?? null,
+                        formatUsd(locale, pack.priceUsd, prefs),
+                      )}
                     </AppText>
                   </View>
                 </View>
