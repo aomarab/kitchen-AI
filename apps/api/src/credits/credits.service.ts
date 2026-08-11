@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import {
   CREDIT_COSTS,
   FREE_MONTHLY_GRANT,
@@ -58,9 +58,11 @@ export class CreditsService {
   /**
    * Debit `action`'s price, free bucket first.
    *
-   * The debit is a single conditional UPDATE rather than a read-then-write:
-   * two household members tapping "generate" at once must not both pass a check
-   * against a balance that only covers one.
+   * `ensureRow` holds FOR UPDATE on the balance row for the duration of this
+   * transaction. That lock is required — not optional — for split correctness:
+   * without it two concurrent spends could read the same balances, compute the
+   * same split, and then both pass the WHERE guard (free + paid >= cost) while
+   * one of them drives freeBalance negative.
    */
   async spend(
     householdId: string,
@@ -72,9 +74,12 @@ export class CreditsService {
     await this.db.transaction(async (tx) => {
       const row = await this.ensureRow(tx, householdId);
 
-      const fromFree = Math.min(row.freeBalance, cost);
+      const fromFree = Math.min(Math.max(row.freeBalance, 0), cost);
       const fromPaid = cost - fromFree;
 
+      // Single conditional UPDATE — zero affected rows means insufficient funds.
+      // The guard matches assertCanAfford: total balance, not per-bucket, so a
+      // negative paidBalance with a healthy freeBalance still allows spending.
       const [updated] = await tx
         .update(householdCredits)
         .set({
@@ -84,8 +89,7 @@ export class CreditsService {
         })
         .where(
           sql`${householdCredits.householdId} = ${householdId}
-              and ${householdCredits.freeBalance} >= ${fromFree}
-              and ${householdCredits.paidBalance} >= ${fromPaid}`,
+              and ${householdCredits.freeBalance} + ${householdCredits.paidBalance} >= ${cost}`,
         )
         .returning({ householdId: householdCredits.householdId });
 
@@ -96,6 +100,8 @@ export class CreditsService {
         });
       }
 
+      // Correlate the 1–2 ledger rows so refund can reverse exactly this spend.
+      const spendGroupId = crypto.randomUUID();
       const rows = [];
       if (fromFree > 0) {
         rows.push({
@@ -104,6 +110,7 @@ export class CreditsService {
           kind: 'spend' as const,
           bucket: 'free',
           action,
+          spendGroupId,
           ...(opts.aiUsageId ? { aiUsageId: opts.aiUsageId } : {}),
         });
       }
@@ -114,6 +121,7 @@ export class CreditsService {
           kind: 'spend' as const,
           bucket: 'paid',
           action,
+          spendGroupId,
           ...(opts.aiUsageId ? { aiUsageId: opts.aiUsageId } : {}),
         });
       }
@@ -122,19 +130,39 @@ export class CreditsService {
   }
 
   /**
-   * Return an action's price after the work failed. Refunds to the same bucket
-   * the spend came from by reading the most recent spend ledger rows for this
-   * action. Falls back to free-first if no spend rows are found.
+   * Return an action's price after the work failed.
+   *
+   * Finds the oldest unreversed spend group for this action and reverses it
+   * exactly — same buckets, same amounts — so the household gets back what it
+   * actually paid, never more. A "reversal" ledger row is written for each
+   * bucket that was part of the original spend; the spend rows are not touched
+   * (ledger is append-only).
    */
   async refund(householdId: string, action: CreditAction): Promise<void> {
-    const amount = CREDIT_COSTS[action];
-
     await this.db.transaction(async (tx) => {
       await this.ensureRow(tx, householdId);
 
-      // Find the most recent spend rows for this action to determine bucket split.
+      // Find spend groups already reversed for this action.
+      const reversedGroups = await tx
+        .select({ spendGroupId: creditLedger.spendGroupId })
+        .from(creditLedger)
+        .where(
+          and(
+            eq(creditLedger.householdId, householdId),
+            eq(creditLedger.kind, 'reversal'),
+            eq(creditLedger.action, action),
+          ),
+        );
+      const reversedIds = new Set(reversedGroups.map((r) => r.spendGroupId).filter(Boolean));
+
+      // Fetch all spend rows for this action so we can find the oldest unreversed group.
       const spendRows = await tx
-        .select({ delta: creditLedger.delta, bucket: creditLedger.bucket })
+        .select({
+          spendGroupId: creditLedger.spendGroupId,
+          delta: creditLedger.delta,
+          bucket: creditLedger.bucket,
+          createdAt: creditLedger.createdAt,
+        })
         .from(creditLedger)
         .where(
           and(
@@ -142,22 +170,42 @@ export class CreditsService {
             eq(creditLedger.kind, 'spend'),
             eq(creditLedger.action, action),
           ),
-        )
-        .orderBy(desc(creditLedger.createdAt))
-        .limit(2);
+        );
 
-      // Reconstruct how much came from each bucket during the spend.
+      // Group by spendGroupId and pick the oldest unreversed group.
+      const groups = new Map<string, { rows: typeof spendRows; oldestAt: Date }>();
+      for (const r of spendRows) {
+        if (!r.spendGroupId || reversedIds.has(r.spendGroupId)) continue;
+        const entry = groups.get(r.spendGroupId);
+        if (!entry) {
+          groups.set(r.spendGroupId, { rows: [r], oldestAt: r.createdAt });
+        } else {
+          entry.rows.push(r);
+          if (r.createdAt < entry.oldestAt) entry.oldestAt = r.createdAt;
+        }
+      }
+
+      if (groups.size === 0) return; // Nothing to reverse.
+
+      const [targetGroupId, target] = [...groups.entries()].sort(
+        (a, b) => a[1].oldestAt.getTime() - b[1].oldestAt.getTime(),
+      )[0]!;
+
       let toFree = 0;
       let toPaid = 0;
-      if (spendRows.length > 0) {
-        for (const r of spendRows) {
-          if (r.bucket === 'free') toFree += Math.abs(r.delta);
-          else toPaid += Math.abs(r.delta);
-        }
-      } else {
-        // No spend rows found — refund free-first as a safe default.
-        toFree = amount;
+      for (const r of target.rows) {
+        if (r.bucket === 'free') toFree += Math.abs(r.delta);
+        else toPaid += Math.abs(r.delta);
       }
+
+      // Cap free refund so it cannot exceed FREE_MONTHLY_GRANT (defensive; the
+      // normal path can only return what was taken, but guard against any drift).
+      const currentRow = await tx.execute(
+        sql`select free_balance from household_credits where household_id = ${householdId}`,
+      );
+      const currentFree =
+        (currentRow[0] as { free_balance: number } | undefined)?.free_balance ?? 0;
+      toFree = Math.min(toFree, FREE_MONTHLY_GRANT - currentFree);
 
       await tx
         .update(householdCredits)
@@ -168,26 +216,28 @@ export class CreditsService {
         })
         .where(eq(householdCredits.householdId, householdId));
 
-      const rows = [];
+      const reversalRows = [];
       if (toFree > 0) {
-        rows.push({
+        reversalRows.push({
           householdId,
           delta: toFree,
           kind: 'reversal' as const,
           bucket: 'free',
           action,
+          spendGroupId: targetGroupId,
         });
       }
       if (toPaid > 0) {
-        rows.push({
+        reversalRows.push({
           householdId,
           delta: toPaid,
           kind: 'reversal' as const,
           bucket: 'paid',
           action,
+          spendGroupId: targetGroupId,
         });
       }
-      if (rows.length > 0) await tx.insert(creditLedger).values(rows);
+      if (reversalRows.length > 0) await tx.insert(creditLedger).values(reversalRows);
     });
   }
 
@@ -219,10 +269,13 @@ export class CreditsService {
 
   /**
    * Read the balance row, creating it or rolling the monthly grant over as
-   * needed, and lock it for the rest of the transaction.
+   * needed, and acquire FOR UPDATE for the rest of the transaction.
    *
-   * `FOR UPDATE` serialises concurrent spends: without it two transactions
-   * read the same balance and both believe they can afford it.
+   * The lock is REQUIRED for split correctness in `spend`. Without it, two
+   * concurrent transactions read the same (free, paid) values, compute the same
+   * split, and then both pass the `free + paid >= cost` WHERE guard — one of
+   * them drives freeBalance negative. The lock serialises the reads so each
+   * transaction sees the balance after the previous one commits.
    */
   private async ensureRow(
     tx: TxClient,

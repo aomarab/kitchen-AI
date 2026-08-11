@@ -580,6 +580,8 @@ export const creditLedger = pgTable(
       onDelete: 'set null',
     }),
     purchaseId: uuid('purchase_id'),
+    /** Groups the 1–2 ledger rows that belong to a single spend. Used by refund to reverse the exact rows from the right buckets. */
+    spendGroupId: uuid('spend_group_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('credit_ledger_household_idx').on(table.householdId, table.createdAt)],

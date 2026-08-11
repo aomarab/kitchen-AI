@@ -43,6 +43,13 @@
       "when": 1786450201477,
       "tag": "0005_silky_mockingbird",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786451444917,
+      "tag": "0006_low_arclight",
+      "breakpoints": true
     }
   ]
 }

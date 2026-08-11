@@ -21,6 +21,9 @@ beforeEach(async () => {
   householdId = await seedHousehold(ctx.db, userId);
   createdUsers.push(userId);
   createdHouseholds.push(householdId);
+  // Lazily create the credits row so tests that directly update householdCredits
+  // find an existing row. This also exercises the create-branch on every test run.
+  await credits.balance(householdId);
 });
 
 // Households are deleted before users: the FK ordering matters.
@@ -35,6 +38,17 @@ describe('CreditsService', () => {
     expect(balance.freeBalance).toBe(FREE_MONTHLY_GRANT);
     expect(balance.paidBalance).toBe(0);
     expect(balance.grantPeriod).toBe(currentGrantPeriod());
+  });
+
+  it('creates the credits row lazily with exactly one grant ledger entry', async () => {
+    // beforeEach already called balance() once — that is the create-branch.
+    // Calling it again must not add another grant row.
+    await credits.balance(householdId);
+    const rows = await ctx.db
+      .select()
+      .from(creditLedger)
+      .where(eq(creditLedger.householdId, householdId));
+    expect(rows.filter((r) => r.kind === 'grant')).toHaveLength(1);
   });
 
   it('spends free credits first', async () => {
@@ -90,7 +104,7 @@ describe('CreditsService', () => {
     expect(balance.grantPeriod).toBe(currentGrantPeriod());
   });
 
-  it('never lets concurrent spends overdraw the balance', async () => {
+  it('never lets concurrent spends overdraw the balance (free-only baseline)', async () => {
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 10, paidBalance: 0 })
@@ -106,6 +120,30 @@ describe('CreditsService', () => {
     const balance = await credits.balance(householdId);
     expect(balance.freeBalance).toBe(2);
     expect(balance.paidBalance).toBe(0);
+  });
+
+  it('never lets concurrent spends drive freeBalance negative (mixed-bucket lock test)', async () => {
+    // free=2, paid=100: total=102 can afford many plan.daily (cost 4).
+    // Without FOR UPDATE the split is stale: two transactions both compute
+    // fromFree=2,fromPaid=2 and both commit, driving freeBalance to -2.
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 2, paidBalance: 100 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, () => credits.spend(householdId, 'plan.daily')),
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+
+    // All 10 spends can succeed: total=102, cost=4, floor(102/4)=25 > 10.
+    expect(ok).toBe(10);
+
+    const balance = await credits.balance(householdId);
+    // freeBalance must never go negative.
+    expect(balance.freeBalance).toBeGreaterThanOrEqual(0);
+    // Total debited must equal ok * cost.
+    expect(balance.freeBalance + balance.paidBalance).toBe(102 - ok * 4);
   });
 
   it('writes an append-only ledger row per movement', async () => {
@@ -153,5 +191,69 @@ describe('CreditsService', () => {
     await expect(credits.assertCanAfford(householdId, 'plan.monthly')).rejects.toMatchObject({
       code: 'INSUFFICIENT_CREDITS',
     });
+  });
+
+  // ── CRITICAL 1: refund correctness ──────────────────────────────────────────
+
+  it('two spends then one refund: refunds exactly one spend, not both', async () => {
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 10, paidBalance: 0 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    await credits.spend(householdId, 'pantry.scan'); // cost 1
+    await credits.spend(householdId, 'pantry.scan'); // cost 1
+    await credits.refund(householdId, 'pantry.scan');
+
+    const balance = await credits.balance(householdId);
+    // Started at 10, spent 2, refunded 1 → 9
+    expect(balance.freeBalance).toBe(9);
+  });
+
+  it('one spend then two refunds: second refund is a no-op, credits not minted', async () => {
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 10, paidBalance: 0 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    await credits.spend(householdId, 'pantry.scan'); // cost 1
+    await credits.refund(householdId, 'pantry.scan'); // reverses the spend
+    await credits.refund(householdId, 'pantry.scan'); // no unreversed spend → no-op
+
+    const balance = await credits.balance(householdId);
+    // Started at 10, net zero after spend+refund, second refund is no-op → 10
+    expect(balance.freeBalance).toBe(10);
+  });
+
+  it('cross-bucket spend refunds to the correct buckets', async () => {
+    // free=2, paid=10: a plan.daily (cost 4) takes 2 from free, 2 from paid.
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 2, paidBalance: 10 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    await credits.spend(householdId, 'plan.daily');
+    await credits.refund(householdId, 'plan.daily');
+
+    const balance = await credits.balance(householdId);
+    expect(balance.freeBalance).toBe(2);
+    expect(balance.paidBalance).toBe(10);
+  });
+
+  // ── CRITICAL 2: assertCanAfford / spend agree on negative paidBalance ───────
+
+  it('assertCanAfford and spend both succeed when freeBalance covers cost despite negative paidBalance', async () => {
+    // paidBalance=-10 is a legitimate post-refund state; freeBalance=150 covers cost=1.
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 150, paidBalance: -10 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    await expect(credits.assertCanAfford(householdId, 'pantry.scan')).resolves.toBeUndefined();
+    await expect(credits.spend(householdId, 'pantry.scan')).resolves.toBeUndefined();
+
+    const balance = await credits.balance(householdId);
+    expect(balance.freeBalance).toBe(149);
+    expect(balance.paidBalance).toBe(-10);
   });
 });

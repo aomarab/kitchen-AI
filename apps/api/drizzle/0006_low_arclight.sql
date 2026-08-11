@@ -1,0 +1,1 @@
+ALTER TABLE "credit_ledger" ADD COLUMN "spend_group_id" uuid;
