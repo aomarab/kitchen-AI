@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import { Logger } from '@nestjs/common';
 import { attachSpend, readPriorAttempts } from '../../ai-spend.js';
+import { AppError } from '../../../common/errors.js';
 import { RoutedAiProvider } from '../routed.provider.js';
 import type { AiProvider, StructuredRequest } from '../ai-provider.interface.js';
 
@@ -154,5 +156,70 @@ describe('RoutedAiProvider fallback', () => {
     const result = await routed.complete(request('vision'));
 
     expect(result.priorAttempts ?? []).toEqual([]);
+  });
+
+  it('logs a warning identifying the primary provider before falling back (Issue 5)', async () => {
+    // A silently-swallowed primary error makes a dead Gemini indistinguishable
+    // from a working one: OpenAI serves, the user sees success, and the branch
+    // delivers zero savings with no trace. The warn is the only observable
+    // difference between "Gemini is saving us" and "Gemini has been dead".
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const vision: AiProvider = {
+      kind: 'gemini',
+      complete: vi
+        .fn()
+        .mockRejectedValue(
+          new AppError('EXTERNAL_SERVICE_ERROR', 'errors.EXTERNAL_SERVICE_ERROR', {
+            model: 'gemini-3-flash',
+          }),
+        ),
+    };
+    const fallback = stub('openai');
+    const routed = new RoutedAiProvider(
+      { cheap: stub('c'), vision, planning: stub('p') },
+      { vision: fallback },
+    );
+
+    const result = await routed.complete(request('vision'));
+
+    expect(result.model).toBe('openai');
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    const message = String(warnSpy.mock.calls[0]![0]);
+    expect(message).toContain('gemini'); // the primary provider's kind
+    expect(message).toContain('vision.recognize'); // the operation
+    warnSpy.mockRestore();
+  });
+
+  it('concatenates the primary spend ahead of the fallback response priorAttempts (Issue 6)', async () => {
+    // The fallback response may already carry its own priorAttempts. Overwriting
+    // them with just [primarySpend] drops billed rows — an asymmetric
+    // drop-the-money default in the one module whose job is not dropping money.
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const vision = stub('gemini');
+    const primaryError = Object.assign(new Error('gemini bad'), {});
+    attachSpend(primaryError, { usage: { inputTokens: 900, outputTokens: 100 }, model: 'gemini' });
+    vision.complete.mockRejectedValue(primaryError);
+
+    const existingPrior = { usage: { inputTokens: 5, outputTokens: 6 }, model: 'earlier' };
+    const fallback = stub('openai');
+    fallback.complete.mockResolvedValue({
+      raw: { from: 'openai' },
+      usage: { inputTokens: 1, outputTokens: 1 },
+      model: 'openai',
+      priorAttempts: [existingPrior],
+    });
+
+    const routed = new RoutedAiProvider(
+      { cheap: stub('c'), vision, planning: stub('p') },
+      { vision: fallback },
+    );
+
+    const result = await routed.complete(request('vision'));
+
+    expect(result.priorAttempts).toEqual([
+      { usage: { inputTokens: 900, outputTokens: 100 }, model: 'gemini' },
+      existingPrior,
+    ]);
+    warnSpy.mockRestore();
   });
 });

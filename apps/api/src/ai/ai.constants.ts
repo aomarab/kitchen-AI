@@ -84,15 +84,53 @@ export function estimateCostUsd(
   inputTokens: number,
   outputTokens: number,
 ): number {
-  let rate = MODEL_RATES_USD_PER_MTOK[model];
+  let rate = resolveModelRate(model);
   if (!rate) {
     rate = TIER_FALLBACK_RATES[tier];
-    console.warn(
-      `[ai] no rate for model "${model}" (tier ${tier}); billing at the tier fallback rate. ` +
-        'Add it to MODEL_RATES_USD_PER_MTOK.',
-    );
+    if (!warnedUnresolvedModels.has(model)) {
+      warnedUnresolvedModels.add(model);
+      console.warn(
+        `[ai] no rate for model "${model}" (tier ${tier}); billing at the tier fallback rate. ` +
+          'Add it to MODEL_RATES_USD_PER_MTOK.',
+      );
+    }
   }
   return (inputTokens * rate.input + outputTokens * rate.output) / 1_000_000;
+}
+
+/**
+ * Warned-about ids, so an unresolved model logs once rather than on every call.
+ * A warning that fires on every call is noise nobody reads; the point is to
+ * surface a genuinely new/superseded model exactly once.
+ */
+const warnedUnresolvedModels = new Set<string>();
+
+/**
+ * Resolve a rate for the id the vendor actually reported.
+ *
+ * Providers return a resolved snapshot id for an alias — `gpt-5` comes back as
+ * `gpt-5-2026-01-15`, `gemini-3-flash` as `gemini-3-flash-preview-11-2025` —
+ * and that resolved id, not the alias, is what reaches billing. An exact hit
+ * wins; otherwise the longest table key that is a prefix of the reported id
+ * does, so `gpt-5-mini-2026-01-15` resolves to `gpt-5-mini` (0.15) and never to
+ * the shorter `gpt-5` (2.50). The prefix must end on a segment boundary so a
+ * hypothetical `gpt-50` can never borrow `gpt-5`'s rate.
+ */
+function resolveModelRate(model: string): ModelRate | undefined {
+  const exact = MODEL_RATES_USD_PER_MTOK[model];
+  if (exact) return exact;
+
+  let best: ModelRate | undefined;
+  let bestLen = -1;
+  for (const key of Object.keys(MODEL_RATES_USD_PER_MTOK)) {
+    if (key.length <= bestLen) continue;
+    const boundary = model[key.length];
+    if (model.startsWith(key) && (boundary === undefined || boundary === '-')) {
+      best = MODEL_RATES_USD_PER_MTOK[key];
+      bestLen = key.length;
+    }
+  }
+  return best;
 }
 
 /** Videos are cached for 30 days (spec §5.5). */

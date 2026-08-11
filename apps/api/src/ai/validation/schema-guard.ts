@@ -55,31 +55,59 @@ export class SchemaGuard {
     };
 
     // The first call is already billed. If the repair itself throws, its error
-    // must carry both calls' spend or the first one is lost.
+    // must carry both calls' spend — but only summed into one row when both
+    // calls were the *same* model. When the repair failed over to a different
+    // vendor (Gemini first, OpenAI repair), the two calls bill at different
+    // per-token rates; summing them would price the first vendor's tokens at
+    // the second's rate. So the throwing (repair) call keeps its own spend and
+    // the first call is carried as a separately-keyed prior attempt.
     let second;
     try {
       second = await provider.complete(repairRequest);
     } catch (error) {
       const repairSpend = readSpend(error);
-      const combined = attachSpend(error as object, {
-        usage: repairSpend ? addUsage(first.usage, repairSpend.usage) : first.usage,
-        model: repairSpend?.model ?? first.model,
-      });
+      const carried: AiSpend[] = [];
+      if (!repairSpend) {
+        // The repair threw before billing (e.g. a transport error). Only the
+        // first call was billed; it becomes this error's own spend.
+        attachSpend(error as object, { usage: first.usage, model: first.model });
+      } else if (repairSpend.model === first.model) {
+        // Same vendor: safe to record as a single summed row.
+        attachSpend(error as object, {
+          usage: addUsage(first.usage, repairSpend.usage),
+          model: repairSpend.model,
+        });
+      } else {
+        // Different vendor: keep the repair call's spend as-is, carry the first
+        // call separately so it is billed at its own model's rate.
+        attachSpend(error as object, repairSpend);
+        carried.push({ usage: first.usage, model: first.model });
+      }
       // Also forward any priorAttempts from the first call so they are not
       // silently dropped on this path.
       const prior = [
         ...(first.priorAttempts ?? []),
+        ...carried,
         ...readPriorAttempts(error),
       ];
-      if (prior.length > 0) attachPriorAttempts(combined, prior);
-      throw combined;
+      if (prior.length > 0) attachPriorAttempts(error as object, prior);
+      throw error;
     }
 
     const secondParse = schema.safeParse(second.raw);
-    const usage = addUsage(first.usage, second.usage);
+    // Only sum the two calls when they were served by the same model. A
+    // cross-vendor repair (Gemini → OpenAI) bills at two different rates, so
+    // the first call is carried as its own prior attempt rather than summed.
+    const sameModel = first.model === second.model;
+    const usage = sameModel ? addUsage(first.usage, second.usage) : second.usage;
+    const carried: AiSpend[] = sameModel ? [] : [{ usage: first.usage, model: first.model }];
 
     if (secondParse.success) {
-      const priorAttempts = [...(first.priorAttempts ?? []), ...(second.priorAttempts ?? [])];
+      const priorAttempts = [
+        ...(first.priorAttempts ?? []),
+        ...carried,
+        ...(second.priorAttempts ?? []),
+      ];
       return {
         data: secondParse.data,
         usage,
@@ -101,7 +129,11 @@ export class SchemaGuard {
       }),
       { usage, model: second.model },
     );
-    const priorOnFinal = [...(first.priorAttempts ?? []), ...(second.priorAttempts ?? [])];
+    const priorOnFinal = [
+      ...(first.priorAttempts ?? []),
+      ...carried,
+      ...(second.priorAttempts ?? []),
+    ];
     if (priorOnFinal.length > 0) attachPriorAttempts(finalError, priorOnFinal);
     throw finalError;
   }
