@@ -3,6 +3,7 @@ import type {
   AddShoppingItemsRequest,
   BulkCreateInventoryRequest,
   CheckoutShoppingRequest,
+  ConfirmPurchaseRequest,
   CreateHouseholdRequest,
   CreateIngredientRequest,
   CreateStorageLocationRequest,
@@ -13,6 +14,7 @@ import type {
   Locale,
   LoginRequest,
   MealSlot,
+  PurchaseIntentRequest,
   RegenerateEntryRequest,
   RegisterRequest,
   Session,
@@ -24,7 +26,7 @@ import type {
   UpdateMeRequest,
   UpdateProfileRequest,
 } from '@kitchen/contracts';
-import { DEFAULT_SLOTS_BY_SCOPE } from '@kitchen/contracts';
+import { CREDIT_PACKS, DEFAULT_SLOTS_BY_SCOPE } from '@kitchen/contracts';
 import { API_URL } from '../lib/config';
 import {
   buildRecognitionSession,
@@ -642,6 +644,25 @@ export const handlers = [
       callCount: 7,
     }),
   ),
+
+  /* ---------- Credits ---------- */
+  http.get(u('/credits'), async () => HttpResponse.json(db.credits)),
+  http.post(u('/credits/intents'), async ({ request }) => {
+    const body = (await request.json()) as PurchaseIntentRequest;
+    const pack = CREDIT_PACKS.find((p) => p.productId === body.productId);
+    if (!pack) return err('VALIDATION_FAILED', 422);
+    const intentId = uuid();
+    db.purchaseIntents.set(intentId, { productId: pack.productId, credits: pack.credits });
+    return HttpResponse.json({ intentId, productId: pack.productId, credits: pack.credits });
+  }),
+  http.post(u('/credits/purchases'), async ({ request }) => {
+    const body = (await request.json()) as ConfirmPurchaseRequest;
+    const intent = db.purchaseIntents.get(body.intentId);
+    if (!intent) return err('NOT_FOUND', 404);
+    db.purchaseIntents.delete(body.intentId);
+    db.credits = { ...db.credits, paidBalance: db.credits.paidBalance + intent.credits };
+    return HttpResponse.json(db.credits);
+  }),
 ];
 
 /* ------------------------------------------------------------------ */

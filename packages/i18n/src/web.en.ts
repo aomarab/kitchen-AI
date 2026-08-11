@@ -190,6 +190,20 @@ export const webEn = {
       saveFailed: 'Could not save. Please try again.',
       signedInAs: 'Signed in as {name}',
     },
+    credits: {
+      title: 'Credits',
+      subtitle: 'Credits pay for kitchen scans and meal plans.',
+      available: 'credits available',
+      free: 'Free this month',
+      paid: 'Purchased',
+      resets: 'Your {grant} free credits refill at the start of each month.',
+      belowMonthly:
+        'This will not cover a monthly plan ({needed} credits). Add more to plan the whole month.',
+      buyOnMobile: 'Buy more credits from the Kitchen app on your phone.',
+      loading: 'Loading your balance…',
+      outOfCreditsTitle: 'Out of credits',
+      getMore: 'Get more credits',
+    },
     feedback: {
       title: 'Send feedback',
       entry: 'Send feedback',

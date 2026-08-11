@@ -10,3 +10,19 @@ export function resolveErrorKey(error: unknown): string {
   if (error instanceof ContractViolationError) return 'errors.INTERNAL_ERROR';
   return 'errors.INTERNAL_ERROR';
 }
+
+/**
+ * True when an action failed because the household is out of credits (HTTP 402,
+ * spec §7). It is not a transport error but an expected, recoverable state, so
+ * the UI answers it with a route to top up rather than a bare "try again".
+ * Handles both a real `ApiError` and the plain `{ code }` envelopes some call
+ * sites hand to `ErrorState`.
+ */
+export function isInsufficientCredits(error: unknown): boolean {
+  if (error instanceof ApiError) return error.code === 'INSUFFICIENT_CREDITS';
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'INSUFFICIENT_CREDITS'
+  );
+}

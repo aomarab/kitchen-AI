@@ -89,12 +89,3 @@ export function useHousehold() {
     enabled: ready,
   });
 }
-
-export function useAiUsage() {
-  const ready = useMocksReady();
-  return useQuery({
-    queryKey: ['ai-usage'],
-    queryFn: () => api.call('getAiUsage'),
-    enabled: ready,
-  });
-}

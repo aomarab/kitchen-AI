@@ -18,6 +18,8 @@ import type {
   StorageLocationType,
   User,
 } from '@kitchen/contracts';
+import type { CreditBalance } from '@kitchen/contracts';
+import { FREE_MONTHLY_GRANT } from '@kitchen/contracts';
 import { INGREDIENTS, RECIPES, type RecipeSeed } from './catalog';
 import { uuid } from '../lib/uuid';
 
@@ -36,6 +38,11 @@ function dateFromNow(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+/** The `YYYY-MM` calendar month the free grant currently belongs to (spec §7). */
+function currentGrantPeriod(): string {
+  return new Date().toISOString().slice(0, 7);
 }
 
 const USER_ID = '22222222-2222-4222-8222-222222222222';
@@ -91,6 +98,10 @@ interface DbShape {
    * makes feedback submitted in mock mode show up in the admin console.
    */
   feedback: FeedbackDetail[];
+  /** Household credit balance (spec §7); the free grant renews monthly. */
+  credits: CreditBalance;
+  /** Purchase intents awaiting confirmation, keyed by intent id. */
+  purchaseIntents: Map<string, { productId: string; credits: number }>;
 }
 
 export const db = {} as DbShape;
@@ -457,6 +468,15 @@ export function seed(): void {
   db.jobs = new Map();
   db.recognitions = new Map();
   db.feedback = seedFeedback();
+
+  db.credits = {
+    householdId: DEFAULT_HOUSEHOLD_ID,
+    freeBalance: FREE_MONTHLY_GRANT,
+    paidBalance: 0,
+    grantPeriod: currentGrantPeriod(),
+    freeGrant: FREE_MONTHLY_GRANT,
+  };
+  db.purchaseIntents = new Map();
 }
 
 /**
