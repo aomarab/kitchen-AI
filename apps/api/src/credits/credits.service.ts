@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import {
   CREDIT_COSTS,
   FREE_MONTHLY_GRANT,
@@ -132,71 +132,53 @@ export class CreditsService {
   /**
    * Return an action's price after the work failed.
    *
-   * Finds the most-recent unreversed spend group for this action and reverses
-   * it exactly — same buckets, same amounts — so the household gets back what
-   * it actually paid, never more. A reversal row is always written for the
-   * target group so `refund` stays idempotent: a second call sees the group as
-   * already reversed and is a no-op. Spend rows are never mutated (append-only).
+   * Identifies the most-recent unreversed spend group via a single bounded SQL
+   * query — ordering by the monotonic `seq` column so microsecond-level
+   * concurrency is handled correctly without JavaScript sorting or UUID
+   * tie-breaking. Reverses the exact bucket amounts of that group. A reversal
+   * row (including a zero-delta sentinel if both amounts were clamped) is
+   * always written so the group is marked reversed and refund stays idempotent.
    */
   async refund(householdId: string, action: CreditAction): Promise<void> {
     await this.db.transaction(async (tx) => {
       const currentRow = await this.ensureRow(tx, householdId);
 
-      // Collect spend-group ids that already have a reversal row.
-      const reversedGroups = await tx
-        .select({ spendGroupId: creditLedger.spendGroupId })
-        .from(creditLedger)
-        .where(
-          and(
-            eq(creditLedger.householdId, householdId),
-            eq(creditLedger.kind, 'reversal'),
-            eq(creditLedger.action, action),
-          ),
-        );
-      const reversedIds = new Set(reversedGroups.map((r) => r.spendGroupId).filter(Boolean));
+      // Find the most-recent spend group for this action that has no reversal row.
+      // `seq` is a bigserial — strictly monotonic within Postgres, immune to
+      // millisecond-resolution Date collisions that afflict JS Date tie-breaking.
+      const groupResult = await tx.execute<{ spend_group_id: string }>(
+        sql`select spend_group_id
+            from credit_ledger
+            where household_id = ${householdId}
+              and kind = 'spend'
+              and action = ${action}
+              and spend_group_id is not null
+              and not exists (
+                select 1 from credit_ledger r
+                where r.household_id = ${householdId}
+                  and r.kind = 'reversal'
+                  and r.action = ${action}
+                  and r.spend_group_id = credit_ledger.spend_group_id
+              )
+            order by seq desc
+            limit 1`,
+      );
 
-      // Fetch all spend rows for this action to find the most-recent unreversed group.
-      const spendRows = await tx
-        .select({
-          spendGroupId: creditLedger.spendGroupId,
-          delta: creditLedger.delta,
-          bucket: creditLedger.bucket,
-          createdAt: creditLedger.createdAt,
-        })
-        .from(creditLedger)
-        .where(
-          and(
-            eq(creditLedger.householdId, householdId),
-            eq(creditLedger.kind, 'spend'),
-            eq(creditLedger.action, action),
-          ),
-        );
+      const targetGroupId = groupResult[0]?.spend_group_id;
+      if (!targetGroupId) return; // Nothing unreversed to reverse.
 
-      // Group by spendGroupId, skipping already-reversed groups.
-      const groups = new Map<string, { rows: typeof spendRows; newestAt: Date }>();
-      for (const r of spendRows) {
-        if (!r.spendGroupId || reversedIds.has(r.spendGroupId)) continue;
-        const entry = groups.get(r.spendGroupId);
-        if (!entry) {
-          groups.set(r.spendGroupId, { rows: [r], newestAt: r.createdAt });
-        } else {
-          entry.rows.push(r);
-          if (r.createdAt > entry.newestAt) entry.newestAt = r.createdAt;
-        }
-      }
-
-      if (groups.size === 0) return; // Nothing to reverse.
-
-      // Pick the most-recent group. Tie-break on spendGroupId (stable sort) so
-      // concurrent spends that land in the same millisecond are deterministic.
-      const [targetGroupId, target] = [...groups.entries()].sort((a, b) => {
-        const dt = b[1].newestAt.getTime() - a[1].newestAt.getTime();
-        return dt !== 0 ? dt : b[0].localeCompare(a[0]);
-      })[0]!;
+      // Fetch the spend rows for this group to reconstruct the bucket split.
+      const spendRows = await tx.execute<{ delta: number; bucket: string }>(
+        sql`select delta, bucket
+            from credit_ledger
+            where household_id = ${householdId}
+              and kind = 'spend'
+              and spend_group_id = ${targetGroupId}`,
+      );
 
       let toFree = 0;
       let toPaid = 0;
-      for (const r of target.rows) {
+      for (const r of spendRows) {
         if (r.bucket === 'free') toFree += Math.abs(r.delta);
         else toPaid += Math.abs(r.delta);
       }
@@ -204,8 +186,7 @@ export class CreditsService {
       // Cap the free refund so freeBalance cannot exceed FREE_MONTHLY_GRANT.
       // Floor at 0: if currentFree > FREE_MONTHLY_GRANT the unclamped value
       // would be negative, which would subtract credits on a refund.
-      // Any clamped-off free amount is NOT redirected to paid — the original
-      // spend came from free, and we cannot conjure paid credits.
+      // Any clamped-off free amount is NOT redirected to paid.
       const cappedToFree = Math.max(
         0,
         Math.min(toFree, FREE_MONTHLY_GRANT - currentRow.freeBalance),
@@ -222,10 +203,10 @@ export class CreditsService {
           .where(eq(householdCredits.householdId, householdId));
       }
 
-      // Always write the reversal row(s) so the group is marked reversed even
-      // when the clamp reduces the credit amount to 0.  Without this, a
-      // clamped no-op refund leaves the group unreversed and a second call
-      // re-targets it — silently failing to credit the household forever.
+      // Always write reversal rows so the group is marked reversed even when
+      // the clamp reduces the credit amount to 0. Without this a clamped
+      // no-op refund leaves the group unreversed and a second call re-targets
+      // it — silently failing to credit the household forever.
       const reversalRows = [];
       if (cappedToFree > 0) {
         reversalRows.push({
@@ -247,7 +228,7 @@ export class CreditsService {
           spendGroupId: targetGroupId,
         });
       }
-      // Sentinel row: marks the group reversed when both amounts were clamped to 0.
+      // Sentinel: marks the group reversed when both amounts were clamped to 0.
       if (reversalRows.length === 0) {
         reversalRows.push({
           householdId,

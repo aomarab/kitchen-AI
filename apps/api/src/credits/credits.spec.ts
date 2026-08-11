@@ -315,4 +315,55 @@ describe('CreditsService', () => {
     expect(balance2.freeBalance).toBe(FREE_MONTHLY_GRANT);
     expect(balance2.paidBalance).toBe(0);
   });
+
+  // ── Important 5: seq-ordered SQL, not JS Date tie-breaking ──────────────────
+
+  it('refunds the higher-seq group when two spends share an identical created_at', async () => {
+    // Insert two spend groups directly with an identical created_at timestamp
+    // so the old JS Date tie-break (millisecond resolution + random UUID) would
+    // be non-deterministic. Group A: 2 free + 0 paid. Group B: 0 free + 4 paid.
+    // The refund must reverse group B (higher seq) not group A.
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 2, paidBalance: 10 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    const collisionTime = new Date();
+    const groupA = crypto.randomUUID();
+    const groupB = crypto.randomUUID();
+
+    // Group A — free spend (seq will be lower because inserted first).
+    await ctx.db.insert(creditLedger).values({
+      householdId,
+      delta: -2,
+      kind: 'spend',
+      bucket: 'free',
+      action: 'plan.daily',
+      spendGroupId: groupA,
+      createdAt: collisionTime,
+    });
+    // Group B — paid spend (seq will be higher because inserted second).
+    await ctx.db.insert(creditLedger).values({
+      householdId,
+      delta: -4,
+      kind: 'spend',
+      bucket: 'paid',
+      action: 'plan.daily',
+      spendGroupId: groupB,
+      createdAt: collisionTime,
+    });
+
+    // Adjust balances to reflect the two "spends".
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 0, paidBalance: 6 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    // Refund must reverse group B (4 paid), not group A (2 free).
+    await credits.refund(householdId, 'plan.daily');
+
+    const after = await credits.balance(householdId);
+    expect(after.freeBalance).toBe(0); // group A not touched
+    expect(after.paidBalance).toBe(10); // group B reversed: 6 + 4
+  });
 });

@@ -1,5 +1,6 @@
 import { relations, sql } from 'drizzle-orm';
 import {
+  bigserial,
   boolean,
   check,
   date,
@@ -565,6 +566,8 @@ export const creditLedger = pgTable(
   'credit_ledger',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    /** Monotonically increasing insert order — the authoritative recency key. */
+    seq: bigserial('seq', { mode: 'bigint' }).notNull(),
     householdId: uuid('household_id')
       .notNull()
       .references(() => households.id, { onDelete: 'cascade' }),
@@ -584,7 +587,11 @@ export const creditLedger = pgTable(
     spendGroupId: uuid('spend_group_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('credit_ledger_household_idx').on(table.householdId, table.createdAt)],
+  (table) => [
+    index('credit_ledger_household_idx').on(table.householdId, table.createdAt),
+    // Covers the refund query: equality on householdId + action + kind, ordered by seq.
+    index('credit_ledger_refund_idx').on(table.householdId, table.action, table.kind, table.seq),
+  ],
 );
 
 /**
