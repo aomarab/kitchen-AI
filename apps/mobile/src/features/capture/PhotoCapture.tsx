@@ -12,6 +12,7 @@ import { useJob, isTerminal } from '../../hooks/job';
 import { api } from '../../lib/api';
 import { expoPhotoUploader } from '../../lib/photo-uploader';
 import { uploadPhotos } from '../../lib/upload';
+import { resizeForUpload } from '../../lib/image';
 import { useCaptureStore, type CaptureSource } from '../../stores/capture';
 import { colors, radius, spacing } from '../../theme';
 
@@ -62,7 +63,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
 
   const takePhoto = async () => {
     const shot = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
-    if (shot?.uri) addPhoto(shot.uri);
+    if (shot?.uri) addPhoto(await resizeForUpload(shot.uri));
   };
 
   const pickLibrary = async () => {
@@ -71,7 +72,9 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
       quality: 0.6,
       allowsMultipleSelection: mode === 'photo',
     });
-    if (!result.canceled) result.assets.forEach((asset) => addPhoto(asset.uri));
+    if (result.canceled) return;
+    const resized = await Promise.all(result.assets.map((asset) => resizeForUpload(asset.uri)));
+    resized.forEach(addPhoto);
   };
 
   const uploadKeys = () =>
