@@ -15,6 +15,7 @@ export const mobileAr: MobileMessages = {
     tabs: {
       home: 'الرئيسية',
       kitchen: 'المطبخ',
+      capture: 'تصوير',
       plans: 'الخطط',
       more: 'المزيد',
     },

@@ -23,6 +23,7 @@ export const mobileEn = {
     tabs: {
       home: 'Home',
       kitchen: 'Kitchen',
+      capture: 'Capture',
       plans: 'Plans',
       more: 'More',
     },

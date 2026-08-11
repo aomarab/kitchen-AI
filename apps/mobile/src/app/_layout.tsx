@@ -21,8 +21,13 @@ import { colors } from '../theme';
 /**
  * Apply layout direction from the active locale. `I18nManager.forceRTL` only
  * takes full effect after an app reload, so switching language in Settings
- * prompts the user to restart (see settings screen). On a fresh launch the
- * device locale is already applied here.
+ * prompts the user to restart (see settings screen).
+ *
+ * This must not run before `useBootstrap` has hydrated the persisted locale.
+ * The store starts on the *device* locale, so an Arabic user on an English
+ * device briefly reads `en` on the first render; applying that flipped the flag
+ * back to LTR, the hydrated `ar` flipped it to RTL again on the next launch,
+ * and the app alternated direction every time it started.
  */
 function applyDirection(locale: Locale): void {
   const rtl = directionFor(locale) === 'rtl';
@@ -55,10 +60,13 @@ function useSignedOutRedirect(ready: boolean): void {
 export default function RootLayout() {
   const { locale } = useLocale();
   const ready = useBootstrap();
-  applyDirection(locale);
   useAppFonts();
   useOfflineSync();
   useSignedOutRedirect(ready);
+
+  useEffect(() => {
+    if (ready) applyDirection(locale);
+  }, [ready, locale]);
 
   // Mocks have no locale header; mirror the app locale into the mock layer so
   // AI-generated plan/entry content comes back in the right language.

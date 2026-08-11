@@ -11,6 +11,7 @@ export { Fab } from './Fab';
 export { Field } from './Field';
 export { Header } from './Header';
 export { Icon, IONICONS } from './Icon';
+export { TabBar } from './TabBar';
 export type { IconName } from './Icon';
 export { ListRow } from './ListRow';
 export { OAuthButtons } from './OAuthButtons';
