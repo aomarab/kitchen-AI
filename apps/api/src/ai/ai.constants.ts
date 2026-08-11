@@ -62,6 +62,7 @@ export const MODEL_RATES_USD_PER_MTOK: Record<string, ModelRate> = {
   'gpt-5': { input: 2.5, output: 10 },
   'gpt-5-mini': { input: 0.15, output: 0.6 },
   'gemini-3-flash': { input: 1.5, output: 7.5 },
+  'text-embedding-3-small': { input: 0.02, output: 0 },
 };
 
 /**

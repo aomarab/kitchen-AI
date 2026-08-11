@@ -33,4 +33,12 @@ describe('estimateCostUsd', () => {
       10,
     );
   });
+
+  it('prices embeddings from their own rate, not the tier fallback', () => {
+    // text-embedding-3-small is on the cheap tier but has a much lower rate (0.02 vs 0.15).
+    // This test must discriminate: it fails if the model entry is missing and the tier fallback is used.
+    const cost = estimateCostUsd('text-embedding-3-small', 'cheap', 1_000_000, 0);
+    expect(cost).toBeCloseTo(0.02, 10);
+  });
 });
+
