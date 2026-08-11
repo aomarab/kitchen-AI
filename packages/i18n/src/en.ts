@@ -66,6 +66,7 @@ export const en = {
     HOUSEHOLD_REQUIRED: 'Create or join a household first.',
     RATE_LIMITED: 'Too many requests. Please wait a moment.',
     QUOTA_EXCEEDED: "You've used today's AI allowance. It resets tomorrow.",
+    INSUFFICIENT_CREDITS: "You don't have enough credits for this. Top up to keep cooking.",
     AI_UNAVAILABLE: 'The AI service is unavailable right now. Please try again shortly.',
     AI_INVALID_OUTPUT: "The AI response couldn't be read. Please try again.",
     AI_NO_RESULT: 'Nothing was recognised. Try another photo or add items manually.',
@@ -247,7 +248,8 @@ export const en = {
   },
 
   /** Keyed by `cuisineSchema.options` — shared by web and mobile. */
-  cuisine: {    levantine: 'Levantine',
+  cuisine: {
+    levantine: 'Levantine',
     gulf: 'Gulf',
     egyptian: 'Egyptian',
     moroccan: 'Moroccan',

@@ -75,6 +75,12 @@ import {
   updateFeedbackRequestSchema,
 } from './feedback.js';
 import { idParamSchema, paginatedSchema, uuidSchema } from './common.js';
+import {
+  creditBalanceSchema,
+  confirmPurchaseRequestSchema,
+  purchaseIntentRequestSchema,
+  purchaseIntentSchema,
+} from './credits.js';
 
 /**
  * Single registry of every HTTP endpoint. `@kitchen/api-client` and the MSW
@@ -564,6 +570,31 @@ export const routes = {
     params: idParamSchema,
     body: updateFeedbackRequestSchema,
     response: feedbackDetailSchema,
+  },
+
+  /* ---------------- Credits ---------------- */
+  getCredits: {
+    method: 'GET',
+    path: '/credits',
+    auth: true,
+    household: true,
+    response: creditBalanceSchema,
+  },
+  createPurchaseIntent: {
+    method: 'POST',
+    path: '/credits/intents',
+    auth: true,
+    household: true,
+    body: purchaseIntentRequestSchema,
+    response: purchaseIntentSchema,
+  },
+  confirmPurchase: {
+    method: 'POST',
+    path: '/credits/purchases',
+    auth: true,
+    household: true,
+    body: confirmPurchaseRequestSchema,
+    response: creditBalanceSchema,
   },
 } as const satisfies Record<string, RouteDefinition>;
 
