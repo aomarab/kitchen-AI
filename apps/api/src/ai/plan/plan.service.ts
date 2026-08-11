@@ -21,7 +21,7 @@ import type { CatalogIngredientRef, ResolvedRecipe } from '../planner/types.js';
 import { toRecipeSummary, type RecipeRow } from '../recipes/recipe-mapper.js';
 import { dishKey } from '../recipes/dish-key.js';
 import type { DishMedia } from '../recipes/media.service.js';
-import { MediaService } from '../recipes/media.service.js';
+import { MediaService, NO_MEDIA } from '../recipes/media.service.js';
 import { PlannerService } from '../planner/planner.service.js';
 
 type EntryWithRecipe = {
@@ -229,7 +229,11 @@ export class PlanService {
     });
     if (!row) throw AppError.notFound('errors.NOT_FOUND');
     const locale = (row.plan.locale as Locale) ?? 'en';
-    return this.toEntry({ ...row, recipe: row.recipe as RecipeRow }, locale);
+    const recipe = row.recipe as RecipeRow;
+    const title = locale === 'ar' ? (recipe.titleAr ?? recipe.titleEn ?? '') : (recipe.titleEn ?? recipe.titleAr ?? '');
+    const dishMediaResult = await this.mediaService.resolve(title, locale);
+    const mediaMap = new Map([[dishKey(title), dishMediaResult]]);
+    return this.toEntry({ ...row, recipe }, locale, mediaMap);
   }
 
   private toMealPlan(row: {
@@ -260,9 +264,9 @@ export class PlanService {
     };
   }
 
-  private toEntry(row: EntryWithRecipe, locale: Locale, mediaMap: Map<string, DishMedia> = new Map()): MealPlanEntry {
+  private toEntry(row: EntryWithRecipe, locale: Locale, mediaMap: Map<string, DishMedia>): MealPlanEntry {
     const title = locale === 'ar' ? (row.recipe.titleAr ?? row.recipe.titleEn ?? '') : (row.recipe.titleEn ?? row.recipe.titleAr ?? '');
-    const media = mediaMap.get(dishKey(title));
+    const media = mediaMap.get(dishKey(title)) ?? NO_MEDIA;
     return {
       id: row.id,
       planId: row.planId,

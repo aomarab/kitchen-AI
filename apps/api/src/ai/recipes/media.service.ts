@@ -18,7 +18,7 @@ export interface DishMedia {
   videos: RecipeVideo[];
 }
 
-const NO_MEDIA: DishMedia = { status: 'none', heroThumbnailUrl: null, videos: [] };
+export const NO_MEDIA: DishMedia = { status: 'none', heroThumbnailUrl: null, videos: [] };
 
 /**
  * Resolves a dish to a hero image and a ranked video list, once, for everyone.

@@ -8,9 +8,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { createTestContext, seedUser, seedHousehold, cleanup } from '../../../testing/harness.js';
 import * as schema from '../../../db/schema.js';
-import { dishMedia, dishVideos } from '../../../db/schema.js';
-import { MediaService } from '../media.service.js';
+import { dishMedia, dishVideos, mealPlans, mealPlanEntries } from '../../../db/schema.js';
+import { MediaService, NO_MEDIA } from '../media.service.js';
 import { RecipesService } from '../recipes.service.js';
+import { PlanService } from '../../plan/plan.service.js';
 import type { YoutubeClient, YoutubeVideo } from '../../clients/clients.interface.js';
 
 const ctx = createTestContext();
@@ -151,5 +152,100 @@ describe('RecipesService getVideos wiring', () => {
     const videos = await service.getVideos(householdId, recipeId, 'en');
 
     expect(videos).toEqual([]);
+  });
+});
+
+describe('PlanService.updateEntry: heroImageUrl is non-null after update when media exists', () => {
+  /** Distinct dish key to avoid cross-test pollution. */
+  const UPDATE_DISH_KEY = 'mandi-rice';
+  let userId2: string;
+  let householdId2: string;
+  let planId: string;
+  let entryId: string;
+  let recipeId2: string;
+
+  beforeAll(async () => {
+    // Clear any stale dish_media rows before seeding
+    await ctx.db.delete(dishVideos).where(eq(dishVideos.dishKey, UPDATE_DISH_KEY));
+    await ctx.db.delete(dishMedia).where(eq(dishMedia.dishKey, UPDATE_DISH_KEY));
+
+    userId2 = await seedUser(ctx.db);
+    householdId2 = await seedHousehold(ctx.db, userId2);
+
+    const [recipe] = await ctx.db
+      .insert(schema.recipes)
+      .values({
+        householdId: householdId2,
+        titleEn: 'Mandi Rice',
+        titleAr: 'أرز مندي',
+        descriptionEn: 'Yemeni rice dish',
+        descriptionAr: 'طبق أرز سعودي',
+        stepsEn: [{ index: 1, text: 'Cook', durationMinutes: 60 }],
+        stepsAr: [{ index: 1, text: 'اطبخ', durationMinutes: 60 }],
+        prepMinutes: 15,
+        cookMinutes: 60,
+        servings: 4,
+        difficulty: 'medium',
+        cuisine: 'middle-eastern',
+        generatedBy: 'ai',
+      })
+      .returning({ id: schema.recipes.id });
+    if (!recipe) throw new Error('seed recipe failed');
+    recipeId2 = recipe.id;
+
+    const [plan] = await ctx.db
+      .insert(mealPlans)
+      .values({
+        householdId: householdId2,
+        scope: 'daily',
+        startsOn: '2026-08-11',
+        endsOn: '2026-08-11',
+        status: 'ready',
+        locale: 'en',
+      })
+      .returning({ id: mealPlans.id });
+    if (!plan) throw new Error('seed plan failed');
+    planId = plan.id;
+
+    const [entry] = await ctx.db
+      .insert(mealPlanEntries)
+      .values({
+        planId,
+        recipeId: recipeId2,
+        date: '2026-08-11',
+        slot: 'lunch',
+        servings: 4,
+        state: 'planned',
+        fullyCovered: true,
+        position: 0,
+      })
+      .returning({ id: mealPlanEntries.id });
+    if (!entry) throw new Error('seed entry failed');
+    entryId = entry.id;
+  });
+
+  afterAll(async () => {
+    await ctx.db.delete(dishVideos).where(eq(dishVideos.dishKey, UPDATE_DISH_KEY));
+    await ctx.db.delete(dishMedia).where(eq(dishMedia.dishKey, UPDATE_DISH_KEY));
+    await cleanup(ctx.db, { households: [householdId2], users: [userId2] });
+  });
+
+  it('updateEntry response carries heroImageUrl from MediaService, not null', async () => {
+    const video: YoutubeVideo = {
+      youtubeId: 'mandi999',
+      title: 'Mandi Rice',
+      channel: 'Test Kitchen',
+      thumbnailUrl: 'https://i.ytimg.com/vi/mandi999/maxresdefault.jpg',
+      durationSeconds: 742,
+      categoryId: '26',
+      defaultAudioLanguage: 'en',
+      embeddable: true,
+    };
+    const media = new MediaService(ctx.db, fakeYoutube([video]));
+    const service = new PlanService(ctx.db, undefined as never, undefined as never, media);
+
+    const result = await service.updateEntry(householdId2, planId, entryId, { servings: 2 });
+
+    expect(result.recipe.heroImageUrl).toBe('https://i.ytimg.com/vi/mandi999/maxresdefault.jpg');
   });
 });

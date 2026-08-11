@@ -219,10 +219,7 @@ export class RecipesService {
     if (!row || (row.householdId !== null && row.householdId !== householdId)) {
       throw AppError.notFound('errors.NOT_FOUND');
     }
-    return {
-      ...(row as unknown as FullRecipeRow),
-      videos: [],
-    };
+    return row as unknown as FullRecipeRow;
   }
 
   async localeFor(userId: string): Promise<Locale> {

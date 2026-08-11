@@ -54,7 +54,6 @@ export interface RecipeIngredientRow {
 
 export interface FullRecipeRow extends RecipeRow {
   ingredients: RecipeIngredientRow[];
-  videos: never[];
 }
 
 function pickText(locale: Locale, en: string | null, ar: string | null): string {
@@ -88,7 +87,7 @@ function toNutrition(value: Record<string, number> | null): Nutrition | null {
   };
 }
 
-export function toRecipeSummary(row: RecipeRow, locale: Locale, media?: DishMedia): RecipeSummary {
+export function toRecipeSummary(row: RecipeRow, locale: Locale, media: DishMedia): RecipeSummary {
   return {
     id: row.id,
     title: pickText(locale, row.titleEn, row.titleAr),
@@ -143,7 +142,7 @@ function toRecipeIngredient(
   return base;
 }
 
-export function toRecipe(row: FullRecipeRow, locale: Locale, snapshot?: PantrySnapshot, media?: DishMedia): Recipe {
+export function toRecipe(row: FullRecipeRow, locale: Locale, snapshot: PantrySnapshot | undefined, media: DishMedia): Recipe {
   const steps = pickSteps(locale, row.stepsEn, row.stepsAr);
   return {
     id: row.id,
