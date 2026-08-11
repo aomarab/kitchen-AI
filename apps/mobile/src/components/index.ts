@@ -23,3 +23,4 @@ export { Sheet } from './Sheet';
 export { StarRating } from './StarRating';
 export { EmptyState, ErrorState, LoadingState } from './States';
 export { ToggleRow } from './ToggleRow';
+export { RecipeThumb } from './RecipeThumb';

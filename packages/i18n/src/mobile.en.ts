@@ -132,6 +132,7 @@ export const mobileEn = {
       exitCookMode: 'Exit',
       watchOnYoutube: 'Watch on YouTube',
       videoUnavailable: 'This video cannot be played right now.',
+      noPhoto: 'No photo available for {dish}',
     },
     more: {
       title: 'More',

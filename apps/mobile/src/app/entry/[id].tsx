@@ -1,6 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View } from 'react-native';
-import { Image } from 'react-native';
 import type { MealSlot } from '@kitchen/contracts';
 import type { MessageKey } from '@kitchen/i18n';
 import {
@@ -14,6 +13,7 @@ import {
   LoadingState,
   ErrorState,
   EmptyState,
+  RecipeThumb,
 } from '../../components';
 import type { BadgeTone } from '../../components/Badge';
 import { useFormat } from '../../hooks/useFormat';
@@ -76,12 +76,13 @@ export default function EntryDetail() {
       <Header title={t('mobile.plans.entryTitle')} onBack={() => router.back()} />
 
       <Card style={{ gap: spacing.sm }}>
-        {recipe.heroImageUrl ? (
-          <Image
-            source={{ uri: recipe.heroImageUrl }}
-            style={{ width: '100%', height: 160, borderRadius: radius.md }}
-          />
-        ) : null}
+        <RecipeThumb
+          src={recipe.heroImageUrl}
+          title={recipe.title}
+          dishKey={recipe.title}
+          height={160}
+          borderRadius={radius.md}
+        />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <Badge label={t(SLOT_KEY[entry.slot])} />
           <Badge tone={STATE_TONE[entry.state] ?? 'neutral'} label={t(`plans.${entry.state}` as MessageKey)} />
