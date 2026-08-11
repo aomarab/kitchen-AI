@@ -50,75 +50,75 @@
 Create `packages/contracts/src/credits.spec.ts`:
 
 ```ts
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 import {
   CREDIT_COSTS,
   CREDIT_PACKS,
   FREE_MONTHLY_GRANT,
   creditActionSchema,
   creditBalanceSchema,
-} from "./credits.js";
-import { ERROR_STATUS, errorCodeSchema } from "./common.js";
+} from './credits.js';
+import { ERROR_STATUS, errorCodeSchema } from './common.js';
 
-describe("credit contracts", () => {
-  it("prices every action", () => {
+describe('credit contracts', () => {
+  it('prices every action', () => {
     for (const action of creditActionSchema.options) {
       expect(CREDIT_COSTS[action]).toBeGreaterThan(0);
     }
   });
 
-  it("uses the exact prices from the spec", () => {
+  it('uses the exact prices from the spec', () => {
     expect(CREDIT_COSTS).toEqual({
-      "pantry.scan": 1,
-      "receipt.scan": 2,
-      "plan.daily": 4,
-      "plan.weekly": 20,
-      "plan.monthly": 50,
-      "plan.regenerateEntry": 2,
+      'pantry.scan': 1,
+      'receipt.scan': 2,
+      'plan.daily': 4,
+      'plan.weekly': 20,
+      'plan.monthly': 50,
+      'plan.regenerateEntry': 2,
     });
   });
 
-  it("grants 150 free credits a month", () => {
+  it('grants 150 free credits a month', () => {
     expect(FREE_MONTHLY_GRANT).toBe(150);
   });
 
-  it("sells 300 credits for $4.99", () => {
-    const pack = CREDIT_PACKS.find((p) => p.productId === "credits_300");
+  it('sells 300 credits for $4.99', () => {
+    const pack = CREDIT_PACKS.find((p) => p.productId === 'credits_300');
     expect(pack).toEqual({
-      productId: "credits_300",
+      productId: 'credits_300',
       credits: 300,
       priceUsd: 4.99,
     });
   });
 
-  it("keeps the monthly plan the most expensive action", () => {
+  it('keeps the monthly plan the most expensive action', () => {
     const costs = Object.values(CREDIT_COSTS);
-    expect(Math.max(...costs)).toBe(CREDIT_COSTS["plan.monthly"]);
+    expect(Math.max(...costs)).toBe(CREDIT_COSTS['plan.monthly']);
   });
 
-  it("registers INSUFFICIENT_CREDITS as a 402", () => {
-    expect(errorCodeSchema.options).toContain("INSUFFICIENT_CREDITS");
+  it('registers INSUFFICIENT_CREDITS as a 402', () => {
+    expect(errorCodeSchema.options).toContain('INSUFFICIENT_CREDITS');
     expect(ERROR_STATUS.INSUFFICIENT_CREDITS).toBe(402);
   });
 
-  it("parses a balance", () => {
+  it('parses a balance', () => {
     const parsed = creditBalanceSchema.parse({
-      householdId: "00000000-0000-4000-8000-000000000000",
+      householdId: '00000000-0000-4000-8000-000000000000',
       freeBalance: 150,
       paidBalance: 0,
-      grantPeriod: "2026-08",
+      grantPeriod: '2026-08',
       freeGrant: 150,
     });
     expect(parsed.freeBalance).toBe(150);
   });
 
-  it("rejects a malformed grant period", () => {
+  it('rejects a malformed grant period', () => {
     expect(() =>
       creditBalanceSchema.parse({
-        householdId: "00000000-0000-4000-8000-000000000000",
+        householdId: '00000000-0000-4000-8000-000000000000',
         freeBalance: 1,
         paidBalance: 0,
-        grantPeriod: "August 2026",
+        grantPeriod: 'August 2026',
         freeGrant: 150,
       }),
     ).toThrow();
@@ -142,8 +142,8 @@ In `packages/contracts/src/common.ts`, add `'INSUFFICIENT_CREDITS',` to `errorCo
 Create `packages/contracts/src/credits.ts`:
 
 ```ts
-import { z } from "zod";
-import { uuidSchema } from "./common.js";
+import { z } from 'zod';
+import { uuidSchema } from './common.js';
 
 /**
  * Billable user-facing actions. Credits are priced per *action*, not per AI
@@ -154,12 +154,12 @@ import { uuidSchema } from "./common.js";
  * internal steps absorbed by the action that triggered them.
  */
 export const creditActionSchema = z.enum([
-  "pantry.scan",
-  "receipt.scan",
-  "plan.daily",
-  "plan.weekly",
-  "plan.monthly",
-  "plan.regenerateEntry",
+  'pantry.scan',
+  'receipt.scan',
+  'plan.daily',
+  'plan.weekly',
+  'plan.monthly',
+  'plan.regenerateEntry',
 ]);
 export type CreditAction = z.infer<typeof creditActionSchema>;
 
@@ -171,12 +171,12 @@ export type CreditAction = z.infer<typeof creditActionSchema>;
  * See spec §3. Change these only with the cost table in `ai.constants.ts`.
  */
 export const CREDIT_COSTS: Record<CreditAction, number> = {
-  "pantry.scan": 1,
-  "receipt.scan": 2,
-  "plan.daily": 4,
-  "plan.weekly": 20,
-  "plan.monthly": 50,
-  "plan.regenerateEntry": 2,
+  'pantry.scan': 1,
+  'receipt.scan': 2,
+  'plan.daily': 4,
+  'plan.weekly': 20,
+  'plan.monthly': 50,
+  'plan.regenerateEntry': 2,
 };
 
 /**
@@ -194,7 +194,7 @@ export interface CreditPack {
 
 /** Store SKUs. `productId` must match the App Store / Play Console product id. */
 export const CREDIT_PACKS: readonly CreditPack[] = [
-  { productId: "credits_300", credits: 300, priceUsd: 4.99 },
+  { productId: 'credits_300', credits: 300, priceUsd: 4.99 },
 ];
 
 /** `YYYY-MM`; the month a free balance belongs to. */
@@ -225,11 +225,9 @@ export type PurchaseIntent = z.infer<typeof purchaseIntentSchema>;
 export const confirmPurchaseRequestSchema = z.object({
   intentId: uuidSchema,
   storeTransactionId: z.string().min(1),
-  store: z.enum(["apple", "google"]),
+  store: z.enum(['apple', 'google']),
 });
-export type ConfirmPurchaseRequest = z.infer<
-  typeof confirmPurchaseRequestSchema
->;
+export type ConfirmPurchaseRequest = z.infer<typeof confirmPurchaseRequestSchema>;
 ```
 
 Add `export * from './credits.js';` to `packages/contracts/src/index.ts` after the `./ai.js` line.
@@ -283,31 +281,27 @@ In `apps/api/src/db/schema.ts`, after the `aiUsage` table (ends around line 520)
  * "are we covering costs?" be a query rather than a guess.
  */
 export const creditLedger = pgTable(
-  "credit_ledger",
+  'credit_ledger',
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    householdId: uuid("household_id")
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
       .notNull()
-      .references(() => households.id, { onDelete: "cascade" }),
+      .references(() => households.id, { onDelete: 'cascade' }),
     /** Signed: positive credits the household, negative debits it. */
-    delta: integer("delta").notNull(),
+    delta: integer('delta').notNull(),
     /** grant | purchase | spend | refund | reversal */
-    kind: text("kind").notNull(),
+    kind: text('kind').notNull(),
     /** free | paid — which bucket moved. */
-    bucket: text("bucket").notNull(),
+    bucket: text('bucket').notNull(),
     /** The `CreditAction` for spends and reversals; null otherwise. */
-    action: text("action"),
-    aiUsageId: uuid("ai_usage_id").references(() => aiUsage.id, {
-      onDelete: "set null",
+    action: text('action'),
+    aiUsageId: uuid('ai_usage_id').references(() => aiUsage.id, {
+      onDelete: 'set null',
     }),
-    purchaseId: uuid("purchase_id"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    purchaseId: uuid('purchase_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [
-    index("credit_ledger_household_idx").on(table.householdId, table.createdAt),
-  ],
+  (table) => [index('credit_ledger_household_idx').on(table.householdId, table.createdAt)],
 );
 
 /**
@@ -319,16 +313,14 @@ export const creditLedger = pgTable(
  * must be able to drive it negative; clamping at zero silently writes off the
  * exact abuse both stores warn about.
  */
-export const householdCredits = pgTable("household_credits", {
-  householdId: uuid("household_id")
+export const householdCredits = pgTable('household_credits', {
+  householdId: uuid('household_id')
     .primaryKey()
-    .references(() => households.id, { onDelete: "cascade" }),
-  freeBalance: integer("free_balance").notNull().default(0),
-  paidBalance: integer("paid_balance").notNull().default(0),
-  grantPeriod: text("grant_period").notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+    .references(() => households.id, { onDelete: 'cascade' }),
+  freeBalance: integer('free_balance').notNull().default(0),
+  paidBalance: integer('paid_balance').notNull().default(0),
+  grantPeriod: text('grant_period').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 /**
@@ -341,32 +333,28 @@ export const householdCredits = pgTable("household_credits", {
  * opens, so a webhook-first delivery can still resolve the household).
  */
 export const creditPurchases = pgTable(
-  "credit_purchases",
+  'credit_purchases',
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    householdId: uuid("household_id")
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
       .notNull()
-      .references(() => households.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
+      .references(() => households.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => users.id, { onDelete: 'cascade' }),
     /** apple | google */
-    store: text("store"),
-    productId: text("product_id").notNull(),
-    storeTransactionId: text("store_transaction_id"),
-    credits: integer("credits").notNull(),
-    priceUsd: numeric("price_usd", { precision: 10, scale: 2 })
-      .notNull()
-      .default("0"),
+    store: text('store'),
+    productId: text('product_id').notNull(),
+    storeTransactionId: text('store_transaction_id'),
+    credits: integer('credits').notNull(),
+    priceUsd: numeric('price_usd', { precision: 10, scale: 2 }).notNull().default('0'),
     /** pending | active | refunded */
-    status: text("status").notNull().default("pending"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    status: text('status').notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("credit_purchases_store_txn_key").on(table.storeTransactionId),
-    index("credit_purchases_household_idx").on(table.householdId),
+    uniqueIndex('credit_purchases_store_txn_key').on(table.storeTransactionId),
+    index('credit_purchases_household_idx').on(table.householdId),
   ],
 );
 ```
@@ -422,6 +410,7 @@ git commit -m "Add credit ledger, balance and purchase tables"
 - Consumes: Task 1 (`CREDIT_COSTS`, `FREE_MONTHLY_GRANT`, `CreditAction`, `CreditBalance`), Task 2 (`creditLedger`, `householdCredits`).
 - Produces:
   - `CreditsService.balance(householdId): Promise<CreditBalance>`
+  - `CreditsService.assertCanAfford(householdId, action): Promise<void>` — throws `AppError('INSUFFICIENT_CREDITS', …)`; moves nothing
   - `CreditsService.spend(householdId, action, opts?: { aiUsageId?: string }): Promise<void>` — throws `AppError('INSUFFICIENT_CREDITS', …)`
   - `CreditsService.refund(householdId, action): Promise<void>`
   - `CreditsService.grantPurchase(householdId, credits, purchaseId): Promise<void>`
@@ -433,17 +422,12 @@ git commit -m "Add credit ledger, balance and purchase tables"
 Create `apps/api/src/credits/credits.spec.ts`. These are integration tests against the live Postgres (`pnpm infra:up && pnpm db:migrate` first):
 
 ```ts
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
-import { CREDIT_COSTS, FREE_MONTHLY_GRANT } from "@kitchen/contracts";
-import {
-  createTestContext,
-  seedHousehold,
-  seedUser,
-  cleanup,
-} from "../testing/harness.js";
-import { creditLedger, householdCredits } from "../db/schema.js";
-import { CreditsService, currentGrantPeriod } from "./credits.service.js";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
+import { CREDIT_COSTS, FREE_MONTHLY_GRANT } from '@kitchen/contracts';
+import { createTestContext, seedHousehold, seedUser, cleanup } from '../testing/harness.js';
+import { creditLedger, householdCredits } from '../db/schema.js';
+import { CreditsService, currentGrantPeriod } from './credits.service.js';
 
 const ctx = createTestContext();
 const createdHouseholds: string[] = [];
@@ -469,25 +453,23 @@ afterAll(async () => {
   await ctx.client.end();
 });
 
-describe("CreditsService", () => {
-  it("gives a brand-new household the full free grant", async () => {
+describe('CreditsService', () => {
+  it('gives a brand-new household the full free grant', async () => {
     const balance = await credits.balance(householdId);
     expect(balance.freeBalance).toBe(FREE_MONTHLY_GRANT);
     expect(balance.paidBalance).toBe(0);
     expect(balance.grantPeriod).toBe(currentGrantPeriod());
   });
 
-  it("spends free credits first", async () => {
+  it('spends free credits first', async () => {
     await credits.grantPurchase(householdId, 300, null);
-    await credits.spend(householdId, "pantry.scan");
+    await credits.spend(householdId, 'pantry.scan');
     const balance = await credits.balance(householdId);
-    expect(balance.freeBalance).toBe(
-      FREE_MONTHLY_GRANT - CREDIT_COSTS["pantry.scan"],
-    );
+    expect(balance.freeBalance).toBe(FREE_MONTHLY_GRANT - CREDIT_COSTS['pantry.scan']);
     expect(balance.paidBalance).toBe(300);
   });
 
-  it("spills into paid credits when free runs short", async () => {
+  it('spills into paid credits when free runs short', async () => {
     // Drain free to 2, then spend a 4-credit action.
     await ctx.db
       .update(householdCredits)
@@ -495,23 +477,21 @@ describe("CreditsService", () => {
       .where(eq(householdCredits.householdId, householdId));
     await credits.grantPurchase(householdId, 300, null);
 
-    await credits.spend(householdId, "plan.daily");
+    await credits.spend(householdId, 'plan.daily');
 
     const balance = await credits.balance(householdId);
     expect(balance.freeBalance).toBe(0);
     expect(balance.paidBalance).toBe(298);
   });
 
-  it("throws INSUFFICIENT_CREDITS and moves nothing when short", async () => {
+  it('throws INSUFFICIENT_CREDITS and moves nothing when short', async () => {
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 1, paidBalance: 0 })
       .where(eq(householdCredits.householdId, householdId));
 
-    await expect(
-      credits.spend(householdId, "plan.monthly"),
-    ).rejects.toMatchObject({
-      code: "INSUFFICIENT_CREDITS",
+    await expect(credits.spend(householdId, 'plan.monthly')).rejects.toMatchObject({
+      code: 'INSUFFICIENT_CREDITS',
       details: { required: 50, balance: 1 },
     });
 
@@ -519,12 +499,12 @@ describe("CreditsService", () => {
     expect(balance.freeBalance).toBe(1);
   });
 
-  it("resets the free grant when the month rolls over, leaving paid untouched", async () => {
+  it('resets the free grant when the month rolls over, leaving paid untouched', async () => {
     await credits.grantPurchase(householdId, 300, null);
-    await credits.spend(householdId, "plan.weekly");
+    await credits.spend(householdId, 'plan.weekly');
     await ctx.db
       .update(householdCredits)
-      .set({ grantPeriod: "2000-01", freeBalance: 3 })
+      .set({ grantPeriod: '2000-01', freeBalance: 3 })
       .where(eq(householdCredits.householdId, householdId));
 
     const balance = await credits.balance(householdId);
@@ -534,7 +514,7 @@ describe("CreditsService", () => {
     expect(balance.grantPeriod).toBe(currentGrantPeriod());
   });
 
-  it("never lets concurrent spends overdraw the balance", async () => {
+  it('never lets concurrent spends overdraw the balance', async () => {
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 10, paidBalance: 0 })
@@ -542,11 +522,9 @@ describe("CreditsService", () => {
 
     // 10 parallel 4-credit spends against a 10-credit balance: exactly 2 win.
     const results = await Promise.allSettled(
-      Array.from({ length: 10 }, () =>
-        credits.spend(householdId, "plan.daily"),
-      ),
+      Array.from({ length: 10 }, () => credits.spend(householdId, 'plan.daily')),
     );
-    const ok = results.filter((r) => r.status === "fulfilled").length;
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
 
     expect(ok).toBe(2);
     const balance = await credits.balance(householdId);
@@ -554,9 +532,9 @@ describe("CreditsService", () => {
     expect(balance.paidBalance).toBe(0);
   });
 
-  it("writes an append-only ledger row per movement", async () => {
-    await credits.spend(householdId, "pantry.scan");
-    await credits.refund(householdId, "pantry.scan");
+  it('writes an append-only ledger row per movement', async () => {
+    await credits.spend(householdId, 'pantry.scan');
+    await credits.refund(householdId, 'pantry.scan');
 
     const rows = await ctx.db
       .select()
@@ -564,23 +542,41 @@ describe("CreditsService", () => {
       .where(eq(creditLedger.householdId, householdId));
 
     const kinds = rows.map((r) => r.kind).sort();
-    expect(kinds).toEqual(["grant", "reversal", "spend"]);
-    expect(rows.find((r) => r.kind === "spend")?.delta).toBe(-1);
-    expect(rows.find((r) => r.kind === "reversal")?.delta).toBe(1);
+    expect(kinds).toEqual(['grant', 'reversal', 'spend']);
+    expect(rows.find((r) => r.kind === 'spend')?.delta).toBe(-1);
+    expect(rows.find((r) => r.kind === 'reversal')?.delta).toBe(1);
   });
 
-  it("refunds to the same bucket the spend came from", async () => {
+  it('refunds to the same bucket the spend came from', async () => {
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 0, paidBalance: 100 })
       .where(eq(householdCredits.householdId, householdId));
 
-    await credits.spend(householdId, "plan.daily");
-    await credits.refund(householdId, "plan.daily");
+    await credits.spend(householdId, 'plan.daily');
+    await credits.refund(householdId, 'plan.daily');
 
     const balance = await credits.balance(householdId);
     expect(balance.freeBalance).toBe(0);
     expect(balance.paidBalance).toBe(100);
+  });
+
+  it('assertCanAfford passes when affordable and moves nothing', async () => {
+    await credits.assertCanAfford(householdId, 'pantry.scan');
+
+    const balance = await credits.balance(householdId);
+    expect(balance.freeBalance).toBe(FREE_MONTHLY_GRANT);
+  });
+
+  it('assertCanAfford throws INSUFFICIENT_CREDITS when short', async () => {
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 0, paidBalance: 0 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    await expect(credits.assertCanAfford(householdId, 'plan.monthly')).rejects.toMatchObject({
+      code: 'INSUFFICIENT_CREDITS',
+    });
   });
 });
 ```
@@ -595,20 +591,20 @@ Expected: FAIL — cannot resolve `./credits.service.js`.
 Create `apps/api/src/credits/credits.service.ts`:
 
 ```ts
-import { Inject, Injectable } from "@nestjs/common";
-import { eq, sql } from "drizzle-orm";
+import { Inject, Injectable } from '@nestjs/common';
+import { eq, sql } from 'drizzle-orm';
 import {
   CREDIT_COSTS,
   FREE_MONTHLY_GRANT,
   type CreditAction,
   type CreditBalance,
-} from "@kitchen/contracts";
-import { DB, type Database } from "../db/index.js";
-import { creditLedger, householdCredits } from "../db/schema.js";
-import { AppError } from "../common/errors.js";
+} from '@kitchen/contracts';
+import { DB, type Database } from '../db/index.js';
+import { creditLedger, householdCredits } from '../db/schema.js';
+import { AppError } from '../common/errors.js';
 
 /** The transaction-scoped client Drizzle hands to a `db.transaction()` callback. */
-type TxClient = Parameters<Parameters<Database["transaction"]>[0]>[0];
+type TxClient = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 /** `YYYY-MM` in UTC — the month a free balance belongs to. */
 export function currentGrantPeriod(now: Date = new Date()): string {
@@ -627,9 +623,7 @@ export class CreditsService {
   constructor(@Inject(DB) private readonly db: Database) {}
 
   async balance(householdId: string): Promise<CreditBalance> {
-    const row = await this.db.transaction((tx) =>
-      this.ensureRow(tx, householdId),
-    );
+    const row = await this.db.transaction((tx) => this.ensureRow(tx, householdId));
     return {
       householdId,
       freeBalance: row.freeBalance,
@@ -637,6 +631,28 @@ export class CreditsService {
       grantPeriod: row.grantPeriod,
       freeGrant: FREE_MONTHLY_GRANT,
     };
+  }
+
+  /**
+   * Throw INSUFFICIENT_CREDITS if the household cannot currently afford
+   * `action`, without moving anything.
+   *
+   * This is an advisory pre-check for synchronous actions, which debit only
+   * after the AI call succeeds (spec §5.4). Without it a household at zero
+   * would still trigger a real, paid provider call and only then fail. It is
+   * deliberately *not* the safety guarantee — `spend`'s conditional UPDATE is
+   * the authority, and a concurrent spend between this check and that UPDATE
+   * simply makes `spend` throw instead.
+   */
+  async assertCanAfford(householdId: string, action: CreditAction): Promise<void> {
+    const row = await this.db.transaction((tx) => this.ensureRow(tx, householdId));
+    if (row.freeBalance + row.paidBalance < CREDIT_COSTS[action]) {
+      throw new AppError('INSUFFICIENT_CREDITS', 'errors.INSUFFICIENT_CREDITS', {
+        action,
+        required: CREDIT_COSTS[action],
+        available: row.freeBalance + row.paidBalance,
+      });
+    }
   }
 
   /**
@@ -674,14 +690,10 @@ export class CreditsService {
         .returning({ householdId: householdCredits.householdId });
 
       if (!updated) {
-        throw new AppError(
-          "INSUFFICIENT_CREDITS",
-          "errors.INSUFFICIENT_CREDITS",
-          {
-            required: cost,
-            balance: row.freeBalance + row.paidBalance,
-          },
-        );
+        throw new AppError('INSUFFICIENT_CREDITS', 'errors.INSUFFICIENT_CREDITS', {
+          required: cost,
+          balance: row.freeBalance + row.paidBalance,
+        });
       }
 
       const rows = [];
@@ -689,8 +701,8 @@ export class CreditsService {
         rows.push({
           householdId,
           delta: -fromFree,
-          kind: "spend",
-          bucket: "free",
+          kind: 'spend',
+          bucket: 'free',
           action,
           ...(opts.aiUsageId ? { aiUsageId: opts.aiUsageId } : {}),
         });
@@ -699,8 +711,8 @@ export class CreditsService {
         rows.push({
           householdId,
           delta: -fromPaid,
-          kind: "spend",
-          bucket: "paid",
+          kind: 'spend',
+          bucket: 'paid',
           action,
           ...(opts.aiUsageId ? { aiUsageId: opts.aiUsageId } : {}),
         });
@@ -736,8 +748,8 @@ export class CreditsService {
         rows.push({
           householdId,
           delta: toFree,
-          kind: "reversal",
-          bucket: "free",
+          kind: 'reversal',
+          bucket: 'free',
           action,
         });
       }
@@ -745,8 +757,8 @@ export class CreditsService {
         rows.push({
           householdId,
           delta: toPaid,
-          kind: "reversal",
-          bucket: "paid",
+          kind: 'reversal',
+          bucket: 'paid',
           action,
         });
       }
@@ -773,8 +785,8 @@ export class CreditsService {
       await tx.insert(creditLedger).values({
         householdId,
         delta: credits,
-        kind: credits >= 0 ? "purchase" : "refund",
-        bucket: "paid",
+        kind: credits >= 0 ? 'purchase' : 'refund',
+        bucket: 'paid',
         ...(purchaseId ? { purchaseId } : {}),
       });
     });
@@ -814,8 +826,8 @@ export class CreditsService {
       await tx.insert(creditLedger).values({
         householdId,
         delta: FREE_MONTHLY_GRANT,
-        kind: "grant",
-        bucket: "free",
+        kind: 'grant',
+        bucket: 'free',
       });
     }
 
@@ -826,9 +838,8 @@ export class CreditsService {
           for update`,
     );
     const row = locked[0] as
-      | { free_balance: number; paid_balance: number; grant_period: string }
-      | undefined;
-    if (!row) throw new AppError("INTERNAL_ERROR", "errors.INTERNAL_ERROR");
+      { free_balance: number; paid_balance: number; grant_period: string } | undefined;
+    if (!row) throw new AppError('INTERNAL_ERROR', 'errors.INTERNAL_ERROR');
 
     if (row.grant_period !== period) {
       await tx
@@ -842,8 +853,8 @@ export class CreditsService {
       await tx.insert(creditLedger).values({
         householdId,
         delta: FREE_MONTHLY_GRANT,
-        kind: "grant",
-        bucket: "free",
+        kind: 'grant',
+        bucket: 'free',
       });
       return {
         freeBalance: FREE_MONTHLY_GRANT,
@@ -866,8 +877,8 @@ The opening `grant` ledger row is written by the `returning`-guarded branch abov
 Create `apps/api/src/credits/credits.module.ts`:
 
 ```ts
-import { Module } from "@nestjs/common";
-import { CreditsService } from "./credits.service.js";
+import { Module } from '@nestjs/common';
+import { CreditsService } from './credits.service.js';
 
 @Module({
   providers: [CreditsService],
@@ -879,7 +890,7 @@ export class CreditsModule {}
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `pnpm --filter @kitchen/api exec vitest run src/credits/credits.spec.ts`
-Expected: PASS, 8 tests.
+Expected: PASS, 10 tests.
 
 If `never lets concurrent spends overdraw` fails with more than 2 successes, `FOR UPDATE` is not being applied — the whole concurrency guarantee rests on it. Do not "fix" the test by relaxing the assertion.
 
@@ -920,24 +931,81 @@ git commit -m "Add CreditsService with lazy monthly grant and atomic debits"
 Create `apps/api/src/credits/credit-debits.spec.ts`:
 
 ```ts
-import { describe, expect, it } from "vitest";
-import { CREDIT_COSTS } from "@kitchen/contracts";
-import { creditActionForScope } from "./credit-actions.js";
+import { describe, expect, it } from 'vitest';
+import { CREDIT_COSTS } from '@kitchen/contracts';
+import { creditActionForScope } from './credit-actions.js';
 
-describe("creditActionForScope", () => {
-  it("maps each plan scope to its priced action", () => {
-    expect(creditActionForScope("daily")).toBe("plan.daily");
-    expect(creditActionForScope("weekly")).toBe("plan.weekly");
-    expect(creditActionForScope("monthly")).toBe("plan.monthly");
+describe('creditActionForScope', () => {
+  it('maps each plan scope to its priced action', () => {
+    expect(creditActionForScope('daily')).toBe('plan.daily');
+    expect(creditActionForScope('weekly')).toBe('plan.weekly');
+    expect(creditActionForScope('monthly')).toBe('plan.monthly');
   });
 
-  it("prices a monthly plan far above a daily one", () => {
-    expect(CREDIT_COSTS[creditActionForScope("monthly")]).toBeGreaterThan(
-      CREDIT_COSTS[creditActionForScope("daily")] * 10,
+  it('prices a monthly plan far above a daily one', () => {
+    expect(CREDIT_COSTS[creditActionForScope('monthly')]).toBeGreaterThan(
+      CREDIT_COSTS[creditActionForScope('daily')] * 10,
     );
   });
 });
 ```
+
+Then add the job-refund integration test that spec §8 requires — a failed plan job must restore the full debit and write a `reversal` row. Append to the same file:
+
+```ts
+import { afterAll, beforeEach } from 'vitest';
+import { eq } from 'drizzle-orm';
+import { createTestContext, seedHousehold, seedUser, cleanup } from '../testing/harness.js';
+import { creditLedger } from '../db/schema.js';
+import { CreditsService } from './credits.service.js';
+
+const ctx = createTestContext();
+const createdHouseholds: string[] = [];
+const createdUsers: string[] = [];
+
+afterAll(async () => {
+  await cleanup(ctx.db, { households: createdHouseholds, users: createdUsers });
+  await ctx.client.end();
+});
+
+describe('job refund', () => {
+  let householdId: string;
+  let credits: CreditsService;
+
+  beforeEach(async () => {
+    const userId = await seedUser(ctx.db);
+    householdId = await seedHousehold(ctx.db, userId);
+    createdUsers.push(userId);
+    createdHouseholds.push(householdId);
+    credits = new CreditsService(ctx.db);
+  });
+
+  it('restores the full debit and writes a reversal when a plan job fails', async () => {
+    const before = await credits.balance(householdId);
+    const action = creditActionForScope('weekly');
+
+    await credits.spend(householdId, action);
+    const during = await credits.balance(householdId);
+    expect(during.freeBalance).toBe(before.freeBalance - CREDIT_COSTS[action]);
+
+    // What plan.processor.ts does in its catch block.
+    await credits.refund(householdId, action);
+
+    const after = await credits.balance(householdId);
+    expect(after.freeBalance).toBe(before.freeBalance);
+    expect(after.paidBalance).toBe(before.paidBalance);
+
+    const rows = await ctx.db
+      .select()
+      .from(creditLedger)
+      .where(eq(creditLedger.householdId, householdId));
+    const reversal = rows.find((r) => r.kind === 'reversal');
+    expect(reversal?.delta).toBe(CREDIT_COSTS[action]);
+  });
+});
+```
+
+Merge the imports into one block per module rather than leaving the two `vitest` and `drizzle-orm` import lines shown separately above.
 
 - [ ] **Step 2: Run it to verify it fails**
 
@@ -949,17 +1017,17 @@ Expected: FAIL — cannot resolve `./credit-actions.js`.
 Create `apps/api/src/credits/credit-actions.ts`:
 
 ```ts
-import type { CreditAction, PlanScope } from "@kitchen/contracts";
+import type { CreditAction, PlanScope } from '@kitchen/contracts';
 
 /** A plan's price depends on how many recipes it generates. See spec §3. */
 export function creditActionForScope(scope: PlanScope): CreditAction {
   switch (scope) {
-    case "daily":
-      return "plan.daily";
-    case "weekly":
-      return "plan.weekly";
-    case "monthly":
-      return "plan.monthly";
+    case 'daily':
+      return 'plan.daily';
+    case 'weekly':
+      return 'plan.weekly';
+    case 'monthly':
+      return 'plan.monthly';
   }
 }
 ```
@@ -967,23 +1035,35 @@ export function creditActionForScope(scope: PlanScope): CreditAction {
 - [ ] **Step 4: Run it to verify it passes**
 
 Run: `pnpm --filter @kitchen/api exec vitest run src/credits/credit-debits.spec.ts`
-Expected: PASS, 2 tests.
+Expected: PASS, 3 tests (two scope-mapping, one job-refund). The job-refund test needs live Postgres — run `pnpm infra:up && pnpm db:migrate && pnpm db:seed` first if it is not already up.
 
 - [ ] **Step 5: Wire the synchronous debits**
 
-In `recognition.service.ts`, inject `private readonly credits: CreditsService` and, as the **first** statement of `recognize`, before any provider call:
+Pantry recognition and entry regeneration are synchronous, so per spec §5.4 they **check affordability before the provider call and debit only after it succeeds**. A user whose scan fails is not charged, and a household at zero never triggers a paid call.
+
+In `recognition.service.ts`, inject `private readonly credits: CreditsService`. As the **first** statement of `recognize`:
 
 ```ts
-await this.credits.spend(input.householdId, "pantry.scan");
+await this.credits.assertCanAfford(input.householdId, 'pantry.scan');
 ```
 
-In `plan.service.ts`, inject `CreditsService` and add the same as the first statement of `regenerateEntry`, after `loadPlan` (so a request for someone else's plan 404s rather than being charged):
+Then, after the provider call has returned successfully and immediately before `recognize` returns its result:
 
 ```ts
-await this.credits.spend(householdId, "plan.regenerateEntry");
+await this.credits.spend(input.householdId, 'pantry.scan');
 ```
 
-Both are synchronous actions, so this debits up-front and Task 4's job path is what handles refunds. A synchronous failure after the debit is covered by the same `AI_DAILY_BUDGET_USD` breaker that already exists; do not add ad-hoc refunds here.
+In `plan.service.ts`, inject `CreditsService` and do the same in `regenerateEntry` — the affordability check after `loadPlan` (so a request for someone else's plan 404s rather than being rejected for credits), and the debit after the regenerated entry is persisted:
+
+```ts
+await this.credits.assertCanAfford(householdId, 'plan.regenerateEntry');
+```
+
+```ts
+await this.credits.spend(householdId, 'plan.regenerateEntry');
+```
+
+Do not wrap the provider call in a try/catch that refunds — nothing was debited yet, so there is nothing to reverse. The gap between check and debit is intentional and bounded: `spend`'s conditional UPDATE remains the authority, so a concurrent spend in that window makes the debit throw rather than overdraw.
 
 - [ ] **Step 6: Wire the job debits, respecting idempotency**
 
@@ -1038,9 +1118,7 @@ In `plan.processor.ts`, inside the existing `catch (err)` block, immediately bef
 await this.credits
   .refund(job.householdId, creditActionForScope(payload.request.scope))
   .catch((refundError) =>
-    this.logger.error(
-      `job ${jobId} credit refund failed: ${String(refundError)}`,
-    ),
+    this.logger.error(`job ${jobId} credit refund failed: ${String(refundError)}`),
   );
 ```
 
@@ -1135,20 +1213,20 @@ Import the four schemas at the top of the file from `./credits.js`.
 Create `apps/api/src/credits/credits.controller.spec.ts`:
 
 ```ts
-import { describe, expect, it, vi } from "vitest";
-import { FREE_MONTHLY_GRANT } from "@kitchen/contracts";
-import { CreditsController } from "./credits.controller.js";
+import { describe, expect, it, vi } from 'vitest';
+import { FREE_MONTHLY_GRANT } from '@kitchen/contracts';
+import { CreditsController } from './credits.controller.js';
 
-const household = { id: "00000000-0000-4000-8000-000000000000" } as never;
+const household = { id: '00000000-0000-4000-8000-000000000000' } as never;
 
-describe("CreditsController", () => {
-  it("returns the household balance", async () => {
+describe('CreditsController', () => {
+  it('returns the household balance', async () => {
     const service = {
       balance: vi.fn().mockResolvedValue({
         householdId: household.id,
         freeBalance: FREE_MONTHLY_GRANT,
         paidBalance: 0,
-        grantPeriod: "2026-08",
+        grantPeriod: '2026-08',
         freeGrant: FREE_MONTHLY_GRANT,
       }),
     };
@@ -1172,7 +1250,7 @@ Expected: FAIL — cannot resolve `./credits.controller.js`.
 Create `apps/api/src/credits/credits.controller.ts`:
 
 ```ts
-import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import {
   confirmPurchaseRequestSchema,
   purchaseIntentRequestSchema,
@@ -1180,15 +1258,15 @@ import {
   type CreditBalance,
   type PurchaseIntent,
   type PurchaseIntentRequest,
-} from "@kitchen/contracts";
-import { ZodPipe } from "../common/http.js";
-import { AuthGuard } from "../common/auth.guard.js";
-import { HouseholdGuard } from "../common/household.guard.js";
-import { CurrentUser } from "../common/current-user.decorator.js";
-import { CurrentHousehold } from "../common/current-household.decorator.js";
-import type { AuthUser, HouseholdContext } from "../common/request-context.js";
-import { CreditsService } from "./credits.service.js";
-import { PurchaseService } from "./purchase.service.js";
+} from '@kitchen/contracts';
+import { ZodPipe } from '../common/http.js';
+import { AuthGuard } from '../common/auth.guard.js';
+import { HouseholdGuard } from '../common/household.guard.js';
+import { CurrentUser } from '../common/current-user.decorator.js';
+import { CurrentHousehold } from '../common/current-household.decorator.js';
+import type { AuthUser, HouseholdContext } from '../common/request-context.js';
+import { CreditsService } from './credits.service.js';
+import { PurchaseService } from './purchase.service.js';
 
 /** Household credit balance and purchases (spec §5, §6). */
 @Controller()
@@ -1199,27 +1277,21 @@ export class CreditsController {
     private readonly purchases: PurchaseService,
   ) {}
 
-  @Get("credits")
-  balance(
-    @CurrentHousehold() household: HouseholdContext,
-  ): Promise<CreditBalance> {
+  @Get('credits')
+  balance(@CurrentHousehold() household: HouseholdContext): Promise<CreditBalance> {
     return this.credits.balance(household.id);
   }
 
-  @Post("credits/intents")
+  @Post('credits/intents')
   createIntent(
     @CurrentHousehold() household: HouseholdContext,
     @CurrentUser() user: AuthUser,
     @Body(new ZodPipe(purchaseIntentRequestSchema)) body: PurchaseIntentRequest,
   ): Promise<PurchaseIntent> {
-    return this.purchases.createIntent(
-      household.id,
-      user.userId,
-      body.productId,
-    );
+    return this.purchases.createIntent(household.id, user.userId, body.productId);
   }
 
-  @Post("credits/purchases")
+  @Post('credits/purchases')
   confirm(
     @CurrentHousehold() household: HouseholdContext,
     @Body(new ZodPipe(confirmPurchaseRequestSchema))
@@ -1277,18 +1349,13 @@ git commit -m "Add credits routes, controller and error copy"
 Create `apps/api/src/credits/purchase.spec.ts`. The decisive test is that crediting is idempotent across both paths:
 
 ```ts
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
-import {
-  createTestContext,
-  seedHousehold,
-  seedUser,
-  cleanup,
-} from "../testing/harness.js";
-import { creditPurchases } from "../db/schema.js";
-import { CreditsService } from "./credits.service.js";
-import { PurchaseService } from "./purchase.service.js";
-import { MockPaymentVerifier } from "./payment-verifier.js";
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
+import { createTestContext, seedHousehold, seedUser, cleanup } from '../testing/harness.js';
+import { creditPurchases } from '../db/schema.js';
+import { CreditsService } from './credits.service.js';
+import { PurchaseService } from './purchase.service.js';
+import { MockPaymentVerifier } from './payment-verifier.js';
 
 const ctx = createTestContext();
 const createdHouseholds: string[] = [];
@@ -1312,60 +1379,48 @@ afterAll(async () => {
   await ctx.client.end();
 });
 
-describe("PurchaseService", () => {
-  it("credits a confirmed purchase once", async () => {
-    const intent = await purchases.createIntent(
-      householdId,
-      userId,
-      "credits_300",
-    );
+describe('PurchaseService', () => {
+  it('credits a confirmed purchase once', async () => {
+    const intent = await purchases.createIntent(householdId, userId, 'credits_300');
     const balance = await purchases.confirm(householdId, {
       intentId: intent.intentId,
-      storeTransactionId: "txn-1",
-      store: "apple",
+      storeTransactionId: 'txn-1',
+      store: 'apple',
     });
     expect(balance.paidBalance).toBe(300);
   });
 
-  it("is idempotent when the same transaction arrives twice", async () => {
-    const intent = await purchases.createIntent(
-      householdId,
-      userId,
-      "credits_300",
-    );
+  it('is idempotent when the same transaction arrives twice', async () => {
+    const intent = await purchases.createIntent(householdId, userId, 'credits_300');
     await purchases.confirm(householdId, {
       intentId: intent.intentId,
-      storeTransactionId: "txn-2",
-      store: "apple",
+      storeTransactionId: 'txn-2',
+      store: 'apple',
     });
     await purchases.confirm(householdId, {
       intentId: intent.intentId,
-      storeTransactionId: "txn-2",
-      store: "apple",
+      storeTransactionId: 'txn-2',
+      store: 'apple',
     });
 
     const balance = await credits.balance(householdId);
     expect(balance.paidBalance).toBe(300);
   });
 
-  it("is idempotent when the webhook races the confirm call", async () => {
-    const intent = await purchases.createIntent(
-      householdId,
-      userId,
-      "credits_300",
-    );
+  it('is idempotent when the webhook races the confirm call', async () => {
+    const intent = await purchases.createIntent(householdId, userId, 'credits_300');
     await Promise.all([
       purchases.confirm(householdId, {
         intentId: intent.intentId,
-        storeTransactionId: "txn-3",
-        store: "apple",
+        storeTransactionId: 'txn-3',
+        store: 'apple',
       }),
       purchases.applyWebhook({
-        type: "INITIAL_PURCHASE",
+        type: 'INITIAL_PURCHASE',
         intentId: intent.intentId,
-        storeTransactionId: "txn-3",
-        productId: "credits_300",
-        store: "apple",
+        storeTransactionId: 'txn-3',
+        productId: 'credits_300',
+        store: 'apple',
       }),
     ]);
 
@@ -1373,46 +1428,37 @@ describe("PurchaseService", () => {
     expect(balance.paidBalance).toBe(300);
   });
 
-  it("resolves the household from the intent when only the webhook arrives", async () => {
-    const intent = await purchases.createIntent(
-      householdId,
-      userId,
-      "credits_300",
-    );
+  it('resolves the household from the intent when only the webhook arrives', async () => {
+    const intent = await purchases.createIntent(householdId, userId, 'credits_300');
     await purchases.applyWebhook({
-      type: "INITIAL_PURCHASE",
+      type: 'INITIAL_PURCHASE',
       intentId: intent.intentId,
-      storeTransactionId: "txn-4",
-      productId: "credits_300",
-      store: "apple",
+      storeTransactionId: 'txn-4',
+      productId: 'credits_300',
+      store: 'apple',
     });
 
     const balance = await credits.balance(householdId);
     expect(balance.paidBalance).toBe(300);
   });
 
-  it("drives the balance negative when consumed credits are refunded", async () => {
-    const intent = await purchases.createIntent(
-      householdId,
-      userId,
-      "credits_300",
-    );
+  it('drives the balance negative when consumed credits are refunded', async () => {
+    const intent = await purchases.createIntent(householdId, userId, 'credits_300');
     await purchases.confirm(householdId, {
       intentId: intent.intentId,
-      storeTransactionId: "txn-5",
-      store: "apple",
+      storeTransactionId: 'txn-5',
+      store: 'apple',
     });
 
     // Drain both buckets, then refund the purchase.
-    for (let i = 0; i < 9; i += 1)
-      await credits.spend(householdId, "plan.monthly");
+    for (let i = 0; i < 9; i += 1) await credits.spend(householdId, 'plan.monthly');
 
     await purchases.applyWebhook({
-      type: "CANCELLATION",
+      type: 'CANCELLATION',
       intentId: intent.intentId,
-      storeTransactionId: "txn-5",
-      productId: "credits_300",
-      store: "apple",
+      storeTransactionId: 'txn-5',
+      productId: 'credits_300',
+      store: 'apple',
     });
 
     const balance = await credits.balance(householdId);
@@ -1421,16 +1467,16 @@ describe("PurchaseService", () => {
     const [row] = await ctx.db
       .select()
       .from(creditPurchases)
-      .where(eq(creditPurchases.storeTransactionId, "txn-5"));
-    expect(row?.status).toBe("refunded");
+      .where(eq(creditPurchases.storeTransactionId, 'txn-5'));
+    expect(row?.status).toBe('refunded');
   });
 
-  it("rejects an unknown product", async () => {
-    await expect(
-      purchases.createIntent(householdId, userId, "credits_9999"),
-    ).rejects.toMatchObject({
-      code: "VALIDATION_FAILED",
-    });
+  it('rejects an unknown product', async () => {
+    await expect(purchases.createIntent(householdId, userId, 'credits_9999')).rejects.toMatchObject(
+      {
+        code: 'VALIDATION_FAILED',
+      },
+    );
   });
 });
 ```
@@ -1456,19 +1502,13 @@ export interface VerifiedPurchase {
  * no RevenueCat account — the same shape as the AI providers behind `AI_MOCK`.
  */
 export interface PaymentVerifier {
-  verify(
-    storeTransactionId: string,
-    productId: string,
-  ): Promise<VerifiedPurchase>;
+  verify(storeTransactionId: string, productId: string): Promise<VerifiedPurchase>;
 }
 
-export const PAYMENT_VERIFIER = Symbol("PAYMENT_VERIFIER");
+export const PAYMENT_VERIFIER = Symbol('PAYMENT_VERIFIER');
 
 export class MockPaymentVerifier implements PaymentVerifier {
-  async verify(
-    storeTransactionId: string,
-    productId: string,
-  ): Promise<VerifiedPurchase> {
+  async verify(storeTransactionId: string, productId: string): Promise<VerifiedPurchase> {
     return { storeTransactionId, productId, valid: true };
   }
 }
@@ -1481,30 +1521,30 @@ Create `apps/api/src/credits/revenuecat.verifier.ts` calling RevenueCat's REST A
 Create `apps/api/src/credits/purchase.service.ts`:
 
 ```ts
-import { Inject, Injectable } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { Inject, Injectable } from '@nestjs/common';
+import { and, eq } from 'drizzle-orm';
 import {
   CREDIT_PACKS,
   type ConfirmPurchaseRequest,
   type CreditBalance,
   type PurchaseIntent,
-} from "@kitchen/contracts";
-import { DB, type Database } from "../db/index.js";
-import { creditPurchases } from "../db/schema.js";
-import { AppError } from "../common/errors.js";
-import { CreditsService } from "./credits.service.js";
-import { PAYMENT_VERIFIER, type PaymentVerifier } from "./payment-verifier.js";
+} from '@kitchen/contracts';
+import { DB, type Database } from '../db/index.js';
+import { creditPurchases } from '../db/schema.js';
+import { AppError } from '../common/errors.js';
+import { CreditsService } from './credits.service.js';
+import { PAYMENT_VERIFIER, type PaymentVerifier } from './payment-verifier.js';
 
 export interface WebhookEvent {
   type: string;
   intentId: string;
   storeTransactionId: string;
   productId: string;
-  store: "apple" | "google";
+  store: 'apple' | 'google';
 }
 
-const PURCHASE_EVENTS = new Set(["INITIAL_PURCHASE", "NON_RENEWING_PURCHASE"]);
-const REFUND_EVENTS = new Set(["CANCELLATION", "REFUND"]);
+const PURCHASE_EVENTS = new Set(['INITIAL_PURCHASE', 'NON_RENEWING_PURCHASE']);
+const REFUND_EVENTS = new Set(['CANCELLATION', 'REFUND']);
 
 /**
  * Credit purchases (spec §6).
@@ -1535,7 +1575,7 @@ export class PurchaseService {
   ): Promise<PurchaseIntent> {
     const pack = CREDIT_PACKS.find((p) => p.productId === productId);
     if (!pack) {
-      throw new AppError("VALIDATION_FAILED", "errors.VALIDATION_FAILED", {
+      throw new AppError('VALIDATION_FAILED', 'errors.VALIDATION_FAILED', {
         productId,
       });
     }
@@ -1548,26 +1588,20 @@ export class PurchaseService {
         productId,
         credits: pack.credits,
         priceUsd: pack.priceUsd.toFixed(2),
-        status: "pending",
+        status: 'pending',
       })
       .returning({ id: creditPurchases.id });
-    if (!row) throw new AppError("INTERNAL_ERROR", "errors.INTERNAL_ERROR");
+    if (!row) throw new AppError('INTERNAL_ERROR', 'errors.INTERNAL_ERROR');
 
     return { intentId: row.id, productId, credits: pack.credits };
   }
 
-  async confirm(
-    householdId: string,
-    body: ConfirmPurchaseRequest,
-  ): Promise<CreditBalance> {
+  async confirm(householdId: string, body: ConfirmPurchaseRequest): Promise<CreditBalance> {
     const intent = await this.loadIntent(householdId, body.intentId);
 
-    const verified = await this.verifier.verify(
-      body.storeTransactionId,
-      intent.productId,
-    );
+    const verified = await this.verifier.verify(body.storeTransactionId, intent.productId);
     if (!verified.valid) {
-      throw new AppError("VALIDATION_FAILED", "errors.VALIDATION_FAILED", {
+      throw new AppError('VALIDATION_FAILED', 'errors.VALIDATION_FAILED', {
         storeTransactionId: body.storeTransactionId,
       });
     }
@@ -1604,23 +1638,14 @@ export class PurchaseService {
     if (REFUND_EVENTS.has(event.type)) {
       const claimed = await this.db
         .update(creditPurchases)
-        .set({ status: "refunded" })
-        .where(
-          and(
-            eq(creditPurchases.id, intent.id),
-            eq(creditPurchases.status, "active"),
-          ),
-        )
+        .set({ status: 'refunded' })
+        .where(and(eq(creditPurchases.id, intent.id), eq(creditPurchases.status, 'active')))
         .returning({ id: creditPurchases.id });
 
       // Only the first refund event debits, and it may drive the balance
       // negative — the credits are already spent and that is the honest record.
       if (claimed.length > 0) {
-        await this.credits.grantPurchase(
-          intent.householdId,
-          -intent.credits,
-          intent.id,
-        );
+        await this.credits.grantPurchase(intent.householdId, -intent.credits, intent.id);
       }
     }
   }
@@ -1635,14 +1660,12 @@ export class PurchaseService {
     householdId: string,
     credits: number,
     storeTransactionId: string,
-    store: "apple" | "google",
+    store: 'apple' | 'google',
   ): Promise<void> {
     const claimed = await this.db
       .update(creditPurchases)
-      .set({ status: "active", storeTransactionId, store })
-      .where(
-        and(eq(creditPurchases.id, id), eq(creditPurchases.status, "pending")),
-      )
+      .set({ status: 'active', storeTransactionId, store })
+      .where(and(eq(creditPurchases.id, id), eq(creditPurchases.status, 'pending')))
       .returning({ id: creditPurchases.id });
 
     if (claimed.length === 0) return;
@@ -1653,13 +1676,8 @@ export class PurchaseService {
     const [row] = await this.db
       .select()
       .from(creditPurchases)
-      .where(
-        and(
-          eq(creditPurchases.id, intentId),
-          eq(creditPurchases.householdId, householdId),
-        ),
-      );
-    if (!row) throw AppError.notFound("errors.NOT_FOUND");
+      .where(and(eq(creditPurchases.id, intentId), eq(creditPurchases.householdId, householdId)));
+    if (!row) throw AppError.notFound('errors.NOT_FOUND');
     return row;
   }
 }
@@ -1726,26 +1744,24 @@ git commit -m "Add credit purchases with idempotent confirm and webhook paths"
 Create `apps/web/src/components/credit-balance.test.tsx`:
 
 ```tsx
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { CreditBalance } from "./credit-balance";
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { CreditBalance } from './credit-balance';
 
-describe("CreditBalance", () => {
-  it("shows the combined balance", () => {
-    render(
-      <CreditBalance freeBalance={120} paidBalance={300} freeGrant={150} />,
-    );
-    expect(screen.getByText("420")).toBeInTheDocument();
+describe('CreditBalance', () => {
+  it('shows the combined balance', () => {
+    render(<CreditBalance freeBalance={120} paidBalance={300} freeGrant={150} />);
+    expect(screen.getByText('420')).toBeInTheDocument();
   });
 
-  it("warns when the balance cannot cover a monthly plan", () => {
+  it('warns when the balance cannot cover a monthly plan', () => {
     render(<CreditBalance freeBalance={10} paidBalance={0} freeGrant={150} />);
-    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
-  it("does not warn when the balance is comfortable", () => {
+  it('does not warn when the balance is comfortable', () => {
     render(<CreditBalance freeBalance={150} paidBalance={0} freeGrant={150} />);
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });
 ```
@@ -1760,15 +1776,15 @@ Expected: FAIL — module not found.
 Create `apps/web/src/hooks/use-credits.ts`:
 
 ```ts
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { useMocksReady } from "./use-mocks-ready";
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { useMocksReady } from './use-mocks-ready';
 
 export function useCredits() {
   const ready = useMocksReady();
   return useQuery({
-    queryKey: ["credits"],
-    queryFn: () => api.call("getCredits"),
+    queryKey: ['credits'],
+    queryFn: () => api.call('getCredits'),
     enabled: ready,
   });
 }
@@ -1779,44 +1795,42 @@ Match the surrounding file's import of `useMocksReady` — copy the specifier us
 Create `apps/web/src/components/credit-balance.tsx`:
 
 ```tsx
-"use client";
+'use client';
 
-import { CREDIT_COSTS } from "@kitchen/contracts";
-import { useTranslation } from "@/lib/i18n";
-import { useCredits } from "@/hooks/use-credits";
+import { CREDIT_COSTS } from '@kitchen/contracts';
+import { useTranslation } from '@/lib/i18n';
+import { useCredits } from '@/hooks/use-credits';
 
 export function CreditBalance() {
   const { t } = useTranslation();
   const { data, isLoading } = useCredits();
 
   if (isLoading || !data) {
-    return <p className="text-sm text-muted">{t("web.credits.loading")}</p>;
+    return <p className="text-sm text-muted">{t('web.credits.loading')}</p>;
   }
 
   const total = data.freeBalance + data.paidBalance;
-  const coversMonthly = total >= CREDIT_COSTS["plan.monthly"];
+  const coversMonthly = total >= CREDIT_COSTS['plan.monthly'];
 
   return (
     <section className="rounded-lg bg-surface-soft p-4 text-start">
-      <h2 className="text-sm font-medium text-primary-text">
-        {t("web.credits.title")}
-      </h2>
+      <h2 className="text-sm font-medium text-primary-text">{t('web.credits.title')}</h2>
       <p className="mt-1 text-2xl font-semibold text-primary-text">
-        {t("web.credits.total", { count: total })}
+        {t('web.credits.total', { count: total })}
       </p>
       <p className="mt-1 text-sm text-muted">
-        {t("web.credits.split", {
+        {t('web.credits.split', {
           free: data.freeBalance,
           paid: data.paidBalance,
         })}
       </p>
-      <p className="mt-1 text-sm text-muted">{t("web.credits.resets")}</p>
+      <p className="mt-1 text-sm text-muted">{t('web.credits.resets')}</p>
       {!coversMonthly ? (
         <p role="status" className="mt-3 text-sm text-warning-text">
-          {t("web.credits.belowMonthly")}
+          {t('web.credits.belowMonthly')}
         </p>
       ) : null}
-      <p className="mt-3 text-sm text-muted">{t("web.credits.buyOnMobile")}</p>
+      <p className="mt-3 text-sm text-muted">{t('web.credits.buyOnMobile')}</p>
     </section>
   );
 }
@@ -1876,37 +1890,35 @@ git commit -m "Show the credit balance on web"
 Mobile specs are pure logic only — no native render harness. Create `apps/mobile/src/lib/credits.spec.ts`:
 
 ```ts
-import { describe, expect, it } from "vitest";
-import { canAfford, creditsShort } from "./credits";
+import { describe, expect, it } from 'vitest';
+import { canAfford, creditsShort } from './credits';
 
 const balance = {
   freeBalance: 10,
   paidBalance: 5,
-  grantPeriod: "2026-08",
+  grantPeriod: '2026-08',
   freeGrant: 150,
 };
 
-describe("credit helpers", () => {
-  it("affords an action within the combined balance", () => {
-    expect(canAfford(balance, "plan.daily")).toBe(true);
+describe('credit helpers', () => {
+  it('affords an action within the combined balance', () => {
+    expect(canAfford(balance, 'plan.daily')).toBe(true);
   });
 
-  it("does not afford an action beyond it", () => {
-    expect(canAfford(balance, "plan.monthly")).toBe(false);
+  it('does not afford an action beyond it', () => {
+    expect(canAfford(balance, 'plan.monthly')).toBe(false);
   });
 
-  it("reports how many credits are missing", () => {
-    expect(creditsShort(balance, "plan.monthly")).toBe(35);
+  it('reports how many credits are missing', () => {
+    expect(creditsShort(balance, 'plan.monthly')).toBe(35);
   });
 
-  it("reports zero short when affordable", () => {
-    expect(creditsShort(balance, "pantry.scan")).toBe(0);
+  it('reports zero short when affordable', () => {
+    expect(creditsShort(balance, 'pantry.scan')).toBe(0);
   });
 
-  it("treats a negative paid balance as reducing what is affordable", () => {
-    expect(canAfford({ ...balance, paidBalance: -8 }, "plan.daily")).toBe(
-      false,
-    );
+  it('treats a negative paid balance as reducing what is affordable', () => {
+    expect(canAfford({ ...balance, paidBalance: -8 }, 'plan.daily')).toBe(false);
   });
 });
 ```
@@ -1919,7 +1931,7 @@ Expected: FAIL — module not found.
 - [ ] **Step 3: Implement the helpers**
 
 ```ts
-import { CREDIT_COSTS, type CreditAction } from "@kitchen/contracts";
+import { CREDIT_COSTS, type CreditAction } from '@kitchen/contracts';
 
 interface BalanceLike {
   freeBalance: number;
@@ -1930,10 +1942,7 @@ export function canAfford(balance: BalanceLike, action: CreditAction): boolean {
   return balance.freeBalance + balance.paidBalance >= CREDIT_COSTS[action];
 }
 
-export function creditsShort(
-  balance: BalanceLike,
-  action: CreditAction,
-): number {
+export function creditsShort(balance: BalanceLike, action: CreditAction): number {
   const total = balance.freeBalance + balance.paidBalance;
   return Math.max(0, CREDIT_COSTS[action] - total);
 }
@@ -1951,11 +1960,11 @@ Install with `pnpm --filter @kitchen/mobile add react-native-purchases`. Do **no
 Create `apps/mobile/src/lib/purchase.ts` — the flow, kept out of the component so it stays testable:
 
 ```ts
-import Purchases, { type PurchasesPackage } from "react-native-purchases";
-import { api } from "./api";
+import Purchases, { type PurchasesPackage } from 'react-native-purchases';
+import { api } from './api';
 
 export type PurchaseOutcome =
-  { status: "credited" } | { status: "pending" } | { status: "cancelled" };
+  { status: 'credited' } | { status: 'pending' } | { status: 'cancelled' };
 
 /**
  * Buy a credit pack (spec §6).
@@ -1969,7 +1978,7 @@ export async function buyCredits(
   productId: string,
   pkg: PurchasesPackage,
 ): Promise<PurchaseOutcome> {
-  const intent = await api.call("createPurchaseIntent", {
+  const intent = await api.call('createPurchaseIntent', {
     body: { productId },
   });
 
@@ -1977,23 +1986,22 @@ export async function buyCredits(
   try {
     const result = await Purchases.purchasePackage(pkg);
     storeTransactionId = result.customerInfo.originalPurchaseDate
-      ? (result.transaction?.transactionIdentifier ?? "")
-      : "";
-    if (!storeTransactionId) return { status: "pending" };
+      ? (result.transaction?.transactionIdentifier ?? '')
+      : '';
+    if (!storeTransactionId) return { status: 'pending' };
   } catch (error) {
-    if ((error as { userCancelled?: boolean }).userCancelled)
-      return { status: "cancelled" };
+    if ((error as { userCancelled?: boolean }).userCancelled) return { status: 'cancelled' };
     throw error;
   }
 
   try {
-    await api.call("confirmPurchase", {
-      body: { intentId: intent.intentId, storeTransactionId, store: "apple" },
+    await api.call('confirmPurchase', {
+      body: { intentId: intent.intentId, storeTransactionId, store: 'apple' },
     });
-    return { status: "credited" };
+    return { status: 'credited' };
   } catch {
     // The charge succeeded; only our confirmation did not land.
-    return { status: "pending" };
+    return { status: 'pending' };
   }
 }
 ```
