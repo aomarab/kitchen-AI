@@ -39,14 +39,14 @@ export class ReceiptProcessor extends WorkerHost {
       });
       await this.store.markDone(jobId, { kind: 'recognition_session', id: sessionId });
     } catch (err) {
-      // The persisted error is code-only. Without this line a failed job is
-      // undiagnosable: no schema issues, no model, no reason.
       this.logger.error(`job ${jobId} failed: ${describeJobError(err)}`);
-      await this.credits
-        .refund(row.householdId, 'receipt.scan')
-        .catch((refundError) =>
-          this.logger.error(`job ${jobId} credit refund failed: ${String(refundError)}`),
-        );
+      if (payload.spendGroupId) {
+        await this.credits
+          .refundSpendGroup(row.householdId, payload.spendGroupId)
+          .catch((refundError) =>
+            this.logger.error(`job ${jobId} credit refund failed: ${String(refundError)}`),
+          );
+      }
       await this.store.markFailed(jobId, toJobError(err));
       throw err;
     }

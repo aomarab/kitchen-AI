@@ -24,7 +24,7 @@ import {
   type RegenerateEntryRequest,
   type UpdateEntryRequest,
 } from '@kitchen/contracts';
-import { IdempotencyKey, ZodPipe } from '../../common/http.js';
+import { RequiredIdempotencyKey, ZodPipe } from '../../common/http.js';
 import { AuthGuard } from '../../common/auth.guard.js';
 import { HouseholdGuard } from '../../common/household.guard.js';
 import { CurrentUser } from '../../common/current-user.decorator.js';
@@ -54,17 +54,18 @@ export class PlanController {
   generate(
     @CurrentHousehold() household: HouseholdContext,
     @CurrentUser() user: AuthUser,
-    @IdempotencyKey() idempotencyKey: string | null,
+    @RequiredIdempotencyKey() idempotencyKey: string,
     @Body(new ZodPipe(generatePlanRequestSchema)) body: GeneratePlanRequest,
   ): Promise<Job> {
-    return this.jobs.enqueuePlan(household.id, { userId: user.userId, request: body }, idempotencyKey);
+    return this.jobs.enqueuePlan(
+      household.id,
+      { userId: user.userId, request: body },
+      idempotencyKey,
+    );
   }
 
   @Get('meal-plans/:id')
-  get(
-    @CurrentHousehold() household: HouseholdContext,
-    @Param('id') id: string,
-  ): Promise<MealPlan> {
+  get(@CurrentHousehold() household: HouseholdContext, @Param('id') id: string): Promise<MealPlan> {
     return this.plans.get(household.id, id);
   }
 

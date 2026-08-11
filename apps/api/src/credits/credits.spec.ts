@@ -147,8 +147,8 @@ describe('CreditsService', () => {
   });
 
   it('writes an append-only ledger row per movement', async () => {
-    await credits.spend(householdId, 'pantry.scan');
-    await credits.refund(householdId, 'pantry.scan');
+    const sgId = await credits.spend(householdId, 'pantry.scan');
+    await credits.refundSpendGroup(householdId, sgId);
 
     const rows = await ctx.db
       .select()
@@ -161,14 +161,14 @@ describe('CreditsService', () => {
     expect(rows.find((r) => r.kind === 'reversal')?.delta).toBe(1);
   });
 
-  it('refunds to the same bucket the spend came from', async () => {
+  it('refundSpendGroup refunds to the same bucket the spend came from', async () => {
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 0, paidBalance: 100 })
       .where(eq(householdCredits.householdId, householdId));
 
-    await credits.spend(householdId, 'plan.daily');
-    await credits.refund(householdId, 'plan.daily');
+    const sgId = await credits.spend(householdId, 'plan.daily');
+    await credits.refundSpendGroup(householdId, sgId);
 
     const balance = await credits.balance(householdId);
     expect(balance.freeBalance).toBe(0);
@@ -193,47 +193,47 @@ describe('CreditsService', () => {
     });
   });
 
-  // ── CRITICAL 1: refund correctness ──────────────────────────────────────────
+  // ── CRITICAL 1: refundSpendGroup correctness ────────────────────────────────
 
-  it('two spends then one refund: refunds exactly one spend, not both', async () => {
+  it('two spends then one refundSpendGroup: refunds exactly the targeted spend', async () => {
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 10, paidBalance: 0 })
       .where(eq(householdCredits.householdId, householdId));
 
-    await credits.spend(householdId, 'pantry.scan'); // cost 1
-    await credits.spend(householdId, 'pantry.scan'); // cost 1
-    await credits.refund(householdId, 'pantry.scan');
+    await credits.spend(householdId, 'pantry.scan'); // cost 1 — spend A
+    const sgIdB = await credits.spend(householdId, 'pantry.scan'); // cost 1 — spend B
+    await credits.refundSpendGroup(householdId, sgIdB); // reverse only B
 
     const balance = await credits.balance(householdId);
     // Started at 10, spent 2, refunded 1 → 9
     expect(balance.freeBalance).toBe(9);
   });
 
-  it('one spend then two refunds: second refund is a no-op, credits not minted', async () => {
+  it('refundSpendGroup called twice for the same group is a no-op, credits not minted', async () => {
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 10, paidBalance: 0 })
       .where(eq(householdCredits.householdId, householdId));
 
-    await credits.spend(householdId, 'pantry.scan'); // cost 1
-    await credits.refund(householdId, 'pantry.scan'); // reverses the spend
-    await credits.refund(householdId, 'pantry.scan'); // no unreversed spend → no-op
+    const sgId = await credits.spend(householdId, 'pantry.scan'); // cost 1
+    await credits.refundSpendGroup(householdId, sgId); // reverses the spend
+    await credits.refundSpendGroup(householdId, sgId); // already reversed → no-op
 
     const balance = await credits.balance(householdId);
-    // Started at 10, net zero after spend+refund, second refund is no-op → 10
+    // Started at 10, net zero after spend+refund, second call is no-op → 10
     expect(balance.freeBalance).toBe(10);
   });
 
-  it('cross-bucket spend refunds to the correct buckets', async () => {
+  it('cross-bucket spend refundSpendGroup restores the correct buckets', async () => {
     // free=2, paid=10: a plan.daily (cost 4) takes 2 from free, 2 from paid.
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 2, paidBalance: 10 })
       .where(eq(householdCredits.householdId, householdId));
 
-    await credits.spend(householdId, 'plan.daily');
-    await credits.refund(householdId, 'plan.daily');
+    const sgId = await credits.spend(householdId, 'plan.daily');
+    await credits.refundSpendGroup(householdId, sgId);
 
     const balance = await credits.balance(householdId);
     expect(balance.freeBalance).toBe(2);
@@ -250,16 +250,16 @@ describe('CreditsService', () => {
       .where(eq(householdCredits.householdId, householdId));
 
     await expect(credits.assertCanAfford(householdId, 'pantry.scan')).resolves.toBeUndefined();
-    await expect(credits.spend(householdId, 'pantry.scan')).resolves.toBeUndefined();
+    await expect(credits.spend(householdId, 'pantry.scan')).resolves.toBeTruthy(); // returns spendGroupId
 
     const balance = await credits.balance(householdId);
     expect(balance.freeBalance).toBe(149);
     expect(balance.paidBalance).toBe(-10);
   });
 
-  // ── CRITICAL 3: refund targets the most-recent spend, not the oldest ────────
+  // ── CRITICAL 3: refundSpendGroup targets the exact group, not the oldest ────
 
-  it('refunds the spend that just failed, not the oldest one', async () => {
+  it('refundSpendGroup reverses the targeted group, not the oldest one', async () => {
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 2, paidBalance: 10 })
@@ -268,13 +268,13 @@ describe('CreditsService', () => {
     // Spend 1: cost 4 -> 2 from free, 2 from paid. free=0, paid=8
     await credits.spend(householdId, 'plan.daily');
     // Spend 2: cost 4 -> 0 from free, 4 from paid. free=0, paid=4
-    await credits.spend(householdId, 'plan.daily');
+    const sgId2 = await credits.spend(householdId, 'plan.daily');
 
     const mid = await credits.balance(householdId);
     expect([mid.freeBalance, mid.paidBalance]).toEqual([0, 4]);
 
-    // Spend 2's job fails. Reversing spend 2 must restore paid only.
-    await credits.refund(householdId, 'plan.daily');
+    // Spend 2's job fails. Reversing spend 2 by id must restore paid only.
+    await credits.refundSpendGroup(householdId, sgId2);
 
     const after = await credits.balance(householdId);
     expect([after.freeBalance, after.paidBalance]).toEqual([0, 8]);
@@ -282,7 +282,7 @@ describe('CreditsService', () => {
 
   // ── CRITICAL 4: free-balance clamp is safe and idempotent ───────────────────
 
-  it('refund never pushes freeBalance above FREE_MONTHLY_GRANT and never lowers a balance', async () => {
+  it('refundSpendGroup never pushes freeBalance above FREE_MONTHLY_GRANT and never lowers a balance', async () => {
     // freeBalance is already at the cap. A refund of a free spend must be a
     // no-op on the balance but still mark the group reversed.
     await ctx.db
@@ -295,7 +295,7 @@ describe('CreditsService', () => {
       .update(householdCredits)
       .set({ freeBalance: 10 })
       .where(eq(householdCredits.householdId, householdId));
-    await credits.spend(householdId, 'pantry.scan'); // free=9
+    const sgId = await credits.spend(householdId, 'pantry.scan'); // free=9
     // Restore free to cap to simulate the month rolling over.
     await ctx.db
       .update(householdCredits)
@@ -303,14 +303,14 @@ describe('CreditsService', () => {
       .where(eq(householdCredits.householdId, householdId));
 
     // Refund: free is already at cap, clamp should floor at 0, not go negative.
-    await credits.refund(householdId, 'pantry.scan');
+    await credits.refundSpendGroup(householdId, sgId);
 
     const balance = await credits.balance(householdId);
     expect(balance.freeBalance).toBe(FREE_MONTHLY_GRANT); // not above cap
     expect(balance.paidBalance).toBe(0); // not lowered
 
-    // A second refund must be a no-op (group was marked reversed by the first).
-    await credits.refund(householdId, 'pantry.scan');
+    // A second call must be a no-op (group was marked reversed by the first).
+    await credits.refundSpendGroup(householdId, sgId);
     const balance2 = await credits.balance(householdId);
     expect(balance2.freeBalance).toBe(FREE_MONTHLY_GRANT);
     expect(balance2.paidBalance).toBe(0);
@@ -318,15 +318,11 @@ describe('CreditsService', () => {
 
   // ── Important 5: seq-ordered SQL, not JS Date tie-breaking ──────────────────
 
-  it('orders spend groups by seq, never by created_at', async () => {
-    // `seq` is the authoritative recency key because `created_at` is not
-    // reliable for ordering: two spends can collide at the resolution a client
-    // compares them at, and the column is writable. This fixture makes the two
-    // keys disagree on purpose — group A carries the LATER timestamp but is
-    // inserted first, so it has the LOWER seq. Anything that orders by
-    // created_at picks A; only seq ordering picks B.
+  it('refundSpendGroup reverses exactly the given group, not the other group', async () => {
+    // Two groups for the same action. refundSpendGroup(groupB) must touch only
+    // paid balance, leaving free balance unchanged.
     //
-    // Group A: 2 from free. Group B: 4 from paid. The refund must reverse B.
+    // Group A: 2 from free. Group B: 4 from paid.
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 2, paidBalance: 10 })
@@ -336,7 +332,7 @@ describe('CreditsService', () => {
     const groupA = crypto.randomUUID();
     const groupB = crypto.randomUUID();
 
-    // Group A — inserted first (lower seq) but stamped a minute in the future.
+    // Group A — 2 free debited.
     await ctx.db.insert(creditLedger).values({
       householdId,
       delta: -2,
@@ -346,7 +342,7 @@ describe('CreditsService', () => {
       spendGroupId: groupA,
       createdAt: new Date(base.getTime() + 60_000),
     });
-    // Group B — inserted second (higher seq) but stamped earlier.
+    // Group B — 4 paid debited.
     await ctx.db.insert(creditLedger).values({
       householdId,
       delta: -4,
@@ -363,8 +359,8 @@ describe('CreditsService', () => {
       .set({ freeBalance: 0, paidBalance: 6 })
       .where(eq(householdCredits.householdId, householdId));
 
-    // Refund must reverse group B (4 paid), not group A (2 free).
-    await credits.refund(householdId, 'plan.daily');
+    // Refund only group B (4 paid); group A (2 free) must not be touched.
+    await credits.refundSpendGroup(householdId, groupB);
 
     const after = await credits.balance(householdId);
     expect(after.freeBalance).toBe(0); // group A not touched

@@ -10,7 +10,7 @@ import {
   type RecognitionSession,
   type RecognizeRequest,
 } from '@kitchen/contracts';
-import { IdempotencyKey, ZodPipe } from '../../common/http.js';
+import { RequiredIdempotencyKey, ZodPipe } from '../../common/http.js';
 import { AuthGuard } from '../../common/auth.guard.js';
 import { HouseholdGuard } from '../../common/household.guard.js';
 import { CurrentUser } from '../../common/current-user.decorator.js';
@@ -42,7 +42,11 @@ export class CaptureController {
     @CurrentUser() user: AuthUser,
     @Body(new ZodPipe(recognizeRequestSchema)) body: RecognizeRequest,
   ): Promise<RecognitionSession> {
-    return this.recognition.recognize({ householdId: household.id, userId: user.userId, request: body });
+    return this.recognition.recognize({
+      householdId: household.id,
+      userId: user.userId,
+      request: body,
+    });
   }
 
   @Get('inventory/lookup')
@@ -56,10 +60,14 @@ export class CaptureController {
   parseReceipt(
     @CurrentHousehold() household: HouseholdContext,
     @CurrentUser() user: AuthUser,
-    @IdempotencyKey() idempotencyKey: string | null,
+    @RequiredIdempotencyKey() idempotencyKey: string,
     @Body(new ZodPipe(parseReceiptRequestSchema)) body: ParseReceiptRequest,
   ): Promise<Job> {
-    return this.jobs.enqueueReceipt(household.id, { userId: user.userId, request: body }, idempotencyKey);
+    return this.jobs.enqueueReceipt(
+      household.id,
+      { userId: user.userId, request: body },
+      idempotencyKey,
+    );
   }
 
   @Get('inventory/recognition-sessions/:id')

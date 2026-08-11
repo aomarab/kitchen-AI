@@ -101,8 +101,8 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
           useValue: new JobsService(
             store,
             {
-              spend: async () => {},
-              refund: async () => {},
+              spend: async () => 'fake-group-id',
+              refundSpendGroup: async () => {},
               assertCanAfford: async () => {},
             } as never,
             undefined,
@@ -116,8 +116,8 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
             undefined as never,
             undefined as never,
             {
-              spend: async () => {},
-              refund: async () => {},
+              spend: async () => 'fake-group-id',
+              refundSpendGroup: async () => {},
               assertCanAfford: async () => {},
             } as never,
           ),
@@ -130,8 +130,8 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
             undefined as never,
             undefined as never,
             {
-              spend: async () => {},
-              refund: async () => {},
+              spend: async () => 'fake-group-id',
+              refundSpendGroup: async () => {},
               assertCanAfford: async () => {},
             } as never,
           ),

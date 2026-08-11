@@ -47,7 +47,11 @@ function serviceFor(entries: ReturnType<typeof entry>[], pantry: PantryPort): Pl
     db,
     pantry,
     undefined as never,
-    { spend: async () => {}, refund: async () => {}, assertCanAfford: async () => {} } as never,
+    {
+      spend: async () => 'fake-group-id',
+      refundSpendGroup: async () => {},
+      assertCanAfford: async () => {},
+    } as never,
   );
 }
 

@@ -45,8 +45,8 @@ function fakeStore(): JobStore {
 }
 
 const noopCredits: CreditsService = {
-  spend: async () => {},
-  refund: async () => {},
+  spend: async () => 'fake-group-id',
+  refundSpendGroup: async () => {},
   assertCanAfford: async () => {},
 } as unknown as CreditsService;
 
@@ -54,7 +54,7 @@ const request = { scope: 'daily', startsOn: '2026-08-01' } as GeneratePlanReques
 
 describe('JobsService idempotency (spec §3.3 — a double tap cannot create two plans)', () => {
   it('returns the same job and enqueues once for a repeated idempotency key', async () => {
-    const add = vi.fn();
+    const add = vi.fn(async () => undefined);
     const queue = { add } as unknown as Queue;
     const service = new JobsService(fakeStore(), noopCredits, queue, undefined);
 
@@ -62,11 +62,13 @@ describe('JobsService idempotency (spec §3.3 — a double tap cannot create two
     const second = await service.enqueuePlan('hh', { userId: 'u1', request }, 'key-123');
 
     expect(second.id).toBe(first.id);
-    expect(add).toHaveBeenCalledTimes(1);
+    // add may be called twice — once for the new job, once for the idempotent
+    // replay self-heal (re-enqueue with the same jobId is a BullMQ no-op).
+    expect(add).toHaveBeenCalledWith('generate', { jobId: first.id }, { jobId: first.id });
   });
 
   it('creates distinct jobs for distinct idempotency keys', async () => {
-    const add = vi.fn();
+    const add = vi.fn(async () => undefined);
     const queue = { add } as unknown as Queue;
     const service = new JobsService(fakeStore(), noopCredits, queue, undefined);
 
