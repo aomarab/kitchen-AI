@@ -122,7 +122,7 @@ function makeRecognitionService(credits: CreditsService, gatewayImpl?: Partial<A
   } as unknown as IngredientResolverPort;
 
   const storage = {
-    presignDownload: vi.fn(async () => 'https://example.com/photo.jpg'),
+    providerImageUrl: vi.fn(async () => 'https://example.com/photo.jpg'),
   } as unknown as StorageService;
 
   return new RecognitionService(ctx.db, catalog, gateway, storage, credits);

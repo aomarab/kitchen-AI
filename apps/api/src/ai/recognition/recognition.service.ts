@@ -56,12 +56,12 @@ export class RecognitionService {
     const seen = new Set<string>();
 
     for (const photoKey of request.photoKeys) {
-      // The provider fetches the image over HTTP, so it needs a signed URL, not
-      // an object key. `presignDownload` also rejects any key outside this
+      // The provider needs something it can actually dereference, not an
+      // object key. `providerImageUrl` also rejects any key outside this
       // household's prefix — `photoKeys` are opaque client strings, and without
       // that check a caller could name another household's photo, or an
       // arbitrary URL, and have the model fetch it for them.
-      const imageUrl = await this.storage.presignDownload(householdId, photoKey);
+      const imageUrl = await this.storage.providerImageUrl(householdId, photoKey);
       const vision = await this.gateway.execute<VisionResult>({
         householdId,
         operation: 'vision.recognize',
