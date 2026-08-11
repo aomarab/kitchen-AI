@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Redis } from 'ioredis';
 import { ENV, type Env } from '../config/env.js';
 import { StorageModule } from '../storage/storage.module.js';
+import type { AiProvider } from './providers/ai-provider.interface.js';
 import {
   AI_PROVIDER,
   CATALOG_PORT,
@@ -66,6 +67,33 @@ function redisConnection(url: string) {
 }
 
 /**
+ * Constructs the `AI_PROVIDER` value from the environment. Extracted so the
+ * factory logic can be unit-tested independently of the NestJS module graph.
+ */
+export function createAiProvider(env: Env): AiProvider {
+  if (env.AI_MOCK) return new MockAiProvider();
+
+  const openai = new OpenAiProvider(env.OPENAI_API_KEY, {
+    cheap: env.OPENAI_MODEL_CHEAP,
+    vision: env.OPENAI_MODEL_VISION,
+    planning: env.OPENAI_MODEL_PLANNING,
+  });
+
+  let vision: AiProvider = openai;
+  if (env.AI_VISION_VENDOR === 'gemini') {
+    if (env.GEMINI_API_KEY.trim() === '') {
+      throw new Error(
+        'AI_VISION_VENDOR is set to "gemini" but GEMINI_API_KEY is empty. ' +
+          'Provide a key or set AI_VISION_VENDOR=openai.',
+      );
+    }
+    vision = new GeminiProvider(env.GEMINI_API_KEY, { vision: env.GEMINI_MODEL_VISION });
+  }
+
+  return new RoutedAiProvider({ cheap: openai, vision, planning: openai });
+}
+
+/**
  * The AI feature module (spec §5). Owns every AI pipeline — vision recognition,
  * barcode lookup, receipt parsing, the three-stage meal planner, recipe/video
  * endpoints, shopping, jobs and usage. Providers are selected by `env.AI_MOCK`:
@@ -103,22 +131,7 @@ function redisConnection(url: string) {
     {
       provide: AI_PROVIDER,
       inject: [ENV],
-      useFactory: (env: Env) => {
-        if (env.AI_MOCK) return new MockAiProvider();
-
-        const openai = new OpenAiProvider(env.OPENAI_API_KEY, {
-          cheap: env.OPENAI_MODEL_CHEAP,
-          vision: env.OPENAI_MODEL_VISION,
-          planning: env.OPENAI_MODEL_PLANNING,
-        });
-
-        const vision =
-          env.AI_VISION_VENDOR === 'gemini'
-            ? new GeminiProvider(env.GEMINI_API_KEY, { vision: env.GEMINI_MODEL_VISION })
-            : openai;
-
-        return new RoutedAiProvider({ cheap: openai, vision, planning: openai });
-      },
+      useFactory: createAiProvider,
     },
     {
       provide: YOUTUBE_CLIENT,
