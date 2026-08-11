@@ -35,31 +35,49 @@ export class GeminiProvider implements AiProvider {
   async complete(request: StructuredRequest): Promise<StructuredResponse> {
     const model = this.models.vision;
 
-    const parts: Array<Record<string, unknown>> = [{ text: request.user }];
-    for (const image of request.images ?? []) {
-      // The URL is a presigned GET; Gemini takes bytes, not a URL, so fetch it.
-      const response = await fetch(image.url);
-      const bytes = Buffer.from(await response.arrayBuffer());
-      parts.push({
-        inlineData: {
-          mimeType: response.headers.get('content-type') ?? 'image/jpeg',
-          data: bytes.toString('base64'),
-        },
-      });
-    }
-
-    if (request.repairOf) {
-      parts.push({
-        text:
-          'Your previous response failed validation with error: ' +
-          `${request.repairOf.error}\nPrevious output was:\n` +
-          `${JSON.stringify(request.repairOf.previousRaw)}\n` +
-          'Return corrected JSON that satisfies the required shape. JSON only.',
-      });
-    }
+    // One deadline for the whole operation — every image fetch and the model
+    // call — so a wedged download cannot hold the Nest request (and the user's
+    // HTTP connection) open past the tier budget. Nothing above this layer
+    // imposes a deadline, so it is imposed here.
+    const signal = AbortSignal.timeout(PROVIDER_TIMEOUT_MS[request.tier]);
 
     let response;
     try {
+      const parts: Array<Record<string, unknown>> = [{ text: request.user }];
+      for (const image of request.images ?? []) {
+        // The URL is a presigned GET; Gemini takes bytes, not a URL, so fetch it.
+        const imageResponse = await fetch(image.url, { signal });
+        if (!imageResponse.ok) {
+          // An expired or denied presigned GET returns an S3 XML error body.
+          // Base64-ing that and shipping it labelled image/jpeg is a billed
+          // request guaranteed to be useless, so fail before ever calling the
+          // model.
+          throw new AppError('EXTERNAL_SERVICE_ERROR', 'errors.EXTERNAL_SERVICE_ERROR', {
+            operation: request.operation,
+            model,
+            status: imageResponse.status,
+            reason: 'image fetch failed',
+          });
+        }
+        const bytes = Buffer.from(await imageResponse.arrayBuffer());
+        parts.push({
+          inlineData: {
+            mimeType: imageResponse.headers.get('content-type') ?? 'image/jpeg',
+            data: bytes.toString('base64'),
+          },
+        });
+      }
+
+      if (request.repairOf) {
+        parts.push({
+          text:
+            'Your previous response failed validation with error: ' +
+            `${request.repairOf.error}\nPrevious output was:\n` +
+            `${JSON.stringify(request.repairOf.previousRaw)}\n` +
+            'Return corrected JSON that satisfies the required shape. JSON only.',
+        });
+      }
+
       response = await this.client.models.generateContent({
         model,
         contents: [{ role: 'user', parts }],
@@ -67,7 +85,7 @@ export class GeminiProvider implements AiProvider {
           systemInstruction: request.system,
           responseMimeType: 'application/json',
           maxOutputTokens: PROVIDER_MAX_OUTPUT_TOKENS[request.tier],
-          abortSignal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS[request.tier]),
+          abortSignal: signal,
           httpOptions: {
             // SDK counts total attempts (original + retries); PROVIDER_MAX_RETRIES
             // counts only retries, matching OpenAI's maxRetries convention.

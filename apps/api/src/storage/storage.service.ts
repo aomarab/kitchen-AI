@@ -45,6 +45,25 @@ export function assertOwnedKey(householdId: string, key: string): void {
   }
 }
 
+/**
+ * Rejects any key that was not uploaded under a camera-capture purpose.
+ *
+ * The 2 MB capture ceiling on `presignUpload` keys on the client-declared
+ * purpose, so a client can sidestep it by presigning a 15 MB `recipe_image` (or
+ * `avatar`) and then handing that key to recognize/receipt — the un-resized
+ * frame would reach the vision model. The purpose is a path segment of the key
+ * (`households/<id>/<purpose>/<uuid>.<ext>`), so re-derive it and require it to
+ * be a capture purpose. Reuses `CAPTURE_PURPOSES` so the two checks cannot
+ * drift apart.
+ */
+export function assertCaptureKey(householdId: string, key: string): void {
+  assertOwnedKey(householdId, key);
+  const purpose = key.slice(householdPrefix(householdId).length).split('/')[0];
+  if (!CAPTURE_PURPOSES.has(purpose as PresignUploadRequest['purpose'])) {
+    throw AppError.notFound('errors.NOT_FOUND');
+  }
+}
+
 @Injectable()
 export class StorageService {
   private readonly client: S3Client;
@@ -116,6 +135,22 @@ export class StorageService {
    */
   async presignDownload(householdId: string, key: string): Promise<string> {
     assertOwnedKey(householdId, key);
+    return this.signGet(key);
+  }
+
+  /**
+   * Presign a GET for a capture the household owns, additionally requiring the
+   * key to have been uploaded under a camera-capture purpose. Used by the
+   * recognize and receipt paths so a key smuggled in under `recipe_image` or
+   * `avatar` (which bypasses the 2 MB capture ceiling) cannot reach the vision
+   * model.
+   */
+  async presignCaptureDownload(householdId: string, key: string): Promise<string> {
+    assertCaptureKey(householdId, key);
+    return this.signGet(key);
+  }
+
+  private signGet(key: string): Promise<string> {
     return getSignedUrl(
       this.client,
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),

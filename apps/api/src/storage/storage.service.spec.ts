@@ -74,3 +74,38 @@ describe('presignUpload capture ceiling', () => {
     ).resolves.toBeDefined();
   });
 });
+
+describe('presignCaptureDownload capture-purpose assertion (Issue 3)', () => {
+  const CAPTURE_KEY = `households/${HOUSEHOLD}/inventory_photo/abc.jpg`;
+  const RECEIPT_KEY = `households/${HOUSEHOLD}/receipt/abc.jpg`;
+  const RECIPE_KEY = `households/${HOUSEHOLD}/recipe_image/abc.jpg`;
+  const AVATAR_KEY = `households/${HOUSEHOLD}/avatar/abc.jpg`;
+  const OTHER_HH = '22222222-2222-2222-2222-222222222222';
+
+  it('presigns a genuine capture key', async () => {
+    await expect(makeStorageService().presignCaptureDownload(HOUSEHOLD, CAPTURE_KEY)).resolves.toContain(
+      'inventory_photo',
+    );
+    await expect(makeStorageService().presignCaptureDownload(HOUSEHOLD, RECEIPT_KEY)).resolves.toBeDefined();
+  });
+
+  it('rejects a recipe_image key smuggled onto the recognize path', async () => {
+    // The whole bypass: upload 15 MB under recipe_image, then hand that key to
+    // recognize. The capture-purpose assertion must reject it.
+    await expect(
+      makeStorageService().presignCaptureDownload(HOUSEHOLD, RECIPE_KEY),
+    ).rejects.toBeInstanceOf(AppError);
+  });
+
+  it('rejects an avatar key on the capture path', async () => {
+    await expect(
+      makeStorageService().presignCaptureDownload(HOUSEHOLD, AVATAR_KEY),
+    ).rejects.toBeInstanceOf(AppError);
+  });
+
+  it('still rejects another household’s key', async () => {
+    await expect(
+      makeStorageService().presignCaptureDownload(HOUSEHOLD, `households/${OTHER_HH}/inventory_photo/abc.jpg`),
+    ).rejects.toBeInstanceOf(AppError);
+  });
+});

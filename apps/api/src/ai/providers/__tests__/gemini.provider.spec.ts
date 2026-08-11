@@ -165,9 +165,33 @@ describe('GeminiProvider', () => {
     const provider = new GeminiProvider('key', { vision: 'gemini-3-flash' });
     await provider.complete(request({ images: [{ url: 'https://example.test/a.jpg' }] }));
 
-    expect(fetchSpy).toHaveBeenCalledWith('https://example.test/a.jpg');
+    // The fetch must carry the operation-wide abort signal so a wedged download
+    // cannot hold the request open past the tier timeout.
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://example.test/a.jpg',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
     const parts = generateContent.mock.calls[0]![0].contents[0].parts;
     expect(parts.some((p: { inlineData?: unknown }) => p.inlineData)).toBe(true);
+    fetchSpy.mockRestore();
+  });
+
+  it('throws instead of shipping an S3 error body when the image fetch is not ok', async () => {
+    // An expired or denied presigned GET returns an XML error body with a 403.
+    // Base64-ing that and labelling it image/jpeg is a guaranteed-useless billed
+    // request; the provider must fail before ever calling the model.
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<Error><Code>AccessDenied</Code></Error>', {
+        status: 403,
+        headers: { 'content-type': 'application/xml' },
+      }),
+    );
+
+    const provider = new GeminiProvider('key', { vision: 'gemini-3-flash' });
+    await expect(
+      provider.complete(request({ images: [{ url: 'https://example.test/expired.jpg' }] })),
+    ).rejects.toMatchObject({ code: 'EXTERNAL_SERVICE_ERROR' });
+    expect(generateContent).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
 });
