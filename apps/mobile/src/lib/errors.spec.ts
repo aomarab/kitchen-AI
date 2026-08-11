@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError, ContractViolationError, NetworkError } from '@kitchen/api-client';
-import { errorMessageKey, isAuthError, isInsufficientCredits, isRetryable } from '../lib/errors';
+import {
+  errorMessageKey,
+  isAuthError,
+  isInsufficientCredits,
+  isRetryable,
+  jobErrorKey,
+} from '../lib/errors';
 
 describe('errorMessageKey', () => {
   it('renders the server-supplied message key for an ApiError', () => {
@@ -82,5 +88,28 @@ describe('isInsufficientCredits', () => {
     expect(isInsufficientCredits({ code: 'NOT_FOUND' })).toBe(false);
     expect(isInsufficientCredits(null)).toBe(false);
     expect(isInsufficientCredits('INSUFFICIENT_CREDITS')).toBe(false);
+  });
+});
+
+describe('jobErrorKey', () => {
+  it('prefers the reason the server gave for the failure', () => {
+    // A household told "there isn't enough in your kitchen" can act on it;
+    // the generic fallback only invites them to retry the same doomed job.
+    expect(
+      jobErrorKey({ code: 'PLAN_INFEASIBLE', messageKey: 'errors.PLAN_INFEASIBLE' }, 'errors.INTERNAL_ERROR'),
+    ).toBe('errors.PLAN_INFEASIBLE');
+  });
+
+  it('falls back when a newer server names a message this build lacks', () => {
+    // `translate` would otherwise render the raw key at the user.
+    expect(jobErrorKey({ code: 'X', messageKey: 'errors.notInThisBuild' }, 'errors.INTERNAL_ERROR')).toBe(
+      'errors.INTERNAL_ERROR',
+    );
+  });
+
+  it('falls back when the job carries no error at all', () => {
+    expect(jobErrorKey(null, 'errors.INTERNAL_ERROR')).toBe('errors.INTERNAL_ERROR');
+    expect(jobErrorKey(undefined, 'errors.INTERNAL_ERROR')).toBe('errors.INTERNAL_ERROR');
+    expect(jobErrorKey({}, 'errors.INTERNAL_ERROR')).toBe('errors.INTERNAL_ERROR');
   });
 });

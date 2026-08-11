@@ -20,6 +20,7 @@ import { useGeneratePlan } from '../hooks/plans';
 import { useCredits } from '../hooks/credits';
 import { useJob, isTerminal } from '../hooks/job';
 import { canAfford, costOf, creditsShort } from '../lib/credits';
+import { jobErrorKey } from '../lib/errors';
 import { todayISODate } from '../lib/expiry';
 import { formatMinutes, formatQty } from '../lib/format';
 import { colors, radius, spacing } from '../theme';
@@ -129,8 +130,8 @@ export default function GeneratePlan() {
                 height: 8,
                 borderRadius: radius.pill,
                 backgroundColor: colors.primary,
-                // No alignSelf: the root layout calls I18nManager.forceRTL, so the
-                // flex start edge is already the right edge in Arabic. Setting
+                // No alignSelf: the root view carries `direction`, so the flex
+                // start edge is already the right edge in Arabic. Setting
                 // flex-end here flipped it a second time and filled from the left.
                 width: `${Math.round((job.data?.progress ?? 0.1) * 100)}%`,
               }}
@@ -141,7 +142,9 @@ export default function GeneratePlan() {
 
       {failed ? (
         <Card tone="alt" style={{ gap: spacing.sm }}>
-          <AppText color="danger">{t('mobile.job.generationFailed')}</AppText>
+          <AppText color="danger">
+            {t(jobErrorKey(job.data?.error, 'mobile.job.generationFailed'))}
+          </AppText>
           <Button title={t('common.retry')} onPress={() => setJobId(null)} />
         </Card>
       ) : null}

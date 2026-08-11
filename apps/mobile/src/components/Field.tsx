@@ -40,7 +40,11 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
             color: colors.text,
             fontSize: 16,
             fontFamily,
-            textAlign: dir === 'rtl' ? 'right' : 'left',
+            // Same reasoning as AppText: iOS resolves `textAlign: 'auto'` from
+            // the writing direction, whereas an explicit 'left'/'right' is
+            // absolute on iOS but mirrored on Android — which put the caret on
+            // opposite sides of the same field across the two platforms.
+            textAlign: 'auto',
             writingDirection: dir,
           },
           style,

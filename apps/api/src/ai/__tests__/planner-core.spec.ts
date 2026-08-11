@@ -34,7 +34,11 @@ describe('runPlanner — daily scope (spec §5.4 Stage C)', () => {
     expect(generate).toHaveBeenCalledTimes(1);
   });
 
-  it('retries a shortfall day up to the limit, then throws PLAN_INFEASIBLE', async () => {
+  it('stops after one attempt when the pantry covers nothing, and names what is missing', async () => {
+    // A day nothing can be cooked from. Retrying re-samples the same model
+    // against the same shelves, so the extra calls only cost the household
+    // money and minutes — this is the case that used to burn three
+    // generations before failing.
     const generate = vi.fn<StageBGenerate>(async ({ dates, slots }) =>
       genPlan([
         {
@@ -56,10 +60,73 @@ describe('runPlanner — daily scope (spec §5.4 Stage C)', () => {
         generate,
         resolve,
       }),
+    ).rejects.toMatchObject({
+      code: 'PLAN_INFEASIBLE',
+      details: { missing: [{ nameEn: 'Chicken breast', shortfall: 300, unit: 'g' }] },
+    });
+
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+
+  it('still retries a day that came partly together, then throws', async () => {
+    // Lunch fits, dinner does not. The model may simply have spent the stock
+    // early, so another arrangement is worth paying for — unlike the case
+    // above, these retries can succeed.
+    const generate = vi.fn<StageBGenerate>(async ({ dates, slots }) =>
+      genPlan(
+        slots.map((slot, i) => ({
+          date: dates[0]!,
+          slot,
+          recipe: genRecipe(`Meal ${slot}`, [
+            { name: 'Chicken breast', quantity: i === 0 ? 200 : 500, unit: 'g' },
+          ]),
+        })),
+      ),
+    );
+
+    await expect(
+      runPlanner({
+        scope: 'daily',
+        weeks: [['2026-08-01']],
+        slots: ['lunch', 'dinner'],
+        constraints: { allergies: [], halal: false },
+        maxDailyRetries: 2,
+        baseSnapshot: snapshotOf([{ ref: chicken, quantity: 500, unit: 'g' }]),
+        generate,
+        resolve,
+      }),
     ).rejects.toMatchObject({ code: 'PLAN_INFEASIBLE' });
 
     // attempt 0 + 2 retries = 3 generations
     expect(generate).toHaveBeenCalledTimes(3);
+  });
+
+  it('accepts a day that only comes together on a later attempt', async () => {
+    const generate = vi.fn<StageBGenerate>(async ({ dates, slots, attempt }) =>
+      genPlan(
+        slots.map((slot, i) => ({
+          date: dates[0]!,
+          slot,
+          recipe: genRecipe(`Meal ${slot} ${attempt}`, [
+            { name: 'Chicken breast', quantity: attempt === 0 && i === 1 ? 500 : 200, unit: 'g' },
+          ]),
+        })),
+      ),
+    );
+
+    const result = await runPlanner({
+      scope: 'daily',
+      weeks: [['2026-08-01']],
+      slots: ['lunch', 'dinner'],
+      constraints: { allergies: [], halal: false },
+      maxDailyRetries: 2,
+      baseSnapshot: snapshotOf([{ ref: chicken, quantity: 500, unit: 'g' }]),
+      generate,
+      resolve,
+    });
+
+    expect(result.entries).toHaveLength(2);
+    expect(generate).toHaveBeenCalledTimes(2);
   });
 });
 

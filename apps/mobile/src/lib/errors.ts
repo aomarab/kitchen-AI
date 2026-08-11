@@ -1,5 +1,5 @@
 import { ApiError, ContractViolationError, NetworkError, TimeoutError } from '@kitchen/api-client';
-import type { MessageKey } from '@kitchen/i18n';
+import { isMessageKey, type MessageKey } from '@kitchen/i18n';
 import { OAuthUnavailableError } from './oauth-errors';
 
 /**
@@ -16,6 +16,24 @@ export function errorMessageKey(error: unknown): MessageKey {
   if (error instanceof OAuthUnavailableError) return error.messageKey;
   if (error instanceof ContractViolationError) return 'errors.INTERNAL_ERROR';
   return 'errors.INTERNAL_ERROR';
+}
+
+/**
+ * The message for a finished job that failed.
+ *
+ * The job envelope carries the server's own `messageKey` (spec §8), but the
+ * screens polling it used to ignore it and print one generic "something went
+ * wrong" — so a household told exactly why a plan was impossible ("there isn't
+ * enough in your kitchen") saw a dead end instead, and retried the same
+ * doomed request. The key is validated because it crosses a version boundary:
+ * a newer server may name a message this build has never heard of.
+ */
+export function jobErrorKey(
+  error: { readonly code?: string; readonly messageKey?: string } | null | undefined,
+  fallback: MessageKey,
+): MessageKey {
+  const key = error?.messageKey;
+  return key && isMessageKey(key) ? key : fallback;
 }
 
 /** True when retrying the same call could plausibly succeed. */

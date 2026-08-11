@@ -15,14 +15,16 @@ export interface SheetProps {
 
 /** Bottom sheet built on RN Modal — no extra dependency required. */
 export function Sheet({ visible, onClose, title, children }: SheetProps) {
-  const { t } = useLocale();
+  const { t, dir } = useLocale();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('common.close')}
         onPress={onClose}
-        style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}
+        // A Modal is hosted outside the root view, so it inherits nothing from
+        // the app's direction style and would always lay out LTR.
+        style={{ flex: 1, direction: dir, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}
       >
         <Pressable
           onPress={(event) => event.stopPropagation()}

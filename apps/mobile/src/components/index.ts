@@ -1,6 +1,6 @@
 export { AppText } from './AppText';
 export { AuthLayout } from './AuthLayout';
-export { AuthTabs } from './AuthTabs';
+export { AuthSwitchLink } from './AuthSwitchLink';
 export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';

@@ -153,6 +153,22 @@ export function translateErrorKey(
   return translate(locale, messageKey as MessageKey, values);
 }
 
+/**
+ * Whether a string names a real message.
+ *
+ * The API sends message keys rather than prose (spec §8), so anything it puts
+ * in an error — including a key from a newer server than the installed client —
+ * arrives as an unvalidated string. `translate` falls back to returning the key
+ * itself, which would show the user `errors.PLAN_INFEASIBLE` verbatim. Checking
+ * first lets a caller keep its own wording when the key means nothing here.
+ *
+ * English is the source of truth for the key set (`ar` is typed against it), so
+ * one catalog is enough to decide.
+ */
+export function isMessageKey(key: string): key is MessageKey {
+  return resolve(en, key) !== undefined;
+}
+
 /* ------------------------------------------------------------------ */
 /* Formatting                                                          */
 /* ------------------------------------------------------------------ */

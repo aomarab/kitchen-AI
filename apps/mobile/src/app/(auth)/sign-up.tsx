@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { AuthLayout, AppText, AuthTabs, Field, Button, OAuthButtons } from '../../components';
+import { AuthLayout, AppText, AuthSwitchLink, Field, Button, OAuthButtons } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useSignUp } from '../../hooks/auth';
 import { errorMessageKey } from '../../lib/errors';
@@ -21,8 +21,6 @@ export default function SignUp() {
 
   return (
     <AuthLayout title={t('mobile.auth.signUpTitle')} subtitle={t('mobile.auth.signUpSubtitle')}>
-      <AuthTabs />
-
       <View style={{ gap: spacing.md }}>
         <Field
           label={t('auth.displayName')}
@@ -56,6 +54,8 @@ export default function SignUp() {
       </View>
 
       <OAuthButtons onSuccess={goHome} />
+
+      <AuthSwitchLink to="/sign-in" />
     </AuthLayout>
   );
 }

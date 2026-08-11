@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, I18nManager, View } from 'react-native';
 import { queryClient } from '../lib/queryClient';
-import { createDirectionApplier } from '../lib/direction';
+import { normalizeNativeDirection } from '../lib/direction';
 import { useLocale } from '../lib/locale';
 import { useBootstrap } from '../lib/bootstrap';
 import { useAppFonts } from '../lib/font-loader';
@@ -19,20 +19,20 @@ import { SyncFailuresBanner } from '../components/SyncFailuresBanner';
 import { colors } from '../theme';
 
 /**
- * Apply layout direction from the active locale. `I18nManager.forceRTL` only
- * takes full effect after an app reload, so switching language in Settings
- * prompts the user to restart (see settings screen).
+ * Layout direction is a *style*, not a native flag.
  *
- * This must not run before `useBootstrap` has hydrated the persisted locale.
- * The store starts on the *device* locale, so an Arabic user on an English
- * device briefly reads `en` on the first render; applying that flipped the flag
- * back to LTR, the hydrated `ar` flipped it to RTL again on the next launch,
- * and the app alternated direction every time it started.
+ * `I18nManager.forceRTL` only takes effect at launch, so switching language
+ * used to leave Arabic text inside an English layout until the user restarted
+ * the app — the "corruption" people reported, and the reason Settings had to
+ * show a restart prompt. Every component here is written in logical properties
+ * (`start`/`end`, `marginStart`, `writingDirection`), which is precisely what
+ * Yoga's `direction` resolves, so setting `direction` on the root view mirrors
+ * the whole tree the moment the locale changes.
  *
- * The applier is created once at module scope so it can remember what it wrote
- * — see `lib/direction.ts` for why re-reading `I18nManager.isRTL` is unsafe.
+ * The persisted native flag is still cleared once at startup, or an install
+ * upgraded from a build that called `forceRTL(true)` would mirror twice.
  */
-const applyDirection = createDirectionApplier(I18nManager);
+
 
 /**
  * Sends the user to sign-in the moment the session ends, from wherever they
@@ -55,15 +55,15 @@ function useSignedOutRedirect(ready: boolean): void {
 }
 
 export default function RootLayout() {
-  const { locale } = useLocale();
+  const { locale, dir } = useLocale();
   const ready = useBootstrap();
   useAppFonts();
   useOfflineSync();
   useSignedOutRedirect(ready);
 
   useEffect(() => {
-    if (ready) applyDirection(locale);
-  }, [ready, locale]);
+    normalizeNativeDirection(I18nManager);
+  }, []);
   // Mocks have no locale header; mirror the app locale into the mock layer so
   // AI-generated plan/entry content comes back in the right language.
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function RootLayout() {
   useEffect(() => startConnectivityMonitor(), []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, direction: dir }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="dark" />
@@ -82,7 +82,9 @@ export default function RootLayout() {
             screenOptions={{
               headerShown: false,
               contentStyle: { backgroundColor: colors.bg },
-              animation: 'slide_from_right',
+              // Push has to travel *with* the reading direction, or Arabic
+              // screens arrive from the side the back gesture lives on.
+              animation: dir === 'rtl' ? 'slide_from_left' : 'slide_from_right',
             }}
           />
           {ready ? null : (

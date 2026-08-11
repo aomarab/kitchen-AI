@@ -1,5 +1,3 @@
-import { directionFor, type Locale } from '@kitchen/i18n';
-
 /** The slice of `I18nManager` this needs, so it can be tested without React Native. */
 export interface DirectionManager {
   readonly isRTL: boolean;
@@ -8,28 +6,25 @@ export interface DirectionManager {
 }
 
 /**
- * Applies layout direction for a locale, returning `true` when the native flag
- * actually changed (the caller then has to ask the user to restart — RN only
- * picks the new direction up at launch).
+ * Pins the *native* layout direction to LTR, once, at startup.
  *
- * The subtlety is that `I18nManager.isRTL` is frozen at launch: it keeps
- * reporting the boot value even after `forceRTL` has written a new one. Reading
- * it on every call meant a second change within one session was silently
- * dropped — an Arabic user who switched to English and back again wrote
- * `forceRTL(false)`, then compared `ar` against the *stale* `true` and skipped
- * `forceRTL(true)`, so the next launch came up LTR with Arabic text. Remember
- * what was written instead, and only fall back to `isRTL` before the first write.
+ * Direction used to be applied with `I18nManager.forceRTL`, which React Native
+ * only honours at launch. Switching to Arabic re-rendered every string in
+ * Arabic while the layout stayed LTR — rows, chevrons and paddings all still
+ * mirrored for English — so the app looked broken and had to ask the user to
+ * restart. The entire UI is written in logical properties (`start`/`end`,
+ * `marginStart`, `writingDirection`), which is exactly what Yoga's `direction`
+ * style resolves, so direction is now a style on the root view and flips live.
+ *
+ * The native flag still has to be neutralised, because it is persisted: anyone
+ * who ran an older build has `forceRTL(true)` baked into their install, and RN
+ * would then swap `left`/`right` underneath the explicit style and mirror
+ * twice. Returns whether it had to write anything — only ever true once, on
+ * the first launch after upgrading.
  */
-export function createDirectionApplier(manager: DirectionManager): (locale: Locale) => boolean {
-  let applied: boolean | null = null;
-
-  return (locale: Locale): boolean => {
-    const rtl = directionFor(locale) === 'rtl';
-    const current = applied ?? manager.isRTL;
-    if (current === rtl) return false;
-    applied = rtl;
-    manager.allowRTL(rtl);
-    manager.forceRTL(rtl);
-    return true;
-  };
+export function normalizeNativeDirection(manager: DirectionManager): boolean {
+  if (!manager.isRTL) return false;
+  manager.allowRTL(false);
+  manager.forceRTL(false);
+  return true;
 }
