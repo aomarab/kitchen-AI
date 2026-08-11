@@ -29,6 +29,13 @@
       "when": 1786390107075,
       "tag": "0003_aromatic_marauders",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786449208905,
+      "tag": "0004_pale_yellowjacket",
+      "breakpoints": true
     }
   ]
 }

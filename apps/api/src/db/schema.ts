@@ -25,7 +25,12 @@ import {
 export const localeEnum = pgEnum('locale', ['en', 'ar']);
 export const householdRoleEnum = pgEnum('household_role', ['owner', 'member']);
 export const userRoleEnum = pgEnum('user_role', ['user', 'staff']);
-export const feedbackStatusEnum = pgEnum('feedback_status', ['new', 'triaged', 'resolved', 'wont_fix']);
+export const feedbackStatusEnum = pgEnum('feedback_status', [
+  'new',
+  'triaged',
+  'resolved',
+  'wont_fix',
+]);
 export const feedbackPlatformEnum = pgEnum('feedback_platform', ['ios', 'android', 'web']);
 export const oauthProviderEnum = pgEnum('oauth_provider', ['apple', 'google']);
 export const storageLocationTypeEnum = pgEnum('storage_location_type', [
@@ -205,12 +210,24 @@ export const profiles = pgTable('profiles', {
   userId: uuid('user_id')
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
-  dietaryPrefs: text('dietary_prefs').array().notNull().default(sql`ARRAY[]::text[]`),
-  allergies: text('allergies').array().notNull().default(sql`ARRAY[]::text[]`),
+  dietaryPrefs: text('dietary_prefs')
+    .array()
+    .notNull()
+    .default(sql`ARRAY[]::text[]`),
+  allergies: text('allergies')
+    .array()
+    .notNull()
+    .default(sql`ARRAY[]::text[]`),
   halal: boolean('halal').notNull().default(false),
-  cuisinePrefs: text('cuisine_prefs').array().notNull().default(sql`ARRAY[]::text[]`),
+  cuisinePrefs: text('cuisine_prefs')
+    .array()
+    .notNull()
+    .default(sql`ARRAY[]::text[]`),
   householdSize: integer('household_size').notNull().default(2),
-  healthGoals: text('health_goals').array().notNull().default(sql`ARRAY[]::text[]`),
+  healthGoals: text('health_goals')
+    .array()
+    .notNull()
+    .default(sql`ARRAY[]::text[]`),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -226,7 +243,10 @@ export const ingredients = pgTable(
     canonicalNameAr: text('canonical_name_ar').notNull(),
     category: ingredientCategoryEnum('category').notNull(),
     defaultUnit: unitEnum('default_unit').notNull(),
-    aliases: text('aliases').array().notNull().default(sql`ARRAY[]::text[]`),
+    aliases: text('aliases')
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     /** Assumed available during plan validation. See spec §5.4. */
     isStaple: boolean('is_staple').notNull().default(false),
     embedding: vector('embedding', { dimensions: 1536 }),
@@ -236,10 +256,7 @@ export const ingredients = pgTable(
     uniqueIndex('ingredients_name_en_key').on(sql`lower(${table.canonicalNameEn})`),
     index('ingredients_category_idx').on(table.category),
     index('ingredients_aliases_idx').using('gin', table.aliases),
-    index('ingredients_embedding_idx').using(
-      'hnsw',
-      table.embedding.op('vector_cosine_ops'),
-    ),
+    index('ingredients_embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops')),
   ],
 );
 
@@ -314,7 +331,9 @@ export const inventoryEvents = pgTable(
     unit: unitEnum('unit').notNull(),
     reason: inventoryEventReasonEnum('reason').notNull(),
     mealPlanEntryId: uuid('meal_plan_entry_id'),
-    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    actorUserId: uuid('actor_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -334,13 +353,17 @@ export const recipes = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     /** Null means globally shared. */
-    householdId: uuid('household_id').references(() => households.id, { onDelete: 'cascade' }),
+    householdId: uuid('household_id').references(() => households.id, {
+      onDelete: 'cascade',
+    }),
     titleEn: text('title_en'),
     titleAr: text('title_ar'),
     descriptionEn: text('description_en'),
     descriptionAr: text('description_ar'),
-    stepsEn: jsonb('steps_en').$type<{ index: number; text: string; durationMinutes: number | null }[]>(),
-    stepsAr: jsonb('steps_ar').$type<{ index: number; text: string; durationMinutes: number | null }[]>(),
+    stepsEn:
+      jsonb('steps_en').$type<{ index: number; text: string; durationMinutes: number | null }[]>(),
+    stepsAr:
+      jsonb('steps_ar').$type<{ index: number; text: string; durationMinutes: number | null }[]>(),
     prepMinutes: integer('prep_minutes').notNull().default(0),
     cookMinutes: integer('cook_minutes').notNull().default(0),
     servings: integer('servings').notNull().default(2),
@@ -446,7 +469,9 @@ export const shoppingListItems = pgTable(
     householdId: uuid('household_id')
       .notNull()
       .references(() => households.id, { onDelete: 'cascade' }),
-    planId: uuid('plan_id').references(() => mealPlans.id, { onDelete: 'cascade' }),
+    planId: uuid('plan_id').references(() => mealPlans.id, {
+      onDelete: 'cascade',
+    }),
     ingredientId: uuid('ingredient_id')
       .notNull()
       .references(() => ingredients.id, { onDelete: 'restrict' }),
@@ -494,9 +519,15 @@ export const recognitionSessions = pgTable(
     householdId: uuid('household_id')
       .notNull()
       .references(() => households.id, { onDelete: 'cascade' }),
-    photoKeys: text('photo_keys').array().notNull().default(sql`ARRAY[]::text[]`),
+    photoKeys: text('photo_keys')
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     items: jsonb('items').$type<unknown[]>().notNull(),
-    emptyPhotoKeys: text('empty_photo_keys').array().notNull().default(sql`ARRAY[]::text[]`),
+    emptyPhotoKeys: text('empty_photo_keys')
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('recognition_household_idx').on(table.householdId, table.createdAt)],
@@ -517,6 +548,95 @@ export const aiUsage = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('ai_usage_household_day_idx').on(table.householdId, table.createdAt)],
+);
+
+/* ------------------------------------------------------------------ */
+/* Credits                                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Append-only record of every credit movement, mirroring `inventory_events`:
+ * `household_credits` is materialised state, this is the truth that explains it.
+ *
+ * `aiUsageId` ties a spend to the vendor cost it caused, which is what lets
+ * "are we covering costs?" be a query rather than a guess.
+ */
+export const creditLedger = pgTable(
+  'credit_ledger',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    /** Signed: positive credits the household, negative debits it. */
+    delta: integer('delta').notNull(),
+    /** grant | purchase | spend | refund | reversal */
+    kind: text('kind').notNull(),
+    /** free | paid — which bucket moved. */
+    bucket: text('bucket').notNull(),
+    /** The `CreditAction` for spends and reversals; null otherwise. */
+    action: text('action'),
+    aiUsageId: uuid('ai_usage_id').references(() => aiUsage.id, {
+      onDelete: 'set null',
+    }),
+    purchaseId: uuid('purchase_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('credit_ledger_household_idx').on(table.householdId, table.createdAt)],
+);
+
+/**
+ * Materialised balance. `grantPeriod` is the month (`2026-08`) the free balance
+ * belongs to: any read compares it to the current month and resets the free
+ * bucket if stale, so the monthly grant needs no scheduled job.
+ *
+ * `paidBalance` is deliberately signed. A refund of already-consumed credits
+ * must be able to drive it negative; clamping at zero silently writes off the
+ * exact abuse both stores warn about.
+ */
+export const householdCredits = pgTable('household_credits', {
+  householdId: uuid('household_id')
+    .primaryKey()
+    .references(() => households.id, { onDelete: 'cascade' }),
+  freeBalance: integer('free_balance').notNull().default(0),
+  paidBalance: integer('paid_balance').notNull().default(0),
+  grantPeriod: text('grant_period').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * One row per store transaction.
+ *
+ * `storeTransactionId` is unique because the client confirm call and the
+ * RevenueCat webhook both report the same purchase, and webhooks retry — without
+ * the constraint a redelivery silently doubles someone's balance. It is
+ * nullable only while the row is `pending` (created before the store sheet
+ * opens, so a webhook-first delivery can still resolve the household).
+ */
+export const creditPurchases = pgTable(
+  'credit_purchases',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** apple | google */
+    store: text('store'),
+    productId: text('product_id').notNull(),
+    storeTransactionId: text('store_transaction_id'),
+    credits: integer('credits').notNull(),
+    priceUsd: numeric('price_usd', { precision: 10, scale: 2 }).notNull().default('0'),
+    /** pending | active | refunded */
+    status: text('status').notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('credit_purchases_store_txn_key').on(table.storeTransactionId),
+    index('credit_purchases_household_idx').on(table.householdId),
+  ],
 );
 
 /* ------------------------------------------------------------------ */
@@ -548,7 +668,9 @@ export const feedback = pgTable(
     locale: localeEnum('locale').notNull(),
     status: feedbackStatusEnum('status').notNull().default('new'),
     adminNote: text('admin_note'),
-    reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+    reviewedBy: uuid('reviewed_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
     reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -581,7 +703,10 @@ export const householdMembersRelations = relations(householdMembers, ({ one }) =
     fields: [householdMembers.householdId],
     references: [households.id],
   }),
-  user: one(users, { fields: [householdMembers.userId], references: [users.id] }),
+  user: one(users, {
+    fields: [householdMembers.userId],
+    references: [users.id],
+  }),
 }));
 
 export const storageLocationsRelations = relations(storageLocations, ({ one, many }) => ({
@@ -617,7 +742,10 @@ export const inventoryEventsRelations = relations(inventoryEvents, ({ one }) => 
     fields: [inventoryEvents.householdId],
     references: [households.id],
   }),
-  actor: one(users, { fields: [inventoryEvents.actorUserId], references: [users.id] }),
+  actor: one(users, {
+    fields: [inventoryEvents.actorUserId],
+    references: [users.id],
+  }),
 }));
 
 export const recipesRelations = relations(recipes, ({ many }) => ({
@@ -626,11 +754,17 @@ export const recipesRelations = relations(recipes, ({ many }) => ({
 }));
 
 export const recipeVideosRelations = relations(recipeVideos, ({ one }) => ({
-  recipe: one(recipes, { fields: [recipeVideos.recipeId], references: [recipes.id] }),
+  recipe: one(recipes, {
+    fields: [recipeVideos.recipeId],
+    references: [recipes.id],
+  }),
 }));
 
 export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
-  recipe: one(recipes, { fields: [recipeIngredients.recipeId], references: [recipes.id] }),
+  recipe: one(recipes, {
+    fields: [recipeIngredients.recipeId],
+    references: [recipes.id],
+  }),
   ingredient: one(ingredients, {
     fields: [recipeIngredients.ingredientId],
     references: [ingredients.id],
@@ -639,17 +773,34 @@ export const recipeIngredientsRelations = relations(recipeIngredients, ({ one })
 
 export const mealPlansRelations = relations(mealPlans, ({ many, one }) => ({
   entries: many(mealPlanEntries),
-  household: one(households, { fields: [mealPlans.householdId], references: [households.id] }),
+  household: one(households, {
+    fields: [mealPlans.householdId],
+    references: [households.id],
+  }),
 }));
 
 export const mealPlanEntriesRelations = relations(mealPlanEntries, ({ one }) => ({
-  plan: one(mealPlans, { fields: [mealPlanEntries.planId], references: [mealPlans.id] }),
-  recipe: one(recipes, { fields: [mealPlanEntries.recipeId], references: [recipes.id] }),
+  plan: one(mealPlans, {
+    fields: [mealPlanEntries.planId],
+    references: [mealPlans.id],
+  }),
+  recipe: one(recipes, {
+    fields: [mealPlanEntries.recipeId],
+    references: [recipes.id],
+  }),
 }));
 
 export const feedbackRelations = relations(feedback, ({ one }) => ({
-  user: one(users, { fields: [feedback.userId], references: [users.id], relationName: 'submitter' }),
-  reviewer: one(users, { fields: [feedback.reviewedBy], references: [users.id], relationName: 'reviewer' }),
+  user: one(users, {
+    fields: [feedback.userId],
+    references: [users.id],
+    relationName: 'submitter',
+  }),
+  reviewer: one(users, {
+    fields: [feedback.reviewedBy],
+    references: [users.id],
+    relationName: 'reviewer',
+  }),
 }));
 
 export const schema = {
@@ -672,6 +823,9 @@ export const schema = {
   jobs,
   recognitionSessions,
   aiUsage,
+  creditLedger,
+  householdCredits,
+  creditPurchases,
   feedback,
   usersRelations,
   householdsRelations,
