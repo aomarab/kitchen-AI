@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { JwtService } from '@nestjs/jwt';
 import type { HouseholdRole, UserRole } from '@kitchen/contracts';
 import * as schema from '../db/schema.js';
+import { FREE_MONTHLY_GRANT } from '@kitchen/contracts';
 import { loadEnv, type Env } from '../config/env.js';
 
 export type TestDatabase = PostgresJsDatabase<typeof schema>;
@@ -55,10 +56,34 @@ export async function seedHousehold(
 ): Promise<string> {
   const [row] = await db
     .insert(schema.households)
-    .values({ name: 'Test Household', inviteCode: randomUUID().slice(0, 12), createdBy: userId })
+    .values({
+      name: 'Test Household',
+      inviteCode: randomUUID().slice(0, 12),
+      createdBy: userId,
+    })
     .returning({ id: schema.households.id });
   if (!row) throw new Error('failed to seed household');
   await db.insert(schema.householdMembers).values({ householdId: row.id, userId, role });
+  // Initialise the credits row so tests can set balances via direct UPDATE.
+  const grantPeriod = new Date().toISOString().slice(0, 7);
+  const [creditsRow] = await db
+    .insert(schema.householdCredits)
+    .values({
+      householdId: row.id,
+      freeBalance: FREE_MONTHLY_GRANT,
+      paidBalance: 0,
+      grantPeriod,
+    })
+    .onConflictDoNothing()
+    .returning({ householdId: schema.householdCredits.householdId });
+  if (creditsRow) {
+    await db.insert(schema.creditLedger).values({
+      householdId: row.id,
+      delta: FREE_MONTHLY_GRANT,
+      kind: 'grant',
+      bucket: 'free',
+    });
+  }
   return row.id;
 }
 
