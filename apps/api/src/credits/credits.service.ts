@@ -132,17 +132,17 @@ export class CreditsService {
   /**
    * Return an action's price after the work failed.
    *
-   * Finds the oldest unreversed spend group for this action and reverses it
-   * exactly — same buckets, same amounts — so the household gets back what it
-   * actually paid, never more. A "reversal" ledger row is written for each
-   * bucket that was part of the original spend; the spend rows are not touched
-   * (ledger is append-only).
+   * Finds the most-recent unreversed spend group for this action and reverses
+   * it exactly — same buckets, same amounts — so the household gets back what
+   * it actually paid, never more. A reversal row is always written for the
+   * target group so `refund` stays idempotent: a second call sees the group as
+   * already reversed and is a no-op. Spend rows are never mutated (append-only).
    */
   async refund(householdId: string, action: CreditAction): Promise<void> {
     await this.db.transaction(async (tx) => {
-      await this.ensureRow(tx, householdId);
+      const currentRow = await this.ensureRow(tx, householdId);
 
-      // Find spend groups already reversed for this action.
+      // Collect spend-group ids that already have a reversal row.
       const reversedGroups = await tx
         .select({ spendGroupId: creditLedger.spendGroupId })
         .from(creditLedger)
@@ -155,7 +155,7 @@ export class CreditsService {
         );
       const reversedIds = new Set(reversedGroups.map((r) => r.spendGroupId).filter(Boolean));
 
-      // Fetch all spend rows for this action so we can find the oldest unreversed group.
+      // Fetch all spend rows for this action to find the most-recent unreversed group.
       const spendRows = await tx
         .select({
           spendGroupId: creditLedger.spendGroupId,
@@ -172,24 +172,27 @@ export class CreditsService {
           ),
         );
 
-      // Group by spendGroupId and pick the oldest unreversed group.
-      const groups = new Map<string, { rows: typeof spendRows; oldestAt: Date }>();
+      // Group by spendGroupId, skipping already-reversed groups.
+      const groups = new Map<string, { rows: typeof spendRows; newestAt: Date }>();
       for (const r of spendRows) {
         if (!r.spendGroupId || reversedIds.has(r.spendGroupId)) continue;
         const entry = groups.get(r.spendGroupId);
         if (!entry) {
-          groups.set(r.spendGroupId, { rows: [r], oldestAt: r.createdAt });
+          groups.set(r.spendGroupId, { rows: [r], newestAt: r.createdAt });
         } else {
           entry.rows.push(r);
-          if (r.createdAt < entry.oldestAt) entry.oldestAt = r.createdAt;
+          if (r.createdAt > entry.newestAt) entry.newestAt = r.createdAt;
         }
       }
 
       if (groups.size === 0) return; // Nothing to reverse.
 
-      const [targetGroupId, target] = [...groups.entries()].sort(
-        (a, b) => a[1].oldestAt.getTime() - b[1].oldestAt.getTime(),
-      )[0]!;
+      // Pick the most-recent group. Tie-break on spendGroupId (stable sort) so
+      // concurrent spends that land in the same millisecond are deterministic.
+      const [targetGroupId, target] = [...groups.entries()].sort((a, b) => {
+        const dt = b[1].newestAt.getTime() - a[1].newestAt.getTime();
+        return dt !== 0 ? dt : b[0].localeCompare(a[0]);
+      })[0]!;
 
       let toFree = 0;
       let toPaid = 0;
@@ -198,29 +201,36 @@ export class CreditsService {
         else toPaid += Math.abs(r.delta);
       }
 
-      // Cap free refund so it cannot exceed FREE_MONTHLY_GRANT (defensive; the
-      // normal path can only return what was taken, but guard against any drift).
-      const currentRow = await tx.execute(
-        sql`select free_balance from household_credits where household_id = ${householdId}`,
+      // Cap the free refund so freeBalance cannot exceed FREE_MONTHLY_GRANT.
+      // Floor at 0: if currentFree > FREE_MONTHLY_GRANT the unclamped value
+      // would be negative, which would subtract credits on a refund.
+      // Any clamped-off free amount is NOT redirected to paid — the original
+      // spend came from free, and we cannot conjure paid credits.
+      const cappedToFree = Math.max(
+        0,
+        Math.min(toFree, FREE_MONTHLY_GRANT - currentRow.freeBalance),
       );
-      const currentFree =
-        (currentRow[0] as { free_balance: number } | undefined)?.free_balance ?? 0;
-      toFree = Math.min(toFree, FREE_MONTHLY_GRANT - currentFree);
 
-      await tx
-        .update(householdCredits)
-        .set({
-          freeBalance: sql`${householdCredits.freeBalance} + ${toFree}`,
-          paidBalance: sql`${householdCredits.paidBalance} + ${toPaid}`,
-          updatedAt: new Date(),
-        })
-        .where(eq(householdCredits.householdId, householdId));
+      if (cappedToFree > 0 || toPaid > 0) {
+        await tx
+          .update(householdCredits)
+          .set({
+            freeBalance: sql`${householdCredits.freeBalance} + ${cappedToFree}`,
+            paidBalance: sql`${householdCredits.paidBalance} + ${toPaid}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(householdCredits.householdId, householdId));
+      }
 
+      // Always write the reversal row(s) so the group is marked reversed even
+      // when the clamp reduces the credit amount to 0.  Without this, a
+      // clamped no-op refund leaves the group unreversed and a second call
+      // re-targets it — silently failing to credit the household forever.
       const reversalRows = [];
-      if (toFree > 0) {
+      if (cappedToFree > 0) {
         reversalRows.push({
           householdId,
-          delta: toFree,
+          delta: cappedToFree,
           kind: 'reversal' as const,
           bucket: 'free',
           action,
@@ -237,7 +247,18 @@ export class CreditsService {
           spendGroupId: targetGroupId,
         });
       }
-      if (reversalRows.length > 0) await tx.insert(creditLedger).values(reversalRows);
+      // Sentinel row: marks the group reversed when both amounts were clamped to 0.
+      if (reversalRows.length === 0) {
+        reversalRows.push({
+          householdId,
+          delta: 0,
+          kind: 'reversal' as const,
+          bucket: 'free',
+          action,
+          spendGroupId: targetGroupId,
+        });
+      }
+      await tx.insert(creditLedger).values(reversalRows);
     });
   }
 

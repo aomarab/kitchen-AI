@@ -256,4 +256,63 @@ describe('CreditsService', () => {
     expect(balance.freeBalance).toBe(149);
     expect(balance.paidBalance).toBe(-10);
   });
+
+  // ── CRITICAL 3: refund targets the most-recent spend, not the oldest ────────
+
+  it('refunds the spend that just failed, not the oldest one', async () => {
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 2, paidBalance: 10 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    // Spend 1: cost 4 -> 2 from free, 2 from paid. free=0, paid=8
+    await credits.spend(householdId, 'plan.daily');
+    // Spend 2: cost 4 -> 0 from free, 4 from paid. free=0, paid=4
+    await credits.spend(householdId, 'plan.daily');
+
+    const mid = await credits.balance(householdId);
+    expect([mid.freeBalance, mid.paidBalance]).toEqual([0, 4]);
+
+    // Spend 2's job fails. Reversing spend 2 must restore paid only.
+    await credits.refund(householdId, 'plan.daily');
+
+    const after = await credits.balance(householdId);
+    expect([after.freeBalance, after.paidBalance]).toEqual([0, 8]);
+  });
+
+  // ── CRITICAL 4: free-balance clamp is safe and idempotent ───────────────────
+
+  it('refund never pushes freeBalance above FREE_MONTHLY_GRANT and never lowers a balance', async () => {
+    // freeBalance is already at the cap. A refund of a free spend must be a
+    // no-op on the balance but still mark the group reversed.
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: FREE_MONTHLY_GRANT, paidBalance: 0 })
+      .where(eq(householdCredits.householdId, householdId));
+
+    // Force a spend row into the ledger by temporarily draining free.
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: 10 })
+      .where(eq(householdCredits.householdId, householdId));
+    await credits.spend(householdId, 'pantry.scan'); // free=9
+    // Restore free to cap to simulate the month rolling over.
+    await ctx.db
+      .update(householdCredits)
+      .set({ freeBalance: FREE_MONTHLY_GRANT })
+      .where(eq(householdCredits.householdId, householdId));
+
+    // Refund: free is already at cap, clamp should floor at 0, not go negative.
+    await credits.refund(householdId, 'pantry.scan');
+
+    const balance = await credits.balance(householdId);
+    expect(balance.freeBalance).toBe(FREE_MONTHLY_GRANT); // not above cap
+    expect(balance.paidBalance).toBe(0); // not lowered
+
+    // A second refund must be a no-op (group was marked reversed by the first).
+    await credits.refund(householdId, 'pantry.scan');
+    const balance2 = await credits.balance(householdId);
+    expect(balance2.freeBalance).toBe(FREE_MONTHLY_GRANT);
+    expect(balance2.paidBalance).toBe(0);
+  });
 });
