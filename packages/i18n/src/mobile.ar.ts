@@ -280,6 +280,7 @@ export const mobileAr: MobileMessages = {
       purchasing: 'جارٍ الاتصال بالمتجر…',
       credited: 'تمت إضافة رصيدك. استمتع!',
       pending: 'شكراً لك! سنُكمل إضافة رصيدك بعد قليل.',
+      failed: 'تعذّر الوصول إلى المتجر. لم يتم خصم أي مبلغ — يرجى المحاولة مرة أخرى.',
       outOfCreditsTitle: 'نفد الرصيد',
       getMore: 'احصل على رصيد إضافي',
       needMore: 'تحتاج إلى {needed} رصيد إضافي.',

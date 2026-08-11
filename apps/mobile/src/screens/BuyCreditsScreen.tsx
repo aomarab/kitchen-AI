@@ -45,7 +45,7 @@ export default function BuyCreditsScreen() {
   const credits = useCredits();
   const packPrices = usePackPrices();
   const [busyProduct, setBusyProduct] = useState<string | null>(null);
-  const [notice, setNotice] = useState<'credited' | 'pending' | null>(null);
+  const [notice, setNotice] = useState<'credited' | 'pending' | 'failed' | null>(null);
 
   const onBuy = async (productId: string) => {
     setNotice(null);
@@ -57,6 +57,13 @@ export default function BuyCreditsScreen() {
         setNotice(outcome.status);
       }
       // `cancelled`: the user backed out — say nothing.
+    } catch {
+      // Nothing was charged to get here: either the intent call failed or the
+      // store sheet never opened (no storefront for this build, no network).
+      // `buyCredits` already converts every post-charge failure into `pending`,
+      // so this branch cannot swallow a real purchase. Without it the button
+      // just stops spinning and the screen says nothing at all.
+      setNotice('failed');
     } finally {
       setBusyProduct(null);
     }
@@ -93,7 +100,11 @@ export default function BuyCreditsScreen() {
 
           {notice ? (
             <Card tone={notice === 'credited' ? 'primary' : 'surface'} style={{ gap: spacing.xs }}>
-              <AppText variant="bodyStrong" color={notice === 'credited' ? 'success' : 'text'}>
+              <AppText
+                variant="bodyStrong"
+                color={notice === 'credited' ? 'success' : notice === 'failed' ? 'danger' : 'text'}
+                accessibilityRole="alert"
+              >
                 {t(`mobile.credits.${notice}`)}
               </AppText>
             </Card>

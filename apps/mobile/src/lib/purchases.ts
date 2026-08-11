@@ -115,7 +115,21 @@ export const nativePurchases: PurchasesPort = {
 const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS !== 'false';
 
 /**
+ * The storefront is switched *separately* from the API mocks, because the two
+ * do not become real at the same time. A build has to leave `EXPO_PUBLIC_USE_MOCKS`
+ * off to do real OAuth against a real API, but there may still be no store to
+ * buy from — no RevenueCat key, or a bundle id App Store Connect has never seen
+ * — and then the native SDK cannot even load and every Buy tap fails.
+ *
+ * `EXPO_PUBLIC_USE_STORE_MOCKS` overrides; when it is unset the storefront
+ * follows the API mocks, so existing builds behave exactly as before.
+ */
+const storeMockFlag = process.env.EXPO_PUBLIC_USE_STORE_MOCKS;
+const USE_STORE_MOCKS =
+  storeMockFlag === undefined || storeMockFlag === '' ? USE_MOCKS : storeMockFlag !== 'false';
+
+/**
  * The port the app uses. Mocks are the default (matching `lib/api.ts`), so a
  * fresh checkout buys credits with the fake and never touches the native SDK.
  */
-export const purchases: PurchasesPort = USE_MOCKS ? mockPurchases : nativePurchases;
+export const purchases: PurchasesPort = USE_STORE_MOCKS ? mockPurchases : nativePurchases;

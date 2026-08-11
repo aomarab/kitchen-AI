@@ -114,3 +114,52 @@ describe('react-native-purchases is never imported eagerly', () => {
     expect(STATIC_IMPORT.test(source)).toBe(false);
   });
 });
+
+describe('storefront mock switch', () => {
+  const envKeys = ['EXPO_PUBLIC_USE_MOCKS', 'EXPO_PUBLIC_USE_STORE_MOCKS'] as const;
+  const saved: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    for (const key of envKeys) saved[key] = process.env[key];
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    for (const key of envKeys) {
+      if (saved[key] === undefined) delete process.env[key];
+      else process.env[key] = saved[key];
+    }
+    vi.resetModules();
+  });
+
+  async function portWith(apiMocks?: string, storeMocks?: string) {
+    if (apiMocks === undefined) delete process.env.EXPO_PUBLIC_USE_MOCKS;
+    else process.env.EXPO_PUBLIC_USE_MOCKS = apiMocks;
+    if (storeMocks === undefined) delete process.env.EXPO_PUBLIC_USE_STORE_MOCKS;
+    else process.env.EXPO_PUBLIC_USE_STORE_MOCKS = storeMocks;
+    vi.resetModules();
+    const mod = await import('./purchases');
+    return mod.purchases === mod.mockPurchases ? 'mock' : 'native';
+  }
+
+  it('follows the API mocks when the store flag is unset', async () => {
+    expect(await portWith(undefined, undefined)).toBe('mock');
+    expect(await portWith('true', undefined)).toBe('mock');
+    expect(await portWith('false', undefined)).toBe('native');
+  });
+
+  // The reason this switch exists: a build must be able to talk to a real API
+  // (the only way to do real OAuth) while there is still no storefront to buy
+  // from, because the native SDK cannot load at all in that build.
+  it('keeps the fake storefront in a real-API build when asked', async () => {
+    expect(await portWith('false', 'true')).toBe('mock');
+  });
+
+  it('can use the real storefront even while the API is mocked', async () => {
+    expect(await portWith('true', 'false')).toBe('native');
+  });
+
+  it('treats an empty store flag as unset rather than as "use the real store"', async () => {
+    expect(await portWith('true', '')).toBe('mock');
+  });
+});

@@ -263,6 +263,7 @@ export const mobileEn = {
       purchasing: 'Contacting the store…',
       credited: 'Credits added. Enjoy!',
       pending: "Thanks! We'll finish adding your credits shortly.",
+      failed: "Couldn't reach the store. You have not been charged — please try again.",
       outOfCreditsTitle: 'Out of credits',
       getMore: 'Get more credits',
       needMore: 'You need {needed} more credits.',
