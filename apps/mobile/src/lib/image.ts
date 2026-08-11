@@ -32,12 +32,22 @@ export function fitWithin(
  * over the cap. The manipulator also bakes EXIF rotation into the pixels: a
  * sideways shelf recognises worse than an upright one, so an
  * orientation-losing resize would spend the saving back on accuracy.
+ *
+ * Guard: if either dimension is unknown (zero, negative, or not finite — which
+ * expo-image-picker documents as possible when the OS omits metadata), fall back
+ * to width-only capping. That still shrinks a full camera frame by roughly an
+ * order of magnitude and keeps the upload under the server's 2 MB ceiling.
+ * The trade-off: a portrait frame in this case lands at a ~1365px long edge
+ * rather than the ideal 1024px. This is a deliberate degradation; it is not a
+ * reappearance of the orientation bug fixed previously.
  */
 export async function resizeForUpload(uri: string, width: number, height: number): Promise<string> {
-  const dims = fitWithin(width, height);
+  const knownDims =
+    Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0;
+  const resize = knownDims ? fitWithin(width, height) : { width: MAX_IMAGE_EDGE_PX };
   const result = await ImageManipulator.manipulateAsync(
     uri,
-    [{ resize: dims }],
+    [{ resize }],
     { compress: IMAGE_JPEG_QUALITY, format: ImageManipulator.SaveFormat.JPEG },
   );
   return result.uri;
