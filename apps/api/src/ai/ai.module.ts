@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Redis } from 'ioredis';
 import { ENV, type Env } from '../config/env.js';
 import { StorageModule } from '../storage/storage.module.js';
+import { CreditsModule } from '../credits/credits.module.js';
 import {
   AI_PROVIDER,
   CATALOG_PORT,
@@ -83,6 +84,7 @@ function redisConnection(url: string) {
     BullModule.registerQueue({ name: QUEUE_PLAN }, { name: QUEUE_RECEIPT }),
     // Vision needs presigned GET URLs for uploaded photos.
     StorageModule,
+    CreditsModule,
   ],
   controllers: [
     CaptureController,

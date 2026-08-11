@@ -14,6 +14,7 @@ import { AppError } from '../../common/errors.js';
 import { DB, type Database } from '../../db/index.js';
 import { recognitionSessions, users } from '../../db/schema.js';
 import { StorageService } from '../../storage/storage.service.js';
+import { CreditsService } from '../../credits/credits.service.js';
 import { AiGateway } from '../ai-gateway.service.js';
 import { CATALOG_PORT } from '../ai.constants.js';
 import type { IngredientResolverPort } from '../catalog/ingredient-resolver.port.js';
@@ -41,10 +42,12 @@ export class RecognitionService {
     @Inject(CATALOG_PORT) private readonly catalog: IngredientResolverPort,
     @Inject(AiGateway) private readonly gateway: AiGateway,
     @Inject(StorageService) private readonly storage: StorageService,
+    @Inject(CreditsService) private readonly credits: CreditsService,
   ) {}
 
   async recognize(input: RecognizeInput): Promise<RecognitionSession> {
     const { householdId, request } = input;
+    await this.credits.assertCanAfford(householdId, 'pantry.scan');
     const locale = await this.localeFor(input.userId);
     const hint = request.locationHint;
 
@@ -86,7 +89,12 @@ export class RecognitionService {
     }
 
     const resolved = await this.catalog.resolve(
-      collected.map(({ item }) => ({ name: item.nameEn, nameAr: item.nameAr, category: item.category, defaultUnit: item.unit })),
+      collected.map(({ item }) => ({
+        name: item.nameEn,
+        nameAr: item.nameAr,
+        category: item.category,
+        defaultUnit: item.unit,
+      })),
       { createIfMissing: false },
     );
 
@@ -107,7 +115,10 @@ export class RecognitionService {
         unit: item.unit,
         confidence: item.confidence,
         suggestedExpiresAt: suggestedExpiry(item.category),
-        suggestedLocationType: suggestedLocation(item.category, hint as StorageLocationType | undefined),
+        suggestedLocationType: suggestedLocation(
+          item.category,
+          hint as StorageLocationType | undefined,
+        ),
         photoKey,
       };
     });
@@ -121,6 +132,8 @@ export class RecognitionService {
         emptyPhotoKeys,
       })
       .returning({ id: recognitionSessions.id, createdAt: recognitionSessions.createdAt });
+
+    await this.credits.spend(householdId, 'pantry.scan');
 
     return {
       id: row!.id,

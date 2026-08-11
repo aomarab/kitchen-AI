@@ -62,8 +62,22 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
     tokenX = await ctx.jwt.signAsync({ sub: userX });
 
     const store = new DrizzleJobStore(ctx.db);
-    jobX = (await store.create({ householdId: hhX, type: 'plan.generate', idempotencyKey: null, payload: {} })).job.id;
-    jobY = (await store.create({ householdId: hhY, type: 'plan.generate', idempotencyKey: null, payload: {} })).job.id;
+    jobX = (
+      await store.create({
+        householdId: hhX,
+        type: 'plan.generate',
+        idempotencyKey: null,
+        payload: {},
+      })
+    ).job.id;
+    jobY = (
+      await store.create({
+        householdId: hhY,
+        type: 'plan.generate',
+        idempotencyKey: null,
+        payload: {},
+      })
+    ).job.id;
 
     planX = await seedPlan(hhX);
     planY = await seedPlan(hhY);
@@ -83,7 +97,19 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
         AuthGuard,
         HouseholdGuard,
         { provide: JobsService, useValue: new JobsService(store) },
-        { provide: PlanService, useValue: new PlanService(ctx.db, undefined as never, undefined as never) },
+        {
+          provide: PlanService,
+          useValue: new PlanService(
+            ctx.db,
+            undefined as never,
+            undefined as never,
+            {
+              spend: async () => {},
+              refund: async () => {},
+              assertCanAfford: async () => {},
+            } as never,
+          ),
+        },
         {
           provide: RecognitionService,
           useValue: new RecognitionService(
@@ -91,6 +117,11 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
             undefined as never,
             undefined as never,
             undefined as never,
+            {
+              spend: async () => {},
+              refund: async () => {},
+              assertCanAfford: async () => {},
+            } as never,
           ),
         },
         { provide: BarcodeService, useValue: {} as unknown as BarcodeService },
@@ -131,8 +162,10 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
     return row!.id;
   }
 
-  const auth = (token: string, householdId: string) => (req: request.Test): request.Test =>
-    req.set('Authorization', `Bearer ${token}`).set(HOUSEHOLD_HEADER, householdId);
+  const auth =
+    (token: string, householdId: string) =>
+    (req: request.Test): request.Test =>
+      req.set('Authorization', `Bearer ${token}`).set(HOUSEHOLD_HEADER, householdId);
 
   const server = () => app.getHttpServer();
 
@@ -196,17 +229,19 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
 
   describe('a recognition session is scoped to its household', () => {
     it("returns 404 NOT_FOUND for another household's session", async () => {
-      const res = await auth(tokenX, hhX)(
-        request(server()).get(`/inventory/recognition-sessions/${sessionY}`),
-      );
+      const res = await auth(
+        tokenX,
+        hhX,
+      )(request(server()).get(`/inventory/recognition-sessions/${sessionY}`));
       expect(res.status).toBe(404);
       expect(res.body.code).toBe('NOT_FOUND');
     });
 
     it('returns 200 for the caller’s own session', async () => {
-      const res = await auth(tokenX, hhX)(
-        request(server()).get(`/inventory/recognition-sessions/${sessionX}`),
-      );
+      const res = await auth(
+        tokenX,
+        hhX,
+      )(request(server()).get(`/inventory/recognition-sessions/${sessionX}`));
       expect(res.status).toBe(200);
       expect(res.body.id).toBe(sessionX);
     });

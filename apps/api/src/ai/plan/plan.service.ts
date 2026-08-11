@@ -13,6 +13,7 @@ import type {
 import { AppError } from '../../common/errors.js';
 import { DB, type Database } from '../../db/index.js';
 import { mealPlanEntries, mealPlans } from '../../db/schema.js';
+import { CreditsService } from '../../credits/credits.service.js';
 import { PANTRY_PORT } from '../ai.constants.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { cloneSnapshot, consumeFromSnapshot } from '../planner/pantry-snapshot.js';
@@ -39,6 +40,7 @@ export class PlanService {
     @Inject(DB) private readonly db: Database,
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
     @Inject(PlannerService) private readonly planner: PlannerService,
+    @Inject(CreditsService) private readonly credits: CreditsService,
   ) {}
 
   async list(householdId: string, query: ListPlansQuery): Promise<MealPlan[]> {
@@ -72,7 +74,9 @@ export class PlanService {
   async coverage(householdId: string, id: string): Promise<PlanCoverage> {
     const plan = await this.db.query.mealPlans.findFirst({
       where: and(eq(mealPlans.id, id), eq(mealPlans.householdId, householdId)),
-      with: { entries: { with: { recipe: { with: { ingredients: { with: { ingredient: true } } } } } } },
+      with: {
+        entries: { with: { recipe: { with: { ingredients: { with: { ingredient: true } } } } } },
+      },
     });
     if (!plan) throw AppError.notFound('errors.NOT_FOUND');
 
@@ -176,6 +180,7 @@ export class PlanService {
     scenario?: string,
   ): Promise<MealPlanEntry> {
     await this.loadPlan(householdId, planId);
+    await this.credits.assertCanAfford(householdId, 'plan.regenerateEntry');
     const existing = await this.loadEntryRow(planId, entryId);
 
     const { recipeId, fullyCovered } = await this.planner.regenerateEntry({
@@ -192,6 +197,8 @@ export class PlanService {
       .update(mealPlanEntries)
       .set({ recipeId, fullyCovered })
       .where(and(eq(mealPlanEntries.id, entryId), eq(mealPlanEntries.planId, planId)));
+
+    await this.credits.spend(householdId, 'plan.regenerateEntry');
     return this.loadEntry(planId, entryId);
   }
 

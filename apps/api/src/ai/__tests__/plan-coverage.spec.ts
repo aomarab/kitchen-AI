@@ -6,7 +6,11 @@ import type { PantryPort } from '../planner/pantry-snapshot.js';
 import type { CatalogIngredientRef } from '../planner/types.js';
 import { cat, snapshotOf, uuid } from './helpers.js';
 
-const RICE: CatalogIngredientRef = cat({ canonicalNameEn: 'Basmati rice', category: 'grain', defaultUnit: 'g' });
+const RICE: CatalogIngredientRef = cat({
+  canonicalNameEn: 'Basmati rice',
+  category: 'grain',
+  defaultUnit: 'g',
+});
 
 /** Shapes a recipe ingredient row the way the drizzle `with` query returns it. */
 function recipeIngredient(ref: CatalogIngredientRef, quantity: number, unit: Unit) {
@@ -39,7 +43,12 @@ function serviceFor(entries: ReturnType<typeof entry>[], pantry: PantryPort): Pl
       },
     },
   } as unknown as Database;
-  return new PlanService(db, pantry, undefined as never);
+  return new PlanService(
+    db,
+    pantry,
+    undefined as never,
+    { spend: async () => {}, refund: async () => {}, assertCanAfford: async () => {} } as never,
+  );
 }
 
 /**

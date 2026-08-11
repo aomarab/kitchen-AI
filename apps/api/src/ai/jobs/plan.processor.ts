@@ -2,6 +2,8 @@ import { Inject, Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job as BullJob } from 'bullmq';
 import { JOB_STORE, QUEUE_PLAN } from '../ai.constants.js';
+import { CreditsService } from '../../credits/credits.service.js';
+import { creditActionForScope } from '../../credits/credit-actions.js';
 import { PlannerService } from '../planner/planner.service.js';
 import type { JobStore } from './job-store.js';
 import type { PlanJobPayload } from './jobs.service.js';
@@ -17,6 +19,7 @@ export class PlanProcessor extends WorkerHost {
   constructor(
     @Inject(JOB_STORE) private readonly store: JobStore,
     @Inject(PlannerService) private readonly planner: PlannerService,
+    @Inject(CreditsService) private readonly credits: CreditsService,
   ) {
     super();
   }
@@ -29,8 +32,8 @@ export class PlanProcessor extends WorkerHost {
     if (!row) return;
 
     await this.store.markRunning(jobId);
+    const payload = row.payload as unknown as PlanJobPayload;
     try {
-      const payload = row.payload as unknown as PlanJobPayload;
       const planId = await this.planner.generate({
         householdId: row.householdId,
         userId: payload.userId,
@@ -41,6 +44,11 @@ export class PlanProcessor extends WorkerHost {
       // The persisted error is code-only. Without this line a failed job is
       // undiagnosable: no schema issues, no model, no reason.
       this.logger.error(`job ${jobId} failed: ${describeJobError(err)}`);
+      await this.credits
+        .refund(row.householdId, creditActionForScope(payload.request.scope))
+        .catch((refundError) =>
+          this.logger.error(`job ${jobId} credit refund failed: ${String(refundError)}`),
+        );
       await this.store.markFailed(jobId, toJobError(err));
       throw err;
     }
