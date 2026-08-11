@@ -8,11 +8,14 @@ import { z } from 'zod';
 import { AiGateway } from '../ai-gateway.service.js';
 import { attachSpend } from '../ai-spend.js';
 
-function providerWith(create: ReturnType<typeof vi.fn>, models = {
-  cheap: 'gpt-5-mini',
-  vision: 'gpt-5',
-  planning: 'gpt-5',
-}) {
+function providerWith(
+  create: ReturnType<typeof vi.fn>,
+  models = {
+    cheap: 'gpt-5-mini',
+    vision: 'gpt-5',
+    planning: 'gpt-5',
+  },
+) {
   const provider = new OpenAiProvider('sk-test', models);
   // Replace the SDK client; nothing here should reach the network.
   (provider as unknown as { client: unknown }).client = {
@@ -79,9 +82,11 @@ describe('billed-but-failed calls', () => {
    * never counted against the daily cap.
    */
   it('carries the spend on a truncation error', async () => {
-    const create = vi.fn().mockResolvedValue(
-      completion({ choices: [{ finish_reason: 'length', message: { content: '{"par' } }] }),
-    );
+    const create = vi
+      .fn()
+      .mockResolvedValue(
+        completion({ choices: [{ finish_reason: 'length', message: { content: '{"par' } }] }),
+      );
 
     const error = await providerWith(create)
       .complete(request())
@@ -172,5 +177,47 @@ describe('AiGateway budget accounting', () => {
       householdId: 'hh',
       usage: { inputTokens: 500, outputTokens: 8000 },
     });
+  });
+});
+
+describe('OpenAiProvider reasoning effort', () => {
+  /**
+   * Capture is someone standing at an open fridge: the default reasoning budget
+   * put ~60s between the shutter and the review screen on a real photo, which
+   * the client gave up waiting for while the server finished and billed the
+   * work anyway.
+   */
+  it('asks the vision tier to think briefly, so capture stays interactive', async () => {
+    const create = vi.fn().mockResolvedValue(completion());
+    await providerWith(create).complete(request({ tier: 'vision', operation: 'vision.recognize' }));
+
+    expect((create.mock.calls[0]![0] as Record<string, unknown>).reasoning_effort).toBe('low');
+  });
+
+  /**
+   * Planning is a background job nobody watches, and the reasoning is what
+   * keeps a generated plan inside the pantry it was given — so it must keep
+   * the model default rather than inherit capture's latency trade.
+   */
+  it('leaves planning at the model default', async () => {
+    const create = vi.fn().mockResolvedValue(completion());
+    await providerWith(create).complete(request());
+
+    expect(create.mock.calls[0]![0]).not.toHaveProperty('reasoning_effort');
+  });
+
+  /**
+   * Non-reasoning models reject the parameter outright with a 400 the SDK does
+   * not retry — the same failure mode as `max_tokens`, and equally invisible
+   * under AI_MOCK. `OPENAI_MODEL_VISION` is configurable, so this is reachable
+   * by configuration alone.
+   */
+  it('never sends it to a model that would reject it', async () => {
+    const create = vi.fn().mockResolvedValue(completion({ model: 'gpt-4o' }));
+    await providerWith(create, { cheap: 'gpt-4o', vision: 'gpt-4o', planning: 'gpt-4o' }).complete(
+      request({ tier: 'vision', operation: 'vision.recognize' }),
+    );
+
+    expect(create.mock.calls[0]![0]).not.toHaveProperty('reasoning_effort');
   });
 });
