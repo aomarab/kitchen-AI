@@ -30,7 +30,10 @@ export const webEn = {
       missing: 'Needs buying',
       collapse: 'Hide pantry rail',
       expand: 'Show pantry rail',
-      coveredMeals: '{covered} of {total} meals cookable now',
+      coveredMeals: plural('total', {
+        one: '{covered} of 1 meal cookable now',
+        other: '{covered} of {total} meals cookable now',
+      }),
       nothingMissing: 'Nothing missing — you can cook the whole plan.',
       addAllToShopping: 'Add everything to shopping',
       why: 'Why this plan',
@@ -69,7 +72,10 @@ export const webEn = {
       expiringTitle: 'Use these soon',
       expiringEmpty: 'Nothing is about to expire. Nice.',
       weekProgressTitle: 'This week',
-      weekProgressCaption: '{cooked} of {total} meals cooked',
+      weekProgressCaption: plural('total', {
+        one: '{cooked} of 1 meal cooked',
+        other: '{cooked} of {total} meals cooked',
+      }),
       quickAddTitle: 'Add to your kitchen',
       quickAddHint: 'Snap a photo, scan a barcode, or capture a receipt.',
       openPlan: 'Open meal plan',

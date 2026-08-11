@@ -68,7 +68,13 @@ export function Button({
           justifyContent: 'center',
           gap: spacing.sm,
           minHeight: 48,
-          paddingHorizontal: spacing.lg,
+          // Ghost variants have no fill and no border, so horizontal padding is
+          // invisible weight that pushes the label off the content margin: the
+          // home "See all" link sat 16pt inside the right edge every card below
+          // it was flush with. Borderless buttons align to the margin (as iOS's
+          // own section headers do); `hitSlop` and the 48pt height keep the
+          // touch target legal without the padding.
+          paddingHorizontal: variant === 'ghost' || variant === 'ghostInverse' ? 0 : spacing.lg,
           borderRadius: radius.pill,
           backgroundColor: (pressed && PRESSED_BG[variant]) || BG[variant],
           borderWidth: variant === 'ghost' || variant === 'ghostInverse' ? 0 : 1,

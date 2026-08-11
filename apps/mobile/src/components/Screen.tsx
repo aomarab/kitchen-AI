@@ -43,7 +43,11 @@ export function Screen({
 }: ScreenProps) {
   const { width } = useWindowDimensions();
   const maxWidth = contentMaxWidth(width);
-  const pad: ViewStyle = padded ? { padding: spacing.lg, gap: spacing.md } : {};
+  // `lg` between top-level blocks against the `sm` most screens use inside a
+  // section gives a real 2:1 rhythm tier. At the previous `md` the gap between
+  // two sections was 12 and the gap inside one was 8, so nothing grouped and
+  // every screen read as one undifferentiated stack.
+  const pad: ViewStyle = padded ? { padding: spacing.lg, gap: spacing.lg } : {};
   // `undefined` below the breakpoint leaves the phone layout untouched.
   const constrain: ViewStyle = maxWidth ? { maxWidth, width: '100%', alignSelf: 'center' } : {};
   return (

@@ -215,7 +215,13 @@ export const ar: Messages = {
       many: '{count} مكوّنًا ناقصًا',
       other: '{count} مكوّن ناقص',
     }),
-    daysCovered: '{covered} من {total} أيام مغطاة من مخزونك',
+    daysCovered: plural('total', {
+      one: 'يوم واحد مغطى من مخزونك',
+      two: '{covered} من يومين مغطيين من مخزونك',
+      few: '{covered} من {total} أيام مغطاة من مخزونك',
+      many: '{covered} من {total} يومًا مغطاة من مخزونك',
+      other: '{covered} من {total} يوم مغطاة من مخزونك',
+    }),
     empty: 'لا توجد خطة بعد. أنشئ واحدة مما لديك.',
   },
 

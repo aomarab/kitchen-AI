@@ -25,7 +25,10 @@ function ProgressBar({ ratio }: { ratio: number }) {
         style={{
           height: 8,
           borderRadius: radius.pill,
-          backgroundColor: colors.accent,
+          // The week's cooked meals are a brand metric, not an informational
+          // one. This was the only place in the app that painted `accent`, so a
+          // blue bar sat alone on an otherwise violet screen.
+          backgroundColor: colors.primary,
           width: `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%`,
         }}
       />
@@ -78,7 +81,7 @@ export default function Home() {
               {'  ·  '}
               {t('recipe.servings', { count: tonight.servings })}
             </AppText>
-            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+            <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm }}>
               <Button
                 title={t('mobile.home.viewRecipe')}
                 variant="primaryInverse"
@@ -157,19 +160,16 @@ export default function Home() {
         <ListRow
           title={t('capture.photo')}
           leading={<Icon name="camera" size={22} color={colors.primary} />}
-          showChevron
           onPress={() => router.push('/capture?method=photo')}
         />
         <ListRow
           title={t('capture.barcode')}
           leading={<Icon name="barcode" size={22} color={colors.primary} />}
-          showChevron
           onPress={() => router.push('/capture?method=barcode')}
         />
         <ListRow
           title={t('capture.receipt')}
           leading={<Icon name="receipt" size={22} color={colors.primary} />}
-          showChevron
           onPress={() => router.push('/capture?method=receipt')}
         />
       </View>

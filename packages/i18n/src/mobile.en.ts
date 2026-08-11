@@ -37,7 +37,10 @@ export const mobileEn = {
       expiringStrip: 'Use these soon',
       expiringNone: 'Nothing is expiring soon.',
       weekTitle: 'This week',
-      weekProgress: '{cooked} of {total} meals cooked this week',
+      weekProgress: plural('total', {
+        one: '{cooked} of 1 meal cooked this week',
+        other: '{cooked} of {total} meals cooked this week',
+      }),
       noPlanTitle: 'No plan yet',
       noPlanBody: 'Generate a plan from what you already have.',
       quickAdd: 'Quick add',

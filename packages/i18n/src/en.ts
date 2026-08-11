@@ -205,7 +205,10 @@ export const en = {
       one: '{count} item missing',
       other: '{count} items missing',
     }),
-    daysCovered: '{covered} of {total} days covered by your pantry',
+    daysCovered: plural('total', {
+      one: '{covered} of 1 day covered by your pantry',
+      other: '{covered} of {total} days covered by your pantry',
+    }),
     empty: 'No plan yet. Generate one from what you have.',
   },
 
