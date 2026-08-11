@@ -8,6 +8,17 @@ import { ENV, type Env } from '../config/env.js';
 
 const EXPIRES_IN_SECONDS = 300;
 
+/**
+ * Camera captures are resized client-side to MAX_IMAGE_EDGE_PX before upload.
+ * The contract's 15 MB cap is far too loose to notice a client that skipped
+ * that step, and an un-resized frame costs real money on the vision tier, so
+ * capture purposes get their own ceiling. A 1024px JPEG at quality 0.7 lands
+ * well under this.
+ */
+export const MAX_CAPTURE_UPLOAD_BYTES = 2 * 1024 * 1024;
+
+const CAPTURE_PURPOSES = new Set(['inventory_photo', 'receipt']);
+
 const EXTENSION: Record<PresignUploadRequest['contentType'], string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -64,6 +75,15 @@ export class StorageService {
     householdId: string,
     dto: PresignUploadRequest,
   ): Promise<PresignUploadResponse> {
+    if (CAPTURE_PURPOSES.has(dto.purpose) && dto.contentLength > MAX_CAPTURE_UPLOAD_BYTES) {
+      throw new AppError('VALIDATION_FAILED', 'errors.VALIDATION_FAILED', {
+        field: 'contentLength',
+        maxBytes: MAX_CAPTURE_UPLOAD_BYTES,
+        actualBytes: dto.contentLength,
+        purpose: dto.purpose,
+      });
+    }
+
     const key = `${householdPrefix(householdId)}${dto.purpose}/${randomUUID()}.${EXTENSION[dto.contentType]}`;
 
     const uploadUrl = await getSignedUrl(
