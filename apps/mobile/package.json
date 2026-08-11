@@ -55,6 +55,7 @@
   "devDependencies": {
     "@kitchen/config": "workspace:*",
     "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.4",
     "eslint": "^9.17.0",
     "msw": "^2.7.0",
     "typescript": "~6.0.3",
