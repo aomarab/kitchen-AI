@@ -26,15 +26,18 @@ export function fitWithin(
 /**
  * Resize a captured photo before upload and return the new local URI.
  *
- * Passing only the long edge lets the manipulator derive the other side, which
- * keeps the aspect ratio exact. The manipulator also bakes EXIF rotation into
- * the pixels: a sideways shelf recognises worse than an upright one, so an
+ * Both source dimensions are required so that `fitWithin` can cap the longest
+ * edge correctly regardless of orientation. Passing only width would pin the
+ * width to 1024 on a portrait frame and leave the height at ~1365 — a third
+ * over the cap. The manipulator also bakes EXIF rotation into the pixels: a
+ * sideways shelf recognises worse than an upright one, so an
  * orientation-losing resize would spend the saving back on accuracy.
  */
-export async function resizeForUpload(uri: string): Promise<string> {
+export async function resizeForUpload(uri: string, width: number, height: number): Promise<string> {
+  const dims = fitWithin(width, height);
   const result = await ImageManipulator.manipulateAsync(
     uri,
-    [{ resize: { width: MAX_IMAGE_EDGE_PX } }],
+    [{ resize: dims }],
     { compress: IMAGE_JPEG_QUALITY, format: ImageManipulator.SaveFormat.JPEG },
   );
   return result.uri;

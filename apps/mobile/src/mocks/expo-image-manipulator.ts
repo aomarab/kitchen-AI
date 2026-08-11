@@ -5,8 +5,18 @@ export enum SaveFormat {
   WEBP = 'webp',
 }
 
+/** Last recorded call arguments — reset between tests via resetManipulatorCalls(). */
+export let lastManipulatorActions: unknown[] = [];
+
+export function resetManipulatorCalls(): void {
+  lastManipulatorActions = [];
+}
+
 export const manipulateAsync = async (
   _uri: string,
-  _actions: unknown[],
+  actions: unknown[],
   _options?: unknown,
-): Promise<{ uri: string }> => ({ uri: _uri });
+): Promise<{ uri: string }> => {
+  lastManipulatorActions = actions;
+  return { uri: _uri };
+};

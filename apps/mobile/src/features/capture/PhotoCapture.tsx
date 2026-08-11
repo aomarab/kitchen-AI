@@ -63,7 +63,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
 
   const takePhoto = async () => {
     const shot = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
-    if (shot?.uri) addPhoto(await resizeForUpload(shot.uri));
+    if (shot?.uri) addPhoto(await resizeForUpload(shot.uri, shot.width, shot.height));
   };
 
   const pickLibrary = async () => {
@@ -73,7 +73,9 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
       allowsMultipleSelection: mode === 'photo',
     });
     if (result.canceled) return;
-    const resized = await Promise.all(result.assets.map((asset) => resizeForUpload(asset.uri)));
+    const resized = await Promise.all(
+      result.assets.map((asset) => resizeForUpload(asset.uri, asset.width, asset.height)),
+    );
     resized.forEach(addPhoto);
   };
 
