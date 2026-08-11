@@ -75,6 +75,8 @@ export const en = {
     JOB_FAILED: 'That task failed. You can retry it.',
     INTERNAL_ERROR: 'Something went wrong on our side.',
     offline: "You're offline. Changes will sync when you reconnect.",
+    emptyPantry:
+      'Your kitchen is empty, so there is nothing to plan around yet. Add a few items — or snap a photo of your shelves — and try again.',
     feedbackRateLimited: "You've sent us plenty of feedback today. Please try again tomorrow.",
   },
 

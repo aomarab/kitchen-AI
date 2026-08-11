@@ -43,6 +43,27 @@ export class PlanService {
     @Inject(CreditsService) private readonly credits: CreditsService,
   ) {}
 
+  /**
+   * Refuse to plan from an empty kitchen, before any credit is spent.
+   *
+   * Stage A (spec §5) reads the pantry; with nothing in it stage C can only
+   * report every ingredient of every candidate as a shortfall, so a weekly plan
+   * comes back fully generated and zero percent covered — a shopping list
+   * wearing a meal plan's clothes, which the household paid AI credits for. The
+   * product's promise is a plan grounded in what you actually have, so the
+   * honest answer is to ask for some items first rather than bill for a plan
+   * that ignores the pantry entirely.
+   *
+   * Staples are deliberately not counted: a kitchen holding only implicit salt
+   * and oil still cannot cook anything.
+   */
+  async assertPantryStocked(householdId: string): Promise<void> {
+    const snapshot = await this.pantry.snapshot(householdId);
+    if (snapshot.byIngredientId.size === 0) {
+      throw new AppError('PLAN_INFEASIBLE', 'errors.emptyPantry');
+    }
+  }
+
   async list(householdId: string, query: ListPlansQuery): Promise<MealPlan[]> {
     const filters = [eq(mealPlans.householdId, householdId)];
     if (query.scope) filters.push(eq(mealPlans.scope, query.scope));

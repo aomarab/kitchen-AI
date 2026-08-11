@@ -51,12 +51,15 @@ export class PlanController {
   }
 
   @Post('meal-plans')
-  generate(
+  async generate(
     @CurrentHousehold() household: HouseholdContext,
     @CurrentUser() user: AuthUser,
     @RequiredIdempotencyKey() idempotencyKey: string,
     @Body(new ZodPipe(generatePlanRequestSchema)) body: GeneratePlanRequest,
   ): Promise<Job> {
+    // Feasibility before affordability: an empty pantry cannot produce a
+    // grounded plan, and `enqueuePlan` spends credits.
+    await this.plans.assertPantryStocked(household.id);
     return this.jobs.enqueuePlan(
       household.id,
       { userId: user.userId, request: body },
