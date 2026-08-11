@@ -256,15 +256,23 @@ export class CreditsService {
     await tx.insert(creditLedger).values(reversalRows);
   }
 
-  /** Add purchased credits. `credits` may be negative for a refunded purchase. */
+  /**
+   * Add purchased credits. `credits` may be negative for a refunded purchase.
+   *
+   * When a `tx` is supplied the work joins that caller's transaction, so the
+   * purchase claim and the credit commit or roll back together; a crash between
+   * them can then never leave a paid-but-uncredited purchase. With no `tx` it
+   * opens its own transaction, so existing callers are unaffected.
+   */
   async grantPurchase(
     householdId: string,
     credits: number,
     purchaseId: string | null,
+    tx?: TxClient,
   ): Promise<void> {
-    await this.db.transaction(async (tx) => {
-      await this.ensureRow(tx, householdId);
-      await tx
+    const run = async (client: TxClient) => {
+      await this.ensureRow(client, householdId);
+      await client
         .update(householdCredits)
         .set({
           paidBalance: sql`${householdCredits.paidBalance} + ${credits}`,
@@ -272,14 +280,20 @@ export class CreditsService {
         })
         .where(eq(householdCredits.householdId, householdId));
 
-      await tx.insert(creditLedger).values({
+      await client.insert(creditLedger).values({
         householdId,
         delta: credits,
         kind: credits >= 0 ? ('purchase' as const) : ('refund' as const),
         bucket: 'paid',
         ...(purchaseId ? { purchaseId } : {}),
       });
-    });
+    };
+
+    if (tx) {
+      await run(tx);
+      return;
+    }
+    await this.db.transaction(run);
   }
 
   /**

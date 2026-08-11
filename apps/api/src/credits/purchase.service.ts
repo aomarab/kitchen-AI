@@ -123,29 +123,37 @@ export class PurchaseService {
     }
 
     if (REFUND_EVENTS.has(event.type)) {
-      const claimed = await this.db
-        .update(creditPurchases)
-        .set({ status: 'refunded' })
-        .where(and(eq(creditPurchases.id, intent.id), eq(creditPurchases.status, 'active')))
-        .returning({ id: creditPurchases.id });
+      // The status flip and the debit share one transaction: a crash between
+      // them must not leave a refunded purchase that never debited (or the
+      // reverse). Only the first refund event claims `active` → `refunded`, and
+      // it may drive the balance negative — the credits are already spent and
+      // that is the honest record.
+      await this.db.transaction(async (tx) => {
+        const claimed = await tx
+          .update(creditPurchases)
+          .set({ status: 'refunded' })
+          .where(and(eq(creditPurchases.id, intent.id), eq(creditPurchases.status, 'active')))
+          .returning({ id: creditPurchases.id });
 
-      // Only the first refund event debits, and it may drive the balance
-      // negative — the credits are already spent and that is the honest record.
-      if (claimed.length > 0) {
-        await this.credits.grantPurchase(intent.householdId, -intent.credits, intent.id);
-      }
+        if (claimed.length === 0) return;
+        await this.credits.grantPurchase(intent.householdId, -intent.credits, intent.id, tx);
+      });
     }
   }
 
   /**
    * Move `pending` → `active` and credit only if this call performed the
-   * transition. Two concurrent arrivals both reach the UPDATE; exactly one
-   * matches `status = 'pending'` and the loser credits nothing.
+   * transition, **atomically**. The claim UPDATE and the credit share one
+   * transaction, so either the row goes active *and* the credits land, or
+   * neither does and the row stays `pending` for the next retry to claim — a
+   * crash in between can never leave a customer charged but uncredited.
    *
-   * The write also stamps `store_transaction_id`, whose UNIQUE index is the
-   * cross-intent backstop: if this transaction was already credited under a
-   * *different* intent, the UPDATE raises a unique violation, which we swallow
-   * as an already-processed no-op. A duplicate must be success, never a 500.
+   * Two concurrent arrivals both reach the UPDATE; exactly one matches
+   * `status = 'pending'` and the loser credits nothing. The write also stamps
+   * `store_transaction_id`, whose UNIQUE index is the cross-intent backstop: if
+   * this transaction was already credited under a *different* intent, the UPDATE
+   * raises a unique violation, the transaction rolls back, and we swallow it as
+   * an already-processed no-op. A duplicate must be success, never a 500.
    */
   private async claimAndCredit(
     id: string,
@@ -154,20 +162,23 @@ export class PurchaseService {
     storeTransactionId: string,
     store: 'apple' | 'google',
   ): Promise<void> {
-    let claimed: { id: string }[];
     try {
-      claimed = await this.db
-        .update(creditPurchases)
-        .set({ status: 'active', storeTransactionId, store })
-        .where(and(eq(creditPurchases.id, id), eq(creditPurchases.status, 'pending')))
-        .returning({ id: creditPurchases.id });
+      await this.db.transaction(async (tx) => {
+        const claimed = await tx
+          .update(creditPurchases)
+          .set({ status: 'active', storeTransactionId, store })
+          .where(and(eq(creditPurchases.id, id), eq(creditPurchases.status, 'pending')))
+          .returning({ id: creditPurchases.id });
+
+        // Loser of a concurrent or duplicate claim: nothing to credit, commit a
+        // clean no-op so the balance is never doubled.
+        if (claimed.length === 0) return;
+        await this.credits.grantPurchase(householdId, credits, id, tx);
+      });
     } catch (error) {
       if (isUniqueViolation(error)) return;
       throw error;
     }
-
-    if (claimed.length === 0) return;
-    await this.credits.grantPurchase(householdId, credits, id);
   }
 
   private async loadIntent(householdId: string, intentId: string) {

@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { createTestContext, seedHousehold, seedUser, cleanup } from '../testing/harness.js';
 import { creditLedger, creditPurchases } from '../db/schema.js';
@@ -214,6 +214,61 @@ describe('PurchaseService', () => {
       .from(creditPurchases)
       .where(eq(creditPurchases.storeTransactionId, 'txn-5'));
     expect(row?.status).toBe('refunded');
+  });
+
+  it('leaves the purchase re-claimable when crediting crashes mid-confirm', async () => {
+    // Simulate a crash or DB blip in the window between the claim and the
+    // credit. The claim and the credit share one transaction, so this must roll
+    // back to `pending` — never a charged-but-uncredited `active` purchase.
+    const flaky = new CreditsService(ctx.db);
+    const realGrant = flaky.grantPurchase.bind(flaky);
+    let grantCalls = 0;
+    const spy = vi
+      .spyOn(flaky, 'grantPurchase')
+      .mockImplementation(async (hid, credits, purchaseId, tx) => {
+        grantCalls += 1;
+        if (grantCalls === 1) throw new Error('simulated crash before credit');
+        return realGrant(hid, credits, purchaseId, tx);
+      });
+    const flakyPurchases = new PurchaseService(ctx.db, flaky, new MockPaymentVerifier());
+
+    const intent = await flakyPurchases.createIntent(householdId, userId, 'credits_300');
+
+    await expect(
+      flakyPurchases.confirm(householdId, {
+        intentId: intent.intentId,
+        storeTransactionId: 'txn-crash',
+        store: 'apple',
+      }),
+    ).rejects.toThrow(/simulated crash/);
+
+    // The failed confirm granted nothing and left the row claimable.
+    const afterCrash = await credits.balance(householdId);
+    expect(afterCrash.paidBalance).toBe(0);
+    const [rowAfterCrash] = await ctx.db
+      .select()
+      .from(creditPurchases)
+      .where(eq(creditPurchases.id, intent.intentId));
+    expect(rowAfterCrash?.status).toBe('pending');
+
+    // RevenueCat redelivers; the retry heals the purchase and credits exactly once.
+    await flakyPurchases.applyWebhook({
+      type: 'INITIAL_PURCHASE',
+      intentId: intent.intentId,
+      storeTransactionId: 'txn-crash',
+      productId: 'credits_300',
+      store: 'apple',
+    });
+
+    const healed = await credits.balance(householdId);
+    expect(healed.paidBalance).toBe(300);
+    const [rowHealed] = await ctx.db
+      .select()
+      .from(creditPurchases)
+      .where(eq(creditPurchases.id, intent.intentId));
+    expect(rowHealed?.status).toBe('active');
+
+    spy.mockRestore();
   });
 
   it('rejects an unknown product', async () => {
