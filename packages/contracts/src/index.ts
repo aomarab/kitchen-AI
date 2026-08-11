@@ -6,5 +6,6 @@ export * from './inventory.js';
 export * from './recipe.js';
 export * from './plan.js';
 export * from './ai.js';
+export * from './credits.js';
 export * from './feedback.js';
 export * from './routes.js';
