@@ -1005,6 +1005,20 @@ describe('job refund', () => {
 });
 ```
 
+> **Correction after Task 3:** a spend group can produce **two** reversal rows
+> (when the spend crossed both buckets) or a single `delta: 0` sentinel row
+> (when the free portion was clamped by the monthly cap). Reading the first
+> `reversal` row is therefore wrong. Sum the group instead:
+>
+> ```ts
+> const spendGroupId = rows.find((r) => r.kind === 'spend')?.spendGroupId;
+> expect(spendGroupId).toBeTruthy();
+> const reversed = rows
+>   .filter((r) => r.kind === 'reversal' && r.spendGroupId === spendGroupId)
+>   .reduce((sum, r) => sum + r.delta, 0);
+> expect(reversed).toBe(CREDIT_COSTS[action]);
+> ```
+
 Merge the imports into one block per module rather than leaving the two `vitest` and `drizzle-orm` import lines shown separately above.
 
 - [ ] **Step 2: Run it to verify it fails**
