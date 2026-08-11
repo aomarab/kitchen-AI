@@ -4,7 +4,7 @@ import type {
   StructuredRequest,
   StructuredResponse,
 } from './ai-provider.interface.js';
-import { PROVIDER_MAX_OUTPUT_TOKENS, PROVIDER_TIMEOUT_MS } from '../ai.constants.js';
+import { PROVIDER_MAX_OUTPUT_TOKENS, PROVIDER_MAX_RETRIES, PROVIDER_TIMEOUT_MS } from '../ai.constants.js';
 import { toProviderError } from './openai.provider.js';
 
 export interface GeminiModels {
@@ -66,6 +66,11 @@ export class GeminiProvider implements AiProvider {
           responseMimeType: 'application/json',
           maxOutputTokens: PROVIDER_MAX_OUTPUT_TOKENS[request.tier],
           abortSignal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS[request.tier]),
+          httpOptions: {
+            // SDK counts total attempts (original + retries); PROVIDER_MAX_RETRIES
+            // counts only retries, matching OpenAI's maxRetries convention.
+            retryOptions: { attempts: PROVIDER_MAX_RETRIES[request.tier] + 1 },
+          },
         },
       });
     } catch (error) {

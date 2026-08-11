@@ -81,6 +81,58 @@ describe('GeminiProvider', () => {
     expect(config.maxOutputTokens).toBe(8192); // PROVIDER_MAX_OUTPUT_TOKENS.vision
   });
 
+  it('caps SDK retry attempts at PROVIDER_MAX_RETRIES + 1', async () => {
+    // The SDK's HttpRetryOptions.attempts counts total attempts including the
+    // original request (genai.d.ts line 7113), while PROVIDER_MAX_RETRIES
+    // counts only retries — matching OpenAI's maxRetries convention. The
+    // mapping must add 1, not pass the raw value. For the vision tier:
+    // PROVIDER_MAX_RETRIES.vision = 2, so the SDK should receive attempts = 3.
+    // Passing the raw value (2) would silently halve the retry budget.
+    generateContent.mockResolvedValue({
+      text: '{}',
+      usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1 },
+    });
+
+    const provider = new GeminiProvider('key', { vision: 'gemini-3-flash' });
+    await provider.complete(request());
+
+    const config = generateContent.mock.calls[0]![0].config;
+    expect(config.httpOptions.retryOptions.attempts).toBe(3); // PROVIDER_MAX_RETRIES.vision (2) + 1
+  });
+
+  it('sets an AbortSignal on the config so the timeout is enforced', async () => {
+    generateContent.mockResolvedValue({
+      text: '{}',
+      usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1 },
+    });
+
+    const provider = new GeminiProvider('key', { vision: 'gemini-3-flash' });
+    await provider.complete(request());
+
+    const config = generateContent.mock.calls[0]![0].config;
+    expect(config.abortSignal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('appends the repair context as a text part when repairOf is set', async () => {
+    generateContent.mockResolvedValue({
+      text: '{}',
+      usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1 },
+    });
+
+    const provider = new GeminiProvider('key', { vision: 'gemini-3-flash' });
+    await provider.complete(
+      request({
+        repairOf: { previousRaw: { bad: true }, error: 'missing field items' },
+      }),
+    );
+
+    const parts = generateContent.mock.calls[0]![0].contents[0].parts;
+    const repairPart = parts.find(
+      (p: { text?: string }) => p.text?.includes('missing field items') && p.text.includes('"bad":true'),
+    );
+    expect(repairPart).toBeDefined();
+  });
+
   it('maps a transport failure onto the app error vocabulary', async () => {
     generateContent.mockRejectedValue(Object.assign(new Error('socket hang up'), {}));
 
