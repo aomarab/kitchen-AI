@@ -28,9 +28,9 @@ export interface ReceiptJobPayload {
 export class JobsService {
   constructor(
     @Inject(JOB_STORE) private readonly store: JobStore,
+    @Inject(CreditsService) private readonly credits: CreditsService,
     @Optional() @InjectQueue(QUEUE_PLAN) private readonly planQueue?: Queue,
     @Optional() @InjectQueue(QUEUE_RECEIPT) private readonly receiptQueue?: Queue,
-    @Optional() @Inject(CreditsService) private readonly credits?: CreditsService,
   ) {}
 
   async enqueuePlan(
@@ -39,32 +39,35 @@ export class JobsService {
     idempotencyKey: string | null,
   ): Promise<Job> {
     const action = creditActionForScope(payload.request.scope);
-    await this.credits?.spend(householdId, action);
 
-    let created = false;
-    let job;
-    try {
-      const result = await this.store.create({
-        householdId,
-        type: 'plan.generate',
-        idempotencyKey,
-        payload: { ...payload },
-      });
-      job = result.job;
-      created = result.created;
-    } catch (error) {
-      await this.credits?.refund(householdId, action).catch(() => undefined);
-      throw error;
+    // Check affordability before creating a job row — a broke household should
+    // never get a queued job entry.
+    await this.credits.assertCanAfford(householdId, action);
+
+    const { job, created } = await this.store.create({
+      householdId,
+      type: 'plan.generate',
+      idempotencyKey,
+      payload: { ...payload },
+    });
+
+    // Only charge for genuinely new work. A replayed idempotency key returns
+    // the original job: no new work will run, so the balance must not move.
+    if (created) {
+      try {
+        await this.credits.spend(householdId, action);
+      } catch (err) {
+        // spend threw (race: balance drained between assertCanAfford and here).
+        // Mark the job failed so the client gets a deterministic terminal state.
+        await this.store.markFailed(job.id, {
+          code: 'INSUFFICIENT_CREDITS',
+          messageKey: 'errors.INSUFFICIENT_CREDITS',
+        });
+        throw err;
+      }
     }
 
-    // A replayed idempotency key returns the original job without doing new
-    // work, so the credits we just took must go straight back.
-    if (!created) {
-      await this.credits?.refund(householdId, action);
-      return toJob(job);
-    }
-
-    if (this.planQueue) {
+    if (created && this.planQueue) {
       await this.planQueue.add('generate', { jobId: job.id }, { jobId: job.id });
     }
     return toJob(job);
@@ -75,32 +78,28 @@ export class JobsService {
     payload: ReceiptJobPayload,
     idempotencyKey: string | null,
   ): Promise<Job> {
-    await this.credits?.spend(householdId, 'receipt.scan');
+    await this.credits.assertCanAfford(householdId, 'receipt.scan');
 
-    let created = false;
-    let job;
-    try {
-      const result = await this.store.create({
-        householdId,
-        type: 'receipt.parse',
-        idempotencyKey,
-        payload: { ...payload },
-      });
-      job = result.job;
-      created = result.created;
-    } catch (error) {
-      await this.credits?.refund(householdId, 'receipt.scan').catch(() => undefined);
-      throw error;
+    const { job, created } = await this.store.create({
+      householdId,
+      type: 'receipt.parse',
+      idempotencyKey,
+      payload: { ...payload },
+    });
+
+    if (created) {
+      try {
+        await this.credits.spend(householdId, 'receipt.scan');
+      } catch (err) {
+        await this.store.markFailed(job.id, {
+          code: 'INSUFFICIENT_CREDITS',
+          messageKey: 'errors.INSUFFICIENT_CREDITS',
+        });
+        throw err;
+      }
     }
 
-    // A replayed idempotency key returns the original job without doing new
-    // work, so the credits we just took must go straight back.
-    if (!created) {
-      await this.credits?.refund(householdId, 'receipt.scan');
-      return toJob(job);
-    }
-
-    if (this.receiptQueue) {
+    if (created && this.receiptQueue) {
       await this.receiptQueue.add('parse', { jobId: job.id }, { jobId: job.id });
     }
     return toJob(job);

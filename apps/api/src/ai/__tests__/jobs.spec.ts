@@ -3,6 +3,7 @@ import type { Queue } from 'bullmq';
 import type { GeneratePlanRequest } from '@kitchen/contracts';
 import { JobsService } from '../jobs/jobs.service.js';
 import type { CreateJobInput, JobRow, JobStore } from '../jobs/job-store.js';
+import type { CreditsService } from '../../credits/credits.service.js';
 import { uuid } from './helpers.js';
 
 /** In-memory job store honouring the (household,type,key) idempotency contract. */
@@ -43,13 +44,19 @@ function fakeStore(): JobStore {
   };
 }
 
+const noopCredits: CreditsService = {
+  spend: async () => {},
+  refund: async () => {},
+  assertCanAfford: async () => {},
+} as unknown as CreditsService;
+
 const request = { scope: 'daily', startsOn: '2026-08-01' } as GeneratePlanRequest;
 
 describe('JobsService idempotency (spec §3.3 — a double tap cannot create two plans)', () => {
   it('returns the same job and enqueues once for a repeated idempotency key', async () => {
     const add = vi.fn();
     const queue = { add } as unknown as Queue;
-    const service = new JobsService(fakeStore(), queue, undefined);
+    const service = new JobsService(fakeStore(), noopCredits, queue, undefined);
 
     const first = await service.enqueuePlan('hh', { userId: 'u1', request }, 'key-123');
     const second = await service.enqueuePlan('hh', { userId: 'u1', request }, 'key-123');
@@ -61,7 +68,7 @@ describe('JobsService idempotency (spec §3.3 — a double tap cannot create two
   it('creates distinct jobs for distinct idempotency keys', async () => {
     const add = vi.fn();
     const queue = { add } as unknown as Queue;
-    const service = new JobsService(fakeStore(), queue, undefined);
+    const service = new JobsService(fakeStore(), noopCredits, queue, undefined);
 
     const a = await service.enqueuePlan('hh', { userId: 'u1', request }, 'key-a');
     const b = await service.enqueuePlan('hh', { userId: 'u1', request }, 'key-b');
