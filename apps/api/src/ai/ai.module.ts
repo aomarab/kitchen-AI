@@ -18,6 +18,8 @@ import {
   YOUTUBE_CLIENT,
 } from './ai.constants.js';
 import { MockAiProvider } from './providers/mock.provider.js';
+import { GeminiProvider } from './providers/gemini.provider.js';
+import { RoutedAiProvider } from './providers/routed.provider.js';
 import { OpenAiProvider } from './providers/openai.provider.js';
 import { SchemaGuard } from './validation/schema-guard.js';
 import { BudgetService } from './usage/budget.service.js';
@@ -101,14 +103,22 @@ function redisConnection(url: string) {
     {
       provide: AI_PROVIDER,
       inject: [ENV],
-      useFactory: (env: Env) =>
-        env.AI_MOCK
-          ? new MockAiProvider()
-          : new OpenAiProvider(env.OPENAI_API_KEY, {
-              cheap: env.OPENAI_MODEL_CHEAP,
-              vision: env.OPENAI_MODEL_VISION,
-              planning: env.OPENAI_MODEL_PLANNING,
-            }),
+      useFactory: (env: Env) => {
+        if (env.AI_MOCK) return new MockAiProvider();
+
+        const openai = new OpenAiProvider(env.OPENAI_API_KEY, {
+          cheap: env.OPENAI_MODEL_CHEAP,
+          vision: env.OPENAI_MODEL_VISION,
+          planning: env.OPENAI_MODEL_PLANNING,
+        });
+
+        const vision =
+          env.AI_VISION_VENDOR === 'gemini'
+            ? new GeminiProvider(env.GEMINI_API_KEY, { vision: env.GEMINI_MODEL_VISION })
+            : openai;
+
+        return new RoutedAiProvider({ cheap: openai, vision, planning: openai });
+      },
     },
     {
       provide: YOUTUBE_CLIENT,
