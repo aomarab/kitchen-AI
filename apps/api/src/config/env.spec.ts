@@ -51,6 +51,38 @@ describe('environment contract', () => {
     expect(loadEnv({ ...prodBase }).AI_MOCK).toBe(true);
   });
 
+  it('defaults to the mock payment verifier, so the API boots with no RevenueCat account', () => {
+    expect(loadEnv({ ...prodBase }).PAYMENTS_MOCK).toBe(true);
+  });
+
+  // `PAYMENTS_MOCK=false` must genuinely switch off the always-approves mock —
+  // `z.coerce.boolean` would coerce the string "false" to `true` and silently
+  // leave the mock live, so the enum+transform is load-bearing here.
+  it.each(['REVENUECAT_API_KEY', 'REVENUECAT_WEBHOOK_SECRET'] as const)(
+    'refuses to boot in production with live payments but no %s',
+    (key) => {
+      expect(() =>
+        loadEnv({
+          ...prodBase,
+          PAYMENTS_MOCK: 'false',
+          // Provide the *other* key so only `key` is the missing one under test.
+          REVENUECAT_API_KEY: key === 'REVENUECAT_API_KEY' ? '' : 'rc-key',
+          REVENUECAT_WEBHOOK_SECRET: key === 'REVENUECAT_WEBHOOK_SECRET' ? '' : 'rc-secret',
+        }),
+      ).toThrow(new RegExp(key));
+    },
+  );
+
+  it('boots in production with live payments once both RevenueCat values are set', () => {
+    const env = loadEnv({
+      ...prodBase,
+      PAYMENTS_MOCK: 'false',
+      REVENUECAT_API_KEY: 'rc-key',
+      REVENUECAT_WEBHOOK_SECRET: 'rc-secret',
+    });
+    expect(env.PAYMENTS_MOCK).toBe(false);
+  });
+
   // Without a client id the `aud` claim is unpinned, so an ID token minted for
   // any other OAuth client is accepted as proof of identity.
   it.each(['GOOGLE_CLIENT_ID', 'APPLE_CLIENT_ID'] as const)(
