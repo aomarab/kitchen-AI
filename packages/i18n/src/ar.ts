@@ -30,7 +30,7 @@ export const ar: Messages = {
   },
 
   common: {
-    appName: 'مطبخي الذكي',
+    appName: 'مطبخ ماما',
     save: 'حفظ',
     cancel: 'إلغاء',
     delete: 'حذف',

@@ -26,7 +26,8 @@ export const webAr: WebMessages = {
       nothingMissing: 'لا ينقص شيء — يمكنك طهي الخطة بالكامل.',
       addAllToShopping: 'أضف الكل إلى التسوق',
       why: 'لماذا هذه الخطة',
-      whyHint: 'تُختار الوجبات مما يوجد في مطبخك، مع إعطاء الأولوية للمكونات التي تقترب من انتهاء صلاحيتها.',
+      whyHint:
+        'تُختار الوجبات مما يوجد في مطبخك، مع إعطاء الأولوية للمكونات التي تقترب من انتهاء صلاحيتها.',
     },
     skipToContent: 'تخطٍ إلى المحتوى',
     brand: {
@@ -38,7 +39,7 @@ export const webAr: WebMessages = {
       signUpTitle: 'أنشئ حسابك',
       signUpSubtitle: 'حوّل ما في مطبخك إلى أسبوع من الوجبات.',
       haveAccount: 'هل لديك حساب بالفعل؟',
-      noAccount: 'جديد على Kitchen AI؟',
+      noAccount: 'جديد على مطبخ ماما؟',
       tabsLabel: 'تسجيل الدخول أو إنشاء حساب',
       orContinue: 'أو تابع عبر',
       householdTitle: 'أنشئ أسرتك',
@@ -213,7 +214,7 @@ export const webAr: WebMessages = {
       title: 'إرسال ملاحظات',
       entry: 'إرسال ملاحظات',
       entryHint: 'أخبرنا بما ينفع وما لا ينفع.',
-      ratingLabel: 'كيف يعمل معك تطبيق Kitchen AI؟',
+      ratingLabel: 'كيف يعمل معك تطبيق مطبخ ماما؟',
       star: 'قيّم {value} من ٥',
       messageLabel: 'هل تود إضافة شيء؟ (اختياري)',
       messagePlaceholder: 'ما الذي سار جيدًا، أو ما الذي أعاقك؟',

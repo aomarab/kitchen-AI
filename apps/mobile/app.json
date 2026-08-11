@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Kitchen AI",
+    "name": "Mama's Kitchen",
     "slug": "kitchen-ai",
     "scheme": "kitchenai",
     "version": "0.1.0",
@@ -57,8 +57,8 @@
         ]
       },
       "infoPlist": {
-        "NSCameraUsageDescription": "Kitchen AI uses the camera to recognise ingredients in your kitchen.",
-        "NSPhotoLibraryUsageDescription": "Kitchen AI reads photos of your kitchen to build your inventory.",
+        "NSCameraUsageDescription": "Mama's Kitchen uses the camera to recognise ingredients in your kitchen.",
+        "NSPhotoLibraryUsageDescription": "Mama's Kitchen reads photos of your kitchen to build your inventory.",
         "UISupportedInterfaceOrientations~ipad": [
           "UIInterfaceOrientationPortrait",
           "UIInterfaceOrientationPortraitUpsideDown",
@@ -87,10 +87,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "CAMERA",
-        "READ_MEDIA_IMAGES"
-      ]
+      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -102,7 +99,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Kitchen AI uses the camera to recognise ingredients in your kitchen."
+          "cameraPermission": "Mama's Kitchen uses the camera to recognise ingredients in your kitchen."
         }
       ],
       [

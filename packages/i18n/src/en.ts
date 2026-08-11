@@ -35,7 +35,7 @@ export const en = {
   },
 
   common: {
-    appName: 'Kitchen AI',
+    appName: "Mama's Kitchen",
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
