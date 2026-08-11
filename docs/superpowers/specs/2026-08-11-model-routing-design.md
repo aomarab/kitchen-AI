@@ -58,14 +58,21 @@ first or the presign is wrong.
 `apps/mobile/src/features/capture/PhotoCapture.tsx`, before `addPhoto`. Library picks need it
 as much as camera shots.
 
-**Web.** Canvas resize; no new dependency. Apply on the camera-capture path and the file-picker
-path described in `2026-07-27-web-camera-capture-design.md`.
+**Web — deferred, because there is nothing to resize.** This section originally called for a
+canvas resize on the paths in `2026-07-27-web-camera-capture-design.md`. Checking the code
+before planning showed that design is unbuilt: `apps/web/src/components/kitchen/CaptureFlow.tsx:240`
+submits a hardcoded `['mock/receipt-1.jpg']`, and nothing in `apps/web/src` outside the MSW
+handlers references `contentLength`, `uploadUrl` or presign. Web uploads no real photo today,
+so a web resize would save nothing and be wired to nothing. The resize belongs to whatever work
+builds the web upload, and must match `MAX_IMAGE_EDGE_PX` / `IMAGE_JPEG_QUALITY` when it does.
 
 **Orientation is load-bearing.** A phone photo carries its rotation in EXIF. A naive canvas or
 manipulator resize discards that metadata, and the pixels come out sideways. A sideways pantry
 shelf recognises worse than a right-way-up one, so this would spend the savings on accuracy.
-Both paths must bake orientation into the pixels and emit an upright image. This needs a test
-with a rotated fixture, not an eyeball.
+The capture path must bake orientation into the pixels and emit an upright image. This cannot be
+unit-tested — the mobile suite is node-only with no native render harness and the manipulator is
+native code — so it is a **required manual gate**: photograph something with the phone held
+sideways and confirm the stored object is upright.
 
 **Server backstop.** The contract already caps `contentLength` at 15 MB, which is far too loose
 to catch an un-resized upload. The presign handler enforces `MAX_CAPTURE_UPLOAD_BYTES = 2 MB`
@@ -150,8 +157,9 @@ both attempts fail.
   the per-tier timeout, retry and output ceilings are applied.
 - `env.ts`: production refuses to boot when a tier is bound to Gemini without a key; the default
   binding is `openai`.
-- Clients: a resized image has a longest edge of at most 1024 and preserves aspect ratio; a
-  rotated EXIF fixture comes out upright; the shared constants match the values above.
+- Mobile: the pure fit maths caps the longest edge at 1024 and preserves aspect ratio; the shared
+  constants match the values above. Orientation is the manual gate described in Stage 1, not a
+  unit test.
 - Presign rejects an oversized `inventory_photo` with `VALIDATION_FAILED`.
 - `AI_MOCK` behaviour is unchanged, and the existing API suite stays green.
 
