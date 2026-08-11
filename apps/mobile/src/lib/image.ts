@@ -26,12 +26,15 @@ export function fitWithin(
 /**
  * Resize a captured photo before upload and return the new local URI.
  *
- * Both source dimensions are required so that `fitWithin` can cap the longest
- * edge correctly regardless of orientation. Passing only width would pin the
- * width to 1024 on a portrait frame and leave the height at ~1365 — a third
- * over the cap. The manipulator also bakes EXIF rotation into the pixels: a
- * sideways shelf recognises worse than an upright one, so an
- * orientation-losing resize would spend the saving back on accuracy.
+ * `fitWithin` caps the longest edge, but only the **longer** fitted edge is
+ * handed to the manipulator — the library derives the other to preserve the
+ * true aspect ratio (`expo-image-manipulator` ResizeOptions: "If you specify
+ * only one value, the other will be calculated automatically to preserve image
+ * ratio."). This matters because the manipulator bakes EXIF rotation into the
+ * pixels: if it rotates before resizing and we had pinned *both* pre-rotation
+ * axes, the output would be forced onto the wrong dimensions and stretched. An
+ * upright-but-distorted image would still pass the manual "is it upright?" gate,
+ * so we make distortion structurally impossible rather than relying on the gate.
  *
  * Guard: if either dimension is unknown (zero, negative, or not finite — which
  * expo-image-picker documents as possible when the OS omits metadata), fall back
@@ -44,7 +47,15 @@ export function fitWithin(
 export async function resizeForUpload(uri: string, width: number, height: number): Promise<string> {
   const knownDims =
     Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0;
-  const resize = knownDims ? fitWithin(width, height) : { width: MAX_IMAGE_EDGE_PX };
+  let resize: { width?: number; height?: number };
+  if (knownDims) {
+    const fitted = fitWithin(width, height);
+    // Specify only the longer fitted edge; the manipulator preserves the ratio
+    // whichever way it rotates the pixels, so the image is never stretched.
+    resize = fitted.width >= fitted.height ? { width: fitted.width } : { height: fitted.height };
+  } else {
+    resize = { width: MAX_IMAGE_EDGE_PX };
+  }
   const result = await ImageManipulator.manipulateAsync(
     uri,
     [{ resize }],

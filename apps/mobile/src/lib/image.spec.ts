@@ -47,21 +47,24 @@ describe('fitWithin', () => {
 describe('resizeForUpload', () => {
   beforeEach(() => resetManipulatorCalls());
 
-  it('caps the longest edge on a portrait frame (height is the long side)', async () => {
-    // 3024×4032 portrait — the old width-only implementation would produce
-    // resize({ width: 1024 }) leaving height at ~1365, over the cap.
+  it('passes only the longer edge (height) on a portrait frame', async () => {
+    // 3024×4032 portrait — fitWithin caps to 768×1024. Only the longer fitted
+    // edge (height) is handed to the manipulator; it derives the width to keep
+    // the true ratio whatever EXIF rotation it bakes in, so the image can never
+    // be stretched onto the wrong axes.
     await resizeForUpload('file://portrait.jpg', 3024, 4032);
-    expect(lastManipulatorActions).toEqual([{ resize: { width: 768, height: 1024 } }]);
+    expect(lastManipulatorActions).toEqual([{ resize: { height: 1024 } }]);
   });
 
-  it('caps the longest edge on a landscape frame (width is the long side)', async () => {
+  it('passes only the longer edge (width) on a landscape frame', async () => {
     await resizeForUpload('file://landscape.jpg', 4032, 3024);
-    expect(lastManipulatorActions).toEqual([{ resize: { width: 1024, height: 768 } }]);
+    expect(lastManipulatorActions).toEqual([{ resize: { width: 1024 } }]);
   });
 
   it('does not upscale a small image', async () => {
+    // 640×480: fitWithin returns it unchanged; width is the longer edge.
     await resizeForUpload('file://small.jpg', 640, 480);
-    expect(lastManipulatorActions).toEqual([{ resize: { width: 640, height: 480 } }]);
+    expect(lastManipulatorActions).toEqual([{ resize: { width: 640 } }]);
   });
 
   it('returns the uri from the manipulator', async () => {
