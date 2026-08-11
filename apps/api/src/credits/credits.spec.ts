@@ -318,21 +318,25 @@ describe('CreditsService', () => {
 
   // ── Important 5: seq-ordered SQL, not JS Date tie-breaking ──────────────────
 
-  it('refunds the higher-seq group when two spends share an identical created_at', async () => {
-    // Insert two spend groups directly with an identical created_at timestamp
-    // so the old JS Date tie-break (millisecond resolution + random UUID) would
-    // be non-deterministic. Group A: 2 free + 0 paid. Group B: 0 free + 4 paid.
-    // The refund must reverse group B (higher seq) not group A.
+  it('orders spend groups by seq, never by created_at', async () => {
+    // `seq` is the authoritative recency key because `created_at` is not
+    // reliable for ordering: two spends can collide at the resolution a client
+    // compares them at, and the column is writable. This fixture makes the two
+    // keys disagree on purpose — group A carries the LATER timestamp but is
+    // inserted first, so it has the LOWER seq. Anything that orders by
+    // created_at picks A; only seq ordering picks B.
+    //
+    // Group A: 2 from free. Group B: 4 from paid. The refund must reverse B.
     await ctx.db
       .update(householdCredits)
       .set({ freeBalance: 2, paidBalance: 10 })
       .where(eq(householdCredits.householdId, householdId));
 
-    const collisionTime = new Date();
+    const base = new Date();
     const groupA = crypto.randomUUID();
     const groupB = crypto.randomUUID();
 
-    // Group A — free spend (seq will be lower because inserted first).
+    // Group A — inserted first (lower seq) but stamped a minute in the future.
     await ctx.db.insert(creditLedger).values({
       householdId,
       delta: -2,
@@ -340,9 +344,9 @@ describe('CreditsService', () => {
       bucket: 'free',
       action: 'plan.daily',
       spendGroupId: groupA,
-      createdAt: collisionTime,
+      createdAt: new Date(base.getTime() + 60_000),
     });
-    // Group B — paid spend (seq will be higher because inserted second).
+    // Group B — inserted second (higher seq) but stamped earlier.
     await ctx.db.insert(creditLedger).values({
       householdId,
       delta: -4,
@@ -350,7 +354,7 @@ describe('CreditsService', () => {
       bucket: 'paid',
       action: 'plan.daily',
       spendGroupId: groupB,
-      createdAt: collisionTime,
+      createdAt: base,
     });
 
     // Adjust balances to reflect the two "spends".
