@@ -5,8 +5,8 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, I18nManager, View } from 'react-native';
-import { directionFor, type Locale } from '@kitchen/i18n';
 import { queryClient } from '../lib/queryClient';
+import { createDirectionApplier } from '../lib/direction';
 import { useLocale } from '../lib/locale';
 import { useBootstrap } from '../lib/bootstrap';
 import { useAppFonts } from '../lib/font-loader';
@@ -28,14 +28,11 @@ import { colors } from '../theme';
  * device briefly reads `en` on the first render; applying that flipped the flag
  * back to LTR, the hydrated `ar` flipped it to RTL again on the next launch,
  * and the app alternated direction every time it started.
+ *
+ * The applier is created once at module scope so it can remember what it wrote
+ * — see `lib/direction.ts` for why re-reading `I18nManager.isRTL` is unsafe.
  */
-function applyDirection(locale: Locale): void {
-  const rtl = directionFor(locale) === 'rtl';
-  if (I18nManager.isRTL !== rtl) {
-    I18nManager.allowRTL(rtl);
-    I18nManager.forceRTL(rtl);
-  }
-}
+const applyDirection = createDirectionApplier(I18nManager);
 
 /**
  * Sends the user to sign-in the moment the session ends, from wherever they
@@ -67,7 +64,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (ready) applyDirection(locale);
   }, [ready, locale]);
-
   // Mocks have no locale header; mirror the app locale into the mock layer so
   // AI-generated plan/entry content comes back in the right language.
   useEffect(() => {

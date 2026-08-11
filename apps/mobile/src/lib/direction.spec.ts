@@ -1,38 +1,62 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { createDirectionApplier, type DirectionManager } from './direction';
 
-const layout = readFileSync(join(__dirname, '..', 'app', '_layout.tsx'), 'utf8');
+function fakeManager(bootRtl: boolean) {
+  const calls: Array<{ allow: boolean; force: boolean }> = [];
+  const manager: DirectionManager = {
+    // Deliberately frozen, exactly like the real one: writing does not change
+    // what a later read reports until the app relaunches.
+    isRTL: bootRtl,
+    allowRTL: (value) => calls.push({ allow: value, force: value }),
+    forceRTL: () => {},
+  };
+  return { manager, calls };
+}
 
-/**
- * `_layout.tsx` pulls in expo-router, so it cannot be imported in the node test
- * environment. This guards the invariant at the source level instead, in the
- * same spirit as `theme/token-usage.spec.ts`.
- *
- * It lives in `lib/` rather than next to the file it checks because expo-router
- * turns every module under `src/app/` into a route — a spec there gets bundled
- * into the app and its `node:fs` import fails to resolve at runtime.
- *
- * The locale store starts on the *device* locale and only learns the user's
- * saved choice when `useBootstrap` finishes hydrating. Applying direction
- * before then made an Arabic user on an English device alternate between RTL
- * and LTR on every single launch: the pre-hydration `en` forced LTR, the
- * hydrated `ar` forced RTL, and each launch undid the last one.
- */
-describe('layout direction', () => {
-  it('applies direction only after the persisted locale has hydrated', () => {
-    const calls = [...layout.matchAll(/applyDirection\(/g)];
-    // One definition plus exactly one call site.
-    expect(calls).toHaveLength(2);
-    expect(layout).toMatch(/if \(ready\) applyDirection\(locale\);/);
+describe('createDirectionApplier', () => {
+  it('does nothing when the locale already matches the launch direction', () => {
+    const { manager, calls } = fakeManager(true);
+    expect(createDirectionApplier(manager)('ar')).toBe(false);
+    expect(calls).toHaveLength(0);
   });
 
-  it('does not force direction during render', () => {
-    // A bare call in the component body runs on every render, before hydration.
-    expect(layout).not.toMatch(/^ {2}applyDirection\(/m);
+  it('forces the flag when the locale disagrees with the launch direction', () => {
+    const { manager, calls } = fakeManager(false);
+    expect(createDirectionApplier(manager)('ar')).toBe(true);
+    expect(calls).toEqual([{ allow: true, force: true }]);
   });
 
-  it('re-runs when either readiness or the locale changes', () => {
-    expect(layout).toMatch(/\}, \[ready, locale\]\);/);
+  it('re-applies when the user switches away and back in one session', () => {
+    // Boot RTL (Arabic). Switch to English, change your mind, switch back.
+    const { manager, calls } = fakeManager(true);
+    const apply = createDirectionApplier(manager);
+
+    expect(apply('en')).toBe(true);
+    // Reading the stale `isRTL` here would report `true`, match `ar`, and skip
+    // the write — leaving the app LTR with Arabic text on the next launch.
+    expect(apply('ar')).toBe(true);
+
+    expect(calls).toEqual([
+      { allow: false, force: false },
+      { allow: true, force: true },
+    ]);
+  });
+
+  it('stays quiet when the locale is set to the value already written', () => {
+    const { manager, calls } = fakeManager(true);
+    const apply = createDirectionApplier(manager);
+
+    expect(apply('en')).toBe(true);
+    expect(apply('en')).toBe(false);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('ignores a pre-hydration locale that matches the launch direction', () => {
+    const { manager, calls } = fakeManager(false);
+    const apply = createDirectionApplier(manager);
+
+    expect(apply('en')).toBe(false);
+    expect(apply('ar')).toBe(true);
+    expect(calls).toEqual([{ allow: true, force: true }]);
   });
 });

@@ -62,6 +62,16 @@ export const mobileEn = {
         one: '{count} photo ready',
         other: '{count} photos ready',
       }),
+      removePhoto: 'Remove photo',
+      photoLimit: plural('count', {
+        one: 'You can add 1 photo at a time.',
+        other: 'You can add up to {count} photos at a time.',
+      }),
+      photoLimitReached: plural('count', {
+        one: "That's the 1 photo this step takes. Remove it to swap in another.",
+        other: "That's all {count} photos this step takes. Remove one to add another.",
+      }),
+      captureFailed: "That photo couldn't be taken. Try again.",
       retake: 'Retake',
       usePhoto: 'Use photo',
       scanBarcodeHint: 'Line the barcode up inside the frame.',
