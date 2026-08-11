@@ -97,7 +97,7 @@ export function toRecipeSummary(row: RecipeRow, locale: Locale, media: DishMedia
     servings: row.servings,
     difficulty: row.difficulty,
     cuisine: toCuisine(row.cuisine),
-    heroImageUrl: media?.heroThumbnailUrl ?? null,
+    heroImageUrl: media.heroThumbnailUrl,
   };
 }
 
@@ -158,8 +158,8 @@ export function toRecipe(row: FullRecipeRow, locale: Locale, snapshot: PantrySna
     difficulty: row.difficulty,
     cuisine: toCuisine(row.cuisine),
     nutrition: toNutrition(row.nutrition),
-    heroImageUrl: media?.heroThumbnailUrl ?? null,
-    videos: media?.videos ?? [],
+    heroImageUrl: media.heroThumbnailUrl,
+    videos: media.videos,
     generatedBy: row.generatedBy,
     createdAt: row.createdAt.toISOString(),
   };

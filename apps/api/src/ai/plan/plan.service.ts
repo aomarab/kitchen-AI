@@ -246,7 +246,7 @@ export class PlanService {
     locale: string;
     createdAt: Date;
     entries: EntryWithRecipe[];
-  }, mediaMap: Map<string, DishMedia> = new Map()): MealPlan {
+  }, mediaMap: Map<string, DishMedia>): MealPlan {
     const locale = (row.locale as Locale) ?? 'en';
     const entries = [...row.entries]
       .sort((a, b) => a.date.localeCompare(b.date) || a.position - b.position)
