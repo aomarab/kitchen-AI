@@ -5,6 +5,7 @@ export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
 export { Chip } from './Chip';
+export { CreditBalance } from './CreditBalance';
 export { DirectionalIcon } from './DirectionalIcon';
 export { Fab } from './Fab';
 export { Field } from './Field';

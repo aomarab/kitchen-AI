@@ -20,4 +20,5 @@ export const qk = {
   job: (id: string) => ['job', id] as const,
   recognition: (id: string) => ['recognition', id] as const,
   aiUsage: ['aiUsage'] as const,
+  credits: ['credits'] as const,
 } as const;

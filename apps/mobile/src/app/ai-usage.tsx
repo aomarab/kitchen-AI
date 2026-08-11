@@ -1,54 +1,36 @@
-import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Screen, Header, AppText, Card, LoadingState, ErrorState } from '../components';
+import { Screen, Header, Button, CreditBalance, LoadingState, ErrorState } from '../components';
 import { useFormat } from '../hooks/useFormat';
-import { useAiUsage } from '../hooks/profile';
-import { formatUsd, formatQty, formatDateWithHijri } from '../lib/format';
-import { colors, radius, spacing } from '../theme';
+import { useCredits } from '../hooks/credits';
 
-export default function AiUsage() {
-  const { t, locale, prefs, showHijri } = useFormat();
+/**
+ * The household's credit balance (spec §7). Replaces the old raw-USD AI usage
+ * view: clients no longer see dollars, only credits — total, the free/paid split
+ * and when the free grant resets — with a route to buy more. The `getAiUsage`
+ * route still serves operators; only this screen moved off it.
+ */
+export default function CreditsScreen() {
+  const { t } = useFormat();
   const router = useRouter();
-  const usage = useAiUsage();
+  const credits = useCredits();
 
   return (
-    <Screen scroll refreshing={usage.isRefetching} onRefresh={() => void usage.refetch()}>
-      <Header title={t('mobile.aiUsage.title')} onBack={() => router.back()} />
+    <Screen scroll refreshing={credits.isRefetching} onRefresh={() => void credits.refetch()}>
+      <Header title={t('mobile.credits.title')} onBack={() => router.back()} />
 
-      {usage.isLoading ? (
+      {credits.isLoading ? (
         <LoadingState />
-      ) : usage.isError || !usage.data ? (
-        <ErrorState error={usage.error} onRetry={() => void usage.refetch()} />
+      ) : credits.isError || !credits.data ? (
+        <ErrorState error={credits.error} onRetry={() => void credits.refetch()} />
       ) : (
-        <Card tone="primary" style={{ gap: spacing.md }}>
-          <AppText variant="label" color="primary">
-            {t('mobile.aiUsage.today')}
-          </AppText>
-          <AppText variant="title">
-            {t('mobile.aiUsage.spentOfBudget', {
-              spent: formatUsd(locale, usage.data.spentUsd, prefs),
-              budget: formatUsd(locale, usage.data.budgetUsd, prefs),
-            })}
-          </AppText>
-          <View style={{ height: 8, borderRadius: radius.pill, backgroundColor: colors.surface }}>
-            <View
-              style={{
-                height: 8,
-                borderRadius: radius.pill,
-                backgroundColor: colors.primary,
-                width: `${Math.round(
-                  Math.min(1, usage.data.budgetUsd > 0 ? usage.data.spentUsd / usage.data.budgetUsd : 0) * 100,
-                )}%`,
-              }}
-            />
-          </View>
-          <AppText variant="caption" muted>
-            {t('mobile.aiUsage.callsCount', { count: formatQty(locale, usage.data.callCount, prefs) })}
-          </AppText>
-          <AppText variant="caption" muted>
-            {formatDateWithHijri(locale, usage.data.day, showHijri)}
-          </AppText>
-        </Card>
+        <>
+          <CreditBalance balance={credits.data} />
+          <Button
+            title={t('mobile.credits.buy')}
+            icon="wallet"
+            onPress={() => router.push('/buy-credits')}
+          />
+        </>
       )}
     </Screen>
   );

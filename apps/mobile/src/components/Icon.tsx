@@ -37,6 +37,8 @@ export const IONICONS = {
   play: 'play',
   apple: 'logo-apple',
   google: 'logo-google',
+  wallet: 'wallet-outline',
+  sparkles: 'sparkles-outline',
   offline: 'cloud-offline',
   sync: 'sync',
   location: 'location-outline',

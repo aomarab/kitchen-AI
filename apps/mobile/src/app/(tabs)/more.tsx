@@ -41,7 +41,7 @@ export default function More() {
         {row(t('mobile.more.household'), 'household', '/settings/household')}
         {row(t('mobile.more.profile'), 'user', '/profile')}
         {row(t('mobile.more.settings'), 'settings', '/settings')}
-        {row(t('mobile.more.aiUsage'), 'sync', '/ai-usage')}
+        {row(t('mobile.more.credits'), 'wallet', '/ai-usage')}
       </View>
 
       <Button

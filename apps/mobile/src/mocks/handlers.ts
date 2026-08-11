@@ -8,6 +8,7 @@ import {
   type RouteName,
   type ShoppingListItem,
 } from '@kitchen/contracts';
+import { CREDIT_PACKS } from '@kitchen/contracts';
 import {
   buildInventory,
   buildRecognitionSession,
@@ -18,6 +19,7 @@ import {
   locations as seedLocations,
   makeSession,
   mockAiUsage,
+  mockCredits,
   mockHousehold,
   mockId,
   mockProfile,
@@ -51,6 +53,8 @@ const db = {
   catalog: [...catalog],
   plans: new Map<string, MealPlan>(),
   jobs: new Map<string, JobRecord>(),
+  credits: { ...mockCredits },
+  purchaseIntents: new Map<string, { productId: string; credits: number }>(),
 };
 
 let mockLocale: Locale = 'en';
@@ -131,7 +135,11 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
   },
   oauthLogin: () => HttpResponse.json(makeSession(db.user)),
   refresh: () =>
-    HttpResponse.json({ accessToken: 'mock.access.token', refreshToken: 'mock.refresh.token', expiresIn: 900 }),
+    HttpResponse.json({
+      accessToken: 'mock.access.token',
+      refreshToken: 'mock.refresh.token',
+      expiresIn: 900,
+    }),
   logout: okEmpty,
   getMe: () => HttpResponse.json(db.user),
   updateMe: async ({ request }) => {
@@ -167,7 +175,10 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
   leaveHousehold: okEmpty,
   getProfile: () => HttpResponse.json(db.profile),
   submitFeedback: () =>
-    HttpResponse.json({ id: crypto.randomUUID(), createdAt: new Date().toISOString() }, { status: 201 }),
+    HttpResponse.json(
+      { id: crypto.randomUUID(), createdAt: new Date().toISOString() },
+      { status: 201 },
+    ),
   updateProfile: async ({ request }) => {
     const body = await readBody(request);
     db.profile = { ...db.profile, ...(body as object) };
@@ -351,7 +362,12 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
         productName: 'Greek Yogurt 500g',
         brand: 'Al Marai',
         imageUrl: 'https://images.kitchenai.dev/products/yogurt.jpg',
-        match: { ingredientId: yogurt.id, strategy: 'alias', confidence: 0.9, rawName: 'Greek Yogurt' },
+        match: {
+          ingredientId: yogurt.id,
+          strategy: 'alias',
+          confidence: 0.9,
+          rawName: 'Greek Yogurt',
+        },
         suggestedQuantity: 500,
         suggestedUnit: 'ml',
       });
@@ -521,7 +537,8 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     for (const id of ids) {
       const shop = db.shopping.find((s) => s.id === id);
       if (!shop) continue;
-      const ingredient = db.catalog.find((i) => i.id === shop.ingredientId) ?? ingredientByKey('onion');
+      const ingredient =
+        db.catalog.find((i) => i.id === shop.ingredientId) ?? ingredientByKey('onion');
       const item: InventoryItem = {
         id: nextId(),
         householdId: db.household.id,
@@ -546,6 +563,30 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
 
   /* ---- Usage ---- */
   getAiUsage: () => HttpResponse.json({ ...mockAiUsage, day: isoDate(0) }),
+
+  /* ---- Credits ---- */
+  getCredits: () => HttpResponse.json(db.credits),
+  createPurchaseIntent: async ({ request }) => {
+    const body = await readBody(request);
+    const pack = CREDIT_PACKS.find((p) => p.productId === body.productId);
+    if (!pack) {
+      return HttpResponse.json(
+        { code: 'VALIDATION_FAILED', messageKey: 'errors.VALIDATION_FAILED' },
+        { status: 422 },
+      );
+    }
+    const intentId = nextId();
+    db.purchaseIntents.set(intentId, { productId: pack.productId, credits: pack.credits });
+    return HttpResponse.json({ intentId, productId: pack.productId, credits: pack.credits });
+  },
+  confirmPurchase: async ({ request }) => {
+    const body = await readBody(request);
+    const intent = db.purchaseIntents.get(String(body.intentId));
+    if (!intent) return notFound();
+    db.purchaseIntents.delete(String(body.intentId));
+    db.credits = { ...db.credits, paidBalance: db.credits.paidBalance + intent.credits };
+    return HttpResponse.json(db.credits);
+  },
 };
 
 /* ------------------------------------------------------------------ */
@@ -555,7 +596,10 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
 function localizedEntry(entry: MealPlan['entries'][number]): MealPlan['entries'][number] {
   const def = recipeDefById(entry.recipe.id);
   if (!def) return entry;
-  return { ...entry, recipe: { ...entry.recipe, title: def.title[mockLocale], locale: mockLocale } };
+  return {
+    ...entry,
+    recipe: { ...entry.recipe, title: def.title[mockLocale], locale: mockLocale },
+  };
 }
 
 function resolveIngredient(input: Body): Ingredient {
@@ -604,7 +648,11 @@ function sortInventory(items: InventoryItem[], sort: string): InventoryItem[] {
   return copy;
 }
 
-function createJob(type: JobRecord['type'], resultKind: JobRecord['resultKind'], resultId: string): JobRecord {
+function createJob(
+  type: JobRecord['type'],
+  resultKind: JobRecord['resultKind'],
+  resultId: string,
+): JobRecord {
   const job: JobRecord = { id: nextId(), type, createdAt: Date.now(), resultKind, resultId };
   db.jobs.set(job.id, job);
   return job;
