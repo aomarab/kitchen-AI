@@ -55,11 +55,7 @@ export async function seedHousehold(
 ): Promise<string> {
   const [row] = await db
     .insert(schema.households)
-    .values({
-      name: 'Test Household',
-      inviteCode: randomUUID().slice(0, 12),
-      createdBy: userId,
-    })
+    .values({ name: 'Test Household', inviteCode: randomUUID().slice(0, 12), createdBy: userId })
     .returning({ id: schema.households.id });
   if (!row) throw new Error('failed to seed household');
   await db.insert(schema.householdMembers).values({ householdId: row.id, userId, role });
