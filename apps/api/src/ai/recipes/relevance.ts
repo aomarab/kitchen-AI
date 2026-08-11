@@ -54,9 +54,17 @@ export function scoreCandidate(
 
   const videoTokens = new Set(normalizeTokens(candidate.title));
   
-  // Strip Arabic definite article 'ال' (al-) for matching, since 'الدجاج' (the chicken)
-  // and 'دجاج' (chicken) refer to the same ingredient
-  const stripArticle = (token: string) => token.startsWith('ال') ? token.slice(2) : token;
+  // Canonicalize Arabic tokens by stripping the definite article 'ال' and any
+  // fused proclitics (و/ف/ب/ك + ال, or ل + ال contracting to لل).
+  // Patterns are matched against already-folded tokens (أإآ→ا, ة→ه, diacritics removed).
+  // Only strip when the proclitic is attached to the article to avoid destroying
+  // words that naturally start with those letters (e.g. بيض, لحم, كبسة).
+  const stripArticle = (token: string): string => {
+    if (/^[وفبك]ال/.test(token)) return token.slice(3); // proclitic + ال → bare noun
+    if (token.startsWith('لل')) return token.slice(1);  // لل = ل + الـ (alef elides) → ل + noun
+    if (token.startsWith('ال')) return token.slice(2);  // bare ال
+    return token;
+  };
   const videoTokensCanonical = new Set(Array.from(videoTokens).map(stripArticle));
   
   const matched = dishTokens.filter((token) => {

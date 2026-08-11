@@ -57,6 +57,34 @@ describe('scoreCandidate — scoring', () => {
     expect(scoreCandidate('كبسه دجاج', arabic, 'ar')).toBeGreaterThan(0);
   });
 
+  it('accepts أرز بالدجاج for dish دجاج بالأرز — headline proclitic case', () => {
+    // بالدجاج = ب+ال+دجاج → دجاج; بالأرز = ب+ال+ارز → ارز
+    const vid = candidate({ title: 'أرز بالدجاج', defaultAudioLanguage: 'ar' });
+    expect(scoreCandidate('دجاج بالأرز', vid, 'ar')).toBeGreaterThan(0);
+  });
+
+  it('accepts الكبسة بالدجاج for dish كبسة دجاج', () => {
+    const vid = candidate({ title: 'الكبسة بالدجاج', defaultAudioLanguage: 'ar' });
+    expect(scoreCandidate('كبسه دجاج', vid, 'ar')).toBeGreaterThan(0);
+  });
+
+  it('does not over-strip: بيض is a word, not ب + يض', () => {
+    // Naive stripping (remove leading ب/ل/ك unconditionally) would mangle بيض→يض and لحم→حم,
+    // so البيض would canonicalize to بيض but the dish token بيض would become يض — no match.
+    // Correct rule: only strip when the proclitic precedes ال, so bare بيض/لحم are untouched.
+    const vid1 = candidate({ title: 'البيض المقلي', defaultAudioLanguage: 'ar' });
+    expect(scoreCandidate('بيض مقلي', vid1, 'ar')).toBeGreaterThan(0);
+
+    const vid2 = candidate({ title: 'اللحم المشوي', defaultAudioLanguage: 'ar' });
+    expect(scoreCandidate('لحم مشوي', vid2, 'ar')).toBeGreaterThan(0);
+  });
+
+  it('over-strip guard: بيض مقلي rejects دجاج مقلي despite shared مقلي', () => {
+    // Shares one token (مقلي) but coverage is exactly 0.5, which is not strictly > 0.5.
+    const other = candidate({ title: 'دجاج مقلي', defaultAudioLanguage: 'ar' });
+    expect(scoreCandidate('بيض مقلي', other, 'ar')).toBeNull();
+  });
+
   it('ranks a how-to video above an equal-coverage rival', () => {
     const howto = scoreCandidate('Chicken Kabsa', candidate({ categoryId: '26' }), 'en');
     const other = scoreCandidate('Chicken Kabsa', candidate({ categoryId: '22' }), 'en');
