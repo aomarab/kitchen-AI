@@ -612,6 +612,10 @@ export const householdCredits = pgTable('household_credits', {
  * the constraint a redelivery silently doubles someone's balance. It is
  * nullable only while the row is `pending` (created before the store sheet
  * opens, so a webhook-first delivery can still resolve the household).
+ *
+ * `userId` is nullable with `ON DELETE SET NULL` so the purchase row outlives
+ * the buyer — refund webhooks and audit traces can still resolve the record
+ * even after the account is gone.
  */
 export const creditPurchases = pgTable(
   'credit_purchases',
@@ -620,9 +624,7 @@ export const creditPurchases = pgTable(
     householdId: uuid('household_id')
       .notNull()
       .references(() => households.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
     /** apple | google */
     store: text('store'),
     productId: text('product_id').notNull(),
