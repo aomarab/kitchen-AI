@@ -32,7 +32,7 @@ export class RecipesService {
   constructor(
     @Inject(DB) private readonly db: Database,
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
-    private readonly media: MediaService,
+    @Inject(MediaService) private readonly media: MediaService,
   ) {}
 
   async getRecipe(householdId: string, id: string, requested?: Locale): Promise<Recipe> {

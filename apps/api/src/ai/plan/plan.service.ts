@@ -42,7 +42,7 @@ export class PlanService {
     @Inject(DB) private readonly db: Database,
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
     @Inject(PlannerService) private readonly planner: PlannerService,
-    private readonly mediaService: MediaService,
+    @Inject(MediaService) private readonly mediaService: MediaService,
   ) {}
 
   async list(householdId: string, query: ListPlansQuery): Promise<MealPlan[]> {

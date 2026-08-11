@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm';
 import { createTestContext, seedUser, seedHousehold, cleanup } from '../../../testing/harness.js';
 import * as schema from '../../../db/schema.js';
 import { dishMedia, dishVideos, mealPlans, mealPlanEntries } from '../../../db/schema.js';
-import { MediaService, NO_MEDIA } from '../media.service.js';
+import { MediaService } from '../media.service.js';
 import { RecipesService } from '../recipes.service.js';
 import { PlanService } from '../../plan/plan.service.js';
 import type { YoutubeClient, YoutubeVideo } from '../../clients/clients.interface.js';
