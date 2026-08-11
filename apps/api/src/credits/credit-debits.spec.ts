@@ -358,6 +358,35 @@ describe('JobsService.enqueuePlan debit site (plan.daily)', () => {
     expect(after.freeBalance).toBe(before.freeBalance - CREDIT_COSTS['plan.daily']);
   });
 
+  it('replay writes no new ledger rows for the household', async () => {
+    const { householdId, credits } = await seedCtx();
+    const svc = makeJobsService(credits);
+
+    await svc.enqueuePlan(
+      householdId,
+      { userId: 'u1', request: { scope: 'daily', startsOn: '2026-08-05' } },
+      'idem-key-plan-rows',
+    );
+    const rowsAfterFirst = await ctx.db
+      .select()
+      .from(creditLedger)
+      .where(eq(creditLedger.householdId, householdId));
+
+    // Second call with the same key — a pure replay, no money should move.
+    await svc.enqueuePlan(
+      householdId,
+      { userId: 'u1', request: { scope: 'daily', startsOn: '2026-08-05' } },
+      'idem-key-plan-rows',
+    );
+    const rowsAfterReplay = await ctx.db
+      .select()
+      .from(creditLedger)
+      .where(eq(creditLedger.householdId, householdId));
+
+    // The replay must write zero additional ledger rows.
+    expect(rowsAfterReplay.length).toBe(rowsAfterFirst.length);
+  });
+
   it('balance unchanged and job terminal when queue.add throws', async () => {
     const { householdId, credits } = await seedCtx();
     const store = new DrizzleJobStore(ctx.db);

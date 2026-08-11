@@ -8,6 +8,12 @@ import { creditActionForScope } from '../../credits/credit-actions.js';
 import { JOB_STORE, QUEUE_PLAN, QUEUE_RECEIPT } from '../ai.constants.js';
 import { toJob, type JobStore } from './job-store.js';
 
+/** Map a spend error to a job-failure envelope (preserves INSUFFICIENT_CREDITS code). */
+function toSpendError(err: unknown): { code: string; messageKey: string } {
+  if (err instanceof AppError) return { code: err.code, messageKey: err.messageKey };
+  return { code: 'INTERNAL_ERROR', messageKey: 'errors.INTERNAL_ERROR' };
+}
+
 export interface PlanJobPayload {
   userId: string;
   request: GeneratePlanRequest;
@@ -48,41 +54,42 @@ export class JobsService {
     // never get a queued job entry.
     await this.credits.assertCanAfford(householdId, action);
 
-    // Debit before persisting. If store.create fails we refund; if the process
-    // dies here the spend is unreversed but no job row exists and no worker will
-    // run, so the household is over-charged by one action — the smallest
-    // possible leak. See spec §5.4.
-    const spendGroupId = await this.credits.spend(householdId, action);
+    // Mint the spend-group id here so it can live in the job payload before
+    // the spend is committed. The order is:
+    //   assertCanAfford → store.create (with spendGroupId in payload)
+    //     → spend only when created=true → queue.add
+    // A crash between create and spend leaves an uncharged job row with no
+    // BullMQ entry — no worker can pick it up unpaid. A replay finds created=false
+    // and never reaches spend, so the balance is untouched.
+    const spendGroupId = crypto.randomUUID();
 
-    let job;
-    let created: boolean;
-    try {
-      const result = await this.store.create({
-        householdId,
-        type: 'plan.generate',
-        idempotencyKey,
-        payload: { ...payload, spendGroupId },
-      });
-      job = result.job;
-      created = result.created;
-    } catch (err) {
-      await this.credits.refundSpendGroup(householdId, spendGroupId).catch(() => undefined);
-      throw err;
-    }
+    const { job, created } = await this.store.create({
+      householdId,
+      type: 'plan.generate',
+      idempotencyKey,
+      payload: { ...payload, spendGroupId },
+    });
 
     if (!created) {
-      // Idempotent replay: a job already exists for this key. Refund the spend
-      // we just took — the original job's spendGroupId covers the work.
-      await this.credits.refundSpendGroup(householdId, spendGroupId);
-
-      // Re-enqueue if the existing job is still non-terminal so a client that
-      // retried after a queue blip can self-heal without support.
+      // Idempotent replay — zero balance movement.
+      // Re-enqueue if still non-terminal so a client can self-heal a missing
+      // BullMQ entry without needing support.
       if (this.planQueue && (job.status === 'queued' || job.status === 'running')) {
         await this.planQueue
           .add('generate', { jobId: job.id }, { jobId: job.id })
           .catch(() => undefined);
       }
       return toJob(job);
+    }
+
+    // New job — debit now that the row is persisted.
+    try {
+      await this.credits.spend(householdId, action, { spendGroupId });
+    } catch (err) {
+      // spend can fail if the balance was drained in the assertCanAfford→spend
+      // window. Mark the job terminal so it is never picked up unpaid.
+      await this.store.markFailed(job.id, toSpendError(err));
+      throw err;
     }
 
     if (this.planQueue) {
@@ -108,33 +115,30 @@ export class JobsService {
     idempotencyKey: string,
   ): Promise<Job> {
     await this.credits.assertCanAfford(householdId, 'receipt.scan');
-    const spendGroupId = await this.credits.spend(householdId, 'receipt.scan');
 
-    let job;
-    let created: boolean;
-    try {
-      const result = await this.store.create({
-        householdId,
-        type: 'receipt.parse',
-        idempotencyKey,
-        payload: { ...payload, spendGroupId },
-      });
-      job = result.job;
-      created = result.created;
-    } catch (err) {
-      await this.credits.refundSpendGroup(householdId, spendGroupId).catch(() => undefined);
-      throw err;
-    }
+    const spendGroupId = crypto.randomUUID();
+
+    const { job, created } = await this.store.create({
+      householdId,
+      type: 'receipt.parse',
+      idempotencyKey,
+      payload: { ...payload, spendGroupId },
+    });
 
     if (!created) {
-      await this.credits.refundSpendGroup(householdId, spendGroupId);
-
       if (this.receiptQueue && (job.status === 'queued' || job.status === 'running')) {
         await this.receiptQueue
           .add('parse', { jobId: job.id }, { jobId: job.id })
           .catch(() => undefined);
       }
       return toJob(job);
+    }
+
+    try {
+      await this.credits.spend(householdId, 'receipt.scan', { spendGroupId });
+    } catch (err) {
+      await this.store.markFailed(job.id, toSpendError(err));
+      throw err;
     }
 
     if (this.receiptQueue) {

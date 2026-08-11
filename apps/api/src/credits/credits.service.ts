@@ -70,10 +70,13 @@ export class CreditsService {
   async spend(
     householdId: string,
     action: CreditAction,
-    opts: { aiUsageId?: string } = {},
+    opts: { aiUsageId?: string; spendGroupId?: string } = {},
   ): Promise<string> {
     const cost = CREDIT_COSTS[action];
-    let spendGroupId!: string;
+    // Allow caller to supply the id so it can be written into a sibling row
+    // (e.g. a job payload) before the spend is committed, eliminating the
+    // charge window that exists when spend runs before store.create.
+    const spendGroupId: string = opts.spendGroupId ?? crypto.randomUUID();
 
     await this.db.transaction(async (tx) => {
       const row = await this.ensureRow(tx, householdId);
@@ -106,7 +109,8 @@ export class CreditsService {
 
       // Correlate the 1–2 ledger rows so refundSpendGroup can reverse exactly
       // this spend, even when multiple groups for the same action exist.
-      spendGroupId = crypto.randomUUID();
+      // spendGroupId was set before the transaction (either supplied by caller
+      // or freshly minted) so it is stable even if the transaction retries.
       const rows = [];
       if (fromFree > 0) {
         rows.push({
@@ -153,13 +157,18 @@ export class CreditsService {
     });
   }
 
-  /** Shared reversal logic used by both refundSpendGroup and refund. */
+  /** Shared reversal logic used by refundSpendGroup. */
   private async _reverseGroup(
     tx: TxClient,
     householdId: string,
     targetGroupId: string,
   ): Promise<void> {
-    // Check whether this group already has a reversal — if so, it's a no-op.
+    // ensureRow acquires FOR UPDATE first — the existence check must be under
+    // the same lock so two concurrent reversals cannot both read "not reversed"
+    // before either commits.
+    const currentRow = await this.ensureRow(tx, householdId);
+
+    // Idempotency guard: if this group already has a reversal, do nothing.
     const alreadyReversed = await tx.execute<{ exists: boolean }>(
       sql`select exists (
             select 1 from credit_ledger
@@ -169,8 +178,6 @@ export class CreditsService {
           ) as exists`,
     );
     if ((alreadyReversed[0] as { exists: boolean } | undefined)?.exists) return;
-
-    const currentRow = await this.ensureRow(tx, householdId);
 
     // Fetch the spend rows for this group to reconstruct the bucket split.
     const spendRows = await tx.execute<{ delta: number; bucket: string }>(
