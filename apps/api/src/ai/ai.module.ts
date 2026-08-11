@@ -90,7 +90,10 @@ export function createAiProvider(env: Env): AiProvider {
     vision = new GeminiProvider(env.GEMINI_API_KEY, { vision: env.GEMINI_MODEL_VISION });
   }
 
-  return new RoutedAiProvider({ cheap: openai, vision, planning: openai });
+  return new RoutedAiProvider(
+    { cheap: openai, vision, planning: openai },
+    env.AI_VISION_VENDOR === 'gemini' ? { vision: openai } : {},
+  );
 }
 
 /**

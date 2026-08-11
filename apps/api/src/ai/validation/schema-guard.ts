@@ -5,6 +5,7 @@ import type {
   StructuredRequest,
   TokenUsage,
 } from '../providers/ai-provider.interface.js';
+import type { AiSpend } from '../ai-spend.js';
 import { addUsage, attachSpend, readSpend } from '../ai-spend.js';
 
 export interface GuardedResult<T> {
@@ -14,6 +15,8 @@ export interface GuardedResult<T> {
   model: string;
   /** 1 = valid first time, 2 = valid after one repair. */
   attempts: number;
+  /** Billed attempts that produced no usable answer. See StructuredResponse. */
+  priorAttempts?: AiSpend[];
 }
 
 /**
@@ -31,7 +34,13 @@ export class SchemaGuard {
     const first = await provider.complete(request);
     const firstParse = schema.safeParse(first.raw);
     if (firstParse.success) {
-      return { data: firstParse.data, usage: first.usage, model: first.model, attempts: 1 };
+      return {
+        data: firstParse.data,
+        usage: first.usage,
+        model: first.model,
+        attempts: 1,
+        priorAttempts: first.priorAttempts,
+      };
     }
 
     const repairRequest: StructuredRequest = {
@@ -62,7 +71,14 @@ export class SchemaGuard {
     const usage = addUsage(first.usage, second.usage);
 
     if (secondParse.success) {
-      return { data: secondParse.data, usage, model: second.model, attempts: 2 };
+      const priorAttempts = [...(first.priorAttempts ?? []), ...(second.priorAttempts ?? [])];
+      return {
+        data: secondParse.data,
+        usage,
+        model: second.model,
+        attempts: 2,
+        ...(priorAttempts.length > 0 ? { priorAttempts } : {}),
+      };
     }
 
     // Two full-priced calls have been made and neither produced usable output.

@@ -74,6 +74,16 @@ export class AiGateway {
       throw error;
     }
 
+    for (const attempt of result.priorAttempts ?? []) {
+      await this.budget.record({
+        householdId: input.householdId,
+        model: attempt.model,
+        operation: input.operation,
+        tier,
+        usage: attempt.usage,
+      });
+    }
+
     await this.budget.record({
       householdId: input.householdId,
       model: result.model,

@@ -1,10 +1,12 @@
-import { GoogleGenAI } from '@google/genai';
+import { FinishReason, GoogleGenAI } from '@google/genai';
+import { AppError } from '../../common/errors.js';
 import type {
   AiProvider,
   StructuredRequest,
   StructuredResponse,
 } from './ai-provider.interface.js';
 import { PROVIDER_MAX_OUTPUT_TOKENS, PROVIDER_MAX_RETRIES, PROVIDER_TIMEOUT_MS } from '../ai.constants.js';
+import { attachSpend } from '../ai-spend.js';
 import { toProviderError } from './openai.provider.js';
 
 export interface GeminiModels {
@@ -84,6 +86,21 @@ export class GeminiProvider implements AiProvider {
       // them out undercosts every call, in the direction that costs us money.
       outputTokens: (meta.candidatesTokenCount ?? 0) + (meta.thoughtsTokenCount ?? 0),
     };
+
+    // Mirror the OpenAI guard: a truncated response parses to partial JSON,
+    // which fails validation and triggers a repair — against the same ceiling,
+    // guaranteed to truncate again. Two full-priced calls, both wasted. Fail
+    // fast so RoutedAiProvider can fall back to OpenAI and bill this attempt.
+    if (response.candidates?.[0]?.finishReason === FinishReason.MAX_TOKENS) {
+      throw attachSpend(
+        new AppError('AI_INVALID_OUTPUT', 'errors.AI_INVALID_OUTPUT', {
+          operation: request.operation,
+          reason: 'truncated',
+          maxTokens: PROVIDER_MAX_OUTPUT_TOKENS[request.tier],
+        }),
+        { usage, model },
+      );
+    }
 
     return { raw: this.parse(response.text ?? '{}'), usage, model };
   }

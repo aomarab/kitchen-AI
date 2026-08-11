@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GeminiProvider } from '../gemini.provider.js';
+import { readSpend } from '../../ai-spend.js';
 
 // vi.hoisted ensures the mock fn is available when vi.mock factory runs (which
 // is hoisted to the top of the file, before const declarations are evaluated).
@@ -9,6 +10,7 @@ vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
     models = { generateContent };
   },
+  FinishReason: { MAX_TOKENS: 'MAX_TOKENS' },
 }));
 
 function request(overrides = {}) {
@@ -167,5 +169,47 @@ describe('GeminiProvider', () => {
     const parts = generateContent.mock.calls[0]![0].contents[0].parts;
     expect(parts.some((p: { inlineData?: unknown }) => p.inlineData)).toBe(true);
     fetchSpy.mockRestore();
+  });
+});
+
+describe('GeminiProvider truncation guard', () => {
+  beforeEach(() => { generateContent.mockReset(); });
+
+  it('throws AI_INVALID_OUTPUT when finishReason is MAX_TOKENS', async () => {
+    generateContent.mockResolvedValue({
+      text: '{"items":[',
+      usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 8192 },
+      candidates: [{ finishReason: 'MAX_TOKENS' }],
+    });
+
+    const provider = new GeminiProvider('key', { vision: 'gemini-3-flash' });
+    await expect(provider.complete(request())).rejects.toMatchObject({
+      code: 'AI_INVALID_OUTPUT',
+      details: expect.objectContaining({ reason: 'truncated' }),
+    });
+  });
+
+  it('attaches spend to the error so the gateway can bill the failed attempt', async () => {
+    generateContent.mockResolvedValue({
+      text: '{"items":[',
+      usageMetadata: { promptTokenCount: 120, candidatesTokenCount: 8192 },
+      candidates: [{ finishReason: 'MAX_TOKENS' }],
+    });
+
+    const provider = new GeminiProvider('key', { vision: 'gemini-3-flash' });
+    let thrown: unknown;
+    try {
+      await provider.complete(request());
+    } catch (e) {
+      thrown = e;
+    }
+
+    // An error without spend is precisely the bug being fixed: RoutedAiProvider
+    // calls readSpend(error) to populate priorAttempts. If readSpend returns
+    // null, the failed Gemini call is silently dropped from the billing ledger.
+    const spend = readSpend(thrown);
+    expect(spend).not.toBeNull();
+    expect(spend!.usage).toEqual({ inputTokens: 120, outputTokens: 8192 });
+    expect(spend!.model).toBe('gemini-3-flash');
   });
 });

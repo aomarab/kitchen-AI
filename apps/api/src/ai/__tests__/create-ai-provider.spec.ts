@@ -50,6 +50,10 @@ function bindings(provider: RoutedAiProvider): Record<string, unknown> {
   return (provider as unknown as { bindings: Record<string, unknown> }).bindings;
 }
 
+function fallbacks(provider: RoutedAiProvider): Record<string, unknown> {
+  return (provider as unknown as { fallbacks: Record<string, unknown> }).fallbacks;
+}
+
 describe('createAiProvider', () => {
   it('returns MockAiProvider when AI_MOCK is true, regardless of AI_VISION_VENDOR', () => {
     const provider = createAiProvider(env({ AI_MOCK: true, AI_VISION_VENDOR: 'gemini' }));
@@ -88,5 +92,24 @@ describe('createAiProvider', () => {
     expect(() =>
       createAiProvider(env({ AI_MOCK: false, AI_VISION_VENDOR: 'gemini', GEMINI_API_KEY: '' })),
     ).toThrow(/GEMINI_API_KEY/);
+  });
+
+  it('binds OpenAiProvider as vision fallback when AI_VISION_VENDOR is gemini', () => {
+    const provider = createAiProvider(
+      env({ AI_MOCK: false, AI_VISION_VENDOR: 'gemini', GEMINI_API_KEY: 'gemini-key' }),
+    ) as RoutedAiProvider;
+    const fb = fallbacks(provider);
+    expect(fb.vision).toBeInstanceOf(OpenAiProvider);
+    // The fallback must be the same OpenAiProvider instance used for cheap/planning.
+    const b = bindings(provider);
+    expect(fb.vision).toBe(b.cheap);
+  });
+
+  it('has no vision fallback when AI_VISION_VENDOR is openai', () => {
+    const provider = createAiProvider(
+      env({ AI_MOCK: false, AI_VISION_VENDOR: 'openai' }),
+    ) as RoutedAiProvider;
+    const fb = fallbacks(provider);
+    expect(fb.vision).toBeUndefined();
   });
 });
