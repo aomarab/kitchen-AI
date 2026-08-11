@@ -5,7 +5,7 @@ import type { AiProvider, ImageInput } from './providers/ai-provider.interface.j
 import type { BuiltPrompt } from './prompts/prompt.shared.js';
 import { SchemaGuard } from './validation/schema-guard.js';
 import { BudgetService } from './usage/budget.service.js';
-import { readSpend } from './ai-spend.js';
+import { readPriorAttempts, readSpend } from './ai-spend.js';
 
 export interface ExecuteInput<T> {
   householdId: string;
@@ -71,19 +71,25 @@ export class AiGateway {
           })
           .catch(() => undefined);
       }
+      // Prior attempts from superseded vendor calls must also be recorded;
+      // they were billed at different rates and cannot be merged into `spend`.
+      for (const attempt of readPriorAttempts(error)) {
+        await this.budget
+          .record({
+            householdId: input.householdId,
+            model: attempt.model,
+            operation: input.operation,
+            tier,
+            usage: attempt.usage,
+          })
+          .catch(() => undefined);
+      }
       throw error;
     }
 
-    for (const attempt of result.priorAttempts ?? []) {
-      await this.budget.record({
-        householdId: input.householdId,
-        model: attempt.model,
-        operation: input.operation,
-        tier,
-        usage: attempt.usage,
-      });
-    }
-
+    // Record the successful call first — it is the larger, budget-gating spend.
+    // Prior-attempt rows are supplementary bookkeeping: a transient write
+    // failure must not discard the valid result or skip the main row.
     await this.budget.record({
       householdId: input.householdId,
       model: result.model,
@@ -91,6 +97,18 @@ export class AiGateway {
       tier,
       usage: result.usage,
     });
+
+    for (const attempt of result.priorAttempts ?? []) {
+      await this.budget
+        .record({
+          householdId: input.householdId,
+          model: attempt.model,
+          operation: input.operation,
+          tier,
+          usage: attempt.usage,
+        })
+        .catch(() => undefined);
+    }
 
     return result.data;
   }

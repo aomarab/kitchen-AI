@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { attachSpend } from '../../ai-spend.js';
+import { attachSpend, readPriorAttempts } from '../../ai-spend.js';
 import { RoutedAiProvider } from '../routed.provider.js';
 import type { AiProvider, StructuredRequest } from '../ai-provider.interface.js';
 
@@ -87,6 +87,29 @@ describe('RoutedAiProvider fallback', () => {
     await expect(routed.complete(request('vision'))).rejects.toThrow('openai down too');
     expect(vision.complete).toHaveBeenCalledTimes(1);
     expect(fallback.complete).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves the primary's spend on the error when the fallback also fails", async () => {
+    // The primary billed us before failing; that spend must not be silently
+    // dropped just because the fallback also failed. AiGateway reads
+    // readPriorAttempts(error) on the throw path to record it.
+    const vision = stub('gemini');
+    const primaryError = Object.assign(new Error('gemini truncated'), {});
+    attachSpend(primaryError, { usage: { inputTokens: 900, outputTokens: 100 }, model: 'gemini' });
+    vision.complete.mockRejectedValue(primaryError);
+
+    const fallback = stub('openai');
+    fallback.complete.mockRejectedValue(new Error('openai down too'));
+
+    const routed = new RoutedAiProvider(
+      { cheap: stub('c'), vision, planning: stub('p') },
+      { vision: fallback },
+    );
+
+    const thrown = await routed.complete(request('vision')).catch((e: unknown) => e);
+    expect(thrown).toMatchObject({ message: 'openai down too' });
+    const prior = readPriorAttempts(thrown);
+    expect(prior).toEqual([{ usage: { inputTokens: 900, outputTokens: 100 }, model: 'gemini' }]);
   });
 
   it('does not fall back on cheap or planning', async () => {

@@ -6,7 +6,7 @@ import type {
   TokenUsage,
 } from '../providers/ai-provider.interface.js';
 import type { AiSpend } from '../ai-spend.js';
-import { addUsage, attachSpend, readSpend } from '../ai-spend.js';
+import { addUsage, attachPriorAttempts, attachSpend, readPriorAttempts, readSpend } from '../ai-spend.js';
 
 export interface GuardedResult<T> {
   data: T;
@@ -61,10 +61,18 @@ export class SchemaGuard {
       second = await provider.complete(repairRequest);
     } catch (error) {
       const repairSpend = readSpend(error);
-      throw attachSpend(error as object, {
+      const combined = attachSpend(error as object, {
         usage: repairSpend ? addUsage(first.usage, repairSpend.usage) : first.usage,
         model: repairSpend?.model ?? first.model,
       });
+      // Also forward any priorAttempts from the first call so they are not
+      // silently dropped on this path.
+      const prior = [
+        ...(first.priorAttempts ?? []),
+        ...readPriorAttempts(error),
+      ];
+      if (prior.length > 0) attachPriorAttempts(combined, prior);
+      throw combined;
     }
 
     const secondParse = schema.safeParse(second.raw);
@@ -83,7 +91,7 @@ export class SchemaGuard {
 
     // Two full-priced calls have been made and neither produced usable output.
     // That is the most expensive outcome there is; it must still be billed.
-    throw attachSpend(
+    const finalError = attachSpend(
       new AppError('AI_INVALID_OUTPUT', 'errors.AI_INVALID_OUTPUT', {
         operation: request.operation,
         issues: secondParse.error.issues.slice(0, 8).map((i) => ({
@@ -93,5 +101,8 @@ export class SchemaGuard {
       }),
       { usage, model: second.model },
     );
+    const priorOnFinal = [...(first.priorAttempts ?? []), ...(second.priorAttempts ?? [])];
+    if (priorOnFinal.length > 0) attachPriorAttempts(finalError, priorOnFinal);
+    throw finalError;
   }
 }

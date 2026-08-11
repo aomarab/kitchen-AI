@@ -1,5 +1,5 @@
 import type { ModelTier } from '../ai.constants.js';
-import { readSpend } from '../ai-spend.js';
+import { attachPriorAttempts, readPriorAttempts, readSpend } from '../ai-spend.js';
 import type {
   AiProvider,
   StructuredRequest,
@@ -31,14 +31,27 @@ export class RoutedAiProvider implements AiProvider {
 
     if (!fallback) return primary.complete(request);
 
+    let primarySpend;
     try {
       return await primary.complete(request);
-    } catch (error) {
+    } catch (primaryError) {
       // A failed attempt may still have been billed; carry it so the gateway
       // can record it against its own model's rate.
-      const spend = readSpend(error);
+      primarySpend = readSpend(primaryError);
+    }
+
+    try {
       const response = await fallback.complete(request);
-      return spend ? { ...response, priorAttempts: [spend] } : response;
+      return primarySpend ? { ...response, priorAttempts: [primarySpend] } : response;
+    } catch (fallbackError) {
+      // The fallback also failed. Preserve the primary's spend on the
+      // propagated error so the gateway can still bill it — appending to
+      // whatever priorAttempts the fallback error may already carry.
+      if (primarySpend && typeof fallbackError === 'object' && fallbackError !== null) {
+        const existing = readPriorAttempts(fallbackError);
+        attachPriorAttempts(fallbackError as object, [primarySpend, ...existing]);
+      }
+      throw fallbackError;
     }
   }
 }
