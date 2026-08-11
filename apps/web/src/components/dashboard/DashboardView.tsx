@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle } from '../ui/Card';
 import { buttonClasses } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { ProgressBar } from '../ui/ProgressBar';
-import { AppImage } from '../ui/AppImage';
+import { RecipeThumb } from '../ui/RecipeThumb';
 import { LoadingState, ErrorState, EmptyState } from '../ui/states';
 import { LocalizedDate } from '../common/LocalizedDate';
 import { CameraIcon, BarcodeIcon, ReceiptIcon, PlusIcon, ClockIcon, FlameIcon } from '../ui/icons';
@@ -55,13 +55,12 @@ export function DashboardView() {
           </CardHeader>
           {tonight ? (
             <div className="flex flex-col gap-4 sm:flex-row">
-              {tonight.entry.recipe.heroImageUrl ? (
-                <AppImage
-                  src={tonight.entry.recipe.heroImageUrl}
-                  alt={tonight.entry.recipe.title}
-                  className="aspect-video w-full rounded-xl sm:w-56"
-                />
-              ) : null}
+              <RecipeThumb
+                src={tonight.entry.recipe.heroImageUrl}
+                title={tonight.entry.recipe.title}
+                dishKey={tonight.entry.recipe.title}
+                className="aspect-video w-full rounded-xl sm:w-56"
+              />
               <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone="info">{t(slotKey(tonight.entry.slot))}</Badge>

@@ -167,6 +167,7 @@ export const webEn = {
       carbs: 'Carbs',
       fat: 'Fat',
       coverageBadge: '{inStock} of {total} in stock',
+      noPhoto: 'No photo available for {dish}',
     },
     shopping: {
       fromPlan: 'From your plan',

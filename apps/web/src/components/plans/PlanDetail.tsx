@@ -11,7 +11,7 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { IconButton } from '../ui/IconButton';
 import { DirectionalIcon } from '../ui/DirectionalIcon';
-import { AppImage } from '../ui/AppImage';
+import { RecipeThumb } from '../ui/RecipeThumb';
 import { LocalizedDate } from '../common/LocalizedDate';
 import { EmptyState } from '../ui/states';
 import { ChevronIcon } from '../ui/icons';
@@ -94,9 +94,7 @@ export function EntryCard({ entry, onOpen }: { entry: MealPlanEntry; onOpen: (e:
       onClick={() => onOpen(entry)}
       className="flex w-full items-center gap-3 rounded-xl border border-border p-2 text-start transition hover:border-primary-text hover:bg-muted"
     >
-      {entry.recipe.heroImageUrl ? (
-        <AppImage src={entry.recipe.heroImageUrl} alt={entry.recipe.title} className="h-14 w-14 shrink-0 rounded-lg" sizes="56px" />
-      ) : null}
+      <RecipeThumb src={entry.recipe.heroImageUrl} title={entry.recipe.title} dishKey={entry.recipe.title} className="h-14 w-14 shrink-0 rounded-lg" sizes="56px" />
       <div className="min-w-0 flex-1">
         <p className="text-xs text-muted-foreground">{t(slotKey(entry.slot))}</p>
         <p className="truncate font-medium">{entry.recipe.title}</p>

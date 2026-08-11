@@ -172,6 +172,7 @@ export const webAr: WebMessages = {
       carbs: 'كربوهيدرات',
       fat: 'دهون',
       coverageBadge: '{inStock} من {total} متوفرة',
+      noPhoto: 'لا توجد صورة لـ {dish}',
     },
     shopping: {
       fromPlan: 'من خطتك',

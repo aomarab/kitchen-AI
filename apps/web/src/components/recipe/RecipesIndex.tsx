@@ -7,7 +7,7 @@ import { useLocale } from '../../lib/locale';
 import { usePlans } from '../../hooks/plans';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { AppImage } from '../ui/AppImage';
+import { RecipeThumb } from '../ui/RecipeThumb';
 import { LoadingState, ErrorState, EmptyState } from '../ui/states';
 
 export function RecipesIndex() {
@@ -32,9 +32,7 @@ export function RecipesIndex() {
       {recipes.map((recipe) => (
         <Link key={recipe.id} href={`/recipes/${recipe.id}`} className="block">
           <Card className="flex h-full flex-col gap-3 p-3 transition hover:border-primary-text">
-            {recipe.heroImageUrl ? (
-              <AppImage src={recipe.heroImageUrl} alt={recipe.title} className="aspect-video w-full rounded-xl" />
-            ) : null}
+            <RecipeThumb src={recipe.heroImageUrl} title={recipe.title} dishKey={recipe.title} className="aspect-video w-full rounded-xl" />
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-medium">{recipe.title}</h3>
               <Badge tone="info">{t(`recipe.difficulty.${recipe.difficulty}`)}</Badge>
