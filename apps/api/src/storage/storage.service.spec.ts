@@ -41,6 +41,8 @@ describe('presignUpload capture ceiling', () => {
   });
 
   it('allows a resized capture at exactly the ceiling', async () => {
+    // AWS SigV4 presigning is pure local HMAC computation and never opens a socket,
+    // so no MinIO or network is required for this spec to pass in CI.
     await expect(
       makeStorageService().presignUpload(HOUSEHOLD, {
         contentType: 'image/jpeg',
@@ -57,6 +59,17 @@ describe('presignUpload capture ceiling', () => {
         contentType: 'image/jpeg',
         contentLength: MAX_CAPTURE_UPLOAD_BYTES + 1,
         purpose: 'recipe_image',
+      }),
+    ).resolves.toBeDefined();
+  });
+
+  it('leaves avatar on the wider contract limit', async () => {
+    // avatar is not a camera capture and keeps the 15 MB contract cap.
+    await expect(
+      makeStorageService().presignUpload(HOUSEHOLD, {
+        contentType: 'image/jpeg',
+        contentLength: MAX_CAPTURE_UPLOAD_BYTES + 1,
+        purpose: 'avatar',
       }),
     ).resolves.toBeDefined();
   });

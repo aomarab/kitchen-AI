@@ -17,7 +17,7 @@ const EXPIRES_IN_SECONDS = 300;
  */
 export const MAX_CAPTURE_UPLOAD_BYTES = 2 * 1024 * 1024;
 
-const CAPTURE_PURPOSES = new Set(['inventory_photo', 'receipt']);
+const CAPTURE_PURPOSES = new Set<PresignUploadRequest['purpose']>(['inventory_photo', 'receipt']);
 
 const EXTENSION: Record<PresignUploadRequest['contentType'], string> = {
   'image/jpeg': 'jpg',
