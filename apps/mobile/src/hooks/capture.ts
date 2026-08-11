@@ -11,10 +11,22 @@ export function usePresignUpload() {
   });
 }
 
+/**
+ * How long the client waits for vision recognition before giving up.
+ *
+ * This is a synchronous call into a vision model over up to
+ * `MAX_INVENTORY_PHOTOS` photos, so it is measured in tens of seconds, not the
+ * sub-second an ordinary request takes. The default client budget aborted it
+ * mid-flight while the server went on to finish the work and charge for it, so
+ * the user paid an AI credit for a result the app had already thrown away.
+ */
+export const RECOGNITION_TIMEOUT_MS = 180_000;
+
 /** Run vision recognition over uploaded photos → a review session. */
 export function useRecognizePhotos() {
   return useMutation({
-    mutationFn: (body: RouteBody<'recognizePhotos'>) => api.call('recognizePhotos', { body }),
+    mutationFn: (body: RouteBody<'recognizePhotos'>) =>
+      api.call('recognizePhotos', { body, timeoutMs: RECOGNITION_TIMEOUT_MS }),
   });
 }
 

@@ -1,4 +1,4 @@
-import { ApiError, ContractViolationError, NetworkError } from '@kitchen/api-client';
+import { ApiError, ContractViolationError, NetworkError, TimeoutError } from '@kitchen/api-client';
 
 /**
  * Every failure the UI can render resolves to an i18n key — the server never
@@ -6,6 +6,9 @@ import { ApiError, ContractViolationError, NetworkError } from '@kitchen/api-cli
  */
 export function resolveErrorKey(error: unknown): string {
   if (error instanceof ApiError) return error.messageKey;
+  // Before NetworkError: TimeoutError extends it, and a request that reached
+  // the server and ran long is not an offline connection.
+  if (error instanceof TimeoutError) return 'errors.timedOut';
   if (error instanceof NetworkError) return 'errors.offline';
   if (error instanceof ContractViolationError) return 'errors.INTERNAL_ERROR';
   return 'errors.INTERNAL_ERROR';

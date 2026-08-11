@@ -49,6 +49,25 @@ export class NetworkError extends Error {
   }
 }
 
+/**
+ * Thrown when the client gave up waiting rather than the connection failing.
+ *
+ * A subclass of `NetworkError` so existing handling (retry, keep the offline
+ * queue intact) still applies, but distinguishable because the two need
+ * different words: a timeout on a slow AI call is not "you are offline", and
+ * telling the user to check their connection sends them to fix the wrong thing
+ * — the request usually reached the server and completed there.
+ */
+export class TimeoutError extends NetworkError {
+  constructor(
+    message: string,
+    readonly timeoutMs: number,
+  ) {
+    super(message);
+    this.name = 'TimeoutError';
+  }
+}
+
 /** Thrown when the server responded but the payload did not match the contract. */
 export class ContractViolationError extends Error {
   readonly issues: unknown;

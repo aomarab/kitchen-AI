@@ -25,6 +25,11 @@ const trackedFetch: typeof fetch = async (...args) => {
     markOnline();
     return response;
   } catch (error) {
+    // An abort is our own timeout (or a cancelled screen), not evidence about
+    // the network. Marking offline here made a slow AI call flip the whole app
+    // into its offline state — banner, queued writes — while the connection was
+    // perfectly healthy and the server was still working on the request.
+    if (error instanceof Error && error.name === 'AbortError') throw error;
     markOffline();
     throw error;
   }

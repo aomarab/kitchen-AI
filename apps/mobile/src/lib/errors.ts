@@ -1,4 +1,4 @@
-import { ApiError, ContractViolationError, NetworkError } from '@kitchen/api-client';
+import { ApiError, ContractViolationError, NetworkError, TimeoutError } from '@kitchen/api-client';
 import type { MessageKey } from '@kitchen/i18n';
 import { OAuthUnavailableError } from './oauth-errors';
 
@@ -9,6 +9,9 @@ import { OAuthUnavailableError } from './oauth-errors';
  */
 export function errorMessageKey(error: unknown): MessageKey {
   if (error instanceof ApiError) return error.messageKey as MessageKey;
+  // Before NetworkError: TimeoutError extends it, and "you're offline" is the
+  // wrong advice for a request that reached the server and ran long.
+  if (error instanceof TimeoutError) return 'errors.timedOut';
   if (error instanceof NetworkError) return 'errors.offline';
   if (error instanceof OAuthUnavailableError) return error.messageKey;
   if (error instanceof ContractViolationError) return 'errors.INTERNAL_ERROR';

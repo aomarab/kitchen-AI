@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Image } from 'react-native';
 import { CameraView } from 'expo-camera';
+import type { MessageKey } from '@kitchen/i18n';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { AppText, Button, Icon } from '../../components';
@@ -12,6 +13,7 @@ import { useJob, isTerminal } from '../../hooks/job';
 import { api } from '../../lib/api';
 import { expoPhotoUploader } from '../../lib/photo-uploader';
 import { uploadPhotos } from '../../lib/upload';
+import { captureErrorKey } from '../../lib/capture-error';
 import { useCaptureStore, type CaptureSource } from '../../stores/capture';
 import { maxPhotosFor } from './limits';
 import { colors, radius, spacing } from '../../theme';
@@ -37,7 +39,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
   const recognize = useRecognizePhotos();
   const parseReceipt = useParseReceipt();
   const [jobId, setJobId] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<MessageKey | null>(null);
   const job = useJob(jobId);
 
   const jobPending = !!jobId && !isTerminal(job.data);
@@ -114,7 +116,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
 
   const submit = async () => {
     if (busy) return;
-    setFailed(false);
+    setError(null);
     setUploading(true);
     try {
       const keys = await uploadKeys();
@@ -126,11 +128,13 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
       const session = await recognize.mutateAsync({ photoKeys: keys });
       setSession(session, 'photo');
       router.replace('/capture/review');
-    } catch {
-      // Uploading or recognising can fail for reasons the user can act on
-      // (no signal, storage rejected the photo). Silently returning to the
-      // camera looks like the button simply did nothing.
-      setFailed(true);
+    } catch (error) {
+      // Only `uploadPhotos` can fail to send bytes. Everything after it —
+      // recognition refusing for want of credits, the model erroring, the call
+      // running past its budget — reached the server, so blaming the upload
+      // ("check your connection") points the user at the wrong problem and
+      // invites a retry that spends another AI credit.
+      setError(captureErrorKey(error));
     } finally {
       setUploading(false);
     }
@@ -185,9 +189,9 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
           </AppText>
         ) : null}
 
-        {failed ? (
+        {error ? (
           <AppText variant="caption" center style={{ color: colors.danger }}>
-            {t('mobile.capture.uploadFailed')}
+            {t(error)}
           </AppText>
         ) : null}
 
