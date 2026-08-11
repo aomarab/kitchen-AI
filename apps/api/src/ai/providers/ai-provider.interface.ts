@@ -58,6 +58,6 @@ export interface StructuredResponse {
 }
 
 export interface AiProvider {
-  readonly kind: 'openai' | 'mock';
+  readonly kind: 'openai' | 'gemini' | 'mock' | 'routed';
   complete(request: StructuredRequest): Promise<StructuredResponse>;
 }
