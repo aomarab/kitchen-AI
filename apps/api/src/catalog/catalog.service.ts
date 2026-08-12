@@ -3,7 +3,9 @@ import { and, asc, eq, type SQL } from 'drizzle-orm';
 import type {
   CreateIngredientRequest,
   Ingredient,
+  IngredientCategory,
   SearchIngredientsQuery,
+  Unit,
 } from '@kitchen/contracts';
 import { DB, type Database } from '../db/index.js';
 import { ingredients } from '../db/schema.js';
@@ -74,7 +76,16 @@ export class CatalogService {
    * have beats showing none). Passing `nameAr` avoids the mirroring entirely,
    * which is why recognition threads both names through.
    */
-  async resolveOrCreate(rawName: string, rawNameAr?: string): Promise<string> {
+  /**
+   * `hints` carry what the scan already determined. Without them a new row is
+   * filed as an uncategorised piece, which is wrong for almost everything and
+   * is never revisited — the row is global and permanent.
+   */
+  async resolveOrCreate(
+    rawName: string,
+    rawNameAr?: string,
+    hints?: { category?: IngredientCategory; unit?: Unit },
+  ): Promise<string> {
     const [existing] = await this.db
       .select({ id: ingredients.id })
       .from(ingredients)
@@ -103,8 +114,8 @@ export class CatalogService {
         .values({
           canonicalNameEn: en,
           canonicalNameAr: ar,
-          category: 'other',
-          defaultUnit: 'piece',
+          category: hints?.category ?? 'other',
+          defaultUnit: hints?.unit ?? 'piece',
           // Every spelling we were given is kept as an alias so
           // `ingredientNameEquals` resolves this row from either script later.
           aliases,

@@ -86,6 +86,13 @@ export const inventoryItemInputSchema = z.object({
    * one, and files it under both languages for every household.
    */
   rawNameAr: z.string().min(1).max(120).optional(),
+  /**
+   * What kind of thing this is, as identified by the scan. Same reasoning as
+   * the names: recognition already worked this out and showed it to the user,
+   * so dropping it here files every scanned item under "other" forever, in a
+   * catalog every household reads.
+   */
+  rawCategory: ingredientCategorySchema.optional(),
   /** Manufacturer from a barcode lookup, when the scan produced one. */
   brand: z.string().min(1).max(120).nullable().default(null),
   locationId: uuidSchema,

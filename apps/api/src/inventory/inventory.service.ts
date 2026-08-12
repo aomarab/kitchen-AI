@@ -360,7 +360,10 @@ export class InventoryService {
   private async resolveIngredientId(input: InventoryItemInput): Promise<string> {
     if (input.ingredientId) return input.ingredientId;
     if (!input.rawName) throw AppError.validation({ reason: 'missing_ingredient' });
-    return this.catalog.resolveOrCreate(input.rawName, input.rawNameAr);
+    return this.catalog.resolveOrCreate(input.rawName, input.rawNameAr, {
+      category: input.rawCategory,
+      unit: input.unit,
+    });
   }
 
   private async addStock(tx: Tx, input: AddStockInput): Promise<string> {

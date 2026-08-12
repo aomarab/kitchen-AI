@@ -100,3 +100,22 @@ describe('buildInventoryInputs — the only path into inventory (spec §5.1)', (
     expect(input!.rawName).toBe('Mystery herb');
   });
 });
+
+describe('buildInventoryInputs carries what recognition identified', () => {
+  const unmatched = recognized({
+    match: { ingredientId: null, strategy: 'created', confidence: 0.7, rawName: 'Butter block' },
+    nameEn: 'Butter block',
+    nameAr: 'زبدة',
+    category: 'dairy',
+  });
+
+  it('sends the category for a row with no catalog match, so it is not filed as "other"', () => {
+    const rows = initialReviewRows(session([unmatched]), LOCATIONS);
+    expect(buildInventoryInputs(rows, 'photo')[0]!.rawCategory).toBe('dairy');
+  });
+
+  it('omits it when the row already matched the catalog, which is already categorised', () => {
+    const rows = initialReviewRows(session([recognized()]), LOCATIONS);
+    expect(buildInventoryInputs(rows, 'photo')[0]!.rawCategory).toBeUndefined();
+  });
+});

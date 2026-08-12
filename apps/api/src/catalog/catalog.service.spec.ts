@@ -37,3 +37,41 @@ describe('CatalogService bilingual search (live seeded catalog)', () => {
     expect(page.items.some((i) => i.canonicalNameEn === 'Avocado')).toBe(true);
   });
 });
+
+describe('CatalogService.resolveOrCreate categorisation', () => {
+  let ctx: TestContext;
+  let service: CatalogService;
+  const created: string[] = [];
+
+  beforeAll(() => {
+    ctx = createTestContext();
+    service = new CatalogService(ctx.db);
+  });
+
+  afterAll(async () => {
+    if (created.length) {
+      await ctx.client`delete from ingredients where id = any(${created})`;
+    }
+    await ctx.client.end({ timeout: 5 });
+  });
+
+  async function categoryOf(id: string): Promise<{ category: string; defaultUnit: string }> {
+    const [row] = await ctx.client<{ category: string; default_unit: string }[]>`
+      select category, default_unit from ingredients where id = ${id}`;
+    return { category: row!.category, defaultUnit: row!.default_unit };
+  }
+
+  it('files a new row under the category the scan identified', async () => {
+    const name = `Test Butter Block ${Date.now()}`;
+    const id = await service.resolveOrCreate(name, undefined, { category: 'dairy', unit: 'g' });
+    created.push(id);
+    expect(await categoryOf(id)).toEqual({ category: 'dairy', defaultUnit: 'g' });
+  });
+
+  it("falls back to 'other' when the caller knows no category", async () => {
+    const name = `Test Mystery Thing ${Date.now()}`;
+    const id = await service.resolveOrCreate(name);
+    created.push(id);
+    expect((await categoryOf(id)).category).toBe('other');
+  });
+});
