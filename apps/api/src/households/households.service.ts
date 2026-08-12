@@ -7,12 +7,30 @@ import type {
   UpdateHouseholdRequest,
 } from '@kitchen/contracts';
 import { DB, type Database } from '../db/index.js';
-import { households, householdMembers, users } from '../db/schema.js';
+import { households, householdMembers, storageLocations, users } from '../db/schema.js';
 import { AppError } from '../common/errors.js';
 import { generateInviteCode } from './invite-code.js';
 import { toHousehold, type MemberRow } from './households.serializer.js';
 
 const MAX_CODE_ATTEMPTS = 8;
+
+/**
+ * The places a new kitchen starts with.
+ *
+ * Not cosmetic: every inventory item requires a `locationId`, so a household
+ * with no locations cannot save a scan at all — the review screen has nowhere
+ * to put anything and the confirm button leads nowhere.
+ *
+ * The names are English because the row's `name` is not shown; clients label a
+ * place by its `type` (`locationLabel`) so it reads natively in both languages.
+ * A place the household adds itself is shown by name instead, because that name
+ * is the user's own words.
+ */
+const STARTING_LOCATIONS = [
+  { name: 'Fridge', type: 'fridge' },
+  { name: 'Freezer', type: 'freezer' },
+  { name: 'Pantry', type: 'pantry' },
+] as const;
 
 function isUniqueViolation(error: unknown): boolean {
   return (
@@ -44,6 +62,9 @@ export class HouseholdsService {
           await tx
             .insert(householdMembers)
             .values({ householdId: row.id, userId, role: 'owner' });
+          await tx
+            .insert(storageLocations)
+            .values(STARTING_LOCATIONS.map((place) => ({ householdId: row.id, ...place })));
           return row.id;
         });
         return this.load(household);
