@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Icon } from './Icon';
 import { AppText } from './AppText';
@@ -7,6 +7,8 @@ import {
   buildEmbedHtml,
   EMBED_BASE_URL,
   isAllowedEmbedUrl,
+  parseEmbedMessage,
+  watchOnYoutubeUrl,
   WEBVIEW_ORIGIN_WHITELIST,
 } from '../lib/youtube';
 import { colors, radius, spacing } from '../theme';
@@ -18,6 +20,8 @@ interface YoutubePlayerProps {
   playLabel: string;
   /** Localized message shown when the embed cannot be displayed. */
   errorLabel: string;
+  /** Localized label for the escape hatch out to the YouTube app. */
+  openLabel: string;
 }
 
 
@@ -32,11 +36,13 @@ export function YoutubePlayer({
   thumbnailUrl,
   playLabel,
   errorLabel,
+  openLabel,
 }: YoutubePlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
 
   const embedHtml = buildEmbedHtml(youtubeId);
+  const watchUrl = watchOnYoutubeUrl(youtubeId);
   const showError = failed || embedHtml === null;
 
   return (
@@ -55,11 +61,33 @@ export function YoutubePlayer({
             alignItems: 'center',
             justifyContent: 'center',
             padding: spacing.md,
+            gap: spacing.sm,
           }}
         >
           <AppText variant="caption" style={{ color: colors.textInverse, textAlign: 'center' }}>
             {errorLabel}
           </AppText>
+          {/*
+            An embed can fail for reasons no client can fix — a rights holder
+            disallowing it, a country block — so a dead black rectangle is not
+            an acceptable resting state. The video exists on YouTube either
+            way, and the recipe is the point.
+          */}
+          {watchUrl ? (
+            <Pressable
+              onPress={() => void Linking.openURL(watchUrl)}
+              accessibilityRole="button"
+              accessibilityLabel={openLabel}
+              hitSlop={spacing.sm}
+            >
+              <AppText
+                variant="bodyStrong"
+                style={{ color: colors.textInverse, textDecorationLine: 'underline' }}
+              >
+                {openLabel}
+              </AppText>
+            </Pressable>
+          ) : null}
         </View>
       ) : playing ? (
         <WebView
@@ -78,6 +106,13 @@ export function YoutubePlayer({
           // instead of cancelling them.
           originWhitelist={WEBVIEW_ORIGIN_WHITELIST}
           onShouldStartLoadWithRequest={(request) => isAllowedEmbedUrl(request.url)}
+          // The player reports its own failures — a WebView that loaded fine
+          // still shows YouTube's error card inside itself, which `onError`
+          // never sees.
+          onMessage={(event) => {
+            const message = parseEmbedMessage(event.nativeEvent.data);
+            if (message?.type === 'error') setFailed(true);
+          }}
           onError={() => setFailed(true)}
           onHttpError={() => setFailed(true)}
           style={{ flex: 1, backgroundColor: '#000' }}

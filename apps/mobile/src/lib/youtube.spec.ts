@@ -4,6 +4,8 @@ import {
   EMBED_BASE_URL,
   isAllowedEmbedUrl,
   isValidYoutubeId,
+  parseEmbedMessage,
+  watchOnYoutubeUrl,
   WEBVIEW_ORIGIN_WHITELIST,
   YOUTUBE_EMBED_ORIGINS,
 } from './youtube';
@@ -76,42 +78,94 @@ describe('buildEmbedHtml', () => {
   /**
    * The whole reason this function exists. Navigating the WebView straight to
    * the embed URL leaves the player with no referrer, and YouTube answers with
-   * "Video unavailable — error 153" instead of playing. The player must
-   * therefore be an iframe inside a document we serve under a real https
-   * origin, never the WebView's own top-level URL.
+   * a player configuration error (153, and its 152 siblings) instead of
+   * playing. The player must live inside a document served under a real https
+   * origin, never at the WebView's own top-level URL.
    */
-  it('embeds the video in a document, so the player has a referrer', () => {
+  it('builds the player in a document, so it has a referrer', () => {
     const html = buildEmbedHtml('dQw4w9WgXcQ')!;
 
-    expect(html).toContain('<iframe');
-    expect(html).toContain('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
+    expect(html).toContain('dQw4w9WgXcQ');
     expect(EMBED_BASE_URL.startsWith('https://')).toBe(true);
     expect(isAllowedEmbedUrl(EMBED_BASE_URL)).toBe(true);
+  });
+
+  /**
+   * Hand-writing the frame was not enough: a frame pointed at a different
+   * YouTube host is cross-origin to the page holding it, and the player
+   * refuses a configuration it cannot verify. Letting YouTube's own API script
+   * build the frame keeps the two in agreement.
+   */
+  it('lets YouTube build the player, from the origin the page runs on', () => {
+    const html = buildEmbedHtml('dQw4w9WgXcQ')!;
+
+    expect(html).toContain('https://www.youtube.com/iframe_api');
+    expect(html).toContain('new YT.Player');
+    expect(html).not.toContain('youtube-nocookie.com');
+    expect(html).toContain(`origin: '${EMBED_BASE_URL}'`);
+  });
+
+  /**
+   * A player error renders *inside* a WebView that loaded perfectly, so
+   * `onError` never fires and every failure looks the same from the native
+   * side. Reporting the code back is what makes the next one diagnosable.
+   */
+  it('reports player failures back to the app', () => {
+    const html = buildEmbedHtml('dQw4w9WgXcQ')!;
+
+    expect(html).toContain('onError');
+    expect(html).toContain('ReactNativeWebView.postMessage');
   });
 
   it('plays inline and automatically, rather than opening the YouTube app', () => {
     const html = buildEmbedHtml('dQw4w9WgXcQ')!;
 
-    expect(html).toContain('playsinline=1');
-    expect(html).toContain('autoplay=1');
-    expect(html).toContain('allow="autoplay');
+    expect(html).toContain('playsinline: 1');
+    expect(html).toContain('autoplay: 1');
   });
 
   /**
-   * The id is the only interpolated value, so it is validated here rather than
-   * relying on every caller to have checked first — otherwise a stored id
-   * could close the attribute and inject markup into the page.
+   * The id is the only interpolated value and it now lands inside a script, so
+   * it is validated here rather than relying on every caller to have checked
+   * first.
    */
   it('refuses an id that is not exactly a YouTube id', () => {
-    for (const bad of ['', 'x" onload="alert(1)', '../../evil', 'dQw4w9WgXc', '<script>']) {
+    for (const bad of ['', "x' + alert(1) + '", '../../evil', 'dQw4w9WgXc', '<script>']) {
       expect(buildEmbedHtml(bad)).toBeNull();
     }
   });
 
-  it('never emits a quote that could escape the src attribute', () => {
+  it('never emits a quote that could break out of the script', () => {
     const html = buildEmbedHtml('dQw4w9WgXcQ')!;
-    const src = html.slice(html.indexOf('src="') + 5);
+    const videoId = html.slice(html.indexOf('videoId:'));
 
-    expect(src.slice(0, src.indexOf('"'))).not.toContain('<');
+    expect(videoId.slice(0, videoId.indexOf(','))).toBe("videoId: 'dQw4w9WgXcQ'");
+  });
+});
+
+describe('parseEmbedMessage', () => {
+  it('reads the codes the player reports', () => {
+    expect(parseEmbedMessage('{"type":"error","code":"150"}')).toEqual({ type: 'error', code: '150' });
+    expect(parseEmbedMessage('{"type":"ready"}')).toEqual({ type: 'ready' });
+  });
+
+  /** The page is remote content, so this channel is untrusted input. */
+  it('ignores anything that is not one of those', () => {
+    for (const bad of ['', 'not json', 'null', '[]', '{"type":"navigate","url":"http://evil"}']) {
+      expect(parseEmbedMessage(bad)).toBeNull();
+    }
+  });
+
+  it('still reports an error whose code is missing or not a string', () => {
+    expect(parseEmbedMessage('{"type":"error"}')).toEqual({ type: 'error', code: 'unknown' });
+    expect(parseEmbedMessage('{"type":"error","code":150}')).toEqual({ type: 'error', code: 'unknown' });
+  });
+});
+
+describe('watchOnYoutubeUrl', () => {
+  /** An embed can fail for reasons no client can fix; the video still exists. */
+  it('offers the real video as a way out', () => {
+    expect(watchOnYoutubeUrl('dQw4w9WgXcQ')).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    expect(watchOnYoutubeUrl('nope')).toBeNull();
   });
 });

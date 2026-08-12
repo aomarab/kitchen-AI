@@ -136,6 +136,12 @@ export const mobileEn = {
       keepMeal: 'Keep this meal',
       regenerating: 'Finding another meal…',
     },
+    item: {
+      nameLabel: 'Name',
+      namePlaceholder: 'What you call it',
+      nameHint: 'Only your household sees this name.',
+      resetName: 'Use catalog name',
+    },
     recipe: {
       startCooking: 'Start cooking',
       cookModeHint: 'Your screen stays awake while you cook.',
@@ -146,6 +152,7 @@ export const mobileEn = {
       exitCookMode: 'Exit',
       watchOnYoutube: 'Watch on YouTube',
       videoUnavailable: 'This video cannot be played right now.',
+      openInYoutube: 'Open in YouTube',
       imageLabel: 'Recipe image for {title}',
     },
     more: {

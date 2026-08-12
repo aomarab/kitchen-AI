@@ -149,6 +149,12 @@ export const mobileAr: MobileMessages = {
       keepMeal: 'الإبقاء على هذه الوجبة',
       regenerating: 'جارٍ اقتراح وجبة أخرى…',
     },
+    item: {
+      nameLabel: 'الاسم',
+      namePlaceholder: 'ما تسمّيه في بيتكم',
+      nameHint: 'هذا الاسم يظهر لأفراد منزلك فقط.',
+      resetName: 'استخدم اسم الفهرس',
+    },
     recipe: {
       startCooking: 'ابدأ الطهي',
       cookModeHint: 'تبقى الشاشة مضاءة أثناء الطهي.',
@@ -159,6 +165,7 @@ export const mobileAr: MobileMessages = {
       exitCookMode: 'خروج',
       watchOnYoutube: 'شاهد على يوتيوب',
       videoUnavailable: 'لا يمكن تشغيل هذا الفيديو الآن.',
+      openInYoutube: 'افتح في يوتيوب',
       imageLabel: 'صورة لوصفة {title}',
     },
     more: {
