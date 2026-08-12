@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { createTestContext, seedHousehold, seedUser, cleanup } from '../testing/harness.js';
@@ -5,6 +6,20 @@ import { creditLedger, creditPurchases } from '../db/schema.js';
 import { CreditsService } from './credits.service.js';
 import { PurchaseService } from './purchase.service.js';
 import { MockPaymentVerifier, type PaymentVerifier } from './payment-verifier.js';
+
+/**
+ * Store transaction ids must be unique per run, not per file.
+ *
+ * `store_transaction_id` is UNIQUE, and a duplicate is deliberately swallowed
+ * as "already credited" — that is the production behaviour these tests exist to
+ * pin. So a fixed id left behind by an interrupted run (afterAll never reached)
+ * makes every later run credit nothing and fail, forever, until someone deletes
+ * the row by hand. The failure looks like a broken service rather than dirty
+ * state, which is what makes it expensive. Reuse *within* a test still means
+ * "the same purchase arriving twice"; only the run is namespaced.
+ */
+const RUN = randomUUID().slice(0, 8);
+const txn = (name: string) => `txn-${name}-${RUN}`;
 
 const ctx = createTestContext();
 const createdHouseholds: string[] = [];
@@ -33,7 +48,7 @@ describe('PurchaseService', () => {
     const intent = await purchases.createIntent(householdId, userId, 'credits_300');
     const balance = await purchases.confirm(householdId, {
       intentId: intent.intentId,
-      storeTransactionId: 'txn-1',
+      storeTransactionId: txn('1'),
       store: 'apple',
     });
     expect(balance.paidBalance).toBe(300);
@@ -43,7 +58,7 @@ describe('PurchaseService', () => {
     const intent = await purchases.createIntent(householdId, userId, 'credits_300');
     const balance = await purchases.confirm(householdId, {
       intentId: intent.intentId,
-      storeTransactionId: 'txn-bucket',
+      storeTransactionId: txn('bucket'),
       store: 'apple',
     });
     // Purchased credits must never expire, so they are the paid bucket only.
@@ -64,12 +79,12 @@ describe('PurchaseService', () => {
     const intent = await purchases.createIntent(householdId, userId, 'credits_300');
     await purchases.confirm(householdId, {
       intentId: intent.intentId,
-      storeTransactionId: 'txn-2',
+      storeTransactionId: txn('2'),
       store: 'apple',
     });
     await purchases.confirm(householdId, {
       intentId: intent.intentId,
-      storeTransactionId: 'txn-2',
+      storeTransactionId: txn('2'),
       store: 'apple',
     });
 
@@ -82,13 +97,13 @@ describe('PurchaseService', () => {
     await Promise.all([
       purchases.confirm(householdId, {
         intentId: intent.intentId,
-        storeTransactionId: 'txn-3',
+        storeTransactionId: txn('3'),
         store: 'apple',
       }),
       purchases.applyWebhook({
         type: 'INITIAL_PURCHASE',
         intentId: intent.intentId,
-        storeTransactionId: 'txn-3',
+        storeTransactionId: txn('3'),
         productId: 'credits_300',
         store: 'apple',
       }),
@@ -103,7 +118,7 @@ describe('PurchaseService', () => {
     const event = {
       type: 'INITIAL_PURCHASE',
       intentId: intent.intentId,
-      storeTransactionId: 'txn-redeliver',
+      storeTransactionId: txn('redeliver'),
       productId: 'credits_300',
       store: 'apple' as const,
     };
@@ -118,7 +133,7 @@ describe('PurchaseService', () => {
     const intentA = await purchases.createIntent(householdId, userId, 'credits_300');
     await purchases.confirm(householdId, {
       intentId: intentA.intentId,
-      storeTransactionId: 'txn-dup',
+      storeTransactionId: txn('dup'),
       store: 'apple',
     });
 
@@ -128,7 +143,7 @@ describe('PurchaseService', () => {
     // and not a second grant.
     await purchases.confirm(householdId, {
       intentId: intentB.intentId,
-      storeTransactionId: 'txn-dup',
+      storeTransactionId: txn('dup'),
       store: 'apple',
     });
 
@@ -147,7 +162,7 @@ describe('PurchaseService', () => {
     await purchases.applyWebhook({
       type: 'INITIAL_PURCHASE',
       intentId: intent.intentId,
-      storeTransactionId: 'txn-4',
+      storeTransactionId: txn('4'),
       productId: 'credits_300',
       store: 'apple',
     });
@@ -170,7 +185,7 @@ describe('PurchaseService', () => {
     await expect(
       guarded.confirm(householdId, {
         intentId: intent.intentId,
-        storeTransactionId: 'txn-reject',
+        storeTransactionId: txn('reject'),
         store: 'apple',
       }),
     ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
@@ -191,7 +206,7 @@ describe('PurchaseService', () => {
     const intent = await purchases.createIntent(householdId, userId, 'credits_300');
     await purchases.confirm(householdId, {
       intentId: intent.intentId,
-      storeTransactionId: 'txn-5',
+      storeTransactionId: txn('5'),
       store: 'apple',
     });
 
@@ -201,7 +216,7 @@ describe('PurchaseService', () => {
     await purchases.applyWebhook({
       type: 'CANCELLATION',
       intentId: intent.intentId,
-      storeTransactionId: 'txn-5',
+      storeTransactionId: txn('5'),
       productId: 'credits_300',
       store: 'apple',
     });
@@ -212,7 +227,7 @@ describe('PurchaseService', () => {
     const [row] = await ctx.db
       .select()
       .from(creditPurchases)
-      .where(eq(creditPurchases.storeTransactionId, 'txn-5'));
+      .where(eq(creditPurchases.storeTransactionId, txn('5')));
     expect(row?.status).toBe('refunded');
   });
 
@@ -237,7 +252,7 @@ describe('PurchaseService', () => {
     await expect(
       flakyPurchases.confirm(householdId, {
         intentId: intent.intentId,
-        storeTransactionId: 'txn-crash',
+        storeTransactionId: txn('crash'),
         store: 'apple',
       }),
     ).rejects.toThrow(/simulated crash/);
@@ -255,7 +270,7 @@ describe('PurchaseService', () => {
     await flakyPurchases.applyWebhook({
       type: 'INITIAL_PURCHASE',
       intentId: intent.intentId,
-      storeTransactionId: 'txn-crash',
+      storeTransactionId: txn('crash'),
       productId: 'credits_300',
       store: 'apple',
     });
