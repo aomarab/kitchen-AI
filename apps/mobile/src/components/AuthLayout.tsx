@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Screen } from './Screen';
 import { AppText } from './AppText';
-import { radius, spacing } from '../theme';
+import { DirectionalIcon } from './DirectionalIcon';
+import { useLocale } from '../lib/locale';
+import { hitSlop, radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 export interface AuthLayoutProps {
@@ -18,6 +21,12 @@ export interface AuthLayoutProps {
  */
 export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
   const { colors } = useTheme();
+  const { t } = useLocale();
+  const router = useRouter();
+  // Only when there is somewhere to return to. These screens are also the
+  // destination after signing out, where the stack is empty and a back arrow
+  // would be a dead control.
+  const canGoBack = router.canGoBack();
 
   return (
     <Screen
@@ -27,6 +36,17 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
       style={{ backgroundColor: colors.surfaceInverse }}
     >
       <View style={{ padding: spacing.lg, gap: spacing.xs }}>
+        {canGoBack ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back')}
+            hitSlop={hitSlop}
+            onPress={() => router.back()}
+            style={{ alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' }}
+          >
+            <DirectionalIcon name="back" size={26} color={colors.textInverse} />
+          </Pressable>
+        ) : null}
         <AppText variant="display" color="textInverse">
           {title}
         </AppText>

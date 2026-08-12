@@ -344,6 +344,17 @@ export const mobileEn = {
       cancel: 'Cancel',
       working: 'Deleting…',
     },
+    welcome: {
+      tagline: 'Cook what you already have.',
+      snapTitle: 'Snap your kitchen',
+      snapBody: 'One photo and we list what is inside, down to the quantities.',
+      planTitle: 'Meals that actually fit',
+      planBody: 'Plans built from the ingredients you own, not a shopping trip.',
+      wasteTitle: 'Nothing goes to waste',
+      wasteBody: 'A quiet nudge before anything passes its date.',
+      getStarted: 'Get started',
+      haveAccount: 'I already have an account',
+    },
     auth: {
       welcomeTitle: 'Welcome back',
       welcomeSubtitle: 'Cook what you already have.',

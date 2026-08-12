@@ -50,7 +50,10 @@ export default function DeleteAccount() {
     if (!canSubmit) return;
     mutation.mutate(
       { password: user.hasPassword ? password : undefined },
-      { onSuccess: () => router.replace('/sign-in') },
+      // Welcome, not sign-in: the account this user would have signed into no
+      // longer exists, so the only real options are creating a new one or
+      // reading what the app is before deciding.
+      { onSuccess: () => router.replace('/welcome') },
     );
   };
 

@@ -395,6 +395,17 @@ export const mobileAr: MobileMessages = {
       cancel: 'إلغاء',
       working: 'جارٍ الحذف…',
     },
+    welcome: {
+      tagline: 'اطبخ مما لديك بالفعل.',
+      snapTitle: 'صوّر مطبخك',
+      snapBody: 'صورة واحدة ونحصي لك ما بداخله، حتى الكميات.',
+      planTitle: 'وجبات تناسب ما لديك',
+      planBody: 'خطط مبنية على المكونات التي تملكها، لا على جولة تسوق.',
+      wasteTitle: 'لا شيء يذهب هدراً',
+      wasteBody: 'تنبيه هادئ قبل أن ينتهي تاريخ أي صنف.',
+      getStarted: 'ابدأ الآن',
+      haveAccount: 'لدي حساب بالفعل',
+    },
     auth: {
       welcomeTitle: 'مرحبًا بعودتك',
       welcomeSubtitle: 'اطبخ مما لديك بالفعل.',

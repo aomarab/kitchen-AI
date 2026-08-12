@@ -16,6 +16,7 @@ import { configureNotificationHandler } from '../lib/notification-scheduler';
 import { setMockLocale } from '../mocks';
 import { startConnectivityMonitor } from '../stores/connectivity';
 import { useAuthStore } from '../stores/auth';
+import { shouldRedirectSignedOut } from '../lib/entry-route';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { SyncFailuresBanner } from '../components/SyncFailuresBanner';
 import { useTheme } from '../theme/useTheme';
@@ -47,10 +48,7 @@ function useSignedOutRedirect(ready: boolean): void {
   const status = useAuthStore((state) => state.status);
 
   useEffect(() => {
-    if (!ready || status !== 'signedOut') return;
-    // The auth group is already the destination; redirecting again would fight
-    // the user typing their password.
-    if (segments[0] === '(auth)') return;
+    if (!shouldRedirectSignedOut(ready, status, segments)) return;
     router.replace('/sign-in');
   }, [ready, status, segments, router]);
 }
