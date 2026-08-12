@@ -52,4 +52,19 @@ describe('dishKey', () => {
     expect(GENERIC_TOKENS).toContain('recipe');
     expect(GENERIC_TOKENS).toContain('طريقة');
   });
+  it('folds a conjunction or preposition carried in front of the article', () => {
+    // Recipe titles attach these to the noun: `بالجبنة` is "with the cheese".
+    // Left alone, the same dish written two ways files under two cache keys.
+    expect(dishKey('شكشوكة بالجبنة', 'ar')).toBe(dishKey('شكشوكة جبنة', 'ar'));
+    expect(dishKey('توست والعسل', 'ar')).toBe(dishKey('توست عسل', 'ar'));
+    expect(dishKey('صينية للدجاج', 'ar')).toBe(dishKey('صينية دجاج', 'ar'));
+  });
+
+  it('leaves an ingredient that merely begins with those letters intact', () => {
+    // `بصل` (onion) and `بطاطس` (potato) are not prefixed words, and `بالغ`
+    // is too short to survive losing three letters.
+    expect(dishKey('بصل مشوي', 'ar')).toContain('بصل');
+    expect(dishKey('بطاطس مقلية', 'ar')).toContain('بطاطس');
+    expect(dishKey('بالغ', 'ar')).toBe('ar:بالغ');
+  });
 });

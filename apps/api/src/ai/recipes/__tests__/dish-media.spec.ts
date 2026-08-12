@@ -13,6 +13,14 @@ import { MediaService } from '../media.service.js';
 
 const KEY = 'en:test-dish-media';
 
+/**
+ * One resolve issues two searches — the full title and the dish head word —
+ * because a descriptive generated title often matches nothing on its own. The
+ * caching assertions below count searches, so they compare against this rather
+ * than a bare 1 and keep testing "did it search again", not "how many calls".
+ */
+const SEARCHES_PER_RESOLVE = 2;
+
 function candidate(overrides: Partial<YoutubeVideo> = {}): YoutubeVideo {
   return {
     youtubeId: 'vid-1',
@@ -119,7 +127,7 @@ describe('MediaService (dish-level media resolution)', () => {
     await service.resolve(KEY, 'Chicken kabsa', 'en');
     const second = await service.resolve(KEY, 'Chicken kabsa', 'en');
 
-    expect(youtube.calls).toBe(1);
+    expect(youtube.calls).toBe(SEARCHES_PER_RESOLVE);
     expect(second.status).toBe('matched');
     expect(second.videos.map((v) => v.youtubeId)).toEqual(['vid-1']);
   });
@@ -134,7 +142,7 @@ describe('MediaService (dish-level media resolution)', () => {
 
     expect(first.status).toBe('none');
     expect(first.heroThumbnailUrl).toBeNull();
-    expect(youtube.calls).toBe(1);
+    expect(youtube.calls).toBe(SEARCHES_PER_RESOLVE);
     expect(second.status).toBe('none');
     expect((await readRow())?.status).toBe('none');
   });
@@ -155,7 +163,7 @@ describe('MediaService (dish-level media resolution)', () => {
     const recovered = clientReturning(candidate());
     const media = await build(recovered).resolve(KEY, 'Chicken kabsa', 'en');
 
-    expect(recovered.calls).toBe(1);
+    expect(recovered.calls).toBe(SEARCHES_PER_RESOLVE);
     expect(media.status).toBe('matched');
   });
 
@@ -183,7 +191,7 @@ describe('MediaService (dish-level media resolution)', () => {
     const youtube = clientReturning(candidate());
     await build(youtube).resolve(KEY, 'Chicken kabsa', 'en');
 
-    expect(youtube.calls).toBe(1);
+    expect(youtube.calls).toBe(SEARCHES_PER_RESOLVE);
     const row = await readRow();
     expect(row?.resolvedAt.getTime()).toBeGreaterThan(
       Date.now() - VIDEO_CACHE_TTL_DAYS * 86_400_000,

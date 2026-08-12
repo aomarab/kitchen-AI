@@ -4,8 +4,12 @@ import type { Locale } from '@kitchen/contracts';
 import { DB, type Database } from '../../db/index.js';
 import { dishMedia, dishVideos } from '../../db/schema.js';
 import { VIDEO_CACHE_TTL_DAYS, YOUTUBE_CLIENT } from '../ai.constants.js';
-import { YoutubeUnavailableError, type YoutubeClient } from '../clients/clients.interface.js';
-import { dishKey } from './dish-key.js';
+import {
+  YoutubeUnavailableError,
+  type YoutubeClient,
+  type YoutubeVideo,
+} from '../clients/clients.interface.js';
+import { dishHeadQuery, dishKey } from './dish-key.js';
 import { scoreCandidate } from './relevance.js';
 
 export interface DishMediaVideo {
@@ -88,7 +92,7 @@ export class MediaService {
 
     let candidates;
     try {
-      candidates = await this.youtube.search(title, locale);
+      candidates = await this.searchCandidates(title, locale);
     } catch (err) {
       if (err instanceof YoutubeUnavailableError) return this.degrade(key, locale);
       throw err;
@@ -104,6 +108,29 @@ export class MediaService {
     if (survivors.length === 0) return this.persistNone(key, locale);
 
     return this.persistMatch(key, locale, survivors);
+  }
+
+  /**
+   * Two searches, because the two failure modes are opposite. A generated title
+   * is descriptive enough that YouTube often matches nothing and falls back to
+   * loosely related cooking videos — searching `شكشوكة ناعمة بالجبنة الكريمية`
+   * returns no shakshuka at all, while searching `شكشوكة` returns seven. The
+   * dish word alone, though, never surfaces the video that happens to match the
+   * whole phrase. Running both and ranking the union keeps the recall of the
+   * first and the precision of the second; the relevance gate discards the rest,
+   * and a dish is resolved once per thirty days, so the extra call is cheap.
+   */
+  private async searchCandidates(title: string, locale: Locale): Promise<YoutubeVideo[]> {
+    const head = dishHeadQuery(title, locale);
+    const queries = head === title ? [title] : [title, head];
+    const results = await Promise.all(queries.map((query) => this.youtube.search(query, locale)));
+
+    const byId = new Map<string, YoutubeVideo>();
+    for (const video of results.flat()) {
+      if (!byId.has(video.youtubeId)) byId.set(video.youtubeId, video);
+    }
+
+    return [...byId.values()];
   }
 
   private async readFresh(key: string, locale: Locale): Promise<DishMedia | null> {
