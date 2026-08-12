@@ -1,5 +1,5 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import type * as NotificationsModule from 'expo-notifications';
 import type { Translator } from '@kitchen/i18n';
 import type { PendingNotification } from './notifications';
 
@@ -11,6 +11,52 @@ import type { PendingNotification } from './notifications';
  * device, so it is kept as small and as boring as possible.
  */
 
+type NotificationsApi = typeof NotificationsModule;
+
+let resolved: NotificationsApi | null | undefined;
+
+/**
+ * Is the native half of the notifications module actually in this binary?
+ *
+ * This is the same check Expo's own `requireOptionalNativeModule` makes,
+ * inlined so that reading it costs nothing and cannot itself throw.
+ */
+function nativeModuleInstalled(name: string): boolean {
+  const registry = (globalThis as { expo?: { modules?: Record<string, unknown> } }).expo?.modules;
+  return Boolean(registry?.[name]);
+}
+
+/**
+ * Loaded lazily, and allowed to be missing.
+ *
+ * `expo-notifications` calls `requireNativeModule` for ten native modules as
+ * it is imported, and each one *throws* when the binary predates the
+ * dependency. Because this file is reached from the root layout, that throw
+ * took the entire app down to a red screen before a single pixel rendered —
+ * no kitchen, no pantry, no plans, over a feature the user may never have
+ * switched on.
+ *
+ * The JS and the native binary drift apart routinely here: the dev server
+ * serves today's JavaScript to whatever build happens to be installed. So the
+ * registry is asked first, and the import only happens once the answer is yes.
+ * A `try` around it is not enough on its own — the throw escapes it — but it
+ * stays as a second line of defence for the other nine modules.
+ */
+function api(): NotificationsApi | null {
+  if (resolved !== undefined) return resolved;
+  if (!nativeModuleInstalled('ExpoNotificationScheduler')) {
+    resolved = null;
+    return resolved;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    resolved = require('expo-notifications') as NotificationsApi;
+  } catch {
+    resolved = null;
+  }
+  return resolved;
+}
+
 /**
  * Delivered while the app is open, too.
  *
@@ -19,7 +65,9 @@ import type { PendingNotification } from './notifications';
  * the moment someone is testing whether notifications work.
  */
 export function configureNotificationHandler(): void {
-  Notifications.setNotificationHandler({
+  const notifications = api();
+  if (!notifications) return;
+  notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
       shouldShowList: true,
@@ -29,10 +77,13 @@ export function configureNotificationHandler(): void {
   });
 }
 
-export type PermissionState = 'granted' | 'denied' | 'undetermined';
+/** `unavailable` means this build cannot notify at all — not that it was refused. */
+export type PermissionState = 'granted' | 'denied' | 'undetermined' | 'unavailable';
 
 export async function currentPermission(): Promise<PermissionState> {
-  const { status } = await Notifications.getPermissionsAsync();
+  const notifications = api();
+  if (!notifications) return 'unavailable';
+  const { status } = await notifications.getPermissionsAsync();
   if (status === 'granted') return 'granted';
   if (status === 'denied') return 'denied';
   return 'undetermined';
@@ -47,9 +98,11 @@ export async function currentPermission(): Promise<PermissionState> {
  * ask — never on first launch, before the user has any food to be reminded of.
  */
 export async function requestPermission(): Promise<PermissionState> {
+  const notifications = api();
+  if (!notifications) return 'unavailable';
   const existing = await currentPermission();
   if (existing !== 'undetermined') return existing;
-  const { status } = await Notifications.requestPermissionsAsync();
+  const { status } = await notifications.requestPermissionsAsync();
   return status === 'granted' ? 'granted' : 'denied';
 }
 
@@ -86,15 +139,17 @@ export async function applyNotificationPlan(
   plan: readonly PendingNotification[],
   t: Translator,
 ): Promise<number> {
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  const notifications = api();
+  if (!notifications) return 0;
+  await notifications.cancelAllScheduledNotificationsAsync();
 
   let scheduled = 0;
   for (const notification of plan) {
     const { title, body } = textFor(notification, t);
-    await Notifications.scheduleNotificationAsync({
+    await notifications.scheduleNotificationAsync({
       content: { title, body, data: { kind: notification.kind } },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        type: notifications.SchedulableTriggerInputTypes.DATE,
         date: notification.fireAt,
       },
     });
@@ -104,7 +159,9 @@ export async function applyNotificationPlan(
 }
 
 export async function cancelAllNotifications(): Promise<void> {
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  const notifications = api();
+  if (!notifications) return;
+  await notifications.cancelAllScheduledNotificationsAsync();
 }
 
 /**
@@ -113,8 +170,10 @@ export async function cancelAllNotifications(): Promise<void> {
  */
 export async function ensureAndroidChannel(name: string): Promise<void> {
   if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync('kitchen-reminders', {
+  const notifications = api();
+  if (!notifications) return;
+  await notifications.setNotificationChannelAsync('kitchen-reminders', {
     name,
-    importance: Notifications.AndroidImportance.DEFAULT,
+    importance: notifications.AndroidImportance.DEFAULT,
   });
 }

@@ -232,6 +232,7 @@ export const mobileAr: MobileMessages = {
       }),
       reminderTime: 'وقت التنبيه',
       permissionDenied: 'التنبيهات مغلقة لهذا التطبيق. افتح الإعدادات للسماح بها.',
+      permissionUnavailable: 'التذكيرات تحتاج نسخة أحدث من التطبيق. حدّثه لتفعيلها.',
       openSettings: 'افتح الإعدادات',
       scheduled: plural('count', {
         zero: 'لا يوجد ما يستدعي التنبيه بعد.',

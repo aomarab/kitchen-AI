@@ -154,6 +154,17 @@ export function NotificationSettings() {
           />
         </View>
       ) : null}
+
+      {/*
+        The JS is newer than the binary it is running inside, so the native
+        notification module simply isn't there. Nothing in the OS Settings app
+        can fix that, so this state deliberately offers no button.
+      */}
+      {permission === 'unavailable' && (notifyExpiry || notifyMeals) ? (
+        <AppText variant="caption" color="danger">
+          {t('mobile.settings.permissionUnavailable')}
+        </AppText>
+      ) : null}
     </Card>
   );
 }

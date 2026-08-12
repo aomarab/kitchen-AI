@@ -56,12 +56,26 @@ function useSignedOutRedirect(ready: boolean): void {
   }, [ready, status, segments, router]);
 }
 
+/**
+ * Hooks that read the TanStack Query *context* cannot live in `RootLayout`,
+ * because `RootLayout` is the component that renders `QueryClientProvider` —
+ * a provider is not inside its own value. Calling one there throws
+ * "No QueryClient set" and takes the entire app down to a red screen.
+ *
+ * `useOfflineSync` gets away with sitting in `RootLayout` only because it
+ * imports the `queryClient` singleton directly instead of reading context.
+ * Anything using `useQuery` needs to be mounted here instead.
+ */
+function QueryScopedEffects() {
+  useNotificationScheduler();
+  return null;
+}
+
 export default function RootLayout() {
   const { locale, dir } = useLocale();
   const ready = useBootstrap();
   useAppFonts();
   useOfflineSync();
-  useNotificationScheduler();
   useSignedOutRedirect(ready);
 
   useEffect(() => {
@@ -84,6 +98,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, direction: dir }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
+          <QueryScopedEffects />
           <StatusBar style="dark" />
           <Stack
             screenOptions={{
