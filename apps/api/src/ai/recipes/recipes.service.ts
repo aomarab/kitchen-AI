@@ -24,6 +24,7 @@ import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { convert } from '../planner/units.js';
 import { MediaService, type DishMedia } from './media.service.js';
 import { toRecipe, type FullRecipeRow, type ResolvedMedia } from './recipe-mapper.js';
+import { RecipeTranslationService } from './translation.service.js';
 
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
@@ -33,6 +34,7 @@ export class RecipesService {
     @Inject(DB) private readonly db: Database,
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
     @Inject(MediaService) private readonly media: MediaService,
+    @Inject(RecipeTranslationService) private readonly translation: RecipeTranslationService,
   ) {}
 
   /**
@@ -42,8 +44,16 @@ export class RecipesService {
    * for every other household that generates it.
    */
   async getRecipe(householdId: string, id: string, requested?: Locale): Promise<Recipe> {
-    const row = await this.loadRecipe(householdId, id);
+    let row = await this.loadRecipe(householdId, id);
     const locale = requested ?? (row.titleEn ? 'en' : 'ar');
+
+    // Opening a recipe is the moment its body is worth translating: it is one
+    // recipe, someone is reading it now, and the result is cached for good.
+    // Re-read rather than trusting the write, so the screen shows what was
+    // actually stored.
+    if (await this.translation.ensureRecipe(householdId, id, locale)) {
+      row = await this.loadRecipe(householdId, id);
+    }
     const [snapshot, media] = await Promise.all([
       this.pantry.snapshot(householdId),
       this.resolveMedia(row, locale),

@@ -4,6 +4,7 @@ import { CREDIT_COSTS } from '@kitchen/contracts';
 import type { VisionResult } from '@kitchen/contracts';
 import { creditActionForScope } from './credit-actions.js';
 import { MediaService } from '../ai/recipes/media.service.js';
+import type { RecipeTranslationService } from '../ai/recipes/translation.service.js';
 import { createTestContext, seedHousehold, seedUser, cleanup } from '../testing/harness.js';
 import {
   creditLedger,
@@ -294,7 +295,7 @@ function makePlanProcessor(credits: CreditsService, plannerImpl?: Partial<Planne
   } as unknown as PlannerService;
   return new PlanProcessor(store, planner, credits, {
     warmMedia: async () => 0,
-  } as unknown as PlanService);
+  } as unknown as PlanService, { warmPlanTitles: async () => 0 } as unknown as RecipeTranslationService);
 }
 
 function makeReceiptProcessor(credits: CreditsService, receiptImpl?: Partial<ReceiptService>) {

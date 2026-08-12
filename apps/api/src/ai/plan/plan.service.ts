@@ -81,18 +81,34 @@ export class PlanService {
       with: { entries: { with: { recipe: true } } },
     });
     const media = await this.mediaFor(
-      rows.flatMap((row) => row.entries.map((entry) => ({ entry, locale: (row.locale as Locale) ?? 'en' }))),
+      rows.flatMap((row) =>
+        row.entries.map((entry) => ({ entry, locale: this.readingLocale(row, query.locale) })),
+      ),
     );
-    return rows.map((row) => this.toMealPlan(row, media));
+    return rows.map((row) => this.toMealPlan(row, media, query.locale));
   }
 
-  async get(householdId: string, id: string): Promise<MealPlan> {
+  async get(householdId: string, id: string, requested?: Locale): Promise<MealPlan> {
     const row = await this.loadPlan(householdId, id);
-    const locale = (row.locale as Locale) ?? 'en';
+    const locale = this.readingLocale(row, requested);
     return this.toMealPlan(
       row,
       await this.mediaFor(row.entries.map((entry) => ({ entry, locale }))),
+      requested,
     );
+  }
+
+  /**
+   * The language to render a plan in.
+   *
+   * A plan is generated in one language and then read in whichever the reader
+   * has chosen, which are not the same thing — defaulting to the plan's own
+   * language left a household that switched to English staring at Arabic. The
+   * reader's choice wins; the plan's language is only the fallback for a client
+   * that did not say.
+   */
+  private readingLocale(row: { locale: string | null }, requested?: Locale): Locale {
+    return requested ?? (row.locale as Locale) ?? 'en';
   }
 
   /**
@@ -332,8 +348,8 @@ export class PlanService {
     locale: string;
     createdAt: Date;
     entries: EntryWithRecipe[];
-  }, media: Map<string, ResolvedMedia>): MealPlan {
-    const locale = (row.locale as Locale) ?? 'en';
+  }, media: Map<string, ResolvedMedia>, requested?: Locale): MealPlan {
+    const locale = this.readingLocale(row, requested);
     const entries = [...row.entries]
       .sort((a, b) => a.date.localeCompare(b.date) || a.position - b.position)
       .map((e) => this.toEntry(e, locale, media));

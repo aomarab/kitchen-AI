@@ -47,6 +47,7 @@ import {
   addShoppingItemsRequestSchema,
   checkoutShoppingRequestSchema,
   generatePlanRequestSchema,
+  getPlanQuerySchema,
   listPlansQuerySchema,
   mealPlanEntrySchema,
   mealPlanSchema,
@@ -443,6 +444,7 @@ export const routes = {
     auth: true,
     household: true,
     params: idParamSchema,
+    query: getPlanQuerySchema,
     response: mealPlanSchema,
   },
   deletePlan: {

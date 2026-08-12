@@ -53,7 +53,7 @@ describe('markCooked refuses a meal-plan entry from another household', () => {
 
   it('throws NOT_FOUND when the entry belongs to another household', async () => {
     const { db, update } = fakeDb([]);
-    const service = new RecipesService(db, {} as never, {} as never);
+    const service = new RecipesService(db, {} as never, {} as never, {} as never);
 
     await expect(
       service.markCooked('hh-x', 'user-x', 'r1', {
@@ -68,7 +68,7 @@ describe('markCooked refuses a meal-plan entry from another household', () => {
 
   it('marks the entry cooked when it belongs to the caller', async () => {
     const { db, update } = fakeDb([{ id: 'entry-owned-by-hh-x' }]);
-    const service = new RecipesService(db, {} as never, {} as never);
+    const service = new RecipesService(db, {} as never, {} as never, {} as never);
 
     await service.markCooked('hh-x', 'user-x', 'r1', {
       mealPlanEntryId: 'entry-owned-by-hh-x',

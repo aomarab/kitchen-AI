@@ -1,20 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ListPlansQuery, RouteBody } from '@kitchen/contracts';
 import { api } from '../lib/api';
+import { useLocale } from '../lib/locale';
 import { uuidv4 } from '../lib/uuid';
 import { qk } from './keys';
 
+/**
+ * The reading language travels with the request and is part of the cache key.
+ *
+ * A plan is generated in one language and stored in both, so the server cannot
+ * know which one to render unless it is told — and without the key, switching
+ * language would redisplay the previous language's cached response.
+ */
 export function usePlans(query?: ListPlansQuery) {
+  const { locale } = useLocale();
+  const withLocale = { ...(query ?? {}), locale };
   return useQuery({
-    queryKey: qk.plans(query),
-    queryFn: () => api.call('listPlans', { query: query ?? {} }),
+    queryKey: qk.plans(withLocale),
+    queryFn: () => api.call('listPlans', { query: withLocale }),
   });
 }
 
 export function usePlan(id: string | null) {
+  const { locale } = useLocale();
   return useQuery({
-    queryKey: qk.plan(id ?? 'none'),
-    queryFn: () => api.call('getPlan', { params: { id: id! } }),
+    queryKey: qk.plan(id ?? 'none', locale),
+    queryFn: () => api.call('getPlan', { params: { id: id! }, query: { locale } }),
     enabled: !!id,
   });
 }
@@ -41,7 +52,7 @@ export function useUpdatePlanEntry(planId: string) {
     mutationFn: (vars: { entryId: string; body: RouteBody<'updatePlanEntry'> }) =>
       api.call('updatePlanEntry', { params: { id: planId, entryId: vars.entryId }, body: vars.body }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: qk.plan(planId) });
+      void qc.invalidateQueries({ queryKey: ['plan', planId] });
       void qc.invalidateQueries({ queryKey: qk.planCoverage(planId) });
     },
   });
@@ -58,7 +69,7 @@ export function useRegeneratePlanEntry(planId: string) {
         idempotencyKey: uuidv4(),
       }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: qk.plan(planId) });
+      void qc.invalidateQueries({ queryKey: ['plan', planId] });
       void qc.invalidateQueries({ queryKey: qk.planCoverage(planId) });
     },
   });

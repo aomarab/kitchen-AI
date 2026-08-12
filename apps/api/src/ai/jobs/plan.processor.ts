@@ -5,6 +5,7 @@ import { JOB_STORE, QUEUE_PLAN } from '../ai.constants.js';
 import { CreditsService } from '../../credits/credits.service.js';
 import { PlannerService } from '../planner/planner.service.js';
 import { PlanService } from '../plan/plan.service.js';
+import { RecipeTranslationService } from '../recipes/translation.service.js';
 import type { JobStore } from './job-store.js';
 import type { PlanJobPayload } from './jobs.service.js';
 import { describeJobError, toJobError } from './job-error.js';
@@ -21,6 +22,7 @@ export class PlanProcessor extends WorkerHost {
     @Inject(PlannerService) private readonly planner: PlannerService,
     @Inject(CreditsService) private readonly credits: CreditsService,
     @Inject(PlanService) private readonly plans: PlanService,
+    @Inject(RecipeTranslationService) private readonly translation: RecipeTranslationService,
   ) {
     super();
   }
@@ -46,6 +48,13 @@ export class PlanProcessor extends WorkerHost {
       // already charged, so a YouTube failure here would refund and fail a job
       // that in fact succeeded.
       await this.store.markDone(jobId, { kind: 'meal_plan', id: planId });
+      // Dish names in both languages, so a household that reads in the other
+      // one gets a board it can read instead of the language the plan happened
+      // to be generated in. One cheap call for the whole plan; recipe bodies
+      // follow lazily when a dish is opened.
+      await this.translation
+        .warmPlanTitles(row.householdId, planId)
+        .catch((err) => this.logger.warn(`job ${jobId} title translation failed: ${String(err)}`));
       await this.plans
         .warmMedia(row.householdId, planId)
         .catch((err) => this.logger.warn(`job ${jobId} media warm failed: ${String(err)}`));

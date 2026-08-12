@@ -4,6 +4,7 @@ import type {
   PlanPromptContext,
   ReceiptMapContext,
   TranslateRecipeContext,
+  TranslateTitlesContext,
   VisionPromptContext,
 } from '../prompts/prompt.types.js';
 import { buildMockPlan, INVALID_PLAN_RAW } from '../fixtures/plan.fixtures.js';
@@ -15,8 +16,13 @@ import {
 } from '../fixtures/receipt.fixtures.js';
 import {
   buildMockNameResolution,
+  buildMockTitlesTranslation,
   buildMockTranslation,
 } from '../fixtures/name-resolution.fixtures.js';
+
+function isTitlesContext(context: unknown): context is TranslateTitlesContext {
+  return typeof context === 'object' && context !== null && 'titles' in context;
+}
 
 /**
  * Fixture-backed provider, selected when `env.AI_MOCK` is true. Returns realistic
@@ -72,7 +78,13 @@ export class MockAiProvider implements AiProvider {
       case 'name.resolve':
         return buildMockNameResolution(request.context as NameResolveContext);
       case 'recipe.translate':
-        return buildMockTranslation(request.context as TranslateRecipeContext);
+        // One operation, two granularities: whole recipes and bulk dish names
+        // (see buildTitlesTranslatePrompt). They share a tier and a budget
+        // line, so they share the operation and are told apart by their
+        // context rather than by adding a second enum value to the database.
+        return isTitlesContext(request.context)
+          ? buildMockTitlesTranslation(request.context)
+          : buildMockTranslation(request.context as TranslateRecipeContext);
       default:
         return {};
     }

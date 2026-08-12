@@ -12,10 +12,12 @@ import {
 } from '@nestjs/common';
 import {
   generatePlanRequestSchema,
+  getPlanQuerySchema,
   listPlansQuerySchema,
   regenerateEntryRequestSchema,
   updateEntryRequestSchema,
   type GeneratePlanRequest,
+  type GetPlanQuery,
   type Job,
   type ListPlansQuery,
   type MealPlan,
@@ -68,8 +70,12 @@ export class PlanController {
   }
 
   @Get('meal-plans/:id')
-  get(@CurrentHousehold() household: HouseholdContext, @Param('id') id: string): Promise<MealPlan> {
-    return this.plans.get(household.id, id);
+  get(
+    @CurrentHousehold() household: HouseholdContext,
+    @Param('id') id: string,
+    @Query(new ZodPipe(getPlanQuerySchema)) query: GetPlanQuery,
+  ): Promise<MealPlan> {
+    return this.plans.get(household.id, id, query.locale);
   }
 
   @Delete('meal-plans/:id')

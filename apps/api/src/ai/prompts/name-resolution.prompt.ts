@@ -1,4 +1,8 @@
-import type { NameResolveContext, TranslateRecipeContext } from './prompt.types.js';
+import type {
+  NameResolveContext,
+  TranslateRecipeContext,
+  TranslateTitlesContext,
+} from './prompt.types.js';
 import {
   type BuiltPrompt,
   localeDirective,
@@ -15,6 +19,7 @@ import {
  */
 export const NAME_RESOLVE_PROMPT_VERSION = 'name-resolve/v1';
 export const RECIPE_TRANSLATE_PROMPT_VERSION = 'recipe-translate/v1';
+export const TITLES_TRANSLATE_PROMPT_VERSION = 'titles-translate/v1';
 
 export function buildNameResolvePrompt(ctx: NameResolveContext): BuiltPrompt {
   const system = [
@@ -54,4 +59,30 @@ export function buildRecipeTranslatePrompt(ctx: TranslateRecipeContext): BuiltPr
   ].join('\n\n');
 
   return { system, user, version: RECIPE_TRANSLATE_PROMPT_VERSION };
+}
+
+/**
+ * Dish names only, in one call.
+ *
+ * A plan board shows twenty-odd dish names and nothing else, so translating
+ * each recipe in full to render a list would be twenty calls for text nobody
+ * asked for yet. Names are short and independent, which makes them the one part
+ * of a recipe worth translating in bulk and ahead of time; the body follows
+ * lazily when someone actually opens the dish.
+ */
+export function buildTitlesTranslatePrompt(ctx: TranslateTitlesContext): BuiltPrompt {
+  const system = [
+    `You translate dish names into natural ${ctx.toLocale === 'ar' ? 'Arabic' : 'English'}.`,
+    localeDirective(ctx.toLocale),
+    'Return JSON {"titles":[...]} with exactly one translation per input name, in the same ' +
+      'order. Translate the dish name as a cook would say it, not word by word. Keep a name ' +
+      'that is already in the target language unchanged.',
+    UNTRUSTED_DATA_DIRECTIVE,
+  ].join('\n\n');
+
+  return {
+    system,
+    user: `Dish names:\n${untrustedList(ctx.titles)}`,
+    version: TITLES_TRANSLATE_PROMPT_VERSION,
+  };
 }

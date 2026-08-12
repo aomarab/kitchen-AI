@@ -1,4 +1,8 @@
-import type { NameResolveContext, TranslateRecipeContext } from '../prompts/prompt.types.js';
+import type {
+  NameResolveContext,
+  TranslateRecipeContext,
+  TranslateTitlesContext,
+} from '../prompts/prompt.types.js';
 
 /**
  * Cheap-model fixtures. Name resolution maps each name to a supplied candidate
@@ -30,4 +34,10 @@ export function buildMockTranslation(ctx: TranslateRecipeContext): unknown {
     description: ctx.description,
     steps: ctx.steps.map((s) => s),
   };
+}
+
+export function buildMockTitlesTranslation(ctx: TranslateTitlesContext): unknown {
+  // Echoes each name, which is what matters here: the count and order must
+  // survive, because the caller maps the result back onto recipes positionally.
+  return { titles: ctx.titles.map((title) => title) };
 }
