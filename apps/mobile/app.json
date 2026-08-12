@@ -10,7 +10,8 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kitchenai.app",
+      "bundleIdentifier": "com.abedomar.kitchenai",
+      "appleTeamId": "YVBW6U3Q43",
       "privacyManifests": {
         "NSPrivacyTracking": false,
         "NSPrivacyCollectedDataTypes": [
@@ -79,7 +80,7 @@
       }
     },
     "android": {
-      "package": "com.kitchenai.app",
+      "package": "com.abedomar.kitchenai",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -93,6 +94,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withoutUnsignableEntitlements",
       "expo-router",
       "expo-localization",
       "expo-secure-store",
