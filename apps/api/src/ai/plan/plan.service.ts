@@ -35,6 +35,9 @@ type EntryWithRecipe = {
   recipe: RecipeRow;
 };
 
+/** The language a dish's artwork falls back to when the reader's has none. */
+const otherLocale = (locale: Locale): Locale => (locale === 'ar' ? 'en' : 'ar');
+
 @Injectable()
 export class PlanService {
   constructor(
@@ -120,30 +123,44 @@ export class PlanService {
   private async mediaFor(
     entries: readonly { entry: EntryWithRecipe; locale: Locale }[],
   ): Promise<Map<string, ResolvedMedia>> {
-    const wanted = new Map<Locale, Map<string, string[]>>();
+    const candidates = new Map<string, { locale: Locale; key: string }[]>();
+    const wanted = new Map<Locale, Set<string>>();
 
     for (const { entry, locale } of entries) {
-      const title = locale === 'ar' ? entry.recipe.titleAr : entry.recipe.titleEn;
-      if (!title) continue;
-      const key = this.media.keyFor(title, locale);
-      const forLocale = wanted.get(locale) ?? new Map<string, string[]>();
-      forLocale.set(key, [...(forLocale.get(key) ?? []), entry.recipe.id]);
-      wanted.set(locale, forLocale);
+      // The reader's language first, then the other one. Artwork is cached
+      // against a dish *and* a language, but a photo of shakshuka is the same
+      // photo in either — so a plan generated in Arabic and read in English
+      // matched nothing and drew a board of placeholders. Videos are genuinely
+      // language-specific, which is why only the image is shared here.
+      const options: { locale: Locale; key: string }[] = [];
+      for (const candidate of [locale, otherLocale(locale)]) {
+        const title = candidate === 'ar' ? entry.recipe.titleAr : entry.recipe.titleEn;
+        if (!title) continue;
+        const key = this.media.keyFor(title, candidate);
+        options.push({ locale: candidate, key });
+        const keys = wanted.get(candidate) ?? new Set<string>();
+        keys.add(key);
+        wanted.set(candidate, keys);
+      }
+      if (options.length > 0) candidates.set(entry.recipe.id, options);
     }
 
-    const resolved = new Map<string, ResolvedMedia>();
+    const found = new Map<Locale, Awaited<ReturnType<MediaService['lookupMany']>>>();
     await Promise.all(
-      [...wanted].map(async ([locale, byKey]) => {
-        const found = await this.media.lookupMany([...byKey.keys()], locale);
-        for (const [key, recipeIds] of byKey) {
-          const hit = found.get(key);
-          if (!hit) continue;
-          for (const recipeId of recipeIds) {
-            resolved.set(recipeId, { heroThumbnailUrl: hit.heroThumbnailUrl, videos: [] });
-          }
-        }
+      [...wanted].map(async ([locale, keys]) => {
+        found.set(locale, await this.media.lookupMany([...keys], locale));
       }),
     );
+
+    const resolved = new Map<string, ResolvedMedia>();
+    for (const [recipeId, options] of candidates) {
+      for (const option of options) {
+        const hit = found.get(option.locale)?.get(option.key);
+        if (!hit?.heroThumbnailUrl) continue;
+        resolved.set(recipeId, { heroThumbnailUrl: hit.heroThumbnailUrl, videos: [] });
+        break;
+      }
+    }
 
     return resolved;
   }

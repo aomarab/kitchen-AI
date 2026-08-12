@@ -41,8 +41,13 @@ function planRow(locale: Locale) {
   };
 }
 
-/** Records which keys and locale the plan asked for, and answers with a hit. */
-function mediaStub(): MediaService & { asked: { keys: string[]; locale: Locale }[] } {
+/**
+ * Records which keys and locale the plan asked for, and answers with a hit only
+ * for the keys named as cached — `undefined` means everything is cached.
+ */
+function mediaStub(
+  cached?: Record<string, string>,
+): MediaService & { asked: { keys: string[]; locale: Locale }[] } {
   const asked: { keys: string[]; locale: Locale }[] = [];
 
   return {
@@ -50,12 +55,20 @@ function mediaStub(): MediaService & { asked: { keys: string[]; locale: Locale }
     keyFor: (title: string, locale: Locale) => `${locale}:${title}`,
     lookupMany: async (keys: readonly string[], locale: Locale) => {
       asked.push({ keys: [...keys], locale });
-      return new Map(
-        keys.map((key) => [
+      const hits = keys
+        .filter((key) => cached === undefined || key in cached)
+        .map((key) => [
           key,
-          { dishKey: key, locale, status: 'matched' as const, heroThumbnailUrl: HERO, heroYoutubeId: 'abc12345678', videos: [] },
-        ]),
-      );
+          {
+            dishKey: key,
+            locale,
+            status: 'matched' as const,
+            heroThumbnailUrl: cached?.[key] ?? HERO,
+            heroYoutubeId: 'abc12345678',
+            videos: [],
+          },
+        ] as const);
+      return new Map(hits);
     },
   } as unknown as MediaService & { asked: { keys: string[]; locale: Locale }[] };
 }
@@ -98,16 +111,42 @@ describe('meal plan media', () => {
     const media = mediaStub();
     await serviceFor('ar', media).get('hh-1', 'plan-1');
 
-    expect(media.asked).toHaveLength(1);
-    expect(media.asked[0]!.locale).toBe('ar');
-    expect(media.asked[0]!.keys).toEqual(['ar:معكرونة بصلصة طماطم كريمية']);
+    const arabic = media.asked.find((ask) => ask.locale === 'ar');
+    expect(arabic?.keys).toEqual(['ar:معكرونة بصلصة طماطم كريمية']);
   });
 
-  /** One read for the whole board, not one per tile. */
-  it('asks once for the whole board rather than per entry', async () => {
+  /**
+   * A photo of shakshuka is a photo of shakshuka in either language, but the
+   * cache is keyed by dish *and* locale — so a plan generated in Arabic and then
+   * read in English matched nothing and showed a board of placeholders. The
+   * artwork is shared across languages even though the videos are not.
+   */
+  it('falls back to the language the dish was cached in', async () => {
+    const media = mediaStub({ 'ar:معكرونة بصلصة طماطم كريمية': HERO });
+    const plan = await serviceFor('ar', media).get('hh-1', 'plan-1', 'en');
+
+    expect(plan.entries[0]!.recipe.title).toBe('Creamy tomato pasta');
+    expect(plan.entries[0]!.recipe.heroImageUrl).toBe(HERO);
+  });
+
+  /** The reader's own language still wins when both have artwork. */
+  it('prefers the reading locale over the fallback', async () => {
+    const other = 'https://i.ytimg.com/vi/zzz99999999/maxresdefault.jpg';
+    const media = mediaStub({
+      'en:Creamy tomato pasta': HERO,
+      'ar:معكرونة بصلصة طماطم كريمية': other,
+    });
+    const plan = await serviceFor('ar', media).get('hh-1', 'plan-1', 'en');
+
+    expect(plan.entries[0]!.recipe.heroImageUrl).toBe(HERO);
+  });
+
+  /** One read per language for the whole board, not one per tile. */
+  it('asks once per language for the whole board rather than per entry', async () => {
     const media = mediaStub();
     await serviceFor('en', media).get('hh-1', 'plan-1');
 
-    expect(media.asked).toHaveLength(1);
+    expect(media.asked.length).toBeLessThanOrEqual(2);
+    for (const ask of media.asked) expect(ask.keys).toHaveLength(1);
   });
 });
