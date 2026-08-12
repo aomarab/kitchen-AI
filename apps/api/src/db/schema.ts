@@ -746,6 +746,64 @@ export const feedback = pgTable(
   ],
 );
 
+/**
+ * Feedback about a *product* — a rating and comment on a thing the household
+ * bought, which we pass to the brand that made it.
+ *
+ * The product is **snapshotted**, not referenced through the inventory item.
+ * An item is the jar in the fridge: it gets eaten and deleted, and its `brand`
+ * goes null the moment a second brand of the same ingredient pools into the
+ * slot. An opinion about a product has to outlive both, and it has to stay
+ * attributed to the brand it was actually written about. So the write resolves
+ * `ingredient_id` and `brand` from the item once and stores them here.
+ *
+ * `brand` is plain text, not a foreign key. It arrives from barcode lookups
+ * against Open Food Facts, so there is no vendor table to point at, and
+ * inventing one would mean guessing that "Almarai" and "almarai" are the same
+ * company. Reports group on the lowercased form instead.
+ *
+ * One opinion per user per product, enforced by the unique index rather than
+ * by the service: a vendor report is worthless if one account can file fifty
+ * ratings. Re-submitting updates the existing row. The index is over
+ * `lower(coalesce(brand, ''))` for two reasons — Postgres treats every NULL as
+ * distinct, so an unbranded product could otherwise be rated repeatedly by the
+ * same user, and the same barcode database returns "Almarai" and "ALMARAI" for
+ * one company. Collapsing null to `''` is unambiguous because the contract
+ * rejects an empty brand: only "no brand" can produce it.
+ *
+ * `ON DELETE CASCADE` on `user_id` for the same reason as `feedback`: account
+ * deletion needs one erasure path, and the comment is the part we were asked
+ * to forget.
+ */
+export const productFeedback = pgTable(
+  'product_feedback',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'restrict' }),
+    brand: text('brand'),
+    rating: smallint('rating').notNull(),
+    message: text('message'),
+    locale: localeEnum('locale').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('product_feedback_rating_range', sql`${table.rating} between 1 and 5`),
+    uniqueIndex('product_feedback_one_per_user').on(
+      table.userId,
+      table.ingredientId,
+      sql`lower(coalesce(${table.brand}, ''))`,
+    ),
+    index('product_feedback_brand_idx').on(sql`lower(${table.brand})`),
+    index('product_feedback_created_idx').on(table.createdAt.desc()),
+  ],
+);
+
 /* ------------------------------------------------------------------ */
 /* Relations                                                           */
 /* ------------------------------------------------------------------ */
@@ -884,6 +942,7 @@ export const schema = {
   householdCredits,
   creditPurchases,
   feedback,
+  productFeedback,
   usersRelations,
   householdsRelations,
   householdMembersRelations,
