@@ -201,6 +201,37 @@ export const mobileEn = {
       rtlRestartBody:
         'Changing language flips the layout direction. Fully close and reopen the app to apply it.',
       restartLater: 'Later',
+      notifications: 'Notifications',
+      notificationsHint: 'Reminders about food going off and what you planned to cook.',
+      notifyExpiry: 'Food about to expire',
+      notifyExpiryHint: 'A reminder before something in your kitchen goes off.',
+      notifyMeals: 'Planned meals',
+      notifyMealsHint: 'A reminder on the day of each meal in your plan.',
+      leadTime: 'Warn me',
+      leadDays: plural('count', {
+        one: '1 day ahead',
+        other: '{count} days ahead',
+      }),
+      reminderTime: 'Remind me at',
+      permissionDenied: 'Notifications are turned off for this app. Open Settings to allow them.',
+      openSettings: 'Open Settings',
+    },
+    notifications: {
+      expiryTitle: 'Use it before it goes',
+      expiryToday: plural('count', {
+        one: '1 item in your kitchen expires today.',
+        other: '{count} items in your kitchen expire today.',
+      }),
+      expiryTomorrow: plural('count', {
+        one: '1 item in your kitchen expires tomorrow.',
+        other: '{count} items in your kitchen expire tomorrow.',
+      }),
+      expirySoon: plural('count', {
+        one: '1 item expires in {days} days.',
+        other: '{count} items expire in {days} days.',
+      }),
+      mealTitle: "Tonight's meal",
+      mealBody: '{title} — everything you need should already be in your kitchen.',
     },
     places: {
       title: 'Kitchen places',

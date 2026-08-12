@@ -1,16 +1,30 @@
 import { create } from 'zustand';
 import { readJson, writeJson } from '../lib/storage';
+import { DEFAULT_LEAD_DAYS, DEFAULT_REMINDER_HOUR } from '../lib/notifications';
 
 const PERSIST_KEY = 'settings';
 
 interface PersistedSettings {
   easternNumerals: boolean;
   showHijri: boolean;
+  /**
+   * Notification preferences live here rather than on the server because the
+   * notifications themselves are scheduled on this device: another phone in
+   * the same household has its own inventory cache and its own quiet hours.
+   */
+  notifyExpiry: boolean;
+  notifyMeals: boolean;
+  expiryLeadDays: number;
+  reminderHour: number;
 }
 
 interface SettingsState extends PersistedSettings {
   setEasternNumerals: (value: boolean) => void;
   setShowHijri: (value: boolean) => void;
+  setNotifyExpiry: (value: boolean) => void;
+  setNotifyMeals: (value: boolean) => void;
+  setExpiryLeadDays: (value: number) => void;
+  setReminderHour: (value: number) => void;
   hydrate: () => Promise<void>;
 }
 
@@ -22,6 +36,12 @@ interface SettingsState extends PersistedSettings {
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   easternNumerals: false,
   showHijri: true,
+  // On by default: the whole point of the app is not wasting food, and a
+  // reminder nobody switched on never fires. Both are one tap to silence.
+  notifyExpiry: true,
+  notifyMeals: true,
+  expiryLeadDays: DEFAULT_LEAD_DAYS,
+  reminderHour: DEFAULT_REMINDER_HOUR,
 
   setEasternNumerals: (value) => {
     set({ easternNumerals: value });
@@ -33,12 +53,49 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     void writeJson(PERSIST_KEY, current(get()));
   },
 
+  setNotifyExpiry: (value) => {
+    set({ notifyExpiry: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
+  setNotifyMeals: (value) => {
+    set({ notifyMeals: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
+  setExpiryLeadDays: (value) => {
+    set({ expiryLeadDays: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
+  setReminderHour: (value) => {
+    set({ reminderHour: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
   hydrate: async () => {
     const saved = await readJson<PersistedSettings>(PERSIST_KEY);
-    if (saved) set({ easternNumerals: !!saved.easternNumerals, showHijri: saved.showHijri !== false });
+    if (!saved) return;
+    set({
+      easternNumerals: !!saved.easternNumerals,
+      showHijri: saved.showHijri !== false,
+      // `!== false` rather than `??` so a settings file written before these
+      // existed keeps the on-by-default behaviour instead of reading as off.
+      notifyExpiry: saved.notifyExpiry !== false,
+      notifyMeals: saved.notifyMeals !== false,
+      expiryLeadDays: saved.expiryLeadDays ?? DEFAULT_LEAD_DAYS,
+      reminderHour: saved.reminderHour ?? DEFAULT_REMINDER_HOUR,
+    });
   },
 }));
 
 function current(state: PersistedSettings): PersistedSettings {
-  return { easternNumerals: state.easternNumerals, showHijri: state.showHijri };
+  return {
+    easternNumerals: state.easternNumerals,
+    showHijri: state.showHijri,
+    notifyExpiry: state.notifyExpiry,
+    notifyMeals: state.notifyMeals,
+    expiryLeadDays: state.expiryLeadDays,
+    reminderHour: state.reminderHour,
+  };
 }

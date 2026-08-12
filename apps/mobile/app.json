@@ -112,6 +112,13 @@
           ]
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "color": "#7B3F61",
+          "defaultChannel": "kitchen-reminders"
+        }
+      ],
       "expo-web-browser",
       "./plugins/withSceneDelegate"
     ],

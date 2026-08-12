@@ -11,6 +11,8 @@ import { useLocale } from '../lib/locale';
 import { useBootstrap } from '../lib/bootstrap';
 import { useAppFonts } from '../lib/font-loader';
 import { useOfflineSync } from '../hooks/offline-sync';
+import { useNotificationScheduler } from '../hooks/notifications';
+import { configureNotificationHandler } from '../lib/notification-scheduler';
 import { setMockLocale } from '../mocks';
 import { startConnectivityMonitor } from '../stores/connectivity';
 import { useAuthStore } from '../stores/auth';
@@ -59,7 +61,12 @@ export default function RootLayout() {
   const ready = useBootstrap();
   useAppFonts();
   useOfflineSync();
+  useNotificationScheduler();
   useSignedOutRedirect(ready);
+
+  useEffect(() => {
+    configureNotificationHandler();
+  }, []);
 
   useEffect(() => {
     normalizeNativeDirection(I18nManager);

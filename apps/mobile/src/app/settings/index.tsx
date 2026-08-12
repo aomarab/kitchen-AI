@@ -5,6 +5,7 @@ import { type Locale } from '@kitchen/i18n';
 import { Screen, Header, AppText, Card, Chip, ToggleRow, ListRow } from '../../components';
 import { useLocale } from '../../lib/locale';
 import { useSettingsStore } from '../../stores/settings';
+import { NotificationSettings } from '../../features/settings/NotificationSettings';
 import { spacing } from '../../theme';
 
 export default function Settings() {
@@ -61,6 +62,8 @@ export default function Settings() {
           onValueChange={setShowHijri}
         />
       </Card>
+
+      <NotificationSettings />
 
       <ListRow
         title={t('mobile.places.entry')}
