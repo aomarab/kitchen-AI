@@ -13,14 +13,25 @@ import {
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { usePlans } from '../../hooks/plans';
-import { useInventory } from '../../hooks/inventory';
+import { useInventory, useInventorySnapshot, useLocations } from '../../hooks/inventory';
+import { useShoppingList } from '../../hooks/shopping';
+import { StatTiles } from '../../features/home/StatTiles';
+import { KitchenGlance } from '../../features/home/KitchenGlance';
+import { WeekStrip } from '../../features/home/WeekStrip';
 import { itemName, formatExpiryLabel, formatMinutes } from '../../lib/format';
-import { todayISODate } from '../../lib/expiry';
+import { isExpiringSoon, todayISODate } from '../../lib/expiry';
+import { weekBars } from '../../lib/home-stats';
 import { colors, radius, spacing, tintFor } from '../../theme';
 
 function ProgressBar({ ratio }: { ratio: number }) {
   return (
-    <View style={{ height: 8, borderRadius: radius.pill, backgroundColor: colors.surfaceAlt }}>
+    <View
+      style={{
+        height: 8,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceAlt,
+      }}
+    >
       <View
         style={{
           height: 8,
@@ -41,6 +52,9 @@ export default function Home() {
   const router = useRouter();
   const plansQuery = usePlans();
   const expiringQuery = useInventory({ expiringWithinDays: 3, sort: 'expiry' });
+  const snapshotQuery = useInventorySnapshot();
+  const locationsQuery = useLocations();
+  const shoppingQuery = useShoppingList();
 
   const plan = plansQuery.data?.[0];
   const today = todayISODate();
@@ -51,11 +65,25 @@ export default function Home() {
     return todays.find((entry) => entry.slot === 'dinner') ?? todays[0];
   }, [plan, today]);
 
+  // The bars and the "N of M cooked" line are both read off the same seven
+  // days, so the card can never state a total its own chart contradicts.
+  const week = useMemo(() => (plan ? weekBars(plan.entries, plan.startsOn) : null), [plan]);
   const weekProgress = useMemo(() => {
-    if (!plan || plan.entries.length === 0) return null;
-    const cooked = plan.entries.filter((entry) => entry.state === 'cooked').length;
-    return { cooked, total: plan.entries.length };
-  }, [plan]);
+    if (!week) return null;
+    const total = week.reduce((sum, bar) => sum + bar.planned, 0);
+    if (total === 0) return null;
+    return { cooked: week.reduce((sum, bar) => sum + bar.cooked, 0), total };
+  }, [week]);
+
+  const stock = useMemo(() => snapshotQuery.data?.items ?? [], [snapshotQuery.data]);
+  const soonCount = useMemo(
+    () => stock.filter((item) => isExpiringSoon(item.expiresAt)).length,
+    [stock],
+  );
+  const toBuy = useMemo(
+    () => (shoppingQuery.data ?? []).filter((entry) => !entry.purchased).length,
+    [shoppingQuery.data],
+  );
 
   const expiring = expiringQuery.data?.items ?? [];
 
@@ -81,7 +109,13 @@ export default function Home() {
               {'  ·  '}
               {t('recipe.servings', { count: tonight.servings })}
             </AppText>
-            <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: spacing.lg,
+                marginTop: spacing.sm,
+              }}
+            >
               <Button
                 title={t('mobile.home.viewRecipe')}
                 variant="primaryInverse"
@@ -101,8 +135,16 @@ export default function Home() {
         )}
       </Card>
 
+      <StatTiles items={stock.length} expiring={soonCount} shopping={toBuy} />
+
       <View style={{ gap: spacing.sm }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <AppText variant="heading">{t('mobile.home.expiringStrip')}</AppText>
           <Button
             title={t('mobile.home.seeAll')}
@@ -139,6 +181,8 @@ export default function Home() {
         )}
       </View>
 
+      <KitchenGlance items={stock} locations={locationsQuery.data ?? []} />
+
       {weekProgress ? (
         <Card>
           <AppText variant="heading">{t('mobile.home.weekTitle')}</AppText>
@@ -146,6 +190,7 @@ export default function Home() {
             {t('mobile.home.weekProgress', weekProgress)}
           </AppText>
           <ProgressBar ratio={weekProgress.cooked / weekProgress.total} />
+          <WeekStrip bars={week ?? []} today={today} />
         </Card>
       ) : (
         <Card>

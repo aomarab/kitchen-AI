@@ -51,6 +51,19 @@ export function formatQty(locale: Locale, value: number, prefs: NumeralPrefs = {
   });
 }
 
+/**
+ * A whole-number percentage, in the user's numerals. Charts have to print the
+ * share as text beside the picture — a slice read by colour and area alone is
+ * unreadable to anyone who cannot separate the colours.
+ */
+export function formatPercent(locale: Locale, ratio: number, prefs: NumeralPrefs = {}): string {
+  return formatNumber(locale, Math.round(ratio * 100) / 100, {
+    style: 'percent',
+    maximumFractionDigits: 0,
+    easternNumerals: prefs.easternNumerals,
+  });
+}
+
 export function unitLabel(t: Translator, unit: Unit): string {
   return t(`units.${unit}` as MessageKey);
 }

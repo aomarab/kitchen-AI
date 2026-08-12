@@ -182,7 +182,7 @@ export type TypographyVariant = keyof typeof SCALE;
  * it stops at 1.6x. Content is uncapped: at the largest accessibility sizes the
  * user has asked for very large text and long-form copy should give it to them.
  */
-const CHROME_MAX_FONT_SCALE = 1.6;
+export const CHROME_MAX_FONT_SCALE = 1.6;
 const CHROME_VARIANTS: readonly TypographyVariant[] = ['button', 'label', 'caption'];
 
 /**

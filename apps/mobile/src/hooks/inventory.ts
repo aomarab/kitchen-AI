@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ListInventoryQuery, RouteBody } from '@kitchen/contracts';
+import type { InventoryItem, ListInventoryQuery, RouteBody } from '@kitchen/contracts';
 import type { MakeEventParams } from '../lib/event-queue';
 import { api } from '../lib/api';
 import { useOfflineQueue } from '../stores/offline-queue';
@@ -7,13 +7,54 @@ import { flushInventoryQueue, currentOwner } from './offline-sync';
 import { qk } from './keys';
 
 export function useLocations() {
-  return useQuery({ queryKey: qk.locations, queryFn: () => api.call('listLocations') });
+  return useQuery({
+    queryKey: qk.locations,
+    queryFn: () => api.call('listLocations'),
+  });
 }
 
 export function useInventory(query: Partial<ListInventoryQuery> = {}) {
   return useQuery({
     queryKey: qk.inventoryList(query),
     queryFn: () => api.call('listInventory', { query }),
+  });
+}
+
+/** A page is capped at 100 items, and ten pages is far more than a kitchen. */
+const SNAPSHOT_PAGE = 100;
+const SNAPSHOT_MAX_PAGES = 10;
+
+/**
+ * Every item in the kitchen, for the home dashboard's charts.
+ *
+ * The list endpoint is paginated, so a chart drawn from one page would report
+ * "100 items" for a household that has three hundred — and worse, the default
+ * `expiry` sort means that first page is not a random sample, so the split by
+ * location would be skewed toward whatever happens to carry a date. A summary
+ * that is quietly wrong is more damaging than no summary, so this walks the
+ * cursor to the end. `complete` is false only if a kitchen somehow exceeds a
+ * thousand items, and the caller is expected to stop claiming a total then.
+ */
+export function useInventorySnapshot() {
+  return useQuery({
+    queryKey: qk.inventorySnapshot,
+    queryFn: async () => {
+      const items: InventoryItem[] = [];
+      let cursor: string | undefined;
+      for (let page = 0; page < SNAPSHOT_MAX_PAGES; page += 1) {
+        const result = await api.call('listInventory', {
+          query: {
+            limit: SNAPSHOT_PAGE,
+            sort: 'name',
+            ...(cursor ? { cursor } : {}),
+          },
+        });
+        items.push(...result.items);
+        if (!result.nextCursor) return { items, complete: true };
+        cursor = result.nextCursor;
+      }
+      return { items, complete: false };
+    },
   });
 }
 
@@ -60,7 +101,10 @@ export function useDeleteLocation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, moveTo }: { id: string; moveTo?: string }) =>
-      api.call('deleteLocation', { params: { id }, query: moveTo ? { moveTo } : {} }),
+      api.call('deleteLocation', {
+        params: { id },
+        query: moveTo ? { moveTo } : {},
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.locations });
       void qc.invalidateQueries({ queryKey: qk.inventory });

@@ -8,6 +8,7 @@ export const qk = {
   profile: ['profile'] as const,
   locations: ['locations'] as const,
   inventory: ['inventory'] as const,
+  inventorySnapshot: ['inventory', 'snapshot'] as const,
   inventoryList: (query: Partial<ListInventoryQuery>) => ['inventory', 'list', query] as const,
   inventoryItem: (id: string) => ['inventory', 'item', id] as const,
   productFeedback: (itemId: string) => ['inventory', 'item', itemId, 'feedback'] as const,

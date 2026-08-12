@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlatList, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { InventoryItem, StorageLocation } from '@kitchen/contracts';
 import {
   Screen,
@@ -35,8 +35,11 @@ const EXPIRY_TONE: Record<ExpiryStatus, BadgeTone> = {
 export default function Kitchen() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
+  // Arriving from the home dashboard's location chart opens this list already
+  // filtered; the chips stay live afterwards, so the param is only a seed.
+  const params = useLocalSearchParams<{ locationId?: string }>();
   const [search, setSearch] = useState('');
-  const [locationId, setLocationId] = useState<string | undefined>(undefined);
+  const [locationId, setLocationId] = useState<string | undefined>(params.locationId);
   const [sort, setSort] = useState<Sort>('expiry');
 
   const locations = useLocations();
@@ -62,7 +65,9 @@ export default function Kitchen() {
             }}
           />
         }
-        trailing={expiryLabel ? <Badge tone={EXPIRY_TONE[status]} label={expiryLabel} /> : undefined}
+        trailing={
+          expiryLabel ? <Badge tone={EXPIRY_TONE[status]} label={expiryLabel} /> : undefined
+        }
       />
     );
   };
@@ -118,7 +123,11 @@ export default function Kitchen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: spacing.lg, paddingTop: 0, gap: spacing.sm }}
+          contentContainerStyle={{
+            padding: spacing.lg,
+            paddingTop: 0,
+            gap: spacing.sm,
+          }}
           refreshing={inventory.isRefetching}
           onRefresh={() => void inventory.refetch()}
         />
