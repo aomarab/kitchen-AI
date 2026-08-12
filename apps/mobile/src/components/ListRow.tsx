@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { Pressable, View, type ViewStyle } from 'react-native';
 import { AppText } from './AppText';
 import { DirectionalIcon } from './DirectionalIcon';
-import { colors, radius, spacing, type ColorToken } from '../theme';
+import { radius, spacing, type ColorToken } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export interface ListRowProps {
   title: string;
@@ -33,6 +34,7 @@ export function ListRow({
   titleColor,
   style,
 }: ListRowProps) {
+  const { colors } = useTheme();
   const content = (
     <View
       style={[

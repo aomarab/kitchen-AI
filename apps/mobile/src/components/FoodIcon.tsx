@@ -2,7 +2,8 @@ import { Image, View } from 'react-native';
 import type { IngredientCategory } from '@kitchen/contracts';
 import { foodIconKey } from '../lib/food-icon';
 import { FOOD_ICON_ASSETS } from '../lib/food-icon-assets';
-import { colors, radius } from '../theme';
+import { radius } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 interface FoodIconProps {
   item: {
@@ -22,6 +23,7 @@ interface FoodIconProps {
  * square and symmetrical in intent, so nothing needs mirroring under RTL.
  */
 export function FoodIcon({ item, size = 40 }: FoodIconProps) {
+  const { colors } = useTheme();
   const source = FOOD_ICON_ASSETS[foodIconKey(item)];
   return (
     <View

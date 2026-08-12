@@ -6,7 +6,8 @@ import { AppText } from './AppText';
 import { useFormat } from '../hooks/useFormat';
 import { useOAuthSignIn } from '../hooks/auth';
 import { errorMessageKey } from '../lib/errors';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 interface OAuthButtonsProps {
   /** Runs only after a session exists — a dismissed provider sheet is a no-op. */
@@ -20,6 +21,7 @@ interface OAuthButtonsProps {
  */
 export function OAuthButtons({ onSuccess }: OAuthButtonsProps) {
   const { t } = useFormat();
+  const { colors } = useTheme();
   const oauth = useOAuthSignIn();
   // One mutation drives both buttons, so its `isPending` alone would spin the
   // wrong one; this records which provider was actually tapped.

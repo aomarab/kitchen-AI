@@ -7,7 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { colors } from '../theme';
+import { useStyles, useTheme, type Theme } from '../theme/useTheme';
 import { Icon } from './Icon';
 import {
   RECIPE_THUMB_TONE_FOREGROUNDS,
@@ -34,6 +34,8 @@ export function RecipeThumb({
   resizeMode = 'cover',
   style,
 }: RecipeThumbProps) {
+  const { colors } = useTheme();
+  const styles = useStyles(stylesFor);
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
@@ -61,11 +63,7 @@ export function RecipeThumb({
           accessible={false}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-          style={[
-            StyleSheet.absoluteFill,
-            styles.placeholder,
-            { backgroundColor: colors[tone] },
-          ]}
+          style={[StyleSheet.absoluteFill, styles.placeholder, { backgroundColor: colors[tone] }]}
         >
           <Icon name="restaurant" size={GLYPH_SIZE} color={colors[foreground]} />
         </View>
@@ -74,14 +72,15 @@ export function RecipeThumb({
   );
 }
 
-const styles = StyleSheet.create({
-  frame: {
-    position: 'relative',
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceAlt,
-  },
-  placeholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const stylesFor = ({ colors }: Theme) =>
+  StyleSheet.create({
+    frame: {
+      position: 'relative',
+      overflow: 'hidden',
+      backgroundColor: colors.surfaceAlt,
+    },
+    placeholder: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });

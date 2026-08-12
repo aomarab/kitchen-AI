@@ -21,9 +21,11 @@ import { WeekStrip } from '../../features/home/WeekStrip';
 import { itemName, formatExpiryLabel, formatMinutes } from '../../lib/format';
 import { isExpiringSoon, todayISODate } from '../../lib/expiry';
 import { weekBars } from '../../lib/home-stats';
-import { colors, radius, spacing, tintFor } from '../../theme';
+import { radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 function ProgressBar({ ratio }: { ratio: number }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{
@@ -48,6 +50,7 @@ function ProgressBar({ ratio }: { ratio: number }) {
 }
 
 export default function Home() {
+  const { colors, tintFor } = useTheme();
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const plansQuery = usePlans();

@@ -1,7 +1,8 @@
 import { Pressable, View } from 'react-native';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
-import { colors, hitSlop, radius, spacing } from '../theme';
+import { hitSlop, radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export interface QuantityStepperProps {
   value: number;
@@ -23,6 +24,7 @@ export function QuantityStepper({
   decrementLabel,
   incrementLabel,
 }: QuantityStepperProps) {
+  const { colors } = useTheme();
   const button = (icon: 'plus' | 'minus', onPress: () => void, a11y: string) => (
     <Pressable
       accessibilityRole="button"

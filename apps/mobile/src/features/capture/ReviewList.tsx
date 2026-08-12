@@ -12,7 +12,8 @@ import {
   type ReviewRow,
 } from '../../lib/capture';
 import { localizedName, locationLabel, unitLabel } from '../../lib/format';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 export interface ReviewListProps {
   session: RecognitionSession;
@@ -29,6 +30,7 @@ export interface ReviewListProps {
  */
 export function ReviewList({ session, source, locations, submitting, onConfirm }: ReviewListProps) {
   const { t, locale } = useFormat();
+  const { colors } = useTheme();
   const [rows, setRows] = useState<ReviewRow[]>(() => initialReviewRows(session, locations));
 
   const count = useMemo(() => includedCount(rows), [rows]);
@@ -54,7 +56,9 @@ export function ReviewList({ session, source, locations, submitting, onConfirm }
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
           >
             <View style={{ flex: 1, gap: 2 }}>
-              <AppText variant="bodyStrong">{localizedName(locale, row.nameEn, row.nameAr)}</AppText>
+              <AppText variant="bodyStrong">
+                {localizedName(locale, row.nameEn, row.nameAr)}
+              </AppText>
               {isLowConfidence(row.confidence) ? (
                 <Badge tone="warn" label={t('capture.lowConfidence')} />
               ) : null}
@@ -64,7 +68,7 @@ export function ReviewList({ session, source, locations, submitting, onConfirm }
               accessibilityLabel={t('mobile.review.remove')}
               onPress={() => update(row.tempId, { include: !row.include })}
             >
-              <AppText variant="label" color={row.include ? 'danger' : 'primary'}>
+              <AppText variant="label" color={row.include ? 'danger' : 'primaryText'}>
                 {row.include ? t('mobile.review.remove') : t('common.add')}
               </AppText>
             </Pressable>
@@ -72,9 +76,7 @@ export function ReviewList({ session, source, locations, submitting, onConfirm }
 
           {row.include ? (
             <>
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}
-              >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                 <QuantityStepper
                   value={row.quantity}
                   onChange={(quantity) => update(row.tempId, { quantity })}

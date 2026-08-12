@@ -4,7 +4,8 @@ import { AppText } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { formatDateL, formatQty } from '../../lib/format';
 import type { DayBar } from '../../lib/home-stats';
-import { colors, radius, spacing, tints } from '../../theme';
+import { radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 const TRACK = 56;
 
@@ -20,6 +21,7 @@ const TRACK = 56;
  */
 export function WeekStrip({ bars, today }: { bars: readonly DayBar[]; today: string }) {
   const { t, locale, prefs } = useFormat();
+  const { colors, tintFor } = useTheme();
   const router = useRouter();
 
   const busiest = Math.max(1, ...bars.map((bar) => bar.planned));
@@ -62,7 +64,7 @@ export function WeekStrip({ bars, today }: { bars: readonly DayBar[]; today: str
               <View
                 style={{
                   height,
-                  backgroundColor: tints[0].bg,
+                  backgroundColor: tintFor(0).bg,
                   justifyContent: 'flex-end',
                 }}
               >

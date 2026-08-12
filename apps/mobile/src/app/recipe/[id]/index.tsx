@@ -17,7 +17,8 @@ import {
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe, useMarkCooked } from '../../../hooks/recipe';
 import { ingredientName, formatMeasure, formatMinutes } from '../../../lib/format';
-import { colors, radius, spacing } from '../../../theme';
+import { radius, spacing } from '../../../theme';
+import { useTheme } from '../../../theme/useTheme';
 
 const DIFFICULTY_KEY: Record<
   Difficulty,
@@ -32,6 +33,7 @@ export default function RecipeDetail() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useTheme();
   const recipe = useRecipe(id ?? null, locale);
   const markCooked = useMarkCooked(id ?? '');
   const [confirm, setConfirm] = useState(false);
@@ -61,7 +63,9 @@ export default function RecipeDetail() {
       {/* Title and back sit above the photo: the picture only means something
           once you know which dish it is, and burying the back affordance under
           a 220px image made leaving the screen a scroll away. */}
-      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md }}>
+      <View
+        style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md }}
+      >
         <Header title={data.title} onBack={() => router.back()} />
       </View>
 
@@ -75,8 +79,16 @@ export default function RecipeDetail() {
 
       <View style={{ padding: spacing.lg, gap: spacing.md }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          <Badge label={t('recipe.prepTime', { minutes: formatMinutes(locale, data.prepMinutes, prefs) })} />
-          <Badge label={t('recipe.cookTime', { minutes: formatMinutes(locale, data.cookMinutes, prefs) })} />
+          <Badge
+            label={t('recipe.prepTime', {
+              minutes: formatMinutes(locale, data.prepMinutes, prefs),
+            })}
+          />
+          <Badge
+            label={t('recipe.cookTime', {
+              minutes: formatMinutes(locale, data.cookMinutes, prefs),
+            })}
+          />
           <Badge label={t('recipe.servings', { count: data.servings })} />
           <Badge tone="info" label={t(DIFFICULTY_KEY[data.difficulty])} />
         </View>
@@ -119,7 +131,7 @@ export default function RecipeDetail() {
                   justifyContent: 'center',
                 }}
               >
-                <AppText variant="caption" color="primary">
+                <AppText variant="caption" color="primaryText">
                   {formatMinutes(locale, step.index, prefs)}
                 </AppText>
               </View>

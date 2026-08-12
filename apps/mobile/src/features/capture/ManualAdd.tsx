@@ -18,13 +18,15 @@ import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
 import { ingredientName, locationLabel, unitLabel } from '../../lib/format';
 import { isValidExpiryInput } from '../../lib/expiry';
 import { errorMessageKey } from '../../lib/errors';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 const COMMON_UNITS: Unit[] = ['piece', 'g', 'kg', 'ml', 'l', 'bunch', 'can', 'packet'];
 
 /** Manual add: search the catalog, then fill quantity, unit, location and expiry. */
 export function ManualAdd() {
   const { t, locale } = useFormat();
+  const { colors } = useTheme();
   const router = useRouter();
   const [term, setTerm] = useState('');
   const [selected, setSelected] = useState<Ingredient | null>(null);
@@ -114,7 +116,12 @@ export function ManualAdd() {
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {COMMON_UNITS.map((u) => (
-              <Chip key={u} label={unitLabel(t, u)} selected={unit === u} onPress={() => setUnit(u)} />
+              <Chip
+                key={u}
+                label={unitLabel(t, u)}
+                selected={unit === u}
+                onPress={() => setUnit(u)}
+              />
             ))}
           </View>
         </View>

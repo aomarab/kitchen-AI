@@ -26,7 +26,8 @@ import {
 } from '../../hooks/inventory';
 import { locationLabel } from '../../lib/format';
 import { countByLocation, planLocationRemoval } from '../../lib/places';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 const TYPES = storageLocationTypeSchema.options;
 
@@ -35,6 +36,7 @@ type Editing = { location: StorageLocation } | { location: null };
 export default function Places() {
   const { t } = useFormat();
   const router = useRouter();
+  const { colors } = useTheme();
   const locations = useLocations();
   // Every item, so each place can show what it holds. The count is the whole
   // point of the screen: it is what makes "remove" a decision rather than a
@@ -81,8 +83,7 @@ export default function Places() {
   const removalPlan = removing
     ? planLocationRemoval(removing, counts.get(removing.id) ?? 0, places)
     : null;
-  const destinations =
-    removalPlan?.action === 'choose-destination' ? removalPlan.destinations : [];
+  const destinations = removalPlan?.action === 'choose-destination' ? removalPlan.destinations : [];
 
   if (locations.isLoading) {
     return (
@@ -112,7 +113,9 @@ export default function Places() {
           <ListRow
             key={place.id}
             title={locationLabel(t, place)}
-            subtitle={count === 0 ? t('mobile.places.empty') : t('mobile.places.itemCount', { count })}
+            subtitle={
+              count === 0 ? t('mobile.places.empty') : t('mobile.places.itemCount', { count })
+            }
             onPress={() => openEdit(place)}
             trailing={
               <Button
@@ -122,9 +125,7 @@ export default function Places() {
                 // nowhere to move what is already stored.
                 disabled={plan.action === 'blocked'}
                 onPress={() =>
-                  plan.action === 'delete'
-                    ? remove.mutate({ id: place.id })
-                    : setRemoving(place)
+                  plan.action === 'delete' ? remove.mutate({ id: place.id }) : setRemoving(place)
                 }
               />
             }

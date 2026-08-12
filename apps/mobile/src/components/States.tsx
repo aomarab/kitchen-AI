@@ -3,7 +3,8 @@ import { useRouter } from 'expo-router';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { Icon, type IconName } from './Icon';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 import { errorMessageKey, isInsufficientCredits, isRetryable } from '../lib/errors';
 
@@ -17,9 +18,10 @@ const CENTER = {
 
 export function LoadingState({ label }: { label?: string }) {
   const { t } = useLocale();
+  const { colors } = useTheme();
   return (
     <View style={CENTER}>
-      <ActivityIndicator color={colors.primary} size="large" />
+      <ActivityIndicator color={colors.primaryText} size="large" />
       <AppText muted>{label ?? t('common.loading')}</AppText>
     </View>
   );

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { colors } from '../theme';
+import { palettes } from '../theme/palettes';
 
 import {
   RECIPE_THUMB_TONE_TOKENS,
@@ -10,6 +10,7 @@ import {
 } from './recipe-thumb-tones';
 
 const source = () => readFileSync(join(__dirname, 'RecipeThumb.tsx'), 'utf8');
+const colors = palettes.violet.light.colors;
 
 describe('recipe thumb tone selection', () => {
   it('is deterministic for a given dish key', () => {
@@ -34,11 +35,17 @@ describe('recipe thumb tone selection', () => {
 
     expect(new Set(sampled)).toEqual(allowed);
     for (const token of RECIPE_THUMB_TONE_TOKENS) {
-      expect(colors[token], `${token} must resolve through theme/index.ts`).toEqual(expect.any(String));
+      expect(colors[token], `${token} must resolve through theme/palettes.ts`).toEqual(
+        expect.any(String),
+      );
     }
     for (const token of sampled) {
-      expect(allowed.has(token), `${token} must be one of the approved recipe thumb tones`).toBe(true);
-      expect(colors[token], `${token} must be a real theme color token`).toEqual(expect.any(String));
+      expect(allowed.has(token), `${token} must be one of the approved recipe thumb tones`).toBe(
+        true,
+      );
+      expect(colors[token], `${token} must be a real theme color token`).toEqual(
+        expect.any(String),
+      );
     }
   });
 });

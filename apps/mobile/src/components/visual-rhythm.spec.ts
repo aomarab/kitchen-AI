@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { palettes } from '../theme/palettes';
 
 /**
  * Source-level guards for three layout defects that were measured off a device
@@ -11,6 +12,7 @@ import { colors, spacing } from '../theme';
  */
 
 const read = (relative: string) => readFileSync(join(__dirname, relative), 'utf8');
+const colors = palettes.violet.light.colors;
 
 describe('borderless buttons align to the content margin', () => {
   const source = read('./Button.tsx');

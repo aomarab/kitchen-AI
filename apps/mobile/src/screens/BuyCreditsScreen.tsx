@@ -20,7 +20,8 @@ import { qk } from '../hooks/keys';
 import { buyCredits } from '../lib/purchase';
 import { canAfford, creditsShort, displayPrice } from '../lib/credits';
 import { formatQty, formatUsd } from '../lib/format';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 /** Read the optional `action` route param — the priced action that sent the user here. */
 function actionParam(value: string | string[] | undefined): CreditAction | null {
@@ -37,6 +38,7 @@ function actionParam(value: string | string[] | undefined): CreditAction | null 
  */
 export default function BuyCreditsScreen() {
   const { t, locale, prefs } = useFormat();
+  const { colors } = useTheme();
   const router = useRouter();
   const qc = useQueryClient();
   const params = useLocalSearchParams<{ action?: string | string[] }>();
@@ -124,7 +126,7 @@ export default function BuyCreditsScreen() {
                       backgroundColor: colors.primarySoft,
                     }}
                   >
-                    <Icon name="sparkles" size={22} color={colors.primary} />
+                    <Icon name="sparkles" size={22} color={colors.primaryText} />
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     <AppText variant="heading">

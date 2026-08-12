@@ -3,7 +3,8 @@ import { useRouter } from 'expo-router';
 import { AppText, Card, Icon, type IconName } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { formatQty } from '../../lib/format';
-import { spacing, tintFor } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 interface Tile {
   readonly key: string;
@@ -30,6 +31,7 @@ export function StatTiles({
   shopping: number;
 }) {
   const { t, locale, prefs } = useFormat();
+  const { tintFor } = useTheme();
   const router = useRouter();
 
   const tiles: Tile[] = [

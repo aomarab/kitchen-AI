@@ -5,10 +5,12 @@ import { Screen, AppText, ListRow, Card, Button, Icon } from '../../components';
 import type { IconName } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useAuthStore } from '../../stores/auth';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 export default function More() {
   const { t } = useFormat();
+  const { colors } = useTheme();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);

@@ -2,7 +2,8 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
 import { Fab } from './Fab';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 /**
  * The slice of React Navigation's tab bar props this bar actually uses.
@@ -51,12 +52,13 @@ export interface TabBarProps {
  */
 export function TabBar({ state, descriptors, navigation, onCapture, captureLabel }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const middle = Math.floor(state.routes.length / 2);
 
   const renderTab = (route: TabRoute, index: number) => {
     const { options } = descriptors[route.key]!;
     const focused = state.index === index;
-    const color = focused ? colors.primary : colors.textMuted;
+    const color = focused ? colors.primaryText : colors.textMuted;
 
     const onPress = () => {
       const event = navigation.emit({

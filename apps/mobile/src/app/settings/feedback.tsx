@@ -7,13 +7,15 @@ import { useFormat } from '../../hooks/useFormat';
 import { useSubmitFeedback } from '../../hooks/feedback';
 import { currentAppVersion, currentPlatform } from '../../lib/feedback';
 import { errorMessageKey } from '../../lib/errors';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 export default function Feedback() {
   // `useFormat` extends `useLocale`, so `locale` comes from the same call —
   // importing both would be two subscriptions to the same source.
   const { t, locale } = useFormat();
   const router = useRouter();
+  const { colors } = useTheme();
   const submit = useSubmitFeedback();
   const [rating, setRating] = useState(0);
   const [message, setMessage] = useState('');

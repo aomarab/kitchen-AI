@@ -1,7 +1,8 @@
 import { forwardRef } from 'react';
 import { TextInput, View, type TextInputProps } from 'react-native';
 import { AppText } from './AppText';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 import { resolveFontFamily, useFontStore } from '../lib/fonts';
 
@@ -16,6 +17,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
   { label, error, hint, style, ...rest },
   ref,
 ) {
+  const { colors } = useTheme();
   const { dir, locale } = useLocale();
   const fontsLoaded = useFontStore((state) => state.loaded);
   const fontFamily = resolveFontFamily(locale, fontsLoaded);

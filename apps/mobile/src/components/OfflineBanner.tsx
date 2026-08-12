@@ -2,7 +2,8 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 import { useConnectivity } from '../stores/connectivity';
 import { useOfflineQueue } from '../stores/offline-queue';
@@ -19,6 +20,7 @@ import { useOwnedQueue } from '../hooks/owned-queue';
  */
 export function OfflineBanner() {
   const { t } = useLocale();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const online = useConnectivity((state) => state.online);
   const pending = useOwnedQueue(useOfflineQueue((state) => state.events)).length;

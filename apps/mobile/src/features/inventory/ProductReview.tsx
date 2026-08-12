@@ -5,7 +5,8 @@ import { FEEDBACK_MESSAGE_MAX } from '@kitchen/contracts';
 import { AppText, Button, Card, Field, StarRating } from '../../components';
 import { useProductFeedback, useSubmitProductFeedback } from '../../hooks/inventory';
 import { errorMessageKey } from '../../lib/errors';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 export interface ProductReviewProps {
   itemId: string;
@@ -22,6 +23,7 @@ export interface ProductReviewProps {
  * it gets its own card, its own button, and a sentence saying where it goes.
  */
 export function ProductReview({ itemId, locale, t }: ProductReviewProps) {
+  const { colors } = useTheme();
   const summary = useProductFeedback(itemId);
   const submit = useSubmitProductFeedback(itemId);
 

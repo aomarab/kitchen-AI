@@ -16,7 +16,8 @@ import { uploadPhotos } from '../../lib/upload';
 import { captureErrorKey } from '../../lib/capture-error';
 import { useCaptureStore, type CaptureSource } from '../../stores/capture';
 import { maxPhotosFor } from './limits';
-import { colors, radius, spacing } from '../../theme';
+import { radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 /**
  * Photo / receipt capture. Take one or more shots (or pick from the library),
@@ -26,6 +27,7 @@ import { colors, radius, spacing } from '../../theme';
  */
 export function PhotoCapture({ mode }: { mode: CaptureSource }) {
   const { t } = useFormat();
+  const { colors } = useTheme();
   const router = useRouter();
   const setSession = useCaptureStore((state) => state.setSession);
   const cameraRef = useRef<CameraView>(null);

@@ -11,7 +11,8 @@ import {
   watchOnYoutubeUrl,
   WEBVIEW_ORIGIN_WHITELIST,
 } from '../lib/youtube';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 interface YoutubePlayerProps {
   youtubeId: string;
@@ -23,7 +24,6 @@ interface YoutubePlayerProps {
   /** Localized label for the escape hatch out to the YouTube app. */
   openLabel: string;
 }
-
 
 /**
  * Embedded YouTube player (spec §6.3): the video plays *inside* the recipe
@@ -40,6 +40,7 @@ export function YoutubePlayer({
 }: YoutubePlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
+  const { colors } = useTheme();
 
   const embedHtml = buildEmbedHtml(youtubeId);
   const watchUrl = watchOnYoutubeUrl(youtubeId);

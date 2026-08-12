@@ -17,7 +17,7 @@ export const RECIPE_THUMB_TONE_TOKENS = [
 export type RecipeThumbToneToken = (typeof RECIPE_THUMB_TONE_TOKENS)[number];
 
 export const RECIPE_THUMB_TONE_FOREGROUNDS = {
-  primarySoft: 'primary',
+  primarySoft: 'primaryText',
   accentSoft: 'accent',
   warnSoft: 'warn',
   successSoft: 'success',
@@ -46,7 +46,6 @@ export function recipeThumbToneForDish(dishKey: string): RecipeThumbToneToken {
   }
 
   return (
-    RECIPE_THUMB_TONE_TOKENS[hash % RECIPE_THUMB_TONE_TOKENS.length] ??
-    RECIPE_THUMB_TONE_TOKENS[0]
+    RECIPE_THUMB_TONE_TOKENS[hash % RECIPE_THUMB_TONE_TOKENS.length] ?? RECIPE_THUMB_TONE_TOKENS[0]
   );
 }

@@ -4,7 +4,8 @@ import { AppText } from './AppText';
 import { useFormat } from '../hooks/useFormat';
 import { canAfford, totalCredits, costOf, type BalanceLike } from '../lib/credits';
 import { formatQty } from '../lib/format';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export interface CreditBalanceProps {
   balance: BalanceLike & { freeGrant: number };
@@ -17,13 +18,14 @@ export interface CreditBalanceProps {
  * The gating maths lives in `lib/credits` so it stays node-testable.
  */
 export function CreditBalance({ balance }: CreditBalanceProps) {
+  const { colors } = useTheme();
   const { t, locale, prefs } = useFormat();
   const total = totalCredits(balance);
   const coversMonthly = canAfford(balance, 'plan.monthly');
 
   return (
     <Card tone="primary" style={{ gap: spacing.md }}>
-      <AppText variant="label" color="primary">
+      <AppText variant="label" color="primaryText">
         {t('mobile.credits.title')}
       </AppText>
 

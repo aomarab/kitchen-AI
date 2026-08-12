@@ -6,6 +6,7 @@ import { Screen, Header, AppText, Card, Chip, ToggleRow, ListRow } from '../../c
 import { useLocale } from '../../lib/locale';
 import { useSettingsStore } from '../../stores/settings';
 import { spacing } from '../../theme';
+import { ThemePicker } from '../../features/settings/ThemePicker';
 
 export default function Settings() {
   const { t, locale, setLocale } = useLocale();
@@ -48,6 +49,7 @@ export default function Settings() {
         <AppText variant="label" muted>
           {t('mobile.settings.appearance')}
         </AppText>
+        <ThemePicker />
         <ToggleRow
           label={t('mobile.settings.easternNumerals')}
           hint={t('mobile.settings.easternNumeralsHint')}
@@ -91,7 +93,6 @@ export default function Settings() {
           {t('mobile.more.appVersion', { version })}
         </AppText>
       </View>
-
     </Screen>
   );
 }

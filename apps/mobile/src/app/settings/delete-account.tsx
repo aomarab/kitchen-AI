@@ -1,18 +1,29 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Screen, Header, AppText, Button, Card, Field, LoadingState, ErrorState } from '../../components';
+import {
+  Screen,
+  Header,
+  AppText,
+  Button,
+  Card,
+  Field,
+  LoadingState,
+  ErrorState,
+} from '../../components';
 import { useLocale } from '../../lib/locale';
 import { useMe, useHouseholds } from '../../hooks/profile';
 import { useDeleteAccount } from '../../hooks/account';
 import { deleteConfirmationWord, matchesDeleteConfirmation } from '../../lib/delete-confirmation';
 import { errorMessageKey } from '../../lib/errors';
-import { colors, radius, spacing } from '../../theme';
+import { radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 import { successorFor } from '../../lib/successor-for';
 
 export default function DeleteAccount() {
   const { t, locale } = useLocale();
   const router = useRouter();
+  const { colors } = useTheme();
   const meQuery = useMe();
   const householdsQuery = useHouseholds();
   const mutation = useDeleteAccount();
@@ -24,7 +35,9 @@ export default function DeleteAccount() {
   if (meQuery.isError)
     return <ErrorState error={meQuery.error} onRetry={() => void meQuery.refetch()} />;
   if (householdsQuery.isError)
-    return <ErrorState error={householdsQuery.error} onRetry={() => void householdsQuery.refetch()} />;
+    return (
+      <ErrorState error={householdsQuery.error} onRetry={() => void householdsQuery.refetch()} />
+    );
   if (!meQuery.data || !householdsQuery.data) return null;
 
   const user = meQuery.data;
@@ -107,7 +120,9 @@ export default function DeleteAccount() {
       ) : null}
 
       <Button
-        title={mutation.isPending ? t('mobile.deleteAccount.working') : t('mobile.deleteAccount.submit')}
+        title={
+          mutation.isPending ? t('mobile.deleteAccount.working') : t('mobile.deleteAccount.submit')
+        }
         variant="danger"
         icon="trash"
         disabled={!canSubmit}

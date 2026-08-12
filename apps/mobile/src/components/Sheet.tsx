@@ -3,7 +3,8 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
-import { colors, hitSlop, radius, spacing } from '../theme';
+import { hitSlop, radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 
 export interface SheetProps {
@@ -23,6 +24,7 @@ export interface SheetProps {
  */
 export function Sheet({ visible, onClose, title, children }: SheetProps) {
   const { t, dir } = useLocale();
+  const { colors } = useTheme();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable
@@ -31,7 +33,12 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
         onPress={onClose}
         // A Modal is hosted outside the root view, so it inherits nothing from
         // the app's direction style and would always lay out LTR.
-        style={{ flex: 1, direction: dir, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}
+        style={{
+          flex: 1,
+          direction: dir,
+          backgroundColor: colors.overlay,
+          justifyContent: 'flex-end',
+        }}
       >
         <Pressable
           onPress={(event) => event.stopPropagation()}

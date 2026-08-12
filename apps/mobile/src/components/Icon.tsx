@@ -1,6 +1,7 @@
 import { type ComponentProps } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { type ColorValue, type StyleProp, type TextStyle } from 'react-native';
+import { useTheme } from '../theme/useTheme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -63,11 +64,16 @@ export interface IconProps {
 }
 
 export function Icon({ name, size = 18, color, style }: IconProps) {
+  const { colors } = useTheme();
   return (
     <Ionicons
       name={IONICONS[name]}
       size={size}
-      color={color}
+      // Ionicons has no default colour of its own: an omitted `color` reaches
+      // React Native as `undefined` and renders pure black, which was merely
+      // off-palette while every screen was light and is invisible now that
+      // three of the six palettes have near-black grounds.
+      color={color ?? colors.text}
       style={style}
       accessible={false}
       importantForAccessibility="no"

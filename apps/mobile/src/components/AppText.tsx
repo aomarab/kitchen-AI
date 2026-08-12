@@ -1,11 +1,6 @@
 import { Text, type TextProps, type TextStyle } from 'react-native';
-import {
-  colors,
-  maxFontScaleFor,
-  typography,
-  type ColorToken,
-  type TypographyVariant,
-} from '../theme';
+import { maxFontScaleFor, typography, type ColorToken, type TypographyVariant } from '../theme';
+import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 import { resolveFontFamily, useFontStore } from '../lib/fonts';
 
@@ -22,6 +17,7 @@ export interface AppTextProps extends TextProps {
  * the theme so no screen sets raw font sizes or hex values.
  */
 export function AppText({ variant = 'body', color, center, muted, style, ...rest }: AppTextProps) {
+  const { colors } = useTheme();
   const { locale, dir } = useLocale();
   const fontsLoaded = useFontStore((state) => state.loaded);
   const token = typography(locale)[variant]!;

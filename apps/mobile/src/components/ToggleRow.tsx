@@ -1,6 +1,7 @@
 import { Switch, View } from 'react-native';
 import { AppText } from './AppText';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export interface ToggleRowProps {
   label: string;
@@ -11,6 +12,7 @@ export interface ToggleRowProps {
 
 /** Labelled switch row used across Settings. */
 export function ToggleRow({ label, hint, value, onValueChange }: ToggleRowProps) {
+  const { colors } = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
       <View style={{ flex: 1, gap: 2 }}>

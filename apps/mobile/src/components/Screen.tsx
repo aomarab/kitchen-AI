@@ -9,8 +9,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
 import { contentMaxWidth } from '../theme/layout';
+import { useTheme } from '../theme/useTheme';
 
 export interface ScreenProps {
   children: ReactNode;
@@ -41,6 +42,7 @@ export function Screen({
   onRefresh,
   footer,
 }: ScreenProps) {
+  const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const maxWidth = contentMaxWidth(width);
   // `lg` between top-level blocks against the `sm` most screens use inside a
@@ -64,7 +66,9 @@ export function Screen({
             contentContainerStyle={[pad, { flexGrow: 1 }, constrain, contentStyle]}
             keyboardShouldPersistTaps="handled"
             refreshControl={
-              onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} /> : undefined
+              onRefresh ? (
+                <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} />
+              ) : undefined
             }
           >
             {children}

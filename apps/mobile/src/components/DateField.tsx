@@ -5,7 +5,8 @@ import { AppText } from './AppText';
 import { Button } from './Button';
 import { Icon } from './Icon';
 import { Sheet } from './Sheet';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 import { useFormat } from '../hooks/useFormat';
 import { dateFromIsoDate, isoDateFromDate } from '../lib/expiry';
 import { formatDateWithHijri } from '../lib/format';
@@ -42,6 +43,7 @@ export function DateField({
   doneLabel,
   minimumDate,
 }: DateFieldProps) {
+  const { colors, isDark } = useTheme();
   const { locale, showHijri } = useFormat();
   const [open, setOpen] = useState(false);
   const selected = dateFromIsoDate(value) ?? new Date();
@@ -78,7 +80,9 @@ export function DateField({
         }}
       >
         <AppText style={{ color: value ? colors.text : colors.textMuted }}>
-          {value ? formatDateWithHijri(locale, value, showHijri, { dateStyle: 'long' }) : placeholder}
+          {value
+            ? formatDateWithHijri(locale, value, showHijri, { dateStyle: 'long' })
+            : placeholder}
         </AppText>
         {/* A calendar reads the same in both directions, so it never mirrors. */}
         <Icon name="calendar" size={18} color={colors.textMuted} />
@@ -86,7 +90,7 @@ export function DateField({
 
       {value ? (
         <Pressable onPress={() => onChange(null)} accessibilityRole="button">
-          <AppText variant="caption" style={{ color: colors.primary }}>
+          <AppText variant="caption" style={{ color: colors.primaryText }}>
             {clearLabel}
           </AppText>
         </Pressable>
@@ -108,7 +112,10 @@ export function DateField({
             mode="date"
             display="inline"
             minimumDate={minimumDate}
-            themeVariant="light"
+            // Pinned to 'light' while the app had one palette. UIDatePicker
+            // draws its own chrome, so a light variant inside a dark sheet
+            // paints near-black day numbers on a near-black surface.
+            themeVariant={isDark ? 'dark' : 'light'}
             locale={locale}
             onChange={(_event, date) => {
               if (date) commit(date);

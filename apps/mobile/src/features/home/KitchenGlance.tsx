@@ -6,7 +6,8 @@ import { AppText, Card, DirectionalIcon, Ring } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { locationLabel, formatPercent, formatQty } from '../../lib/format';
 import { freshnessCounts, locationSlices, ringTicks, type LocatedItem } from '../../lib/home-stats';
-import { CHROME_MAX_FONT_SCALE, colors, radius, spacing, tintFor } from '../../theme';
+import { CHROME_MAX_FONT_SCALE, radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 /** Enough ticks to read as a ring, few enough that a slice is still countable. */
 const TICKS = 48;
@@ -31,6 +32,7 @@ export function KitchenGlance({
   locations: readonly StorageLocation[];
 }) {
   const { t, locale, prefs } = useFormat();
+  const { colors, tintFor } = useTheme();
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale > 1.3;
   const router = useRouter();

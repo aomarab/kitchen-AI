@@ -18,7 +18,7 @@ import { startConnectivityMonitor } from '../stores/connectivity';
 import { useAuthStore } from '../stores/auth';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { SyncFailuresBanner } from '../components/SyncFailuresBanner';
-import { colors } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 /**
  * Layout direction is a *style*, not a native flag.
@@ -34,7 +34,6 @@ import { colors } from '../theme';
  * The persisted native flag is still cleared once at startup, or an install
  * upgraded from a build that called `forceRTL(true)` would mirror twice.
  */
-
 
 /**
  * Sends the user to sign-in the moment the session ends, from wherever they
@@ -73,6 +72,7 @@ function QueryScopedEffects() {
 
 export default function RootLayout() {
   const { locale, dir } = useLocale();
+  const { colors, isDark } = useTheme();
   const ready = useBootstrap();
   useAppFonts();
   useOfflineSync();
@@ -99,7 +99,10 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <QueryScopedEffects />
-          <StatusBar style="dark" />
+          {/* Follows the *resolved* mode, not the OS: someone who has pinned
+              light on a dark phone would otherwise get dark glyphs on a light
+              bar. `style` names the content, so dark mode wants 'light'. */}
+          <StatusBar style={isDark ? 'light' : 'dark'} />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -122,7 +125,7 @@ export default function RootLayout() {
                 backgroundColor: colors.bg,
               }}
             >
-              <ActivityIndicator size="large" color={colors.primary} />
+              <ActivityIndicator size="large" color={colors.primaryText} />
             </View>
           )}
           <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, start: 0, end: 0 }}>

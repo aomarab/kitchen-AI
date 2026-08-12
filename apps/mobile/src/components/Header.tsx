@@ -1,7 +1,8 @@
 import { Pressable, View } from 'react-native';
 import { AppText } from './AppText';
 import { DirectionalIcon } from './DirectionalIcon';
-import { colors, hitSlop, spacing } from '../theme';
+import { hitSlop, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 
 export interface HeaderProps {
@@ -14,6 +15,7 @@ export interface HeaderProps {
 /** In-screen header row with an optional back affordance (mirrors in RTL). */
 export function Header({ title, onBack, trailing, subtitle }: HeaderProps) {
   const { t } = useLocale();
+  const { colors } = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 }}>
       {onBack ? (

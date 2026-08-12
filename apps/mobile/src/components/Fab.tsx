@@ -1,6 +1,7 @@
 import { Pressable } from 'react-native';
 import { Icon, type IconName } from './Icon';
-import { colors, radius, shadow } from '../theme';
+import { radius } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export interface FabProps {
   icon?: IconName;
@@ -20,6 +21,8 @@ export interface FabProps {
  * shadow, so it sits in the same light as every other raised surface.
  */
 export function Fab({ icon = 'camera', onPress, accessibilityLabel }: FabProps) {
+  const { colors, shadow } = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -38,7 +41,7 @@ export function Fab({ icon = 'camera', onPress, accessibilityLabel }: FabProps) 
         transform: [{ scale: pressed ? 0.94 : 1 }],
       })}
     >
-      <Icon name={icon} size={26} color={colors.textInverse} />
+      <Icon name={icon} size={26} color={colors.onFill} />
     </Pressable>
   );
 }

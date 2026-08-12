@@ -98,7 +98,12 @@ describe('notification settings', () => {
     // The mirror of the test above: `!== false` must not become "always true",
     // or turning notifications off would never survive a restart.
     fileSystem.readAsStringAsync.mockResolvedValue(
-      JSON.stringify({ notifyExpiry: false, notifyMeals: false, expiryLeadDays: 7, reminderHour: 9 }),
+      JSON.stringify({
+        notifyExpiry: false,
+        notifyMeals: false,
+        expiryLeadDays: 7,
+        reminderHour: 9,
+      }),
     );
 
     await useSettingsStore.getState().hydrate();
@@ -120,5 +125,60 @@ describe('notification settings', () => {
       notifyMeals: true,
       reminderHour: DEFAULT_REMINDER_HOUR,
     });
+  });
+});
+
+describe('theme preference', () => {
+  it('defaults to violet following the system, so nothing changes on upgrade', () => {
+    useSettingsStore.setState({ themeFamily: 'violet', themePreference: 'system' });
+    expect(useSettingsStore.getState().themeFamily).toBe('violet');
+    expect(useSettingsStore.getState().themePreference).toBe('system');
+  });
+
+  it('persists both halves of the choice', async () => {
+    useSettingsStore.getState().setThemeFamily('terracotta');
+    useSettingsStore.getState().setThemePreference('dark');
+    await Promise.resolve();
+
+    const written = fileSystem.writeAsStringAsync.mock.calls.at(-1)?.[1] as string;
+    expect(JSON.parse(written)).toMatchObject({
+      themeFamily: 'terracotta',
+      themePreference: 'dark',
+    });
+  });
+
+  it('restores a saved theme', async () => {
+    fileSystem.readAsStringAsync.mockResolvedValue(
+      JSON.stringify({ themeFamily: 'green', themePreference: 'light' }),
+    );
+    await useSettingsStore.getState().hydrate();
+
+    expect(useSettingsStore.getState().themeFamily).toBe('green');
+    expect(useSettingsStore.getState().themePreference).toBe('light');
+  });
+
+  /**
+   * The failure this guards is a downgrade: a build that knows four families
+   * writes the fourth, the user reinstalls an older build, and `paletteFor`
+   * gets a key it has never heard of. Casting the saved string would put
+   * `undefined.colors` on screen; validating it falls back to the default.
+   */
+  it('falls back when the saved theme is not one this build knows', async () => {
+    fileSystem.readAsStringAsync.mockResolvedValue(
+      JSON.stringify({ themeFamily: 'chartreuse', themePreference: 'sepia' }),
+    );
+    await useSettingsStore.getState().hydrate();
+
+    expect(useSettingsStore.getState().themeFamily).toBe('violet');
+    expect(useSettingsStore.getState().themePreference).toBe('system');
+  });
+
+  it('reads an older settings file, written before themes existed, as the default', async () => {
+    useSettingsStore.setState({ themeFamily: 'green', themePreference: 'dark' });
+    fileSystem.readAsStringAsync.mockResolvedValue(JSON.stringify({ easternNumerals: true }));
+    await useSettingsStore.getState().hydrate();
+
+    expect(useSettingsStore.getState().themeFamily).toBe('violet');
+    expect(useSettingsStore.getState().themePreference).toBe('system');
   });
 });

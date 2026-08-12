@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { readJson, writeJson } from '../lib/storage';
 import { DEFAULT_LEAD_DAYS, DEFAULT_REMINDER_HOUR } from '../lib/notifications';
+import { DEFAULT_THEME_FAMILY, THEME_FAMILIES, type ThemeFamily } from '../theme/palettes';
+
+/** 'system' follows the OS switch; the other two pin it regardless. */
+export type ThemePreference = 'system' | 'light' | 'dark';
+
+const THEME_PREFERENCES: readonly ThemePreference[] = ['system', 'light', 'dark'];
 
 const PERSIST_KEY = 'settings';
 
@@ -19,6 +25,8 @@ interface PersistedSettings {
   notifyPlanning: boolean;
   expiryLeadDays: number;
   reminderHour: number;
+  themeFamily: ThemeFamily;
+  themePreference: ThemePreference;
 }
 
 interface SettingsState extends PersistedSettings {
@@ -31,6 +39,8 @@ interface SettingsState extends PersistedSettings {
   setNotifyPlanning: (value: boolean) => void;
   setExpiryLeadDays: (value: number) => void;
   setReminderHour: (value: number) => void;
+  setThemeFamily: (value: ThemeFamily) => void;
+  setThemePreference: (value: ThemePreference) => void;
   hydrate: () => Promise<void>;
 }
 
@@ -54,6 +64,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   notifyPlanning: false,
   expiryLeadDays: DEFAULT_LEAD_DAYS,
   reminderHour: DEFAULT_REMINDER_HOUR,
+  themeFamily: DEFAULT_THEME_FAMILY,
+  // Defaults to following the phone. Someone who has set their device to dark
+  // has already told us what they want; asking again in-app is redundant.
+  themePreference: 'system',
 
   setEasternNumerals: (value) => {
     set({ easternNumerals: value });
@@ -100,6 +114,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     void writeJson(PERSIST_KEY, current(get()));
   },
 
+  setThemeFamily: (value) => {
+    set({ themeFamily: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
+  setThemePreference: (value) => {
+    set({ themePreference: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
   hydrate: async () => {
     const saved = await readJson<PersistedSettings>(PERSIST_KEY);
     if (!saved) return;
@@ -117,6 +141,15 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       notifyPlanning: saved.notifyPlanning === true,
       expiryLeadDays: saved.expiryLeadDays ?? DEFAULT_LEAD_DAYS,
       reminderHour: saved.reminderHour ?? DEFAULT_REMINDER_HOUR,
+      // Validated against the known sets rather than cast: a settings file
+      // written by a future build with a fourth family must not put an
+      // undefined palette on screen after a downgrade.
+      themeFamily: THEME_FAMILIES.includes(saved.themeFamily)
+        ? saved.themeFamily
+        : DEFAULT_THEME_FAMILY,
+      themePreference: THEME_PREFERENCES.includes(saved.themePreference)
+        ? saved.themePreference
+        : 'system',
     });
   },
 }));
@@ -132,5 +165,7 @@ function current(state: PersistedSettings): PersistedSettings {
     notifyPlanning: state.notifyPlanning,
     expiryLeadDays: state.expiryLeadDays,
     reminderHour: state.reminderHour,
+    themeFamily: state.themeFamily,
+    themePreference: state.themePreference,
   };
 }

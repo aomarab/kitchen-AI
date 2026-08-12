@@ -14,11 +14,13 @@ import { useFormat } from '../hooks/useFormat';
 import { useShoppingList, useToggleShoppingItem, useCheckoutShopping } from '../hooks/shopping';
 import { useLocations } from '../hooks/inventory';
 import { localizedName, formatMeasure } from '../lib/format';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export default function Shopping() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
+  const { colors } = useTheme();
   const list = useShoppingList();
   const toggle = useToggleShoppingItem();
   const checkout = useCheckoutShopping();
@@ -52,7 +54,9 @@ export default function Shopping() {
                 title={localizedName(locale, item.nameEn, item.nameAr)}
                 subtitle={formatMeasure(t, locale, item.quantity, item.unit, prefs)}
                 accessibilityLabel={
-                  item.purchased ? t('shopping.purchased') : localizedName(locale, item.nameEn, item.nameAr)
+                  item.purchased
+                    ? t('shopping.purchased')
+                    : localizedName(locale, item.nameEn, item.nameAr)
                 }
                 leading={
                   <Pressable

@@ -28,12 +28,18 @@ import {
   useDeleteInventoryItem,
   useAdjustQuantity,
 } from '../../hooks/inventory';
-import { ingredientName, itemName, unitLabel, formatExpiryLabel, locationLabel } from '../../lib/format';
+import {
+  ingredientName,
+  itemName,
+  unitLabel,
+  formatExpiryLabel,
+  locationLabel,
+} from '../../lib/format';
 import { expiryStatus, isValidExpiryInput, type ExpiryStatus } from '../../lib/expiry';
 import { errorMessageKey } from '../../lib/errors';
 import { ProductReview } from '../../features/inventory/ProductReview';
-import { colors } from '../../theme';
 import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 const COMMON_UNITS: Unit[] = ['piece', 'g', 'kg', 'ml', 'l', 'bunch', 'can', 'packet'];
 
@@ -49,6 +55,7 @@ export default function ItemDetail() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useTheme();
 
   // Fetched by id. Scanning the first page of the unfiltered list instead
   // meant anything past item #50 rendered as NOT_FOUND.
@@ -132,7 +139,9 @@ export default function ItemDetail() {
         title={itemName(locale, item)}
         onBack={() => router.back()}
         trailing={
-          expiryLabel ? <Badge tone={EXPIRY_TONE[expiryStatus(item.expiresAt)]} label={expiryLabel} /> : undefined
+          expiryLabel ? (
+            <Badge tone={EXPIRY_TONE[expiryStatus(item.expiresAt)]} label={expiryLabel} />
+          ) : undefined
         }
       />
 
@@ -195,7 +204,12 @@ export default function ItemDetail() {
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {COMMON_UNITS.map((u) => (
-              <Chip key={u} label={unitLabel(t, u)} selected={unit === u} onPress={() => setDraftUnit(u)} />
+              <Chip
+                key={u}
+                label={unitLabel(t, u)}
+                selected={unit === u}
+                onPress={() => setDraftUnit(u)}
+              />
             ))}
           </View>
         </View>
@@ -286,7 +300,11 @@ export default function ItemDetail() {
             })
           }
         />
-        <Button title={t('common.cancel')} variant="ghost" onPress={() => setConfirmDelete(false)} />
+        <Button
+          title={t('common.cancel')}
+          variant="ghost"
+          onPress={() => setConfirmDelete(false)}
+        />
       </Sheet>
     </Screen>
   );

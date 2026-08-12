@@ -16,6 +16,7 @@
     "db:generate": "pnpm --filter @kitchen/api db:generate",
     "db:migrate": "pnpm --filter @kitchen/api db:migrate",
     "db:seed": "pnpm --filter @kitchen/api db:seed",
+    "db:reset": "pnpm --filter @kitchen/api db:reset",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""

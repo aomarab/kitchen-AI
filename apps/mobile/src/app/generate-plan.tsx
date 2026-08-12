@@ -23,7 +23,8 @@ import { canAfford, costOf, creditsShort } from '../lib/credits';
 import { jobErrorKey } from '../lib/errors';
 import { todayISODate } from '../lib/expiry';
 import { formatMinutes, formatQty } from '../lib/format';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 /** Each plan scope maps to the billable action it triggers (spec §3). */
 const SCOPE_ACTION: Record<PlanScope, CreditAction> = {
@@ -66,6 +67,7 @@ function toggle<T>(set: readonly T[], value: T): T[] {
 export default function GeneratePlan() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
+  const { colors } = useTheme();
 
   const [scope, setScope] = useState<PlanScope>('weekly');
   const [startsOn, setStartsOn] = useState(todayISODate());
