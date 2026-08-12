@@ -26,6 +26,7 @@ import {
 import {
   bulkCreateInventoryRequestSchema,
   createStorageLocationRequestSchema,
+  deleteStorageLocationQuerySchema,
   inventoryEventSchema,
   inventoryItemSchema,
   listInventoryQuerySchema,
@@ -35,6 +36,7 @@ import {
   syncEventsRequestSchema,
   syncEventsResponseSchema,
   updateInventoryItemRequestSchema,
+  updateStorageLocationRequestSchema,
 } from './inventory.js';
 import {
   getRecipeQuerySchema,
@@ -276,12 +278,22 @@ export const routes = {
     body: createStorageLocationRequestSchema,
     response: storageLocationSchema,
   },
+  updateLocation: {
+    method: 'PATCH',
+    path: '/inventory/locations/:id',
+    auth: true,
+    household: true,
+    params: idParamSchema,
+    body: updateStorageLocationRequestSchema,
+    response: storageLocationSchema,
+  },
   deleteLocation: {
     method: 'DELETE',
     path: '/inventory/locations/:id',
     auth: true,
     household: true,
     params: idParamSchema,
+    query: deleteStorageLocationQuerySchema,
     response: emptyResponse,
   },
   listInventory: {

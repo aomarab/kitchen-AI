@@ -30,6 +30,22 @@ export const createStorageLocationRequestSchema = storageLocationSchema.omit({
 });
 export type CreateStorageLocationRequest = z.infer<typeof createStorageLocationRequestSchema>;
 
+/** Renaming a place, or correcting what kind of place it is. */
+export const updateStorageLocationRequestSchema = createStorageLocationRequestSchema.partial();
+export type UpdateStorageLocationRequest = z.infer<typeof updateStorageLocationRequestSchema>;
+
+/**
+ * Deleting a place that still holds food.
+ *
+ * Without `moveTo` the request is refused, because a kitchen place and the
+ * food inside it are not the same thing and deleting one must not silently
+ * destroy the other. With it, the contents are moved first and nothing is lost.
+ */
+export const deleteStorageLocationQuerySchema = z.object({
+  moveTo: uuidSchema.optional(),
+});
+export type DeleteStorageLocationQuery = z.infer<typeof deleteStorageLocationQuerySchema>;
+
 /* ------------------------------------------------------------------ */
 /* Inventory items                                                     */
 /* ------------------------------------------------------------------ */

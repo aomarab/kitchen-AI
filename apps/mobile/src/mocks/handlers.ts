@@ -228,7 +228,41 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     db.locations.push(location);
     return HttpResponse.json(location);
   },
-  deleteLocation: okEmpty,
+  updateLocation: async ({ params, request }) => {
+    const body = await readBody(request);
+    const location = db.locations.find((l) => l.id === String(params.id));
+    if (!location) return notFound();
+    if (body.name !== undefined) location.name = String(body.name);
+    if (body.type !== undefined) location.type = body.type as (typeof db.locations)[number]['type'];
+    return HttpResponse.json(location);
+  },
+  deleteLocation: ({ params, request }) => {
+    const id = String(params.id);
+    const index = db.locations.findIndex((l) => l.id === id);
+    if (index === -1) return notFound();
+
+    const contents = db.inventory.filter((i) => i.locationId === id);
+    const moveTo = query(request).get('moveTo');
+    if (contents.length > 0) {
+      // Mirrors the API: a place is not its contents, so deleting one that
+      // still holds food is refused unless the food is given somewhere to go.
+      if (!moveTo) {
+        return HttpResponse.json(
+          {
+            code: 'CONFLICT',
+            messageKey: 'errors.CONFLICT',
+            details: { reason: 'location_not_empty', itemCount: contents.length },
+          },
+          { status: 409 },
+        );
+      }
+      if (!db.locations.some((l) => l.id === moveTo)) return notFound();
+      for (const item of contents) item.locationId = moveTo;
+    }
+
+    db.locations.splice(index, 1);
+    return HttpResponse.json({ ok: true });
+  },
   listInventory: ({ request }) => {
     const params = query(request);
     const locationId = params.get('locationId');

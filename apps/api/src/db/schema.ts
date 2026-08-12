@@ -286,9 +286,24 @@ export const inventoryItems = pgTable(
     ingredientId: uuid('ingredient_id')
       .notNull()
       .references(() => ingredients.id, { onDelete: 'restrict' }),
+    /**
+     * Deliberately NOT `cascade`. It was, and deleting a storage location
+     * silently deleted every item inside it — and their events with them,
+     * since those cascade from the item. A kitchen place and the food in it
+     * are different things: emptying a shelf is a decision about food, and it
+     * has to be made explicitly. `LocationsService.delete` moves the contents
+     * or refuses.
+     *
+     * `no action` rather than `restrict` because the two are equivalent for
+     * the case that matters (both raise 23503) but only `no action` can defer
+     * its check to the end of the statement, so a household deletion — which
+     * cascades to locations and items in an order Postgres does not promise —
+     * cannot become order-dependent. Both were measured against a real
+     * database before choosing.
+     */
     locationId: uuid('location_id')
       .notNull()
-      .references(() => storageLocations.id, { onDelete: 'cascade' }),
+      .references(() => storageLocations.id),
     /** Materialized current state; the source of truth is `inventory_events`. */
     quantity: numeric('quantity', { precision: 12, scale: 3 }).notNull(),
     unit: unitEnum('unit').notNull(),
