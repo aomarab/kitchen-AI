@@ -144,6 +144,26 @@ export const mobileEn = {
       nameHint: 'Only your household sees this name.',
       resetName: 'Use catalog name',
     },
+    productReview: {
+      title: 'Rate this product',
+      prompt: 'How was it?',
+      star: 'Rate {value} out of 5',
+      messageLabel: 'What should the maker know? (optional)',
+      messagePlaceholder: 'Taste, freshness, packaging, value…',
+      submit: 'Send review',
+      update: 'Update review',
+      saved: 'Thank you — your review was sent.',
+      yours: 'Your review',
+      // Said plainly, because a review that reaches the manufacturer is not
+      // what people expect a kitchen app to do with a tap on a star.
+      vendorNote: 'We pass reviews to the brand that makes this product. Your name is never sent.',
+      othersNone: 'No one has rated this yet.',
+      others: plural('count', {
+        one: '{rating} out of 5, from {count} review',
+        other: '{rating} out of 5, from {count} reviews',
+      }),
+      unbranded: 'Unbranded',
+    },
     recipe: {
       startCooking: 'Start cooking',
       cookModeHint: 'Your screen stays awake while you cook.',

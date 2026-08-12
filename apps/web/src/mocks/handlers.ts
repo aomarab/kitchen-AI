@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import type {
+  ProductComment,
   AddShoppingItemsRequest,
   BulkCreateInventoryRequest,
   CheckoutShoppingRequest,
@@ -39,6 +40,16 @@ import {
   uuid,
 } from './db';
 import { getMockLocale } from './runtime';
+
+/** Stable ids for mock products, so a selection survives the next refetch. */
+const mockIngredientIds = new Map<string, string>();
+function mockIngredientId(name: string): string {
+  const existing = mockIngredientIds.get(name);
+  if (existing) return existing;
+  const created = uuid();
+  mockIngredientIds.set(name, created);
+  return created;
+}
 
 const u = (path: string) => `${API_URL}${path}`;
 
@@ -619,6 +630,66 @@ export const handlers = [
       items: page.map(({ submitter: _submitter, adminNote: _note, reviewedAt: _at, ...rest }) => rest),
       nextCursor,
     });
+  }),
+
+  /*
+   * Declared before `/admin/feedback/:id` and before the collection route so
+   * MSW matches the literal path; a `:id` pattern registered first would
+   * swallow `/admin/product-feedback/comments`.
+   */
+  http.get(u('/admin/product-feedback/comments'), ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const brand = params.get('brand');
+    const rating = params.get('rating');
+    const rows = db.productFeedback.filter(
+      (row) =>
+        (!brand || (row.brand ?? '').toLowerCase() === brand.toLowerCase()) &&
+        (!rating || row.rating === Number(rating)),
+    );
+    return HttpResponse.json({ items: rows, nextCursor: null });
+  }),
+
+  http.get(u('/admin/product-feedback'), ({ request }) => {
+    // Stable per product for the life of the session: the page selects a row
+    // and then queries its comments by id, so a fresh uuid on every fetch
+    // would make the selection point at a product that no longer exists.
+    const params = new URL(request.url).searchParams;
+    const brand = params.get('brand');
+    const maxAverage = params.get('maxAverage');
+
+    // Group by product *and* brand, matching the server: one company's two
+    // products are two rows, and one product's two companies are two rows.
+    const groups = new Map<string, ProductComment[]>();
+    for (const row of db.productFeedback) {
+      if (brand && (row.brand ?? '').toLowerCase() !== brand.toLowerCase()) continue;
+      const key = `${row.nameEn}|${(row.brand ?? '').toLowerCase()}`;
+      groups.set(key, [...(groups.get(key) ?? []), row]);
+    }
+
+    const items = [...groups.values()]
+      .map((rows) => {
+        const first = rows[0]!;
+        const average = rows.reduce((sum, r) => sum + r.rating, 0) / rows.length;
+        const byRating: Record<string, number> = {};
+        for (const row of rows) {
+          byRating[String(row.rating)] = (byRating[String(row.rating)] ?? 0) + 1;
+        }
+        return {
+          ingredientId: mockIngredientId(first.nameEn),
+          nameEn: first.nameEn,
+          nameAr: first.nameAr,
+          brand: first.brand,
+          count: rows.length,
+          averageRating: Math.round(average * 100) / 100,
+          byRating,
+          commentCount: rows.filter((r) => r.message.length > 0).length,
+        };
+      })
+      .filter((row) => !maxAverage || row.averageRating <= Number(maxAverage))
+      // Worst first, like the server: the report is for finding what to fix.
+      .sort((a, b) => a.averageRating - b.averageRating);
+
+    return HttpResponse.json({ items, nextCursor: null });
   }),
 
   http.get(u('/admin/feedback/:id'), ({ params }) => {

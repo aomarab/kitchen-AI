@@ -113,3 +113,29 @@ export function useAdjustQuantity() {
     onSettled: () => qc.invalidateQueries({ queryKey: qk.inventory }),
   });
 }
+
+/**
+ * What this household and everyone else thinks of the product an item is.
+ *
+ * Keyed under the item rather than the product because the screen has an item
+ * id and the server is what decides which product that is — mirroring that
+ * decision on the client would mean two places that could disagree.
+ */
+export function useProductFeedback(itemId: string) {
+  return useQuery({
+    queryKey: qk.productFeedback(itemId),
+    queryFn: () => api.call('getProductFeedback', { params: { id: itemId } }),
+    enabled: itemId.length > 0,
+  });
+}
+
+export function useSubmitProductFeedback(itemId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: RouteBody<'submitProductFeedback'>) =>
+      api.call('submitProductFeedback', { params: { id: itemId }, body }),
+    // Refetch rather than write the response in: submitting changes the shared
+    // average too, and the response only carries this household's own review.
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.productFeedback(itemId) }),
+  });
+}

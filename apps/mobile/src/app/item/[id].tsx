@@ -31,6 +31,7 @@ import {
 import { ingredientName, itemName, unitLabel, formatExpiryLabel, locationLabel } from '../../lib/format';
 import { expiryStatus, isValidExpiryInput, type ExpiryStatus } from '../../lib/expiry';
 import { errorMessageKey } from '../../lib/errors';
+import { ProductReview } from '../../features/inventory/ProductReview';
 import { colors } from '../../theme';
 import { spacing } from '../../theme';
 
@@ -258,13 +259,14 @@ export default function ItemDetail() {
         ) : null}
       </Card>
 
+      <ProductReview itemId={item.id} locale={locale} t={t} />
+
       <Button
         title={t('inventory.deleteItem')}
         variant="danger"
         icon="trash"
         onPress={() => setConfirmDelete(true)}
       />
-
       <Sheet
         visible={confirmDelete}
         onClose={() => setConfirmDelete(false)}

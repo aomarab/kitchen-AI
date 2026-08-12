@@ -246,7 +246,9 @@ export const webEn = {
     },
     admin: {
       title: 'Admin',
-      feedbackTitle: 'Product feedback',
+      // Was 'Product feedback', which is now a different screen: this one is
+      // about the app, /admin/products is about the things people buy.
+      feedbackTitle: 'App feedback',
       forbidden: 'You do not have access to this area.',
       total: 'Total',
       average: 'Average rating',
@@ -257,6 +259,17 @@ export const webEn = {
       filterAll: 'All',
       loadMore: 'Load more',
       exportCsv: 'Export CSV',
+      navFeedback: 'App feedback',
+      navProducts: 'Product reviews',
+      vendorTitle: 'Product reviews',
+      vendorIntro:
+        'What customers think of the products they buy, grouped by the brand that makes them. Export a product to send its reviews to the vendor.',
+      vendorEmpty: 'No product reviews yet.',
+      poorOnly: 'Only poorly rated',
+      unbranded: 'Unbranded',
+      reviewCount: plural('count', { one: '{count} review', other: '{count} reviews' }),
+      commentsFor: 'Comments for {brand}',
+      noComments: 'These ratings came without written comments.',
       exporting: 'Preparing export…',
       exportFailed: 'The export could not be produced. Please try again.',
       empty: 'No feedback matches these filters.',

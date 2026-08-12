@@ -55,6 +55,8 @@ const db = {
   jobs: new Map<string, JobRecord>(),
   credits: { ...mockCredits },
   purchaseIntents: new Map<string, { productId: string; credits: number }>(),
+  /** Product reviews, keyed by the product the item is: `ingredientId|brand`. */
+  productReviews: new Map<string, { id: string; rating: number; message: string | null }>(),
 };
 
 let mockLocale: Locale = 'en';
@@ -69,6 +71,15 @@ let idCounter = 9000;
 function nextId(): string {
   idCounter += 1;
   return mockId(`f${idCounter}`);
+}
+
+/**
+ * Which product an item is, for review purposes. Mirrors the server's unique
+ * index: same ingredient and same brand case-insensitively, with no brand
+ * collapsing to `''` rather than staying distinct the way SQL nulls would.
+ */
+function productKey(item: { ingredient: { id: string }; brand: string | null }): string {
+  return `${item.ingredient.id}|${(item.brand ?? '').toLowerCase()}`;
 }
 
 function currentPlan(): MealPlan {
@@ -320,6 +331,49 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
   getInventoryItem: ({ params }) => {
     const item = db.inventory.find((i) => i.id === String(params.id));
     return item ? HttpResponse.json(item) : notFound();
+  },
+  getProductFeedback: ({ params }) => {
+    const item = db.inventory.find((i) => i.id === String(params.id));
+    if (!item) return notFound();
+    const mine = db.productReviews.get(productKey(item)) ?? null;
+    return HttpResponse.json({
+      mine: mine
+        ? {
+            id: mine.id,
+            ingredientId: item.ingredient.id,
+            brand: item.brand,
+            rating: mine.rating,
+            message: mine.message,
+            createdAt: new Date().toISOString(),
+          }
+        : null,
+      // A fixed stranger average, so the "others" line has something to render
+      // offline. Only the reader's own review is stateful here.
+      averageRating: mine ? Math.round(((mine.rating + 4) / 2) * 100) / 100 : 4,
+      count: mine ? 2 : 1,
+    });
+  },
+  submitProductFeedback: async ({ request, params }) => {
+    const item = db.inventory.find((i) => i.id === String(params.id));
+    if (!item) return notFound();
+    const body = (await readBody(request)) as { rating: number; message?: string };
+    const key = productKey(item);
+    // Upsert, mirroring the unique index: re-reviewing replaces, never stacks.
+    const existing = db.productReviews.get(key);
+    const saved = {
+      id: existing?.id ?? nextId(),
+      rating: body.rating,
+      message: body.message ?? null,
+    };
+    db.productReviews.set(key, saved);
+    return HttpResponse.json({
+      id: saved.id,
+      ingredientId: item.ingredient.id,
+      brand: item.brand,
+      rating: saved.rating,
+      message: saved.message,
+      createdAt: new Date().toISOString(),
+    });
   },
   updateInventoryItem: async ({ request, params }) => {
     const body = await readBody(request);

@@ -18,7 +18,7 @@ import type {
   StorageLocationType,
   User,
 } from '@kitchen/contracts';
-import type { CreditBalance } from '@kitchen/contracts';
+import type { CreditBalance, ProductComment } from '@kitchen/contracts';
 import { FREE_MONTHLY_GRANT } from '@kitchen/contracts';
 import { INGREDIENTS, RECIPES, type RecipeSeed } from './catalog';
 import { uuid } from '../lib/uuid';
@@ -98,6 +98,8 @@ interface DbShape {
    * makes feedback submitted in mock mode show up in the admin console.
    */
   feedback: FeedbackDetail[];
+  /** Reviews of products, which the vendor report groups by brand. */
+  productFeedback: ProductComment[];
   /** Household credit balance (spec §7); the free grant renews monthly. */
   credits: CreditBalance;
   /** Purchase intents awaiting confirmation, keyed by intent id. */
@@ -469,6 +471,7 @@ export function seed(): void {
   db.jobs = new Map();
   db.recognitions = new Map();
   db.feedback = seedFeedback();
+  db.productFeedback = seedProductFeedback();
 
   db.credits = {
     householdId: DEFAULT_HOUSEHOLD_ID,
@@ -618,3 +621,48 @@ function buildWeeklyPlan(): InternalPlan {
 }
 
 seed();
+
+/**
+ * Seeded for the same reason as `seedFeedback`: the vendor report is reachable
+ * by URL only and mock state does not survive a reload, so an empty seed left
+ * the screen permanently empty in mock mode. Two brands of one product, one of
+ * them poorly rated, so the grouping and the "poorly rated" filter both have
+ * something to show — plus one Arabic comment, because the console renders a
+ * customer's words in the customer's direction, not the reader's.
+ */
+function seedProductFeedback(): ProductComment[] {
+  const milk = INGREDIENTS.find((i) => i.key === 'yogurt') ?? INGREDIENTS[0]!;
+  const second = INGREDIENTS.find((i) => i.key === 'rice') ?? INGREDIENTS[1]!;
+  return [
+    {
+      id: '55555555-5555-4555-8555-555555555551',
+      rating: 2,
+      message: 'Soured two days before the date printed on the carton.',
+      locale: 'en',
+      createdAt: iso(NOW()),
+      nameEn: milk.en,
+      nameAr: milk.ar,
+      brand: 'Almarai',
+    },
+    {
+      id: '55555555-5555-4555-8555-555555555552',
+      rating: 1,
+      message: 'العبوة كانت منتفخة عند الشراء.',
+      locale: 'ar',
+      createdAt: iso(NOW()),
+      nameEn: milk.en,
+      nameAr: milk.ar,
+      brand: 'Almarai',
+    },
+    {
+      id: '55555555-5555-4555-8555-555555555553',
+      rating: 5,
+      message: 'Consistently good, and the packaging reseals properly.',
+      locale: 'en',
+      createdAt: iso(NOW()),
+      nameEn: second.en,
+      nameAr: second.ar,
+      brand: 'Nadec',
+    },
+  ];
+}
