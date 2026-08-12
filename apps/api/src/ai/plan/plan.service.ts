@@ -19,7 +19,8 @@ import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { cloneSnapshot, consumeFromSnapshot } from '../planner/pantry-snapshot.js';
 import { validateRecipe } from '../planner/validation.js';
 import type { CatalogIngredientRef, ResolvedRecipe } from '../planner/types.js';
-import { toRecipeSummary, type RecipeRow } from '../recipes/recipe-mapper.js';
+import { toRecipeSummary, type RecipeRow, type ResolvedMedia } from '../recipes/recipe-mapper.js';
+import { MediaService } from '../recipes/media.service.js';
 import { PlannerService } from '../planner/planner.service.js';
 
 type EntryWithRecipe = {
@@ -41,6 +42,7 @@ export class PlanService {
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
     @Inject(PlannerService) private readonly planner: PlannerService,
     @Inject(CreditsService) private readonly credits: CreditsService,
+    @Inject(MediaService) private readonly media: MediaService,
   ) {}
 
   /**
@@ -78,12 +80,80 @@ export class PlanService {
       orderBy: [desc(mealPlans.startsOn)],
       with: { entries: { with: { recipe: true } } },
     });
-    return rows.map((row) => this.toMealPlan(row));
+    const media = await this.mediaFor(
+      rows.flatMap((row) => row.entries.map((entry) => ({ entry, locale: (row.locale as Locale) ?? 'en' }))),
+    );
+    return rows.map((row) => this.toMealPlan(row, media));
   }
 
   async get(householdId: string, id: string): Promise<MealPlan> {
     const row = await this.loadPlan(householdId, id);
-    return this.toMealPlan(row);
+    const locale = (row.locale as Locale) ?? 'en';
+    return this.toMealPlan(
+      row,
+      await this.mediaFor(row.entries.map((entry) => ({ entry, locale }))),
+    );
+  }
+
+  /**
+   * One cached read for every dish on the board. A plan screen is a wall of
+   * recipes, so resolving them individually would be a search per tile; this
+   * only reads what the recipe screen has already resolved, which is why it
+   * never spends quota and never blocks the list on YouTube.
+   */
+  private async mediaFor(
+    entries: readonly { entry: EntryWithRecipe; locale: Locale }[],
+  ): Promise<Map<string, ResolvedMedia>> {
+    const wanted = new Map<Locale, Map<string, string[]>>();
+
+    for (const { entry, locale } of entries) {
+      const title = locale === 'ar' ? entry.recipe.titleAr : entry.recipe.titleEn;
+      if (!title) continue;
+      const key = this.media.keyFor(title, locale);
+      const forLocale = wanted.get(locale) ?? new Map<string, string[]>();
+      forLocale.set(key, [...(forLocale.get(key) ?? []), entry.recipe.id]);
+      wanted.set(locale, forLocale);
+    }
+
+    const resolved = new Map<string, ResolvedMedia>();
+    await Promise.all(
+      [...wanted].map(async ([locale, byKey]) => {
+        const found = await this.media.lookupMany([...byKey.keys()], locale);
+        for (const [key, recipeIds] of byKey) {
+          const hit = found.get(key);
+          if (!hit) continue;
+          for (const recipeId of recipeIds) {
+            resolved.set(recipeId, { heroThumbnailUrl: hit.heroThumbnailUrl, videos: [] });
+          }
+        }
+      }),
+    );
+
+    return resolved;
+  }
+
+  /**
+   * Resolves media for every dish on a freshly generated plan.
+   *
+   * {@link mediaFor} is read-only, so without this a new plan opens as a wall of
+   * placeholders until each recipe is opened individually. Generation is
+   * already an asynchronous job, so it is the only place that can pay for the
+   * searches without a screen waiting on them.
+   *
+   * Returns the number warmed rather than throwing: the plan is saved and paid
+   * for by the time this runs, and a YouTube outage must not cost the user
+   * their plan.
+   */
+  async warmMedia(householdId: string, id: string): Promise<number> {
+    const row = await this.loadPlan(householdId, id);
+    const locale = (row.locale as Locale) ?? 'en';
+
+    const dishes = row.entries
+      .map((entry) => (locale === 'ar' ? entry.recipe.titleAr : entry.recipe.titleEn))
+      .filter((title): title is string => Boolean(title))
+      .map((title) => ({ title, locale }));
+
+    return this.media.warm(dishes);
   }
 
   async remove(householdId: string, id: string): Promise<{ ok: true }> {
@@ -262,11 +332,11 @@ export class PlanService {
     locale: string;
     createdAt: Date;
     entries: EntryWithRecipe[];
-  }): MealPlan {
+  }, media: Map<string, ResolvedMedia>): MealPlan {
     const locale = (row.locale as Locale) ?? 'en';
     const entries = [...row.entries]
       .sort((a, b) => a.date.localeCompare(b.date) || a.position - b.position)
-      .map((e) => this.toEntry(e, locale));
+      .map((e) => this.toEntry(e, locale, media));
     return {
       id: row.id,
       householdId: row.householdId,
@@ -280,13 +350,17 @@ export class PlanService {
     };
   }
 
-  private toEntry(row: EntryWithRecipe, locale: Locale): MealPlanEntry {
+  private toEntry(
+    row: EntryWithRecipe,
+    locale: Locale,
+    media?: Map<string, ResolvedMedia>,
+  ): MealPlanEntry {
     return {
       id: row.id,
       planId: row.planId,
       date: row.date,
       slot: row.slot,
-      recipe: toRecipeSummary(row.recipe, locale),
+      recipe: toRecipeSummary(row.recipe, locale, media?.get(row.recipe.id)),
       servings: row.servings,
       state: row.state,
       fullyCovered: row.fullyCovered,

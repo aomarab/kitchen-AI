@@ -264,4 +264,87 @@ describe('MediaService (dish-level media resolution)', () => {
     expect(Object.keys(fresh.videos[0]!).sort()).toEqual([...expected].sort());
     expect(fresh.videos).toEqual(cached.videos);
   });
+
+  /**
+   * Warming exists so a freshly generated plan is not a wall of placeholders.
+   * These lock the three properties that make it safe to run inside a job.
+   */
+  describe('warm', () => {
+    const WARM_TITLE = 'Chicken kabsa';
+
+    beforeEach(async () => {
+      const key = build(clientReturning()).keyFor(WARM_TITLE, 'en');
+      await ctx.db.delete(dishVideos).where(eq(dishVideos.dishKey, key));
+      await ctx.db.delete(dishMedia).where(eq(dishMedia.dishKey, key));
+    });
+
+    it('resolves and persists a dish nobody has opened yet', async () => {
+      const youtube = clientReturning(candidate());
+      const service = build(youtube);
+
+      const warmed = await service.warm([{ title: WARM_TITLE, locale: 'en' }]);
+
+      expect(warmed).toBe(1);
+      const cached = await service.lookupMany([service.keyFor(WARM_TITLE, 'en')], 'en');
+      expect(cached.get(service.keyFor(WARM_TITLE, 'en'))?.heroThumbnailUrl).toBeTruthy();
+    });
+
+    /**
+     * The plan is already saved and already charged by the time warming runs,
+     * so a failure here must be swallowed. If this ever propagates, an
+     * unrelated outage refunds and fails a job whose plan generated perfectly.
+     */
+    it('swallows a search that fails outright', async () => {
+      const youtube = {
+        calls: 0,
+        async search(): Promise<YoutubeVideo[]> {
+          throw new Error('socket hang up');
+        },
+      };
+
+      await expect(build(youtube).warm([{ title: WARM_TITLE, locale: 'en' }])).resolves.toBe(0);
+    });
+
+    /**
+     * A quota outage degrades instead of throwing, which must not be mistaken
+     * for a resolved dish — caching it would leave the plan permanently
+     * imageless until the 30-day TTL expired.
+     */
+    it('does not record an outage as resolved media', async () => {
+      const youtube = clientFailing('quota');
+      const service = build(youtube);
+
+      await service.warm([{ title: WARM_TITLE, locale: 'en' }]);
+
+      const cached = await service.lookupMany([service.keyFor(WARM_TITLE, 'en')], 'en');
+      expect(cached.size).toBe(0);
+    });
+
+    /**
+     * A weekly plan repeats dishes. Collapsing them matters beyond the search
+     * cost — undeduped repeats would eat slots out of the per-plan ceiling and
+     * leave later dishes unwarmed, so the count of work done must be distinct
+     * dishes, not entries.
+     */
+    it('treats a dish repeated across the plan as one dish', async () => {
+      const youtube = clientReturning(candidate());
+
+      const warmed = await build(youtube).warm([
+        { title: WARM_TITLE, locale: 'en' },
+        { title: WARM_TITLE, locale: 'en' },
+        { title: WARM_TITLE, locale: 'en' },
+      ]);
+
+      expect(warmed).toBe(1);
+      expect(youtube.calls).toBe(SEARCHES_PER_RESOLVE);
+    });
+
+    it('skips dishes with no title rather than searching for an empty string', async () => {
+      const youtube = clientReturning(candidate());
+
+      await build(youtube).warm([{ title: '', locale: 'en' }]);
+
+      expect(youtube.calls).toBe(0);
+    });
+  });
 });

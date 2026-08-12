@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Unit } from '@kitchen/contracts';
+import { MediaService } from '../recipes/media.service.js';
 import { PlanService } from '../plan/plan.service.js';
 import type { Database } from '../../db/index.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
@@ -52,6 +53,7 @@ function serviceFor(entries: ReturnType<typeof entry>[], pantry: PantryPort): Pl
       refundSpendGroup: async () => {},
       assertCanAfford: async () => {},
     } as never,
+    new MediaService(db, undefined as never),
   );
 }
 

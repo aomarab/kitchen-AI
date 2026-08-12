@@ -3,6 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 import { CREDIT_COSTS } from '@kitchen/contracts';
 import type { VisionResult } from '@kitchen/contracts';
 import { creditActionForScope } from './credit-actions.js';
+import { MediaService } from '../ai/recipes/media.service.js';
 import { createTestContext, seedHousehold, seedUser, cleanup } from '../testing/harness.js';
 import {
   creditLedger,
@@ -221,7 +222,7 @@ function makePlanService(credits: CreditsService, plannerImpl?: Partial<PlannerS
     ...plannerImpl,
   } as unknown as PlannerService;
 
-  return new PlanService(ctx.db, undefined as never, planner, credits);
+  return new PlanService(ctx.db, undefined as never, planner, credits, new MediaService(ctx.db, undefined as never));
 }
 
 describe('PlanService.regenerateEntry debit site (plan.regenerateEntry)', () => {
@@ -291,7 +292,9 @@ function makePlanProcessor(credits: CreditsService, plannerImpl?: Partial<Planne
     }),
     ...plannerImpl,
   } as unknown as PlannerService;
-  return new PlanProcessor(store, planner, credits);
+  return new PlanProcessor(store, planner, credits, {
+    warmMedia: async () => 0,
+  } as unknown as PlanService);
 }
 
 function makeReceiptProcessor(credits: CreditsService, receiptImpl?: Partial<ReceiptService>) {

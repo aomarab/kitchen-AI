@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Locale } from '@kitchen/contracts';
 import { DB, type Database } from '../../db/index.js';
 import { dishMedia, dishVideos } from '../../db/schema.js';
@@ -33,6 +33,14 @@ export interface DishMedia {
 const MAX_STORED_VIDEOS = 5;
 
 /**
+ * Ceiling on dishes warmed per plan. A monthly plan can hold far more entries
+ * than the free 10,000-unit daily quota allows (≈201 units per uncached dish),
+ * so one large plan must not be able to exhaust the day for every other
+ * household. Beyond the cap, dishes resolve on first open as before.
+ */
+const MAX_WARM_DISHES = 30;
+
+/**
  * Resolves the image and videos for a *dish*.
  *
  * Recipes are household-scoped, so a recipe-keyed cache paid a fresh 100-unit
@@ -50,6 +58,8 @@ export class MediaService {
     @Inject(DB) private readonly db: Database,
     @Inject(YOUTUBE_CLIENT) private readonly youtube: YoutubeClient,
   ) {}
+
+  private readonly logger = new Logger(MediaService.name);
 
   keyFor(title: string, locale: Locale): string {
     return dishKey(title, locale);
@@ -84,6 +94,44 @@ export class MediaService {
         },
       ]),
     );
+  }
+
+  /**
+   * Resolves a batch of dishes ahead of anyone asking for them.
+   *
+   * `lookupMany` never searches, so a plan board shows a real picture only for
+   * dishes somebody already opened — a freshly generated plan is a wall of
+   * placeholders. Generation is already a job the user waits on, so it is the
+   * one place that can pay for the searches without a screen hanging.
+   *
+   * Deliberately forgiving: a dish that fails is skipped, never retried and
+   * never allowed to escape, because the plan is already saved by this point
+   * and a YouTube outage must not fail it. `resolve` returns early on a cache
+   * hit, so re-warming a known dish costs one indexed read.
+   */
+  async warm(dishes: readonly { title: string; locale: Locale }[]): Promise<number> {
+    const unique = new Map<string, { title: string; locale: Locale }>();
+    for (const dish of dishes) {
+      if (!dish.title) continue;
+      const key = `${dish.locale}:${this.keyFor(dish.title, dish.locale)}`;
+      if (!unique.has(key)) unique.set(key, dish);
+    }
+
+    const queue = [...unique.values()].slice(0, MAX_WARM_DISHES);
+    let warmed = 0;
+
+    // Serial on purpose. Concurrency here would burst the YouTube rate limit
+    // for no benefit: nothing is waiting on this loop.
+    for (const dish of queue) {
+      try {
+        await this.resolve(this.keyFor(dish.title, dish.locale), dish.title, dish.locale);
+        warmed += 1;
+      } catch (err) {
+        this.logger.warn(`warm failed for "${dish.title}": ${String(err)}`);
+      }
+    }
+
+    return warmed;
   }
 
   async resolve(key: string, title: string, locale: Locale): Promise<DishMedia> {

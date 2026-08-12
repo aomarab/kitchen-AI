@@ -29,6 +29,7 @@ function serviceFor(pantry: PantryPort): PlanService {
     pantry,
     unreachable as never,
     unreachable as never,
+    unreachable as never,
   );
 }
 

@@ -4,6 +4,7 @@ import type { Job as BullJob } from 'bullmq';
 import { JOB_STORE, QUEUE_PLAN } from '../ai.constants.js';
 import { CreditsService } from '../../credits/credits.service.js';
 import { PlannerService } from '../planner/planner.service.js';
+import { PlanService } from '../plan/plan.service.js';
 import type { JobStore } from './job-store.js';
 import type { PlanJobPayload } from './jobs.service.js';
 import { describeJobError, toJobError } from './job-error.js';
@@ -19,6 +20,7 @@ export class PlanProcessor extends WorkerHost {
     @Inject(JOB_STORE) private readonly store: JobStore,
     @Inject(PlannerService) private readonly planner: PlannerService,
     @Inject(CreditsService) private readonly credits: CreditsService,
+    @Inject(PlanService) private readonly plans: PlanService,
   ) {
     super();
   }
@@ -38,7 +40,15 @@ export class PlanProcessor extends WorkerHost {
         userId: payload.userId,
         request: payload.request,
       });
+      // Marked done *before* warming so the client stops waiting the moment the
+      // plan exists; the pictures land seconds later on the next poll. Warming
+      // must never reach the catch block below — the plan is already saved and
+      // already charged, so a YouTube failure here would refund and fail a job
+      // that in fact succeeded.
       await this.store.markDone(jobId, { kind: 'meal_plan', id: planId });
+      await this.plans
+        .warmMedia(row.householdId, planId)
+        .catch((err) => this.logger.warn(`job ${jobId} media warm failed: ${String(err)}`));
     } catch (err) {
       // The persisted error is code-only. Without this line a failed job is
       // undiagnosable: no schema issues, no model, no reason.

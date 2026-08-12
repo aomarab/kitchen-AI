@@ -20,6 +20,7 @@ import { JobsController } from '../jobs/jobs.controller.js';
 import { JobsService } from '../jobs/jobs.service.js';
 import { DrizzleJobStore } from '../jobs/job-store.js';
 import { PlanController } from '../plan/plan.controller.js';
+import { MediaService } from '../recipes/media.service.js';
 import { PlanService } from '../plan/plan.service.js';
 import { CaptureController } from '../recognition/capture.controller.js';
 import { RecognitionService } from '../recognition/recognition.service.js';
@@ -120,6 +121,7 @@ describe('AI endpoint cross-household isolation (live DB + real guards)', () => 
               refundSpendGroup: async () => {},
               assertCanAfford: async () => {},
             } as never,
+            new MediaService(ctx.db, undefined as never),
           ),
         },
         {
