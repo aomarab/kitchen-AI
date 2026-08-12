@@ -138,6 +138,29 @@ describe('RecipeTranslationService', () => {
     });
 
     /**
+     * The board is drawn from the bulk-translated names, so re-deriving the
+     * title from the body renamed the dish the moment it was opened — and the
+     * body pass, which sees one recipe with no siblings for context, tended to
+     * produce the looser name of the two.
+     */
+    it('keeps the name already on the board when translating the body', async () => {
+      const id = await seedRecipe({
+        titleAr: 'شكشوكة ناعمة بالجبنة الكريمية',
+        titleEn: 'Soft Shakshuka with Cream Cheese',
+        stepsAr: [{ index: 1, text: 'سخن الزيت', durationMinutes: null }],
+      });
+      const service = new RecipeTranslationService(
+        ctx.db as never,
+        gatewayReturning({ title: 'Creamy Shakshuka', description: '', steps: ['Heat the oil'] }),
+      );
+
+      await expect(service.ensureRecipe(householdId, id, 'en')).resolves.toBe(true);
+      const row = await readRecipe(id);
+      expect(row.titleEn).toBe('Soft Shakshuka with Cream Cheese');
+      expect((row.stepsEn as { text: string }[])[0]!.text).toBe('Heat the oil');
+    });
+
+    /**
      * A recipe that cannot be translated must stay readable in the language it
      * has. If this ever propagates, an AI budget cap turns into a broken screen.
      */

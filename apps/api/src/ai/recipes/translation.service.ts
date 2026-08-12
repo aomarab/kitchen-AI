@@ -112,12 +112,18 @@ export class RecipeTranslationService {
         durationMinutes: source.steps?.[i]?.durationMinutes ?? null,
       }));
 
+      // A name already on the board is a name the reader has read. Translating
+      // the body produces a title too, and letting it win renamed the dish
+      // under them mid-tap — so an existing title stands and only the parts
+      // that were missing are filled in.
+      const title = existingTitle ?? result.title;
+
       await this.db
         .update(recipes)
         .set(
           locale === 'ar'
-            ? { titleAr: result.title, descriptionAr: result.description ?? null, stepsAr: steps }
-            : { titleEn: result.title, descriptionEn: result.description ?? null, stepsEn: steps },
+            ? { titleAr: title, descriptionAr: result.description ?? null, stepsAr: steps }
+            : { titleEn: title, descriptionEn: result.description ?? null, stepsEn: steps },
         )
         .where(eq(recipes.id, recipeId));
 
