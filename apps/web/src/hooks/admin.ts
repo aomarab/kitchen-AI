@@ -58,3 +58,23 @@ export function useUpdateFeedback(id: string) {
     },
   });
 }
+
+/**
+ * Every row matching the filters, not just the pages already on screen.
+ *
+ * An export that silently stopped at the first 25 rows would look successful
+ * and be wrong, so this walks the cursor to the end before returning. The cap
+ * exists so a runaway cursor cannot spin forever.
+ */
+export async function fetchAllFeedback(filters: Filters, maxRows = 5000) {
+  const rows = [];
+  let cursor: string | undefined;
+  do {
+    const page = await api.call('adminListFeedback', {
+      query: { ...filters, limit: 100, cursor },
+    });
+    rows.push(...page.items);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor && rows.length < maxRows);
+  return rows;
+}
