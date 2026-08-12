@@ -12,6 +12,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.abedomar.kitchenai",
       "appleTeamId": "YVBW6U3Q43",
+      "entitlements": {
+        "keychain-access-groups": ["$(AppIdentifierPrefix)com.abedomar.kitchenai"]
+      },
       "privacyManifests": {
         "NSPrivacyTracking": false,
         "NSPrivacyCollectedDataTypes": [

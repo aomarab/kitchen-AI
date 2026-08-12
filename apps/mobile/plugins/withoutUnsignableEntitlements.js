@@ -1,4 +1,4 @@
-const { withEntitlementsPlist } = require("expo/config-plugins");
+const { withEntitlementsPlist } = require('expo/config-plugins');
 
 /**
  * Strips the two entitlements this app cannot sign, so `expo prebuild`
@@ -33,14 +33,26 @@ const { withEntitlementsPlist } = require("expo/config-plugins");
  * delete this plugin from `app.json`, enable the capabilities on the App ID,
  * and rebuild. Nothing else in the codebase needs to change.
  *
+ * ## Why `ios.entitlements` in `app.json` is not empty
+ *
+ * Stripping both keys used to leave the entitlements file as a bare `<dict/>`,
+ * so the app was signed with **no entitlements at all** — including no
+ * keychain access group. Every `SecItemCopyMatching` / `SecItemAdd` then
+ * returned `-34018 errSecMissingEntitlement`, which broke two things at once:
+ * `expo-notifications` logged a red error on every launch, and — silently —
+ * `expo-secure-store` could not persist the refresh token, so the session was
+ * lost on every cold start. `app.json` therefore declares
+ * `keychain-access-groups` explicitly. Do not remove it when this plugin goes
+ * away.
+ *
  * Must be listed FIRST in `plugins`. Expo applies mods in reverse
  * registration order — the last plugin in the array runs first — so anything
  * listed after the plugin that adds an entitlement gets overwritten by it.
  */
 module.exports = function withoutUnsignableEntitlements(config) {
   return withEntitlementsPlist(config, (mod) => {
-    delete mod.modResults["aps-environment"];
-    delete mod.modResults["com.apple.developer.applesignin"];
+    delete mod.modResults['aps-environment'];
+    delete mod.modResults['com.apple.developer.applesignin'];
     return mod;
   });
 };
