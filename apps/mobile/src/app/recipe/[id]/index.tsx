@@ -58,6 +58,13 @@ export default function RecipeDetail() {
 
   return (
     <Screen scroll padded={false}>
+      {/* Title and back sit above the photo: the picture only means something
+          once you know which dish it is, and burying the back affordance under
+          a 220px image made leaving the screen a scroll away. */}
+      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md }}>
+        <Header title={data.title} onBack={() => router.back()} />
+      </View>
+
       <RecipeThumb
         heroImageUrl={data.heroImageUrl}
         dishKey={`${data.locale}:${data.title}`}
@@ -67,8 +74,6 @@ export default function RecipeDetail() {
       />
 
       <View style={{ padding: spacing.lg, gap: spacing.md }}>
-        <Header title={data.title} onBack={() => router.back()} />
-
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <Badge label={t('recipe.prepTime', { minutes: formatMinutes(locale, data.prepMinutes, prefs) })} />
           <Badge label={t('recipe.cookTime', { minutes: formatMinutes(locale, data.cookMinutes, prefs) })} />

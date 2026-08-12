@@ -45,3 +45,44 @@ export function isAllowedEmbedUrl(url: string): boolean {
     (origin) => url === origin || url.startsWith(`${origin}/`),
   );
 }
+
+/**
+ * The document origin the player page is loaded under.
+ *
+ * YouTube rejects an embed whose request carries no usable `Referer` with
+ * "Video unavailable / error 153". Pointing a WebView straight at the embed
+ * URL does exactly that: WKWebView has no document to derive a referrer from,
+ * so the player refuses to start. Loading our own one-line page *under a real
+ * https origin* gives the iframe a referrer and the player runs.
+ *
+ * The page carries no script and can navigate nowhere but YouTube, so adopting
+ * this origin grants it nothing — it exists only to be a referrer.
+ */
+export const EMBED_BASE_URL = 'https://www.youtube.com';
+
+/**
+ * The player document for {@link EMBED_BASE_URL}.
+ *
+ * Returns null for an id that is not exactly a YouTube id, so a malformed or
+ * hostile value can never reach the markup — the id is the only interpolated
+ * value here, and validating at the point of construction means no caller can
+ * forget to.
+ */
+export function buildEmbedHtml(youtubeId: string): string | null {
+  if (!isValidYoutubeId(youtubeId)) return null;
+
+  const params = ['autoplay=1', 'playsinline=1', 'rel=0', 'modestbranding=1'].join('&amp;');
+  const src = `https://www.youtube-nocookie.com/embed/${youtubeId}?${params}`;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}iframe{display:block;border:0;width:100%;height:100%}</style>
+</head>
+<body>
+<iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+</body>
+</html>`;
+}

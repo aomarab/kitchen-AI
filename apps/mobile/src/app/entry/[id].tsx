@@ -76,6 +76,7 @@ export default function EntryDetail() {
       <Header title={t('mobile.plans.entryTitle')} onBack={() => router.back()} />
 
       <Card style={{ gap: spacing.sm }}>
+        <AppText variant="heading">{recipe.title}</AppText>
         <RecipeThumb
           heroImageUrl={recipe.heroImageUrl}
           dishKey={`${recipe.locale}:${recipe.title}`}
@@ -88,7 +89,6 @@ export default function EntryDetail() {
           <Badge tone={STATE_TONE[entry.state] ?? 'neutral'} label={t(`plans.${entry.state}` as MessageKey)} />
           {entry.fullyCovered ? <Badge tone="success" label={t('plans.fullyCovered')} /> : null}
         </View>
-        <AppText variant="heading">{recipe.title}</AppText>
         <AppText variant="caption" muted>
           {formatDateWithHijri(locale, entry.date, showHijri)}
           {'  ·  '}

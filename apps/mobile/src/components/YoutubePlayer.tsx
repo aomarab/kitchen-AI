@@ -3,7 +3,12 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Icon } from './Icon';
 import { AppText } from './AppText';
-import { isAllowedEmbedUrl, isValidYoutubeId, WEBVIEW_ORIGIN_WHITELIST } from '../lib/youtube';
+import {
+  buildEmbedHtml,
+  EMBED_BASE_URL,
+  isAllowedEmbedUrl,
+  WEBVIEW_ORIGIN_WHITELIST,
+} from '../lib/youtube';
 import { colors, radius, spacing } from '../theme';
 
 interface YoutubePlayerProps {
@@ -31,8 +36,8 @@ export function YoutubePlayer({
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const valid = isValidYoutubeId(youtubeId);
-  const showError = failed || !valid;
+  const embedHtml = buildEmbedHtml(youtubeId);
+  const showError = failed || embedHtml === null;
 
   return (
     <View
@@ -58,10 +63,12 @@ export function YoutubePlayer({
         </View>
       ) : playing ? (
         <WebView
-          source={{
-            uri: `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`,
-          }}
+          // Loaded as a document rather than by URL: pointing the WebView at
+          // the embed URL leaves the player with no referrer, which YouTube
+          // now rejects outright (error 153). See EMBED_BASE_URL.
+          source={{ html: embedHtml ?? '', baseUrl: EMBED_BASE_URL }}
           allowsInlineMediaPlayback
+          allowsFullscreenVideo
           mediaPlaybackRequiresUserAction={false}
           javaScriptEnabled
           domStorageEnabled
