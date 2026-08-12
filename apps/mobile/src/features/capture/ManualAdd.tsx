@@ -2,7 +2,16 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { Ingredient, Unit } from '@kitchen/contracts';
-import { AppText, Button, Card, Chip, Field, ListRow, QuantityStepper } from '../../components';
+import {
+  AppText,
+  Button,
+  Card,
+  Chip,
+  DateField,
+  Field,
+  ListRow,
+  QuantityStepper,
+} from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useSearchIngredients } from '../../hooks/profile';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
@@ -126,19 +135,14 @@ export function ManualAdd() {
           </View>
         </View>
 
-        <Field
+        <DateField
           label={t('inventory.expiryDate')}
-          value={expiresAt}
-          onChangeText={setExpiresAt}
+          value={expiresAt || null}
+          onChange={(next) => setExpiresAt(next ?? '')}
           placeholder={t('mobile.capture.noExpiry')}
-          autoCapitalize="none"
-          autoCorrect={false}
+          clearLabel={t('mobile.capture.clearDate')}
+          doneLabel={t('mobile.capture.pickDate')}
         />
-        {!expiryValid ? (
-          <AppText variant="caption" style={{ color: colors.danger }}>
-            {t('mobile.capture.expiryFormat')}
-          </AppText>
-        ) : null}
       </Card>
 
       <Button

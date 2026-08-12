@@ -10,7 +10,9 @@ import {
   Badge,
   Button,
   Chip,
+  DateField,
   Field,
+  FoodIcon,
   QuantityStepper,
   Sheet,
   LoadingState,
@@ -134,6 +136,27 @@ export default function ItemDetail() {
       />
 
       <Card style={{ gap: spacing.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <FoodIcon
+            item={{
+              label: item.label,
+              nameEn: item.ingredient.canonicalNameEn,
+              nameAr: item.ingredient.canonicalNameAr,
+              category: item.ingredient.category,
+            }}
+            size={56}
+          />
+          <View style={{ flex: 1 }}>
+            <AppText variant="heading">{itemName(locale, item)}</AppText>
+            {/* Only when renamed: the shelf shows your name, this says what it is. */}
+            {item.label ? (
+              <AppText variant="caption" muted>
+                {ingredientName(locale, item.ingredient)}
+              </AppText>
+            ) : null}
+          </View>
+        </View>
+
         <AppText variant="label" muted>
           {t('inventory.quantity')}
         </AppText>
@@ -212,19 +235,14 @@ export default function ItemDetail() {
           autoCorrect={false}
         />
 
-        <Field
+        <DateField
           label={t('inventory.expiryDate')}
-          value={expiresAt}
-          onChangeText={setDraftExpiry}
+          value={expiresAt || null}
+          onChange={(next) => setDraftExpiry(next ?? '')}
           placeholder={t('mobile.capture.noExpiry')}
-          autoCapitalize="none"
-          autoCorrect={false}
+          clearLabel={t('mobile.capture.clearDate')}
+          doneLabel={t('mobile.capture.pickDate')}
         />
-        {!expiryValid ? (
-          <AppText variant="caption" style={{ color: colors.danger }}>
-            {t('mobile.capture.expiryFormat')}
-          </AppText>
-        ) : null}
 
         <Button
           title={t('common.save')}

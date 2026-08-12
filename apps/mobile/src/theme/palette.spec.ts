@@ -59,6 +59,17 @@ describe('mobile palette', () => {
     expect(contrast(colors.primary, colors.primarySoft)).toBeGreaterThanOrEqual(AA_TEXT);
   });
 
+  /**
+   * DateField's "clear date" is violet label text on a card.
+   *
+   * Only `surface` is certified for it: measured against `surfaceAlt` the same
+   * violet is 4.28:1, under AA, so a violet label must never be moved onto the
+   * alt surface — use `primarySoft` as its backing instead.
+   */
+  it('primary reads as text on a plain surface', () => {
+    expect(contrast(colors.primary, colors.surface), 'on surface').toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
   it('cook mode inverts legibly', () => {
     expect(contrast(colors.textInverse, colors.surfaceInverse), 'primary').toBeGreaterThanOrEqual(AA_TEXT);
     expect(contrast(colors.textInverseMuted, colors.surfaceInverse), 'muted').toBeGreaterThanOrEqual(AA_TEXT);

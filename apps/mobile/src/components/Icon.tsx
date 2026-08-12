@@ -25,6 +25,7 @@ export const IONICONS = {
   check: 'checkmark',
   close: 'close',
   clock: 'time-outline',
+  calendar: 'calendar-outline',
   trash: 'trash-outline',
   edit: 'pencil-outline',
   warning: 'warning-outline',

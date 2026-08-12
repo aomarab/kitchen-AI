@@ -86,6 +86,8 @@ export const mobileEn = {
       manualTitle: 'Add manually',
       searchIngredient: 'Search ingredients',
       noExpiry: 'No expiry date',
+      pickDate: 'Done',
+      clearDate: 'Clear date',
       expiryFormat: 'Use the format YYYY-MM-DD, for example 2026-12-31.',
       selectLocation: 'Choose a location',
       confirmTitle: 'Add to your kitchen?',

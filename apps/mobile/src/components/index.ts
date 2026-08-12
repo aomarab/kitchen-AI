@@ -8,6 +8,7 @@ export { Chip } from './Chip';
 export { CreditBalance } from './CreditBalance';
 export { DirectionalIcon } from './DirectionalIcon';
 export { Fab } from './Fab';
+export { DateField } from './DateField';
 export { Field } from './Field';
 export { FoodIcon } from './FoodIcon';
 export { Header } from './Header';

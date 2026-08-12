@@ -90,6 +90,8 @@ export const mobileAr: MobileMessages = {
       manualTitle: 'إضافة يدوية',
       searchIngredient: 'ابحث عن مكوّن',
       noExpiry: 'بدون تاريخ انتهاء',
+      pickDate: 'تم',
+      clearDate: 'مسح التاريخ',
       expiryFormat: 'استخدم الصيغة YYYY-MM-DD، مثال 2026-12-31.',
       selectLocation: 'اختر موقعاً',
       confirmTitle: 'إضافة إلى مطبخك؟',
