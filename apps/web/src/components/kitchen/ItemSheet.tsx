@@ -31,8 +31,8 @@ function ItemSheetBody({ item, onClose }: { item: InventoryItem; onClose: () => 
   const [brand, setBrand] = useState(item.brand ?? '');
 
   const name = localizedName(locale, {
-    en: item.ingredient.canonicalNameEn,
-    ar: item.ingredient.canonicalNameAr,
+    en: item.label ?? item.ingredient.canonicalNameEn,
+    ar: item.label ?? item.ingredient.canonicalNameAr,
   });
   const info = expiryInfo(item.expiresAt, t);
   const location = locationsQuery.data?.find((l) => l.id === item.locationId);

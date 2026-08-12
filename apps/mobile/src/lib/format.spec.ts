@@ -6,6 +6,7 @@ import { unitSchema, storageLocationTypeSchema, type Unit } from '@kitchen/contr
 import {
   formatExpiryLabel,
   ingredientName,
+  itemName,
   localizedName,
   locationLabel,
   unitLabel,
@@ -98,5 +99,22 @@ describe('storage location labels', () => {
     expect(locationLabel(t, { type: 'fridge', name: 'Fridge' } as never)).toBe(
       locationLabel(t, { type: 'fridge' }),
     );
+  });
+});
+
+describe('itemName', () => {
+  const ingredient = { canonicalNameEn: 'Tomato', canonicalNameAr: 'طماطم' } as never;
+
+  it('uses the catalog name in the reader language when the item is not renamed', () => {
+    expect(itemName('en', { label: null, ingredient })).toBe('Tomato');
+    expect(itemName('ar', { label: null, ingredient })).toBe('طماطم');
+  });
+
+  it("prefers the household's own name for the item", () => {
+    expect(itemName('en', { label: 'Cherry toms', ingredient })).toBe('Cherry toms');
+  });
+
+  it('keeps that name in both languages, because the household wrote it once', () => {
+    expect(itemName('ar', { label: 'Cherry toms', ingredient })).toBe('Cherry toms');
   });
 });

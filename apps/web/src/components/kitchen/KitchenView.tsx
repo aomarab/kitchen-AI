@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { InventoryItem, ListInventoryQuery } from '@kitchen/contracts';
 import { formatNumber } from '@kitchen/i18n';
 import { useLocale } from '../../lib/locale';
-import { localizedName } from '../../lib/name';
+import { itemName } from '../../lib/name';
 import { locationKey, unitKey } from '../../lib/labels';
 import { cn } from '../../lib/cn';
 import { expiryInfo } from '../../lib/expiry';
@@ -146,7 +146,7 @@ function ItemRow({ item, onClick }: { item: InventoryItem; onClick: () => void }
     >
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">
-          {localizedName(locale, { en: item.ingredient.canonicalNameEn, ar: item.ingredient.canonicalNameAr })}
+          {itemName(locale, item)}
         </p>
         <p className="text-sm text-muted-foreground">
           {formatNumber(locale, item.quantity)} {t(unitKey(item.unit))}

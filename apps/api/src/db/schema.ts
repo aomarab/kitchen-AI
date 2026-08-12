@@ -298,6 +298,13 @@ export const inventoryItems = pgTable(
      * stay a single pooled row, and the column goes null when they disagree.
      */
     brand: text('brand'),
+    /**
+     * What this household calls it, when the catalog name is not what they
+     * would say. `ingredients` is a *global* table shared by every household,
+     * so a rename cannot be written there — one household correcting "Labneh"
+     * would rename it for everyone. Null means "use the catalog name".
+     */
+    label: text('label'),
     expiresAt: date('expires_at'),
     source: inventorySourceEnum('source').notNull(),
     confidence: numeric('confidence', { precision: 4, scale: 3 }),

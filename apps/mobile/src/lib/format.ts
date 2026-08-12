@@ -26,6 +26,24 @@ export function ingredientName(
   return locale === 'ar' ? ingredient.canonicalNameAr : ingredient.canonicalNameEn;
 }
 
+/**
+ * What to call an item on this household's shelf.
+ *
+ * A household can rename what it keeps, because a recognised name is often not
+ * the name they use — and `ingredient` is a row in a global catalog shared by
+ * everyone, so the new name lives on the item. When they have not renamed it,
+ * the catalog name in the active language stands.
+ */
+export function itemName(
+  locale: Locale,
+  item: {
+    label: string | null;
+    ingredient: Pick<Ingredient, 'canonicalNameEn' | 'canonicalNameAr'>;
+  },
+): string {
+  return item.label ?? ingredientName(locale, item.ingredient);
+}
+
 export function formatQty(locale: Locale, value: number, prefs: NumeralPrefs = {}): string {
   return formatNumber(locale, value, {
     maximumFractionDigits: 2,

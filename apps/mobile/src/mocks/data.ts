@@ -328,6 +328,7 @@ export function buildInventory(): InventoryItem[] {
       householdId: HOUSEHOLD_ID,
       ingredient,
       brand: seed.brand ?? null,
+      label: null,
       locationId: seed.location,
       quantity: seed.quantity,
       unit: seed.unit,

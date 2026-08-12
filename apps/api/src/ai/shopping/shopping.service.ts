@@ -171,6 +171,7 @@ export class ShoppingService {
       householdId: item.householdId,
       ingredient: toIngredient(ingredient),
       brand: item.brand,
+      label: item.label,
       locationId: item.locationId,
       quantity: Number(item.quantity),
       unit: item.unit,

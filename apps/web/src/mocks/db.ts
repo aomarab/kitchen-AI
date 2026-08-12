@@ -435,6 +435,7 @@ export function seed(): void {
       householdId: DEFAULT_HOUSEHOLD_ID,
       ingredient,
       brand: s.brand ?? null,
+      label: null,
       locationId: locByType.get(s.location)!,
       quantity: s.quantity,
       unit: ingredient.defaultUnit,

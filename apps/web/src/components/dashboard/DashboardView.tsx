@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { itemName } from '../../lib/name';
 import { formatNumber } from '@kitchen/i18n';
 import { useLocale } from '../../lib/locale';
 import { usePlans } from '../../hooks/plans';
@@ -131,7 +132,7 @@ export function DashboardView() {
                 <li key={item.id}>
                   <span className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm">
                     <span className="font-medium">
-                      {locale === 'ar' ? item.ingredient.canonicalNameAr : item.ingredient.canonicalNameEn}
+                      {itemName(locale, item)}
                     </span>
                     <Badge tone={info.tone === 'danger' ? 'danger' : 'warning'}>{info.label}</Badge>
                   </span>

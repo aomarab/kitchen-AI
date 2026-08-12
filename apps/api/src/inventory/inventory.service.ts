@@ -16,7 +16,7 @@ import { ingredients, inventoryEvents, inventoryItems, storageLocations } from '
 import { AppError } from '../common/errors.js';
 import { numeric, toNumber } from '../common/serialization.js';
 import { decodeCursor, toPage, type Page } from '../common/pagination.js';
-import { ingredientNameMatches } from '../catalog/normalize.js';
+import { inventoryNameMatches } from '../catalog/normalize.js';
 import { CatalogService } from '../catalog/catalog.service.js';
 import { areCompatible, convertQuantity } from './units.js';
 import {
@@ -78,7 +78,7 @@ export class InventoryService {
     const conditions: SQL[] = [eq(inventoryItems.householdId, householdId)];
     if (query.locationId) conditions.push(eq(inventoryItems.locationId, query.locationId));
     if (query.category) conditions.push(eq(ingredients.category, query.category));
-    if (query.q) conditions.push(ingredientNameMatches(query.q));
+    if (query.q) conditions.push(inventoryNameMatches(query.q, inventoryItems.label));
     if (query.expiringWithinDays !== undefined) {
       conditions.push(isNotNull(inventoryItems.expiresAt));
       conditions.push(
@@ -203,6 +203,7 @@ export class InventoryService {
       if (dto.unit !== undefined) patch.unit = finalUnit;
       if (dto.expiresAt !== undefined) patch.expiresAt = dto.expiresAt;
       if (dto.brand !== undefined) patch.brand = dto.brand;
+      if (dto.label !== undefined) patch.label = dto.label;
       if (dto.quantity !== undefined || (dto.unit && dto.unit !== current.unit)) {
         patch.quantity = numeric(finalQuantity);
       }

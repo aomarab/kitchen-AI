@@ -26,7 +26,7 @@ import {
   useDeleteInventoryItem,
   useAdjustQuantity,
 } from '../../hooks/inventory';
-import { ingredientName, unitLabel, formatExpiryLabel, locationLabel } from '../../lib/format';
+import { ingredientName, itemName, unitLabel, formatExpiryLabel, locationLabel } from '../../lib/format';
 import { expiryStatus, isValidExpiryInput, type ExpiryStatus } from '../../lib/expiry';
 import { errorMessageKey } from '../../lib/errors';
 import { colors } from '../../theme';
@@ -62,6 +62,7 @@ export default function ItemDetail() {
   const [draftLocation, setDraftLocation] = useState<string | null>(null);
   const [draftExpiry, setDraftExpiry] = useState<string | null>(null);
   const [draftBrand, setDraftBrand] = useState<string | null>(null);
+  const [draftLabel, setDraftLabel] = useState<string | null>(null);
 
   if (itemQuery.isLoading) {
     return (
@@ -92,11 +93,13 @@ export default function ItemDetail() {
   const locationId = draftLocation ?? item.locationId;
   const expiresAt = draftExpiry ?? item.expiresAt ?? '';
   const brand = draftBrand ?? item.brand ?? '';
+  const label = draftLabel ?? item.label ?? '';
   const expiryValid = isValidExpiryInput(expiresAt);
   const dirty =
     unit !== item.unit ||
     locationId !== item.locationId ||
     (brand.trim() || null) !== (item.brand ?? null) ||
+    (label.trim() || null) !== (item.label ?? null) ||
     (expiresAt || null) !== (item.expiresAt ?? null);
 
   const onAdjust = (next: number) => {
@@ -111,6 +114,9 @@ export default function ItemDetail() {
       locationId,
       unit,
       brand: brand.trim() ? brand.trim() : null,
+      // Empty means "no name of our own", which restores the catalog name —
+      // the field is never left holding a blank the user cannot see.
+      label: label.trim() ? label.trim() : null,
       expiresAt: expiresAt.trim() ? expiresAt.trim() : null,
     });
   };
@@ -120,7 +126,7 @@ export default function ItemDetail() {
   return (
     <Screen scroll>
       <Header
-        title={ingredientName(locale, item.ingredient)}
+        title={itemName(locale, item)}
         onBack={() => router.back()}
         trailing={
           expiryLabel ? <Badge tone={EXPIRY_TONE[expiryStatus(item.expiresAt)]} label={expiryLabel} /> : undefined
@@ -168,6 +174,33 @@ export default function ItemDetail() {
               <Chip key={u} label={unitLabel(t, u)} selected={unit === u} onPress={() => setDraftUnit(u)} />
             ))}
           </View>
+        </View>
+
+        <View style={{ gap: spacing.xs }}>
+          <Field
+            label={t('mobile.item.nameLabel')}
+            value={label}
+            onChangeText={setDraftLabel}
+            placeholder={ingredientName(locale, item.ingredient)}
+            maxLength={120}
+            autoCapitalize="words"
+            autoCorrect={false}
+          />
+          {/*
+            The catalog name is a global row shared by every household, so this
+            renames the item and nothing else — worth saying, because "rename"
+            otherwise reads as editing the dictionary.
+          */}
+          <AppText variant="caption" muted>
+            {t('mobile.item.nameHint')}
+          </AppText>
+          {item.label ? (
+            <Button
+              title={t('mobile.item.resetName')}
+              variant="ghost"
+              onPress={() => setDraftLabel('')}
+            />
+          ) : null}
         </View>
 
         <Field
@@ -219,7 +252,7 @@ export default function ItemDetail() {
         onClose={() => setConfirmDelete(false)}
         title={t('inventory.deleteItem')}
       >
-        <AppText muted>{ingredientName(locale, item.ingredient)}</AppText>
+        <AppText muted>{itemName(locale, item)}</AppText>
         <Button
           title={t('common.delete')}
           variant="danger"

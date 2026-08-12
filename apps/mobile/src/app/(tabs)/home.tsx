@@ -14,7 +14,7 @@ import {
 import { useFormat } from '../../hooks/useFormat';
 import { usePlans } from '../../hooks/plans';
 import { useInventory } from '../../hooks/inventory';
-import { ingredientName, formatExpiryLabel, formatMinutes } from '../../lib/format';
+import { itemName, formatExpiryLabel, formatMinutes } from '../../lib/format';
 import { todayISODate } from '../../lib/expiry';
 import { colors, radius, spacing, tintFor } from '../../theme';
 
@@ -126,7 +126,7 @@ export default function Home() {
                   style={{ width: 150 }}
                 >
                   <AppText variant="bodyStrong" numberOfLines={1}>
-                    {ingredientName(locale, item.ingredient)}
+                    {itemName(locale, item)}
                   </AppText>
                   <Badge
                     tone="warn"

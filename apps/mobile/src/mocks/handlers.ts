@@ -244,7 +244,8 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
       items = items.filter(
         (i) =>
           i.ingredient.canonicalNameEn.toLowerCase().includes(q) ||
-          i.ingredient.canonicalNameAr.includes(q),
+          i.ingredient.canonicalNameAr.includes(q) ||
+          (i.label ?? '').toLowerCase().includes(q),
       );
     if (within != null) {
       const max = Number(within);
@@ -267,6 +268,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
         householdId: db.household.id,
         ingredient,
         brand: (input.brand as string | null) ?? null,
+        label: null,
         locationId: String(input.locationId ?? db.locations[0]!.id),
         quantity: Number(input.quantity ?? 1),
         unit: (input.unit as InventoryItem['unit']) ?? ingredient.defaultUnit,
@@ -295,6 +297,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     if (body.locationId) item.locationId = String(body.locationId);
     if (body.expiresAt !== undefined) item.expiresAt = body.expiresAt as string | null;
     if (body.brand !== undefined) item.brand = body.brand as string | null;
+    if (body.label !== undefined) item.label = body.label as string | null;
     item.updatedAt = isoDateTime(0);
     return HttpResponse.json(item);
   },
@@ -544,6 +547,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
         householdId: db.household.id,
         ingredient,
         brand: null,
+        label: null,
         locationId,
         quantity: shop.quantity,
         unit: shop.unit,
