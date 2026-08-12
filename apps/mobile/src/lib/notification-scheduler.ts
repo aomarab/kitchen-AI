@@ -117,6 +117,27 @@ function textFor(
     };
   }
 
+  if (notification.kind === 'expired') {
+    return {
+      title: t('mobile.notifications.expiredTitle'),
+      body: t('mobile.notifications.expiredBody', { count: notification.count }),
+    };
+  }
+
+  if (notification.kind === 'shopping') {
+    return {
+      title: t('mobile.notifications.shoppingTitle'),
+      body: t('mobile.notifications.shoppingBody', { count: notification.count }),
+    };
+  }
+
+  if (notification.kind === 'planning') {
+    return {
+      title: t('mobile.notifications.planningTitle'),
+      body: t('mobile.notifications.planningBody'),
+    };
+  }
+
   const { count, daysUntil } = notification;
   const title = t('mobile.notifications.expiryTitle');
   if (daysUntil <= 0) return { title, body: t('mobile.notifications.expiryToday', { count }) };

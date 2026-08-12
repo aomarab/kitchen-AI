@@ -31,17 +31,32 @@ export function NotificationSettings() {
   const setNotifyExpiry = useSettingsStore((state) => state.setNotifyExpiry);
   const notifyMeals = useSettingsStore((state) => state.notifyMeals);
   const setNotifyMeals = useSettingsStore((state) => state.setNotifyMeals);
+  const notifyExpired = useSettingsStore((state) => state.notifyExpired);
+  const setNotifyExpired = useSettingsStore((state) => state.setNotifyExpired);
+  const notifyShopping = useSettingsStore((state) => state.notifyShopping);
+  const setNotifyShopping = useSettingsStore((state) => state.setNotifyShopping);
+  const notifyPlanning = useSettingsStore((state) => state.notifyPlanning);
+  const setNotifyPlanning = useSettingsStore((state) => state.setNotifyPlanning);
   const leadDays = useSettingsStore((state) => state.expiryLeadDays);
   const setLeadDays = useSettingsStore((state) => state.setExpiryLeadDays);
   const reminderHour = useSettingsStore((state) => state.reminderHour);
   const setReminderHour = useSettingsStore((state) => state.setReminderHour);
 
-  const [permission, setPermission] = useState<PermissionState>('undetermined');
+  const [permission, setPermissionState] = useState<PermissionState>('undetermined');
   const scheduledCount = useNotificationStatus((state) => state.scheduledCount);
+
+  // Mirrored into the shared store, which is what the background scheduler
+  // watches: granting permission here changes nothing about the kitchen, so
+  // without that signal the reminders would not be armed until the next
+  // foreground.
+  const setPermission = useCallback((value: PermissionState) => {
+    setPermissionState(value);
+    useNotificationStatus.getState().setPermission(value);
+  }, []);
 
   const refresh = useCallback(() => {
     void currentPermission().then(setPermission);
-  }, []);
+  }, [setPermission]);
 
   useEffect(() => {
     refresh();
@@ -60,6 +75,10 @@ export function NotificationSettings() {
     setPermission(await requestPermission());
   };
 
+  // Every control below the toggles is shared, so it appears as soon as any
+  // one reminder is on rather than only the two the screen started with.
+  const anyEnabled = notifyExpiry || notifyMeals || notifyExpired || notifyShopping || notifyPlanning;
+
   const hourLabel = (hour: number) =>
     new Date(2026, 0, 1, hour, 0).toLocaleTimeString(locale, {
       hour: 'numeric',
@@ -68,14 +87,13 @@ export function NotificationSettings() {
 
   return (
     <Card style={{ gap: spacing.lg }}>
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('mobile.settings.notifications')}
-        </AppText>
-        <AppText variant="caption" muted>
-          {t('mobile.settings.notificationsHint')}
-        </AppText>
-      </View>
+      {/*
+        No section title: this is the whole screen now, and the navigation bar
+        above it already says "Notifications".
+      */}
+      <AppText variant="caption" muted>
+        {t('mobile.settings.notificationsHint')}
+      </AppText>
 
       <ToggleRow
         label={t('mobile.settings.notifyExpiry')}
@@ -109,7 +127,28 @@ export function NotificationSettings() {
         onValueChange={(value) => void enable(value, setNotifyMeals)}
       />
 
-      {notifyExpiry || notifyMeals ? (
+      <ToggleRow
+        label={t('mobile.settings.notifyExpired')}
+        hint={t('mobile.settings.notifyExpiredHint')}
+        value={notifyExpired}
+        onValueChange={(value) => void enable(value, setNotifyExpired)}
+      />
+
+      <ToggleRow
+        label={t('mobile.settings.notifyShopping')}
+        hint={t('mobile.settings.notifyShoppingHint')}
+        value={notifyShopping}
+        onValueChange={(value) => void enable(value, setNotifyShopping)}
+      />
+
+      <ToggleRow
+        label={t('mobile.settings.notifyPlanning')}
+        hint={t('mobile.settings.notifyPlanningHint')}
+        value={notifyPlanning}
+        onValueChange={(value) => void enable(value, setNotifyPlanning)}
+      />
+
+      {anyEnabled ? (
         <View style={{ gap: spacing.xs }}>
           <AppText variant="label" muted>
             {t('mobile.settings.reminderTime')}
@@ -131,7 +170,7 @@ export function NotificationSettings() {
         Proof the reminders are actually armed. Without it, "on" and "silently
         broken" look identical until the day something is wasted.
       */}
-      {permission === 'granted' && scheduledCount !== null && (notifyExpiry || notifyMeals) ? (
+      {permission === 'granted' && scheduledCount !== null && anyEnabled ? (
         <AppText variant="caption" muted>
           {t('mobile.settings.scheduled', { count: scheduledCount })}
         </AppText>
@@ -142,7 +181,7 @@ export function NotificationSettings() {
         toggles above cannot fix — leaving them on while nothing ever arrives
         is the confusing failure this replaces.
       */}
-      {permission === 'denied' && (notifyExpiry || notifyMeals) ? (
+      {permission === 'denied' && anyEnabled ? (
         <View style={{ gap: spacing.sm }}>
           <AppText variant="caption" color="danger">
             {t('mobile.settings.permissionDenied')}
@@ -156,11 +195,30 @@ export function NotificationSettings() {
       ) : null}
 
       {/*
+        The state a fresh install sits in: reminders are on by default, but iOS
+        has never been asked, so nothing can arrive. Without this the toggles
+        read as working while the phone holds nothing — the only way out was to
+        turn a toggle off and on again to trigger the prompt.
+      */}
+      {permission === 'undetermined' && anyEnabled ? (
+        <View style={{ gap: spacing.sm }}>
+          <AppText variant="caption" muted>
+            {t('mobile.settings.permissionNeeded')}
+          </AppText>
+          <Button
+            variant="secondary"
+            title={t('mobile.settings.allowNotifications')}
+            onPress={() => void requestPermission().then(setPermission)}
+          />
+        </View>
+      ) : null}
+
+      {/*
         The JS is newer than the binary it is running inside, so the native
         notification module simply isn't there. Nothing in the OS Settings app
         can fix that, so this state deliberately offers no button.
       */}
-      {permission === 'unavailable' && (notifyExpiry || notifyMeals) ? (
+      {permission === 'unavailable' && anyEnabled ? (
         <AppText variant="caption" color="danger">
           {t('mobile.settings.permissionUnavailable')}
         </AppText>

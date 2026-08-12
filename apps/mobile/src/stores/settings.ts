@@ -14,6 +14,9 @@ interface PersistedSettings {
    */
   notifyExpiry: boolean;
   notifyMeals: boolean;
+  notifyExpired: boolean;
+  notifyShopping: boolean;
+  notifyPlanning: boolean;
   expiryLeadDays: number;
   reminderHour: number;
 }
@@ -23,6 +26,9 @@ interface SettingsState extends PersistedSettings {
   setShowHijri: (value: boolean) => void;
   setNotifyExpiry: (value: boolean) => void;
   setNotifyMeals: (value: boolean) => void;
+  setNotifyExpired: (value: boolean) => void;
+  setNotifyShopping: (value: boolean) => void;
+  setNotifyPlanning: (value: boolean) => void;
   setExpiryLeadDays: (value: number) => void;
   setReminderHour: (value: number) => void;
   hydrate: () => Promise<void>;
@@ -40,6 +46,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   // reminder nobody switched on never fires. Both are one tap to silence.
   notifyExpiry: true,
   notifyMeals: true,
+  notifyExpired: true,
+  // Off by default. These two are useful but they are also the ones that can
+  // nag: a shopping list nobody is shopping for, and a planning nudge for
+  // someone who plans on Sundays. Opt in, rather than opt out after annoyance.
+  notifyShopping: false,
+  notifyPlanning: false,
   expiryLeadDays: DEFAULT_LEAD_DAYS,
   reminderHour: DEFAULT_REMINDER_HOUR,
 
@@ -63,6 +75,21 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     void writeJson(PERSIST_KEY, current(get()));
   },
 
+  setNotifyExpired: (value) => {
+    set({ notifyExpired: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
+  setNotifyShopping: (value) => {
+    set({ notifyShopping: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
+  setNotifyPlanning: (value) => {
+    set({ notifyPlanning: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
   setExpiryLeadDays: (value) => {
     set({ expiryLeadDays: value });
     void writeJson(PERSIST_KEY, current(get()));
@@ -83,6 +110,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       // existed keeps the on-by-default behaviour instead of reading as off.
       notifyExpiry: saved.notifyExpiry !== false,
       notifyMeals: saved.notifyMeals !== false,
+      notifyExpired: saved.notifyExpired !== false,
+      // `=== true` for the pair that ships off, so an older settings file
+      // does not silently switch them on the first time it is read back.
+      notifyShopping: saved.notifyShopping === true,
+      notifyPlanning: saved.notifyPlanning === true,
       expiryLeadDays: saved.expiryLeadDays ?? DEFAULT_LEAD_DAYS,
       reminderHour: saved.reminderHour ?? DEFAULT_REMINDER_HOUR,
     });
@@ -95,6 +127,9 @@ function current(state: PersistedSettings): PersistedSettings {
     showHijri: state.showHijri,
     notifyExpiry: state.notifyExpiry,
     notifyMeals: state.notifyMeals,
+    notifyExpired: state.notifyExpired,
+    notifyShopping: state.notifyShopping,
+    notifyPlanning: state.notifyPlanning,
     expiryLeadDays: state.expiryLeadDays,
     reminderHour: state.reminderHour,
   };

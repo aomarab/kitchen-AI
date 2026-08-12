@@ -182,6 +182,7 @@ export const mobileEn = {
       shopping: 'Shopping list',
       household: 'Household',
       profile: 'Preferences',
+      notifications: 'Notifications',
       settings: 'Settings',
       aiUsage: 'AI usage',
       credits: 'Credits',
@@ -207,6 +208,12 @@ export const mobileEn = {
       notifyExpiryHint: 'A reminder before something in your kitchen goes off.',
       notifyMeals: 'Planned meals',
       notifyMealsHint: 'A reminder on the day of each meal in your plan.',
+      notifyExpired: 'Food already gone off',
+      notifyExpiredHint: 'A nudge to clear out what is past its date.',
+      notifyShopping: 'Shopping list',
+      notifyShoppingHint: 'A reminder of what you still have left to buy.',
+      notifyPlanning: 'Plan tomorrow',
+      notifyPlanningHint: 'Only when tomorrow has no meals planned yet.',
       leadTime: 'Warn me',
       leadDays: plural('count', {
         one: '1 day ahead',
@@ -215,6 +222,8 @@ export const mobileEn = {
       reminderTime: 'Remind me at',
       permissionDenied: 'Notifications are turned off for this app. Open Settings to allow them.',
       permissionUnavailable: 'Reminders need a newer version of the app. Update to turn them on.',
+      permissionNeeded: 'Your phone has not been asked yet, so nothing can arrive.',
+      allowNotifications: 'Allow notifications',
       openSettings: 'Open Settings',
       scheduled: plural('count', {
         zero: 'Nothing to remind you about yet.',
@@ -238,6 +247,18 @@ export const mobileEn = {
       }),
       mealTitle: "Tonight's meal",
       mealBody: '{title} — everything you need should already be in your kitchen.',
+      expiredTitle: 'Time for a clear-out',
+      expiredBody: plural('count', {
+        one: '1 item in your kitchen is past its date.',
+        other: '{count} items in your kitchen are past their date.',
+      }),
+      shoppingTitle: 'Still on your list',
+      shoppingBody: plural('count', {
+        one: '1 thing left to buy.',
+        other: '{count} things left to buy.',
+      }),
+      planningTitle: 'Nothing planned for tomorrow',
+      planningBody: 'Pick tomorrow’s meals while you still have the ingredients.',
     },
     places: {
       title: 'Kitchen places',

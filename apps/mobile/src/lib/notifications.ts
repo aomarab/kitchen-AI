@@ -32,7 +32,23 @@ export const DEFAULT_REMINDER_HOUR = 19;
  */
 export const MAX_SCHEDULED = 48;
 
-export type NotificationKind = 'expiry' | 'meal';
+export type NotificationKind = 'expiry' | 'meal' | 'expired' | 'shopping' | 'planning';
+
+/**
+ * Which reminders the user actually wants.
+ *
+ * Passed in whole rather than by handing the planner empty arrays, because
+ * two of these read the same data: the expiry warning and the "this has gone
+ * off" nudge both come from the inventory, and the planning nudge needs the
+ * meal list even when meal reminders are silenced.
+ */
+export interface NotificationToggles {
+  readonly expiry: boolean;
+  readonly meals: boolean;
+  readonly expired: boolean;
+  readonly shopping: boolean;
+  readonly planning: boolean;
+}
 
 export interface PendingNotification {
   /** Stable within one plan, so the scheduler can diff rather than duplicate. */
@@ -54,6 +70,10 @@ export interface ExpiringItem {
 export interface PlannedMeal {
   readonly date: string;
   readonly title: string;
+}
+
+export interface ShoppingLine {
+  readonly purchased: boolean;
 }
 
 function atHour(day: Date, hour: number): Date {
@@ -159,21 +179,144 @@ export function planMealNotifications(
     .sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
 }
 
+/**
+ * Food that is already past its date and still in the kitchen.
+ *
+ * The expiry warning deliberately stops at the expiry date, so without this
+ * the app goes silent at exactly the moment something became waste. One
+ * summary, not one per item — the point is "go and look in the fridge".
+ */
+export function planExpiredNotifications(
+  items: readonly ExpiringItem[],
+  options: { hour: number; now: Date },
+): PendingNotification[] {
+  const { hour, now } = options;
+
+  let count = 0;
+  for (const item of items) {
+    const date = item.expiresAt?.trim();
+    if (!date) continue;
+    const days = daysUntilExpiry(date, now);
+    if (days !== null && days < 0) count += 1;
+  }
+  if (count === 0) return [];
+
+  const fireAt = nextReminderSlot(now, hour);
+  return [{ key: `expired:${fireAt.getTime()}`, kind: 'expired', fireAt, count, daysUntil: 0 }];
+}
+
+/**
+ * What is still waiting on the shopping list.
+ *
+ * A list written days ago is only useful if it resurfaces before the next trip
+ * to the shop, and the app cannot know when that is — so it says it once, at
+ * the same hour as everything else, and stops as soon as the list is cleared.
+ */
+export function planShoppingNotifications(
+  items: readonly ShoppingLine[],
+  options: { hour: number; now: Date },
+): PendingNotification[] {
+  const { hour, now } = options;
+  const count = items.filter((line) => !line.purchased).length;
+  if (count === 0) return [];
+
+  const fireAt = nextReminderSlot(now, hour);
+  return [{ key: `shopping:${fireAt.getTime()}`, kind: 'shopping', fireAt, count, daysUntil: 0 }];
+}
+
+/**
+ * A nudge when tomorrow has nothing to cook.
+ *
+ * Judged from the moment the reminder *lands*, not from now: after the evening
+ * hour has passed, the earliest it can arrive is tomorrow evening, and by then
+ * "tomorrow" is a different day. Asking about the wrong one would nag someone
+ * about a day they had already planned.
+ */
+export function planPlanningNotifications(
+  meals: readonly PlannedMeal[],
+  options: { hour: number; now: Date },
+): PendingNotification[] {
+  const { hour, now } = options;
+  const fireAt = nextReminderSlot(now, hour);
+  const nextDay = new Date(fireAt.getFullYear(), fireAt.getMonth(), fireAt.getDate() + 1);
+  const target = todayISODate(nextDay);
+
+  if (meals.some((meal) => meal.date === target)) return [];
+  return [{ key: `planning:${fireAt.getTime()}`, kind: 'planning', fireAt, count: 0, daysUntil: 1 }];
+}
+
 export function planNotifications(options: {
   items: readonly ExpiringItem[];
   meals: readonly PlannedMeal[];
+  shopping?: readonly ShoppingLine[];
+  toggles: NotificationToggles;
   leadDays: number;
   hour: number;
   now: Date;
   max?: number;
 }): PendingNotification[] {
-  const { items, meals, leadDays, hour, now, max = MAX_SCHEDULED } = options;
+  const { items, meals, shopping = [], toggles, leadDays, hour, now, max = MAX_SCHEDULED } = options;
 
   return [
-    ...planExpiryNotifications(items, { leadDays, hour, now }),
-    ...planMealNotifications(meals, { hour, now }),
+    ...(toggles.expiry ? planExpiryNotifications(items, { leadDays, hour, now }) : []),
+    ...(toggles.meals ? planMealNotifications(meals, { hour, now }) : []),
+    ...(toggles.expired ? planExpiredNotifications(items, { hour, now }) : []),
+    ...(toggles.shopping ? planShoppingNotifications(shopping, { hour, now }) : []),
+    ...(toggles.planning ? planPlanningNotifications(meals, { hour, now }) : []),
   ]
     .sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime())
     // Soonest-first before the cut, so what gets dropped is the distant future.
     .slice(0, max);
+}
+
+/** Everything a scheduled reminder is built out of. See `schedulerSignature`. */
+export interface SchedulerSignatureInput {
+  readonly locale: string;
+  readonly toggles: NotificationToggles;
+  readonly leadDays: number;
+  readonly hour: number;
+  /**
+   * The OS permission as last observed. Part of the signature because it is
+   * granted from the settings screen long after the scheduler last ran: at
+   * that moment nothing about the kitchen has changed, so without this the
+   * plan is never rebuilt and the phone holds no reminders at all.
+   */
+  readonly permission: string;
+  /**
+   * Bumped when the app returns to the foreground. Reminders are scheduled
+   * relative to "now", so an app carried across midnight — or reopened days
+   * later — is holding a plan built for the wrong day, even though none of
+   * the data moved.
+   */
+  readonly revision: number;
+  readonly items: readonly { readonly expiresAt?: string | null }[];
+  readonly meals: readonly PlannedMeal[];
+  readonly unpurchasedCount: number;
+}
+
+/**
+ * Collapses the scheduler's inputs into one comparable string.
+ *
+ * Rebuilding the plan means cancelling and re-arming every reminder, so it
+ * must happen when — and only when — something that could make a pending
+ * reminder wrong has moved. Object identity is useless for that: TanStack
+ * Query hands back a fresh array on every refetch even when nothing changed.
+ */
+export function schedulerSignature(input: SchedulerSignatureInput): string {
+  const { toggles } = input;
+  return [
+    input.locale,
+    toggles.expiry,
+    toggles.meals,
+    toggles.expired,
+    toggles.shopping,
+    toggles.planning,
+    input.leadDays,
+    input.hour,
+    input.permission,
+    input.revision,
+    input.items.map((item) => item.expiresAt ?? '-').join(','),
+    input.meals.map((meal) => `${meal.date}:${meal.title}`).join(','),
+    input.unpurchasedCount,
+  ].join('|');
 }

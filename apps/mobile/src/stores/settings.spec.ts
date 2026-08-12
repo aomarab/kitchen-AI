@@ -24,6 +24,9 @@ beforeEach(() => {
   useSettingsStore.setState({
     notifyExpiry: true,
     notifyMeals: true,
+    notifyExpired: true,
+    notifyShopping: false,
+    notifyPlanning: false,
     expiryLeadDays: DEFAULT_LEAD_DAYS,
     reminderHour: DEFAULT_REMINDER_HOUR,
   });
@@ -33,6 +36,43 @@ describe('notification settings', () => {
   it('reminds by default, because a reminder nobody enabled never fires', async () => {
     expect(useSettingsStore.getState().notifyExpiry).toBe(true);
     expect(useSettingsStore.getState().notifyMeals).toBe(true);
+  });
+
+  it('ships the naggier reminders switched off', async () => {
+    // Waste is the point of the app, so the two that watch food are on. The
+    // shopping and planning nudges fire on a state that can sit unchanged for
+    // weeks, so they are opt-in rather than something to discover and disable.
+    expect(useSettingsStore.getState().notifyExpired).toBe(true);
+    expect(useSettingsStore.getState().notifyShopping).toBe(false);
+    expect(useSettingsStore.getState().notifyPlanning).toBe(false);
+  });
+
+  it('does not switch the opt-in reminders on when reading an older file', async () => {
+    // `!== false` is right for the on-by-default keys and wrong for these: it
+    // would turn on reminders the user has never been asked about.
+    fileSystem.readAsStringAsync.mockResolvedValue(
+      JSON.stringify({ notifyExpiry: true, notifyMeals: true }),
+    );
+
+    await useSettingsStore.getState().hydrate();
+
+    const state = useSettingsStore.getState();
+    expect(state.notifyExpired).toBe(true);
+    expect(state.notifyShopping).toBe(false);
+    expect(state.notifyPlanning).toBe(false);
+  });
+
+  it('restores the opt-in reminders once they are chosen', async () => {
+    fileSystem.readAsStringAsync.mockResolvedValue(
+      JSON.stringify({ notifyShopping: true, notifyPlanning: true, notifyExpired: false }),
+    );
+
+    await useSettingsStore.getState().hydrate();
+
+    const state = useSettingsStore.getState();
+    expect(state.notifyShopping).toBe(true);
+    expect(state.notifyPlanning).toBe(true);
+    expect(state.notifyExpired).toBe(false);
   });
 
   it('keeps the defaults when reading a settings file written before they existed', async () => {

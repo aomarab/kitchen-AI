@@ -35,6 +35,7 @@ export const IONICONS = {
   basket: 'basket-outline',
   restaurant: 'restaurant-outline',
   settings: 'settings-outline',
+  bell: 'notifications-outline',
   user: 'person-outline',
   household: 'people-outline',
   play: 'play',
