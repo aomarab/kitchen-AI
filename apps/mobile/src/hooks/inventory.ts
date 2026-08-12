@@ -39,6 +39,35 @@ export function useCreateLocation() {
   });
 }
 
+export function useUpdateLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: RouteBody<'updateLocation'> }) =>
+      api.call('updateLocation', { params: { id }, body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.locations }),
+  });
+}
+
+/**
+ * Deleting a place. `moveTo` sends its contents somewhere; without it the API
+ * refuses a place that still holds food, and the screen turns that refusal
+ * into the question of where the food should go.
+ *
+ * Invalidates inventory as well as locations: the items that moved are now in
+ * a different place, so a cached list would show them where they no longer are.
+ */
+export function useDeleteLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, moveTo }: { id: string; moveTo?: string }) =>
+      api.call('deleteLocation', { params: { id }, query: moveTo ? { moveTo } : {} }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.locations });
+      void qc.invalidateQueries({ queryKey: qk.inventory });
+    },
+  });
+}
+
 export function useUpdateInventoryItem(id: string) {
   const qc = useQueryClient();
   return useMutation({

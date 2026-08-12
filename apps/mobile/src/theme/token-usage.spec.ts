@@ -141,24 +141,25 @@ describe('mobile source sweep', () => {
    * The same hole, from the other side: `Sheet` renders in a Modal, which is a
    * sibling of Screen's KeyboardAvoidingView rather than a child, so a Field
    * inside a Sheet is unprotected even on a screen that passes the check above.
-   * Today no Sheet holds one. If that changes, the Sheet needs its own
-   * avoidance rather than an exception here.
+   * Sheet answers that with its own avoidance, which is what makes a Field in
+   * one safe — so guard the property the fields depend on, at the source.
    */
-  it('keeps text inputs out of modal sheets', () => {
-    const offenders = sourceFiles()
-      .filter((file) => /\/(app|features)\//.test(file))
-      .filter((file) => {
-        const content = readFileSync(file, 'utf8');
-        const sheet = content.match(/<Sheet\b[\s\S]*?<\/Sheet>/g);
-        return !!sheet?.some((block) => /<Field\b/.test(block));
-      })
-      .map((file) => relative(SRC, file));
+  it('gives the sheet its own keyboard avoidance', () => {
+    const sheet = readFileSync(join(SRC, 'components/Sheet.tsx'), 'utf8');
 
     expect(
-      offenders,
-      'A Field inside a Sheet sits in a Modal, outside the KeyboardAvoidingView ' +
-        'that Screen mounts, so the keyboard covers it. Give the Sheet its own ' +
-        `avoidance before adding one. Offending files: ${offenders.join(', ')}`,
-    ).toEqual([]);
+      /<KeyboardAvoidingView/.test(sheet),
+      'Sheet renders in a Modal, which is hosted outside the root view and so ' +
+        'sits beside the KeyboardAvoidingView that Screen mounts rather than ' +
+        'inside it. Without its own, the iOS keyboard covers any Field a sheet ' +
+        'holds — and several sheets hold one.',
+    ).toBe(true);
+
+    expect(
+      /behavior=\{Platform\.OS === 'ios' \? 'padding' : undefined\}/.test(sheet),
+      'Expo sets softwareKeyboardLayoutMode="resize", so Android already ' +
+        'shrinks the window. A behavior on both platforms double-adjusts there ' +
+        'and pushes the sheet off-screen.',
+    ).toBe(true);
   });
 });

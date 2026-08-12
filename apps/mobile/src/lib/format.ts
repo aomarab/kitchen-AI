@@ -6,7 +6,7 @@ import {
   type MessageKey,
   type Translator,
 } from '@kitchen/i18n';
-import type { Ingredient, StorageLocation, Unit } from '@kitchen/contracts';
+import type { Ingredient, StorageLocation, StorageLocationType, Unit } from '@kitchen/contracts';
 import { daysUntilExpiry } from './expiry';
 
 export interface NumeralPrefs {
@@ -56,14 +56,37 @@ export function unitLabel(t: Translator, unit: Unit): string {
 }
 
 /**
+ * Names the API seeds a new household with. These are never shown: they exist
+ * so the row has something to hold, and the client renders the *type* instead
+ * so it reads natively in Arabic as well as English.
+ */
+const SEEDED_NAMES: Record<StorageLocationType, string> = {
+  fridge: 'Fridge',
+  freezer: 'Freezer',
+  pantry: 'Pantry',
+  spice_rack: 'Spice rack',
+  other: 'Other',
+};
+
+/**
  * Storage location name in the active language.
  *
- * The row carries a `name` the API stores, but that name is seeded in English,
- * so rendering it directly left `Fridge` / `Freezer` sitting untranslated in the
- * Arabic UI. Labelling by `type` matches the web client (`lib/labels.ts`) and
- * the project rule that the server never sends user-facing prose.
+ * A household's starting places are seeded in English, so rendering the stored
+ * name directly left `Fridge` / `Freezer` sitting untranslated in the Arabic
+ * UI — hence labelling by `type`, matching the web client (`lib/labels.ts`) and
+ * the rule that the server never sends user-facing prose.
+ *
+ * A place the household added itself is different: its name is the user's own
+ * words, in whichever language they typed, and translating "الرف اللي فوق
+ * الفرن" into "Other" would be worse than useless. So a name that is not one of
+ * the seeded ones is shown as written.
  */
-export function locationLabel(t: Translator, location: Pick<StorageLocation, 'type'>): string {
+export function locationLabel(
+  t: Translator,
+  location: Pick<StorageLocation, 'type'> & Partial<Pick<StorageLocation, 'name'>>,
+): string {
+  const name = location.name?.trim();
+  if (name && name !== SEEDED_NAMES[location.type]) return name;
   return t(`inventory.locations.${location.type}` as MessageKey);
 }
 

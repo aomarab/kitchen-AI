@@ -182,6 +182,29 @@ export const mobileEn = {
         'Changing language flips the layout direction. Fully close and reopen the app to apply it.',
       restartLater: 'Later',
     },
+    places: {
+      title: 'Kitchen places',
+      entry: 'Kitchen places',
+      entryHint: 'Add or rename where you keep things.',
+      add: 'Add a place',
+      namePlaceholder: 'e.g. Garage fridge',
+      kind: 'What kind of place is it?',
+      rename: 'Rename',
+      remove: 'Remove',
+      itemCount: plural('count', {
+        one: '{count} item',
+        other: '{count} items',
+      }),
+      empty: 'Empty',
+      moveTitle: 'Move what is inside first',
+      moveBody: plural('count', {
+        one: 'This place still holds {count} item. Choose where it should go — nothing is thrown away.',
+        other:
+          'This place still holds {count} items. Choose where they should go — nothing is thrown away.',
+      }),
+      moveHere: 'Move here and remove',
+      cannotRemoveLast: 'This is your only place, so there is nowhere to move things to.',
+    },
     feedback: {
       title: 'Send feedback',
       entry: 'Send feedback',
