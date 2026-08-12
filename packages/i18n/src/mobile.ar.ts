@@ -159,6 +159,7 @@ export const mobileAr: MobileMessages = {
       exitCookMode: 'خروج',
       watchOnYoutube: 'شاهد على يوتيوب',
       videoUnavailable: 'لا يمكن تشغيل هذا الفيديو الآن.',
+      imageLabel: 'صورة لوصفة {title}',
     },
     more: {
       title: 'المزيد',

@@ -19,6 +19,7 @@ export { OfflineBanner } from './OfflineBanner';
 export { SyncFailuresBanner } from './SyncFailuresBanner';
 export { YoutubePlayer } from './YoutubePlayer';
 export { QuantityStepper } from './QuantityStepper';
+export { RecipeThumb } from './RecipeThumb';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';
 export { Sheet } from './Sheet';

@@ -102,6 +102,7 @@ export const planStatusEnum = pgEnum('plan_status', ['generating', 'ready', 'fai
 export const entryStateEnum = pgEnum('entry_state', ['planned', 'cooked', 'skipped']);
 export const difficultyEnum = pgEnum('difficulty', ['easy', 'medium', 'hard']);
 export const generatedByEnum = pgEnum('generated_by', ['ai', 'user']);
+export const dishMediaStatusEnum = pgEnum('dish_media_status', ['matched', 'none']);
 export const jobTypeEnum = pgEnum('job_type', [
   'receipt.parse',
   'plan.generate',
@@ -400,22 +401,52 @@ export const recipeIngredients = pgTable(
   ],
 );
 
-export const recipeVideos = pgTable(
-  'recipe_videos',
+/**
+ * Resolved media for a *dish*, not a recipe row.
+ *
+ * Recipes are household-scoped, so the same dish is a separate row for every
+ * household and a recipe-keyed cache paid a fresh 100-unit YouTube search for
+ * each one. Keying on the normalized dish title collapses those into a single
+ * lookup shared by every household, which is what keeps the daily quota
+ * survivable as households grow.
+ *
+ * `dishKey` is derived on demand (see `ai/recipes/dish-key.ts`) rather than
+ * stored on `recipes`: it is a pure function of title and locale, so storing it
+ * would buy a migration and a stale-key failure mode for nothing. Rows orphaned
+ * by a later change to the normalizer age out with the TTL.
+ */
+export const dishMedia = pgTable(
+  'dish_media',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    recipeId: uuid('recipe_id')
-      .notNull()
-      .references(() => recipes.id, { onDelete: 'cascade' }),
+    dishKey: text('dish_key').notNull(),
+    locale: localeEnum('locale').notNull(),
+    /** `none` is the negative cache — it replaces the old Redis empty-answer key. */
+    status: dishMediaStatusEnum('status').notNull(),
+    heroYoutubeId: text('hero_youtube_id'),
+    heroThumbnailUrl: text('hero_thumbnail_url'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.dishKey, table.locale] })],
+);
+
+export const dishVideos = pgTable(
+  'dish_videos',
+  {
+    dishKey: text('dish_key').notNull(),
+    locale: localeEnum('locale').notNull(),
     youtubeId: text('youtube_id').notNull(),
     title: text('title').notNull(),
     channel: text('channel').notNull(),
     thumbnailUrl: text('thumbnail_url').notNull(),
-    durationSeconds: integer('duration_seconds'),
-    locale: localeEnum('locale').notNull(),
+    durationSeconds: integer('duration_seconds').notNull(),
+    /** 0 is the winner, and the row the hero thumbnail was taken from. */
+    rank: integer('rank').notNull(),
     fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [uniqueIndex('recipe_video_key').on(table.recipeId, table.youtubeId)],
+  (table) => [
+    primaryKey({ columns: [table.dishKey, table.locale, table.youtubeId] }),
+    index('dish_videos_key_idx').on(table.dishKey, table.locale, table.rank),
+  ],
 );
 
 /* ------------------------------------------------------------------ */
@@ -761,14 +792,6 @@ export const inventoryEventsRelations = relations(inventoryEvents, ({ one }) => 
 
 export const recipesRelations = relations(recipes, ({ many }) => ({
   ingredients: many(recipeIngredients),
-  videos: many(recipeVideos),
-}));
-
-export const recipeVideosRelations = relations(recipeVideos, ({ one }) => ({
-  recipe: one(recipes, {
-    fields: [recipeVideos.recipeId],
-    references: [recipes.id],
-  }),
 }));
 
 export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
@@ -827,7 +850,8 @@ export const schema = {
   inventoryEvents,
   recipes,
   recipeIngredients,
-  recipeVideos,
+  dishMedia,
+  dishVideos,
   mealPlans,
   mealPlanEntries,
   shoppingListItems,
@@ -846,7 +870,6 @@ export const schema = {
   inventoryEventsRelations,
   recipesRelations,
   recipeIngredientsRelations,
-  recipeVideosRelations,
   mealPlansRelations,
   mealPlanEntriesRelations,
   feedbackRelations,

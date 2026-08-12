@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { colors, gradientHero, tintFor, tints } from './index';
 import { contrast } from './contrast';
+import {
+  RECIPE_THUMB_TONE_FOREGROUNDS,
+  RECIPE_THUMB_TONE_TOKENS,
+} from '../components/recipe-thumb-tones';
 
 const AA_TEXT = 4.5;
 const AA_NON_TEXT = 3;
@@ -9,6 +13,13 @@ const AA_NON_TEXT = 3;
 const SURFACES = ['bg', 'surface', 'surfaceAlt'] as const;
 
 const STATUSES = ['success', 'warn', 'danger'] as const;
+
+// The recipe placeholder picks one of these pairs by hashing the dish key, so
+// every pair must be legible — a tone cannot be added without a partner that
+// clears the bar.
+const RECIPE_THUMB_PAIRS = RECIPE_THUMB_TONE_TOKENS.map(
+  (tone) => [RECIPE_THUMB_TONE_FOREGROUNDS[tone], tone] as const,
+);
 
 describe('mobile palette', () => {
   it.each(['text', 'textMuted'] as const)('%s reads on every surface', (token) => {
@@ -21,6 +32,10 @@ describe('mobile palette', () => {
     for (const surface of SURFACES) {
       expect(contrast(colors.accent, colors[surface]), `accent on ${surface}`).toBeGreaterThanOrEqual(AA_TEXT);
     }
+  });
+
+  it.each(RECIPE_THUMB_PAIRS)('placeholder glyph %s reads on %s', (fg, bg) => {
+    expect(contrast(colors[fg], colors[bg]), `${fg} on ${bg}`).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 
   it('button fills carry readable labels', () => {

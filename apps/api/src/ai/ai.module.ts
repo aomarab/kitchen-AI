@@ -43,6 +43,7 @@ import { CaptureController } from './recognition/capture.controller.js';
 import { BarcodeService } from './barcode/barcode.service.js';
 import { ReceiptService } from './receipt/receipt.service.js';
 import { RecipesService } from './recipes/recipes.service.js';
+import { MediaService } from './recipes/media.service.js';
 import { RecipesController } from './recipes/recipes.controller.js';
 import { PlannerService } from './planner/planner.service.js';
 import { PlanService } from './plan/plan.service.js';
@@ -145,6 +146,7 @@ function redisConnection(url: string) {
     BarcodeService,
     ReceiptService,
     RecipesService,
+    MediaService,
     PlannerService,
     PlanService,
     ShoppingService,

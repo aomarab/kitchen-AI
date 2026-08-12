@@ -146,6 +146,7 @@ export const mobileEn = {
       exitCookMode: 'Exit',
       watchOnYoutube: 'Watch on YouTube',
       videoUnavailable: 'This video cannot be played right now.',
+      imageLabel: 'Recipe image for {title}',
     },
     more: {
       title: 'More',

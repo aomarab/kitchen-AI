@@ -9,7 +9,7 @@ import { useRegenerateEntry, useUpdateEntry } from '../../hooks/plans';
 import { Sheet } from '../ui/Sheet';
 import { Button, buttonClasses } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { AppImage } from '../ui/AppImage';
+import { RecipeThumb } from '../ui/RecipeThumb';
 import { LocalizedDate } from '../common/LocalizedDate';
 
 export function EntrySheet({
@@ -31,9 +31,12 @@ export function EntrySheet({
   return (
     <Sheet open={Boolean(entryId)} onClose={onClose} title={t('web.plans.entryDetail')}>
       <div className="flex flex-col gap-4">
-        {entry.recipe.heroImageUrl ? (
-          <AppImage src={entry.recipe.heroImageUrl} alt={entry.recipe.title} className="aspect-video w-full rounded-xl" />
-        ) : null}
+        <RecipeThumb
+          heroImageUrl={entry.recipe.heroImageUrl}
+          title={entry.recipe.title}
+          dishKey={`${entry.recipe.locale}:${entry.recipe.title}`}
+          className="aspect-video w-full rounded-xl"
+        />
 
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone="info">{t(slotKey(entry.slot))}</Badge>

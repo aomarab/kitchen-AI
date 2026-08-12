@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Difficulty } from '@kitchen/contracts';
 import {
@@ -11,6 +11,7 @@ import {
   Sheet,
   LoadingState,
   ErrorState,
+  RecipeThumb,
   YoutubePlayer,
 } from '../../../components';
 import { useFormat } from '../../../hooks/useFormat';
@@ -57,9 +58,13 @@ export default function RecipeDetail() {
 
   return (
     <Screen scroll padded={false}>
-      {data.heroImageUrl ? (
-        <Image source={{ uri: data.heroImageUrl }} style={{ width: '100%', height: 220 }} />
-      ) : null}
+      <RecipeThumb
+        heroImageUrl={data.heroImageUrl}
+        dishKey={`${data.locale}:${data.title}`}
+        title={data.title}
+        accessibilityLabel={t('mobile.recipe.imageLabel', { title: data.title })}
+        style={{ width: '100%', height: 220 }}
+      />
 
       <View style={{ padding: spacing.lg, gap: spacing.md }}>
         <Header title={data.title} onBack={() => router.back()} />

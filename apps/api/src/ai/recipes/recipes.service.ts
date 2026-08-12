@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
   Locale,
@@ -16,16 +16,14 @@ import {
   inventoryItems,
   mealPlanEntries,
   mealPlans,
-  recipeVideos,
   recipes,
   users,
 } from '../../db/schema.js';
-import { PANTRY_PORT, RESPONSE_CACHE, VIDEO_CACHE_TTL_DAYS, YOUTUBE_CLIENT } from '../ai.constants.js';
+import { PANTRY_PORT } from '../ai.constants.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { convert } from '../planner/units.js';
-import { YoutubeUnavailableError, type YoutubeClient } from '../clients/clients.interface.js';
-import { hashKey, type ResponseCachePort } from '../cache/response-cache.js';
-import { toRecipe, type FullRecipeRow } from './recipe-mapper.js';
+import { MediaService, type DishMedia } from './media.service.js';
+import { toRecipe, type FullRecipeRow, type ResolvedMedia } from './recipe-mapper.js';
 
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
@@ -34,92 +32,43 @@ export class RecipesService {
   constructor(
     @Inject(DB) private readonly db: Database,
     @Inject(PANTRY_PORT) private readonly pantry: PantryPort,
-    @Inject(YOUTUBE_CLIENT) private readonly youtube: YoutubeClient,
-    @Inject(RESPONSE_CACHE) private readonly cache: ResponseCachePort,
+    @Inject(MediaService) private readonly media: MediaService,
   ) {}
 
+  /**
+   * Opening a recipe is where media gets resolved. Both the hero image and the
+   * videos come from the one matched dish, so the screen the user is actually
+   * looking at fills in from a single call — and the resolved dish is then free
+   * for every other household that generates it.
+   */
   async getRecipe(householdId: string, id: string, requested?: Locale): Promise<Recipe> {
     const row = await this.loadRecipe(householdId, id);
     const locale = requested ?? (row.titleEn ? 'en' : 'ar');
-    const snapshot = await this.pantry.snapshot(householdId);
-    return toRecipe(row, locale, snapshot);
+    const [snapshot, media] = await Promise.all([
+      this.pantry.snapshot(householdId),
+      this.resolveMedia(row, locale),
+    ]);
+    return toRecipe(row, locale, snapshot, media);
   }
 
   /**
-   * Recipe videos (spec §5.5). Cached per recipe for 30 days; ids always come
-   * from the YouTube API, never the LLM. When the quota is exhausted the recipe
-   * is served with whatever is cached (possibly nothing) and the fetch is
-   * retried later — the flow never dead-ends.
+   * Recipe videos (spec §5.5). Delegates to the dish-level cache, so this and
+   * the hero image are always the same verified match. Ids always come from the
+   * YouTube API, never the LLM.
    */
   async getVideos(householdId: string, id: string, requested?: Locale): Promise<RecipeVideo[]> {
     const row = await this.loadRecipe(householdId, id);
     const locale = requested ?? (row.titleEn ? 'en' : 'ar');
-    const title = locale === 'ar' ? row.titleAr ?? row.titleEn ?? '' : row.titleEn ?? row.titleAr ?? '';
+    return (await this.resolveMedia(row, locale)).videos;
+  }
 
-    const freshCutoff = new Date(Date.now() - VIDEO_CACHE_TTL_DAYS * 86_400_000);
-    const fresh = await this.db
-      .select()
-      .from(recipeVideos)
-      .where(and(eq(recipeVideos.recipeId, id), gte(recipeVideos.fetchedAt, freshCutoff)))
-      .orderBy(desc(recipeVideos.fetchedAt));
-    if (fresh.length > 0) return fresh.map(toVideo);
+  private async resolveMedia(row: FullRecipeRow, locale: Locale): Promise<ResolvedMedia> {
+    const title =
+      locale === 'ar' ? row.titleAr ?? row.titleEn ?? '' : row.titleEn ?? row.titleAr ?? '';
+    if (title.trim().length === 0) return { heroThumbnailUrl: null, videos: [] };
 
-    // "No rows" is indistinguishable from "never searched", so a recipe YouTube
-    // has nothing for would re-run search.list on every single request — 100
-    // quota units each, against a daily allowance of 10,000. Remember the empty
-    // answer explicitly.
-    const emptyKey = hashKey('recipe-videos-empty', { recipeId: id, locale });
-    if (await this.cache.get<true>(emptyKey)) return [];
-
-    try {
-      const results = await this.youtube.search(title, locale);
-      if (results.length === 0) {
-        await this.cache.set(emptyKey, true, VIDEO_CACHE_TTL_DAYS * 86_400);
-        return [];
-      }
-      const now = new Date();
-      for (const v of results) {
-        await this.db
-          .insert(recipeVideos)
-          .values({
-            recipeId: id,
-            youtubeId: v.youtubeId,
-            title: v.title,
-            channel: v.channel,
-            thumbnailUrl: v.thumbnailUrl,
-            durationSeconds: v.durationSeconds,
-            locale,
-          })
-          // Renew fetchedAt, don't skip. `fetchedAt` only defaults on insert,
-          // so doing nothing on conflict froze it at the first search: for a
-          // popular recipe whose top results never change, the freshness
-          // window could never reopen and every request past day 30 spent
-          // another 100 quota units, forever.
-          .onConflictDoUpdate({
-            target: [recipeVideos.recipeId, recipeVideos.youtubeId],
-            set: {
-              title: v.title,
-              channel: v.channel,
-              thumbnailUrl: v.thumbnailUrl,
-              durationSeconds: v.durationSeconds,
-              locale,
-              fetchedAt: now,
-            },
-          });
-      }
-      return results.map((v) => ({ ...v, locale }));
-    } catch (err) {
-      if (err instanceof YoutubeUnavailableError) {
-        // Degrade: serve any cached videos (even stale), else none.
-        const stale = await this.db
-          .select()
-          .from(recipeVideos)
-          .where(eq(recipeVideos.recipeId, id))
-          .orderBy(desc(recipeVideos.fetchedAt));
-        return stale.map(toVideo);
-      }
-      throw err;
-    }
+    const resolved = await this.media.resolve(this.media.keyFor(title, locale), title, locale);
+    return toResolvedMedia(resolved, locale);
   }
 
   /**
@@ -282,7 +231,6 @@ export class RecipesService {
       where: eq(recipes.id, id),
       with: {
         ingredients: { with: { ingredient: true } },
-        videos: true,
       },
     });
     if (!row || (row.householdId !== null && row.householdId !== householdId)) {
@@ -301,20 +249,9 @@ export class RecipesService {
   }
 }
 
-function toVideo(row: {
-  youtubeId: string;
-  title: string;
-  channel: string;
-  thumbnailUrl: string;
-  durationSeconds: number | null;
-  locale: Locale;
-}): RecipeVideo {
+function toResolvedMedia(media: DishMedia, locale: Locale): ResolvedMedia {
   return {
-    youtubeId: row.youtubeId,
-    title: row.title,
-    channel: row.channel,
-    thumbnailUrl: row.thumbnailUrl,
-    durationSeconds: row.durationSeconds,
-    locale: row.locale,
+    heroThumbnailUrl: media.heroThumbnailUrl,
+    videos: media.videos.map((video) => ({ ...video, locale })),
   };
 }

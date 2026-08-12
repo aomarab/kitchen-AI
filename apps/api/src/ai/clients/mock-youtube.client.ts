@@ -8,17 +8,80 @@ import type { YoutubeClient, YoutubeVideo } from './clients.interface.js';
  * fixtures — the point is that ids never originate from the LLM (spec §5.5).
  */
 export class MockYoutubeClient implements YoutubeClient {
-  async search(query: string, locale: Locale, max = 3): Promise<YoutubeVideo[]> {
-    const suffix = locale === 'ar' ? 'بالعربي' : 'Recipe';
-    const channel = locale === 'ar' ? 'مطبخ' : 'Kitchen Channel';
-    const ids = ['dQw4w9WgXcQ', 'M7lc1UVf-VE', '9bZkp7q19f0'];
-    const count = Math.min(max, 2);
-    return Array.from({ length: count }, (_, i) => ({
-      youtubeId: ids[i]!,
-      title: `${query} — ${suffix} #${i + 1}`,
-      channel,
-      thumbnailUrl: `https://i.ytimg.com/vi/${ids[i]}/hqdefault.jpg`,
-      durationSeconds: 480 + i * 120,
-    }));
+  async search(
+    query: string,
+    locale: Locale,
+    max = 10,
+  ): Promise<YoutubeVideo[]> {
+    const fixtures =
+      locale === 'ar'
+        ? [
+            {
+              youtubeId: 'a1B2c3D4e5F',
+              title: `طريقة عمل ${query} خطوة بخطوة`,
+              channel: 'مطبخ البيت',
+              thumbnailUrl:
+                'https://i.ytimg.com/vi/a1B2c3D4e5F/maxresdefault.jpg',
+              durationSeconds: 720,
+              categoryId: '26',
+              defaultAudioLanguage: 'ar',
+              embeddable: true,
+            },
+            {
+              youtubeId: 'g6H7i8J9k0L',
+              title: `${query} بوصفة سهلة للمبتدئين`,
+              channel: 'وصفات يومية',
+              thumbnailUrl: 'https://i.ytimg.com/vi/g6H7i8J9k0L/sddefault.jpg',
+              durationSeconds: 960,
+              categoryId: '26',
+              defaultAudioLanguage: 'ar-SA',
+              embeddable: true,
+            },
+            {
+              youtubeId: 'm1N2o3P4q5R',
+              title: `${query} في أقل من دقيقة`,
+              channel: 'لقمات سريعة',
+              thumbnailUrl: 'https://i.ytimg.com/vi/m1N2o3P4q5R/hqdefault.jpg',
+              durationSeconds: 42,
+              categoryId: '26',
+              defaultAudioLanguage: 'ar',
+              embeddable: true,
+            },
+          ]
+        : [
+            {
+              youtubeId: 'a1B2c3D4e5F',
+              title: `${query} step-by-step dinner recipe`,
+              channel: 'Home Kitchen',
+              thumbnailUrl:
+                'https://i.ytimg.com/vi/a1B2c3D4e5F/maxresdefault.jpg',
+              durationSeconds: 720,
+              categoryId: '26',
+              defaultAudioLanguage: 'en',
+              embeddable: true,
+            },
+            {
+              youtubeId: 'g6H7i8J9k0L',
+              title: `Easy ${query} for weeknights`,
+              channel: 'Pantry Table',
+              thumbnailUrl: 'https://i.ytimg.com/vi/g6H7i8J9k0L/sddefault.jpg',
+              durationSeconds: 960,
+              categoryId: '26',
+              defaultAudioLanguage: 'en-US',
+              embeddable: true,
+            },
+            {
+              youtubeId: 'm1N2o3P4q5R',
+              title: `${query} in under a minute`,
+              channel: 'Quick Kitchen Shorts',
+              thumbnailUrl: 'https://i.ytimg.com/vi/m1N2o3P4q5R/hqdefault.jpg',
+              durationSeconds: 42,
+              categoryId: '26',
+              defaultAudioLanguage: 'en',
+              embeddable: true,
+            },
+          ];
+
+    return fixtures.slice(0, max);
   }
 }

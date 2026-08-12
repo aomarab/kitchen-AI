@@ -32,6 +32,7 @@ export const IONICONS = {
   star: 'star',
   starOutline: 'star-outline',
   basket: 'basket-outline',
+  restaurant: 'restaurant-outline',
   settings: 'settings-outline',
   user: 'person-outline',
   household: 'people-outline',
