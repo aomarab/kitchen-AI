@@ -10,6 +10,7 @@ import {
   ListRow,
   Badge,
   SegmentedControl,
+  FoodIcon,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -18,9 +19,8 @@ import type { BadgeTone } from '../../components/Badge';
 import { useFormat } from '../../hooks/useFormat';
 import { useInventory, useLocations } from '../../hooks/inventory';
 import { itemName, formatMeasure, formatExpiryLabel, locationLabel } from '../../lib/format';
-import { categoryEmoji } from '../../lib/ingredient-icon';
 import { expiryStatus, type ExpiryStatus } from '../../lib/expiry';
-import { colors, radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
 
 type Sort = 'expiry' | 'name' | 'recent';
 
@@ -53,23 +53,14 @@ export default function Kitchen() {
         onPress={() => router.push(`/item/${item.id}`)}
         showChevron
         leading={
-          // Decoration, so it is hidden from screen readers: the row already
-          // announces the item, and "carrot emoji" ahead of every name is
-          // noise to someone who cannot see it.
-          <View
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: radius.sm,
-              backgroundColor: colors.surfaceAlt,
-              alignItems: 'center',
-              justifyContent: 'center',
+          <FoodIcon
+            item={{
+              label: item.label,
+              nameEn: item.ingredient.canonicalNameEn,
+              nameAr: item.ingredient.canonicalNameAr,
+              category: item.ingredient.category,
             }}
-          >
-            <AppText style={{ fontSize: 20 }}>{categoryEmoji(item.ingredient.category)}</AppText>
-          </View>
+          />
         }
         trailing={expiryLabel ? <Badge tone={EXPIRY_TONE[status]} label={expiryLabel} /> : undefined}
       />

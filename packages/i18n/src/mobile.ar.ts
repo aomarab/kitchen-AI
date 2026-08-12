@@ -178,6 +178,7 @@ export const mobileAr: MobileMessages = {
       credits: 'الرصيد',
       signOut: 'تسجيل الخروج',
       appVersion: 'الإصدار {version}',
+      iconCredit: 'الرسوم من Twemoji، رخصة CC-BY 4.0',
     },
     settings: {
       title: 'الإعدادات',

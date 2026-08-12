@@ -55,6 +55,10 @@ export default function More() {
       <AppText variant="caption" muted center>
         {t('mobile.more.appVersion', { version })}
       </AppText>
+      {/* Required by the CC-BY licence the bundled item artwork ships under. */}
+      <AppText variant="caption" muted center>
+        {t('mobile.more.iconCredit')}
+      </AppText>
     </Screen>
   );
 }

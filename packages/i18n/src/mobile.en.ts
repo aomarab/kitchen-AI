@@ -165,6 +165,7 @@ export const mobileEn = {
       credits: 'Credits',
       signOut: 'Sign out',
       appVersion: 'Version {version}',
+      iconCredit: 'Emoji artwork by Twemoji, CC-BY 4.0',
     },
     settings: {
       title: 'Settings',
