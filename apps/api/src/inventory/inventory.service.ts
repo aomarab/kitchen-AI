@@ -461,6 +461,19 @@ export class InventoryService {
       .where(
         and(eq(inventoryItems.householdId, householdId), inArray(inventoryItems.id, itemIds)),
       );
-    return rows.map((row) => toInventoryItem(row.item as InventoryItemRow, row.ingredient));
+
+    // Returned in the order asked for. A bare select has no order at all, and
+    // `bulkCreate` hands this array straight back to a caller that pairs it
+    // with its own input by position — so an arbitrary row order silently
+    // attaches each result to the wrong submitted item.
+    const byId = new Map(
+      rows.map((row) => [
+        row.item.id,
+        toInventoryItem(row.item as InventoryItemRow, row.ingredient),
+      ]),
+    );
+    return itemIds
+      .map((id) => byId.get(id))
+      .filter((item): item is InventoryItem => item !== undefined);
   }
 }

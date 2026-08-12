@@ -314,6 +314,28 @@ describe('InventoryService (live DB)', () => {
     await expectAppError(service.get(hhA, randomUUID()), 'NOT_FOUND');
   });
 
+  /**
+   * The capture flow submits a reviewed list and pairs each result with the row
+   * the user edited, by position. A bare select has no defined order, so this
+   * used to come back shuffled — attaching quantities and expiry dates to the
+   * wrong ingredients, and showing up only as an occasional failure elsewhere
+   * in this file.
+   */
+  it('returns bulk-created items in the order they were submitted', async () => {
+    // Its own ingredients: every other fixture already holds stock at locA, and
+    // merging into it would hide the ordering this asserts.
+    const fresh = await seedIngredients(ctx.db, 4);
+    seededIngredients.push(...fresh);
+    const submitted = fresh.map((ingredientId, i) =>
+      itemInput({ ingredientId, locationId: locA, quantity: i + 1, unit: 'piece' }),
+    );
+
+    const created = await service.bulkCreate(hhA, userId, { items: submitted });
+
+    expect(created.map((item) => item.ingredient.id)).toEqual(fresh);
+    expect(created.map((item) => item.quantity)).toEqual([1, 2, 3, 4]);
+  });
+
   it('reports an incompatible-unit sync event as rejected rather than swallowing it', async () => {
     const [item] = await service.bulkCreate(hhA, userId, {
       items: [itemInput({ ingredientId: ingD, locationId: locA, quantity: 5, unit: 'piece' })],
