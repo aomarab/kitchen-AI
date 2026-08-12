@@ -5,6 +5,7 @@ import { usePlans } from './plans';
 import { useLocale } from '../lib/locale';
 import { useAuthStore } from '../stores/auth';
 import { useSettingsStore } from '../stores/settings';
+import { useNotificationStatus } from '../stores/notification-status';
 import { planNotifications, type PlannedMeal } from '../lib/notifications';
 import {
   applyNotificationPlan,
@@ -72,6 +73,7 @@ export function useNotificationScheduler(): void {
       // when it was granted, or the user revokes it and reminders keep firing.
       if (permission !== 'granted' || (!notifyExpiry && !notifyMeals)) {
         await cancelAllNotifications();
+        useNotificationStatus.getState().setScheduledCount(0);
         lastApplied.current = signature;
         return;
       }
@@ -95,7 +97,8 @@ export function useNotificationScheduler(): void {
       });
 
       if (cancelled) return;
-      await applyNotificationPlan(plan, t);
+      const scheduled = await applyNotificationPlan(plan, t);
+      useNotificationStatus.getState().setScheduledCount(scheduled);
       lastApplied.current = signature;
     };
 

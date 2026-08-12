@@ -215,6 +215,11 @@ export const mobileEn = {
       reminderTime: 'Remind me at',
       permissionDenied: 'Notifications are turned off for this app. Open Settings to allow them.',
       openSettings: 'Open Settings',
+      scheduled: plural('count', {
+        zero: 'Nothing to remind you about yet.',
+        one: '1 reminder is set.',
+        other: '{count} reminders are set.',
+      }),
     },
     notifications: {
       expiryTitle: 'Use it before it goes',

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState, Linking, View } from 'react-native';
 import { useLocale } from '../../lib/locale';
 import { useSettingsStore } from '../../stores/settings';
+import { useNotificationStatus } from '../../stores/notification-status';
 import { AppText, Button, Card, Chip, ToggleRow } from '../../components';
 import { spacing } from '../../theme';
 import {
@@ -36,6 +37,7 @@ export function NotificationSettings() {
   const setReminderHour = useSettingsStore((state) => state.setReminderHour);
 
   const [permission, setPermission] = useState<PermissionState>('undetermined');
+  const scheduledCount = useNotificationStatus((state) => state.scheduledCount);
 
   const refresh = useCallback(() => {
     void currentPermission().then(setPermission);
@@ -123,6 +125,16 @@ export function NotificationSettings() {
             ))}
           </View>
         </View>
+      ) : null}
+
+      {/*
+        Proof the reminders are actually armed. Without it, "on" and "silently
+        broken" look identical until the day something is wasted.
+      */}
+      {permission === 'granted' && scheduledCount !== null && (notifyExpiry || notifyMeals) ? (
+        <AppText variant="caption" muted>
+          {t('mobile.settings.scheduled', { count: scheduledCount })}
+        </AppText>
       ) : null}
 
       {/*
