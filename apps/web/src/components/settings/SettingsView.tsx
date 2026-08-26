@@ -199,6 +199,16 @@ export function SettingsView() {
 
       <Card>
         <CardHeader>
+          <CardTitle>{t('web.screen.entry')}</CardTitle>
+        </CardHeader>
+        <p className="text-sm text-muted-foreground">{t('web.screen.entryHint')}</p>
+        <Link href="/screen" className={buttonClasses({ className: 'mt-4' })}>
+          {t('web.screen.open')}
+        </Link>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>{t('web.feedback.entry')}</CardTitle>
         </CardHeader>
         <p className="text-sm text-muted-foreground">{t('web.feedback.entryHint')}</p>
