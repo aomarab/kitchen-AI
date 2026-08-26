@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { deleteMeRequestSchema, userSchema } from './auth.js';
 import { routes } from './routes.js';
+import { updateReminderSettingsRequestSchema } from './reminders.js';
 
 describe('deleteMe route', () => {
   it('is authenticated but not household-scoped, so it works when the last household is gone', () => {
@@ -65,5 +66,26 @@ describe('userSchema', () => {
         createdAt: '2026-01-01T00:00:00.000Z',
       });
     }).toThrow();
+  });
+});
+
+describe('reminder settings routes', () => {
+  it('registers the read route as authenticated and household-scoped', () => {
+    expect(routes.getReminderSettings).toMatchObject({
+      method: 'GET',
+      path: '/reminders/settings',
+      auth: true,
+      household: true,
+    });
+  });
+
+  it('registers the update route with the partial-settings body', () => {
+    expect(routes.updateReminderSettings).toMatchObject({
+      method: 'PATCH',
+      path: '/reminders/settings',
+      auth: true,
+      household: true,
+    });
+    expect(routes.updateReminderSettings.body).toBe(updateReminderSettingsRequestSchema);
   });
 });
