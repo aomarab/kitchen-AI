@@ -44,24 +44,93 @@ export const OPERATION_TIER: Record<AiOperation, ModelTier> = {
   'recipe.translate': 'cheap',
 };
 
+export interface ModelRate {
+  input: number;
+  output: number;
+}
+
 /**
- * Approximate USD cost per 1M tokens, used to enforce the per-household daily
- * budget before a call and to record spend afterwards. Values are intentionally
- * conservative; exact billing is not the goal, budget safety is.
+ * USD per 1M tokens, keyed by the concrete model id the provider reports.
+ *
+ * Keyed by model rather than by tier because two vendors can serve one tier:
+ * billing a Gemini vision call at OpenAI's rate would misstate spend in
+ * `ai_usage`, and that ledger is what AI credit pricing is derived from.
+ *
+ * List prices as of 2026-08-11. Verify before launch; these move.
  */
-export const MODEL_RATES_USD_PER_MTOK: Record<ModelTier, { input: number; output: number }> = {
+export const MODEL_RATES_USD_PER_MTOK: Record<string, ModelRate> = {
+  'gpt-5': { input: 2.5, output: 10 },
+  'gpt-5-mini': { input: 0.15, output: 0.6 },
+  'gemini-3-flash': { input: 1.5, output: 7.5 },
+  'text-embedding-3-small': { input: 0.02, output: 0 },
+};
+
+/**
+ * Used only when a model id is not in the table above — a newly configured
+ * model, or a provider reporting a dated id like `gpt-5-2026-01-01`. It keeps
+ * billing conservative rather than free, but it is a fallback, not a plan:
+ * an unknown model priced silently at a default is how spend drifts unnoticed,
+ * so it warns.
+ */
+export const TIER_FALLBACK_RATES: Record<ModelTier, ModelRate> = {
   cheap: { input: 0.15, output: 0.6 },
   vision: { input: 2.5, output: 10 },
   planning: { input: 2.5, output: 10 },
 };
 
 export function estimateCostUsd(
+  model: string,
   tier: ModelTier,
   inputTokens: number,
   outputTokens: number,
 ): number {
-  const rate = MODEL_RATES_USD_PER_MTOK[tier];
+  let rate = resolveModelRate(model);
+  if (!rate) {
+    rate = TIER_FALLBACK_RATES[tier];
+    if (!warnedUnresolvedModels.has(model)) {
+      warnedUnresolvedModels.add(model);
+      console.warn(
+        `[ai] no rate for model "${model}" (tier ${tier}); billing at the tier fallback rate. ` +
+          'Add it to MODEL_RATES_USD_PER_MTOK.',
+      );
+    }
+  }
   return (inputTokens * rate.input + outputTokens * rate.output) / 1_000_000;
+}
+
+/**
+ * Warned-about ids, so an unresolved model logs once rather than on every call.
+ * A warning that fires on every call is noise nobody reads; the point is to
+ * surface a genuinely new/superseded model exactly once.
+ */
+const warnedUnresolvedModels = new Set<string>();
+
+/**
+ * Resolve a rate for the id the vendor actually reported.
+ *
+ * Providers return a resolved snapshot id for an alias — `gpt-5` comes back as
+ * `gpt-5-2026-01-15`, `gemini-3-flash` as `gemini-3-flash-preview-11-2025` —
+ * and that resolved id, not the alias, is what reaches billing. An exact hit
+ * wins; otherwise the longest table key that is a prefix of the reported id
+ * does, so `gpt-5-mini-2026-01-15` resolves to `gpt-5-mini` (0.15) and never to
+ * the shorter `gpt-5` (2.50). The prefix must end on a segment boundary so a
+ * hypothetical `gpt-50` can never borrow `gpt-5`'s rate.
+ */
+function resolveModelRate(model: string): ModelRate | undefined {
+  const exact = MODEL_RATES_USD_PER_MTOK[model];
+  if (exact) return exact;
+
+  let best: ModelRate | undefined;
+  let bestLen = -1;
+  for (const key of Object.keys(MODEL_RATES_USD_PER_MTOK)) {
+    if (key.length <= bestLen) continue;
+    const boundary = model[key.length];
+    if (model.startsWith(key) && (boundary === undefined || boundary === '-')) {
+      best = MODEL_RATES_USD_PER_MTOK[key];
+      bestLen = key.length;
+    }
+  }
+  return best;
 }
 
 /** Videos are cached for 30 days (spec §5.5). */

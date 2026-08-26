@@ -38,7 +38,12 @@ export class BudgetService {
   }
 
   async record(input: RecordUsageInput): Promise<number> {
-    const cost = estimateCostUsd(input.tier, input.usage.inputTokens, input.usage.outputTokens);
+    const cost = estimateCostUsd(
+      input.model,
+      input.tier,
+      input.usage.inputTokens,
+      input.usage.outputTokens,
+    );
     await this.repo.record({
       householdId: input.householdId,
       model: input.model,

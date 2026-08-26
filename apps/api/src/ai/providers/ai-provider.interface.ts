@@ -1,4 +1,5 @@
 import type { AiOperation, ModelTier } from '../ai.constants.js';
+import type { AiSpend } from '../ai-spend.js';
 
 /**
  * The AI provider is deliberately generic: it takes a fully-formed prompt and
@@ -55,9 +56,16 @@ export interface StructuredResponse {
   usage: TokenUsage;
   /** The concrete model id that served the request. */
   model: string;
+  /**
+   * Attempts that were billed but did not produce this response — currently a
+   * vision call that failed over to the other vendor. Each carries its own
+   * model id because two vendors bill at different rates, so these cannot be
+   * summed into the successful call's usage without mispricing them.
+   */
+  priorAttempts?: AiSpend[];
 }
 
 export interface AiProvider {
-  readonly kind: 'openai' | 'mock';
+  readonly kind: 'openai' | 'gemini' | 'mock' | 'routed';
   complete(request: StructuredRequest): Promise<StructuredResponse>;
 }

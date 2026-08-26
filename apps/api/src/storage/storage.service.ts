@@ -8,6 +8,17 @@ import { ENV, type Env } from '../config/env.js';
 
 const EXPIRES_IN_SECONDS = 300;
 
+/**
+ * Camera captures are resized client-side to MAX_IMAGE_EDGE_PX before upload.
+ * The contract's 15 MB cap is far too loose to notice a client that skipped
+ * that step, and an un-resized frame costs real money on the vision tier, so
+ * capture purposes get their own ceiling. A 1024px JPEG at quality 0.7 lands
+ * well under this.
+ */
+export const MAX_CAPTURE_UPLOAD_BYTES = 2 * 1024 * 1024;
+
+const CAPTURE_PURPOSES = new Set<PresignUploadRequest['purpose']>(['inventory_photo', 'receipt']);
+
 const EXTENSION: Record<PresignUploadRequest['contentType'], string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -30,6 +41,25 @@ export function householdPrefix(householdId: string): string {
  */
 export function assertOwnedKey(householdId: string, key: string): void {
   if (!key.startsWith(householdPrefix(householdId)) || key.includes('..')) {
+    throw AppError.notFound('errors.NOT_FOUND');
+  }
+}
+
+/**
+ * Rejects any key that was not uploaded under a camera-capture purpose.
+ *
+ * The 2 MB capture ceiling on `presignUpload` keys on the client-declared
+ * purpose, so a client can sidestep it by presigning a 15 MB `recipe_image` (or
+ * `avatar`) and then handing that key to recognize/receipt — the un-resized
+ * frame would reach the vision model. The purpose is a path segment of the key
+ * (`households/<id>/<purpose>/<uuid>.<ext>`), so re-derive it and require it to
+ * be a capture purpose. Reuses `CAPTURE_PURPOSES` so the two checks cannot
+ * drift apart.
+ */
+export function assertCaptureKey(householdId: string, key: string): void {
+  assertOwnedKey(householdId, key);
+  const purpose = key.slice(householdPrefix(householdId).length).split('/')[0];
+  if (!CAPTURE_PURPOSES.has(purpose as PresignUploadRequest['purpose'])) {
     throw AppError.notFound('errors.NOT_FOUND');
   }
 }
@@ -64,6 +94,15 @@ export class StorageService {
     householdId: string,
     dto: PresignUploadRequest,
   ): Promise<PresignUploadResponse> {
+    if (CAPTURE_PURPOSES.has(dto.purpose) && dto.contentLength > MAX_CAPTURE_UPLOAD_BYTES) {
+      throw new AppError('VALIDATION_FAILED', 'errors.VALIDATION_FAILED', {
+        field: 'contentLength',
+        maxBytes: MAX_CAPTURE_UPLOAD_BYTES,
+        actualBytes: dto.contentLength,
+        purpose: dto.purpose,
+      });
+    }
+
     const key = `${householdPrefix(householdId)}${dto.purpose}/${randomUUID()}.${EXTENSION[dto.contentType]}`;
 
     const uploadUrl = await getSignedUrl(
@@ -96,6 +135,22 @@ export class StorageService {
    */
   async presignDownload(householdId: string, key: string): Promise<string> {
     assertOwnedKey(householdId, key);
+    return this.signGet(key);
+  }
+
+  /**
+   * Presign a GET for a capture the household owns, additionally requiring the
+   * key to have been uploaded under a camera-capture purpose. Used by the
+   * recognize and receipt paths so a key smuggled in under `recipe_image` or
+   * `avatar` (which bypasses the 2 MB capture ceiling) cannot reach the vision
+   * model.
+   */
+  async presignCaptureDownload(householdId: string, key: string): Promise<string> {
+    assertCaptureKey(householdId, key);
+    return this.signGet(key);
+  }
+
+  private signGet(key: string): Promise<string> {
     return getSignedUrl(
       this.client,
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),
