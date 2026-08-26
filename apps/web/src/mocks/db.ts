@@ -13,6 +13,7 @@ import type {
   RecipeIngredient,
   RecipeSummary,
   RecipeVideo,
+  ReminderSettings,
   ShoppingListItem,
   StorageLocation,
   StorageLocationType,
@@ -91,6 +92,7 @@ interface DbShape {
    * makes feedback submitted in mock mode show up in the admin console.
    */
   feedback: FeedbackDetail[];
+  reminderSettings: ReminderSettings;
 }
 
 export const db = {} as DbShape;
@@ -457,6 +459,17 @@ export function seed(): void {
   db.jobs = new Map();
   db.recognitions = new Map();
   db.feedback = seedFeedback();
+  db.reminderSettings = {
+    householdId: DEFAULT_HOUSEHOLD_ID,
+    breakEnabled: true,
+    stretchEnabled: true,
+    morningEnabled: true,
+    hydrationEnabled: true,
+    breakCadenceMinutes: 60,
+    hydrationGoalCups: 8,
+    quietHoursStart: 22,
+    quietHoursEnd: 7,
+  };
 }
 
 /**
