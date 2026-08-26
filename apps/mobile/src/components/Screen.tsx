@@ -9,8 +9,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
 import { contentMaxWidth } from '../theme/layout';
+import { useTheme } from '../theme/useTheme';
 
 export interface ScreenProps {
   children: ReactNode;
@@ -41,9 +42,14 @@ export function Screen({
   onRefresh,
   footer,
 }: ScreenProps) {
+  const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const maxWidth = contentMaxWidth(width);
-  const pad: ViewStyle = padded ? { padding: spacing.lg, gap: spacing.md } : {};
+  // `lg` between top-level blocks against the `sm` most screens use inside a
+  // section gives a real 2:1 rhythm tier. At the previous `md` the gap between
+  // two sections was 12 and the gap inside one was 8, so nothing grouped and
+  // every screen read as one undifferentiated stack.
+  const pad: ViewStyle = padded ? { padding: spacing.lg, gap: spacing.lg } : {};
   // `undefined` below the breakpoint leaves the phone layout untouched.
   const constrain: ViewStyle = maxWidth ? { maxWidth, width: '100%', alignSelf: 'center' } : {};
   return (
@@ -60,7 +66,9 @@ export function Screen({
             contentContainerStyle={[pad, { flexGrow: 1 }, constrain, contentStyle]}
             keyboardShouldPersistTaps="handled"
             refreshControl={
-              onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} /> : undefined
+              onRefresh ? (
+                <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} />
+              ) : undefined
             }
           >
             {children}

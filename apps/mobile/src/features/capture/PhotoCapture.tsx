@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Image } from 'react-native';
 import { CameraView } from 'expo-camera';
+import type { MessageKey } from '@kitchen/i18n';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { AppText, Button, Icon } from '../../components';
@@ -12,9 +13,12 @@ import { useJob, isTerminal } from '../../hooks/job';
 import { api } from '../../lib/api';
 import { expoPhotoUploader } from '../../lib/photo-uploader';
 import { uploadPhotos } from '../../lib/upload';
+import { captureErrorKey } from '../../lib/capture-error';
 import { resizeForUpload } from '../../lib/image';
 import { useCaptureStore, type CaptureSource } from '../../stores/capture';
-import { colors, radius, spacing } from '../../theme';
+import { maxPhotosFor } from './limits';
+import { radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 /**
  * Photo / receipt capture. Take one or more shots (or pick from the library),
@@ -24,17 +28,21 @@ import { colors, radius, spacing } from '../../theme';
  */
 export function PhotoCapture({ mode }: { mode: CaptureSource }) {
   const { t } = useFormat();
+  const { colors } = useTheme();
   const router = useRouter();
   const setSession = useCaptureStore((state) => state.setSession);
   const cameraRef = useRef<CameraView>(null);
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [captureError, setCaptureError] = useState(false);
+  const maxPhotos = maxPhotosFor(mode);
+  const atLimit = photos.length >= maxPhotos;
 
   const presign = usePresignUpload();
   const recognize = useRecognizePhotos();
   const parseReceipt = useParseReceipt();
   const [jobId, setJobId] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<MessageKey | null>(null);
   const job = useJob(jobId);
 
   const jobPending = !!jobId && !isTerminal(job.data);
@@ -59,25 +67,49 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
     });
   }, [job.data, mode, router, setSession]);
 
-  const addPhoto = (uri: string) => setPhotos((prev) => [...prev, uri]);
+  const addPhoto = (uri: string) =>
+    setPhotos((prev) => (prev.length >= maxPhotos ? prev : [...prev, uri]));
 
   const takePhoto = async () => {
-    const shot = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
-    if (shot?.uri) addPhoto(await resizeForUpload(shot.uri, shot.width, shot.height));
+    if (atLimit) return;
+    setCaptureError(false);
+    try {
+      const shot = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
+      if (shot?.uri) addPhoto(await resizeForUpload(shot.uri, shot.width, shot.height));
+    } catch {
+      // takePictureAsync rejects when the camera is still warming up, the
+      // session was interrupted (a call, another app) or storage is full.
+      // Unhandled, the button just looks dead.
+      setCaptureError(true);
+    }
   };
 
   const pickLibrary = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.6,
-      allowsMultipleSelection: mode === 'photo',
-    });
-    if (result.canceled) return;
-    const resized = await Promise.all(
-      result.assets.map((asset) => resizeForUpload(asset.uri, asset.width, asset.height)),
-    );
-    resized.forEach(addPhoto);
+    if (atLimit) return;
+    setCaptureError(false);
+    const remaining = maxPhotos - photos.length;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.6,
+        allowsMultipleSelection: mode === 'photo' && remaining > 1,
+        selectionLimit: remaining,
+      });
+      // `selectionLimit` is advisory on some Android pickers, so still trim.
+      if (!result.canceled) {
+        const resized = await Promise.all(
+          result.assets
+            .slice(0, remaining)
+            .map((asset) => resizeForUpload(asset.uri, asset.width, asset.height)),
+        );
+        resized.forEach(addPhoto);
+      }
+    } catch {
+      setCaptureError(true);
+    }
   };
+
+  const removePhoto = (uri: string) => setPhotos((prev) => prev.filter((item) => item !== uri));
 
   const uploadKeys = () =>
     uploadPhotos(
@@ -93,23 +125,25 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
 
   const submit = async () => {
     if (busy) return;
-    setFailed(false);
+    setError(null);
     setUploading(true);
     try {
       const keys = await uploadKeys();
       if (mode === 'receipt') {
-        const started = await parseReceipt.mutateAsync({ photoKeys: keys.slice(0, 5) });
+        const started = await parseReceipt.mutateAsync({ photoKeys: keys });
         setJobId(started.id);
         return;
       }
-      const session = await recognize.mutateAsync({ photoKeys: keys.slice(0, 10) });
+      const session = await recognize.mutateAsync({ photoKeys: keys });
       setSession(session, 'photo');
       router.replace('/capture/review');
-    } catch {
-      // Uploading or recognising can fail for reasons the user can act on
-      // (no signal, storage rejected the photo). Silently returning to the
-      // camera looks like the button simply did nothing.
-      setFailed(true);
+    } catch (error) {
+      // Only `uploadPhotos` can fail to send bytes. Everything after it —
+      // recognition refusing for want of credits, the model erroring, the call
+      // running past its budget — reached the server, so blaming the upload
+      // ("check your connection") points the user at the wrong problem and
+      // invites a retry that spends another AI credit.
+      setError(captureErrorKey(error));
     } finally {
       setUploading(false);
     }
@@ -144,7 +178,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
               padding: spacing.sm,
             }}
           >
-            <Icon name="camera" size={20} color={colors.textInverse} />
+            <Icon name="cameraReverse" size={20} color={colors.textInverse} />
           </Pressable>
         </View>
 
@@ -152,9 +186,21 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
           {mode === 'receipt' ? t('mobile.capture.receiptHint') : t('mobile.capture.captureHint')}
         </AppText>
 
-        {failed ? (
+        <AppText variant="caption" muted center>
+          {atLimit
+            ? t('mobile.capture.photoLimitReached', { count: maxPhotos })
+            : t('mobile.capture.photoLimit', { count: maxPhotos })}
+        </AppText>
+
+        {captureError ? (
           <AppText variant="caption" center style={{ color: colors.danger }}>
-            {t('mobile.capture.uploadFailed')}
+            {t('mobile.capture.captureFailed')}
+          </AppText>
+        ) : null}
+
+        {error ? (
+          <AppText variant="caption" center style={{ color: colors.danger }}>
+            {t(error)}
           </AppText>
         ) : null}
 
@@ -165,11 +211,31 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
             contentContainerStyle={{ gap: spacing.sm, padding: spacing.lg }}
           >
             {photos.map((uri) => (
-              <Image
-                key={uri}
-                source={{ uri }}
-                style={{ width: 64, height: 64, borderRadius: radius.md }}
-              />
+              <View key={uri}>
+                <Image
+                  source={{ uri }}
+                  style={{ width: 64, height: 64, borderRadius: radius.md }}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('mobile.capture.removePhoto')}
+                  hitSlop={12}
+                  onPress={() => removePhoto(uri)}
+                  style={{
+                    position: 'absolute',
+                    top: -6,
+                    end: -6,
+                    width: 24,
+                    height: 24,
+                    borderRadius: radius.pill,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: colors.overlay,
+                  }}
+                >
+                  <Icon name="close" size={14} color={colors.textInverse} />
+                </Pressable>
+              </View>
             ))}
           </ScrollView>
         ) : null}
@@ -179,12 +245,14 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
             <Button
               title={t('capture.takePhoto')}
               icon="camera"
+              disabled={atLimit}
               onPress={() => void takePhoto()}
               style={{ flex: 1 }}
             />
             <Button
               title={t('mobile.capture.fromLibrary')}
               variant="secondary"
+              disabled={atLimit}
               onPress={() => void pickLibrary()}
               style={{ flex: 1 }}
             />

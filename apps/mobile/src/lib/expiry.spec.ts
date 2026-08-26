@@ -5,6 +5,8 @@ import {
   expiryStatus,
   isExpiringSoon,
   isValidExpiryInput,
+  isoDateFromDate,
+  dateFromIsoDate,
   todayISODate,
 } from '../lib/expiry';
 
@@ -82,5 +84,34 @@ describe('isValidExpiryInput', () => {
   it('rejects well-formed but impossible dates', () => {
     expect(isValidExpiryInput('2026-02-31')).toBe(false);
     expect(isValidExpiryInput('2026-13-01')).toBe(false);
+  });
+});
+
+describe('picker <-> API date conversion', () => {
+  it('keeps the day the user tapped, west of UTC', () => {
+    // 1 Jan local. toISOString() here would say 2026-01-01T05:00Z — fine — but
+    // the reverse (new Date('2026-01-01')) is UTC midnight = 31 Dec locally.
+    expect(isoDateFromDate(new Date(2026, 0, 1, 0, 30))).toBe('2026-01-01');
+    expect(isoDateFromDate(new Date(2026, 0, 1, 23, 30))).toBe('2026-01-01');
+  });
+
+  it('round-trips a date through the API format unchanged', () => {
+    const iso = '2026-12-31';
+    expect(isoDateFromDate(dateFromIsoDate(iso)!)).toBe(iso);
+  });
+
+  it('round-trips every day of a year, so no timezone rolls a day', () => {
+    const start = new Date(2026, 0, 1, 12);
+    for (let i = 0; i < 365; i += 1) {
+      const day = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
+      const iso = isoDateFromDate(day);
+      expect(isoDateFromDate(dateFromIsoDate(iso)!), iso).toBe(iso);
+    }
+  });
+
+  it('treats no date and an unusable date as no date', () => {
+    expect(dateFromIsoDate(null)).toBeNull();
+    expect(dateFromIsoDate('')).toBeNull();
+    expect(dateFromIsoDate('31/12/2026')).toBeNull();
   });
 });

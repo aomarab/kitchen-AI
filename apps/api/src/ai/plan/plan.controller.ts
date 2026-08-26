@@ -12,10 +12,12 @@ import {
 } from '@nestjs/common';
 import {
   generatePlanRequestSchema,
+  getPlanQuerySchema,
   listPlansQuerySchema,
   regenerateEntryRequestSchema,
   updateEntryRequestSchema,
   type GeneratePlanRequest,
+  type GetPlanQuery,
   type Job,
   type ListPlansQuery,
   type MealPlan,
@@ -24,7 +26,7 @@ import {
   type RegenerateEntryRequest,
   type UpdateEntryRequest,
 } from '@kitchen/contracts';
-import { IdempotencyKey, ZodPipe } from '../../common/http.js';
+import { RequiredIdempotencyKey, ZodPipe } from '../../common/http.js';
 import { AuthGuard } from '../../common/auth.guard.js';
 import { HouseholdGuard } from '../../common/household.guard.js';
 import { CurrentUser } from '../../common/current-user.decorator.js';
@@ -51,21 +53,29 @@ export class PlanController {
   }
 
   @Post('meal-plans')
-  generate(
+  async generate(
     @CurrentHousehold() household: HouseholdContext,
     @CurrentUser() user: AuthUser,
-    @IdempotencyKey() idempotencyKey: string | null,
+    @RequiredIdempotencyKey() idempotencyKey: string,
     @Body(new ZodPipe(generatePlanRequestSchema)) body: GeneratePlanRequest,
   ): Promise<Job> {
-    return this.jobs.enqueuePlan(household.id, { userId: user.userId, request: body }, idempotencyKey);
+    // Feasibility before affordability: an empty pantry cannot produce a
+    // grounded plan, and `enqueuePlan` spends credits.
+    await this.plans.assertPantryStocked(household.id);
+    return this.jobs.enqueuePlan(
+      household.id,
+      { userId: user.userId, request: body },
+      idempotencyKey,
+    );
   }
 
   @Get('meal-plans/:id')
   get(
     @CurrentHousehold() household: HouseholdContext,
     @Param('id') id: string,
+    @Query(new ZodPipe(getPlanQuerySchema)) query: GetPlanQuery,
   ): Promise<MealPlan> {
-    return this.plans.get(household.id, id);
+    return this.plans.get(household.id, id, query.locale);
   }
 
   @Delete('meal-plans/:id')

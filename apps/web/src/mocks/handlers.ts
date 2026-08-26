@@ -1,8 +1,10 @@
 import { http, HttpResponse } from 'msw';
 import type {
+  ProductComment,
   AddShoppingItemsRequest,
   BulkCreateInventoryRequest,
   CheckoutShoppingRequest,
+  ConfirmPurchaseRequest,
   CreateHouseholdRequest,
   CreateIngredientRequest,
   CreateStorageLocationRequest,
@@ -13,6 +15,7 @@ import type {
   Locale,
   LoginRequest,
   MealSlot,
+  PurchaseIntentRequest,
   RegenerateEntryRequest,
   RegisterRequest,
   Session,
@@ -25,7 +28,7 @@ import type {
   UpdateProfileRequest,
   UpdateReminderSettingsRequest,
 } from '@kitchen/contracts';
-import { DEFAULT_SLOTS_BY_SCOPE } from '@kitchen/contracts';
+import { CREDIT_PACKS, DEFAULT_SLOTS_BY_SCOPE } from '@kitchen/contracts';
 import { API_URL } from '../lib/config';
 import {
   buildRecognitionSession,
@@ -38,6 +41,16 @@ import {
   uuid,
 } from './db';
 import { getMockLocale } from './runtime';
+
+/** Stable ids for mock products, so a selection survives the next refetch. */
+const mockIngredientIds = new Map<string, string>();
+function mockIngredientId(name: string): string {
+  const existing = mockIngredientIds.get(name);
+  if (existing) return existing;
+  const created = uuid();
+  mockIngredientIds.set(name, created);
+  return created;
+}
 
 const u = (path: string) => `${API_URL}${path}`;
 
@@ -303,6 +316,7 @@ export const handlers = [
         householdId: db.household.id,
         ingredient,
         brand: item.brand ?? null,
+        label: null,
         locationId: item.locationId,
         quantity: item.quantity,
         unit: item.unit,
@@ -533,6 +547,7 @@ export const handlers = [
         householdId: db.household.id,
         ingredient,
         brand: null,
+        label: null,
         locationId: body.locationId,
         quantity: s.quantity,
         unit: s.unit,
@@ -624,6 +639,66 @@ export const handlers = [
     });
   }),
 
+  /*
+   * Declared before `/admin/feedback/:id` and before the collection route so
+   * MSW matches the literal path; a `:id` pattern registered first would
+   * swallow `/admin/product-feedback/comments`.
+   */
+  http.get(u('/admin/product-feedback/comments'), ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const brand = params.get('brand');
+    const rating = params.get('rating');
+    const rows = db.productFeedback.filter(
+      (row) =>
+        (!brand || (row.brand ?? '').toLowerCase() === brand.toLowerCase()) &&
+        (!rating || row.rating === Number(rating)),
+    );
+    return HttpResponse.json({ items: rows, nextCursor: null });
+  }),
+
+  http.get(u('/admin/product-feedback'), ({ request }) => {
+    // Stable per product for the life of the session: the page selects a row
+    // and then queries its comments by id, so a fresh uuid on every fetch
+    // would make the selection point at a product that no longer exists.
+    const params = new URL(request.url).searchParams;
+    const brand = params.get('brand');
+    const maxAverage = params.get('maxAverage');
+
+    // Group by product *and* brand, matching the server: one company's two
+    // products are two rows, and one product's two companies are two rows.
+    const groups = new Map<string, ProductComment[]>();
+    for (const row of db.productFeedback) {
+      if (brand && (row.brand ?? '').toLowerCase() !== brand.toLowerCase()) continue;
+      const key = `${row.nameEn}|${(row.brand ?? '').toLowerCase()}`;
+      groups.set(key, [...(groups.get(key) ?? []), row]);
+    }
+
+    const items = [...groups.values()]
+      .map((rows) => {
+        const first = rows[0]!;
+        const average = rows.reduce((sum, r) => sum + r.rating, 0) / rows.length;
+        const byRating: Record<string, number> = {};
+        for (const row of rows) {
+          byRating[String(row.rating)] = (byRating[String(row.rating)] ?? 0) + 1;
+        }
+        return {
+          ingredientId: mockIngredientId(first.nameEn),
+          nameEn: first.nameEn,
+          nameAr: first.nameAr,
+          brand: first.brand,
+          count: rows.length,
+          averageRating: Math.round(average * 100) / 100,
+          byRating,
+          commentCount: rows.filter((r) => r.message.length > 0).length,
+        };
+      })
+      .filter((row) => !maxAverage || row.averageRating <= Number(maxAverage))
+      // Worst first, like the server: the report is for finding what to fix.
+      .sort((a, b) => a.averageRating - b.averageRating);
+
+    return HttpResponse.json({ items, nextCursor: null });
+  }),
+
   http.get(u('/admin/feedback/:id'), ({ params }) => {
     const item = db.feedback.find((f) => f.id === params.id);
     return item ? HttpResponse.json(item) : err('NOT_FOUND', 404);
@@ -649,6 +724,25 @@ export const handlers = [
       callCount: 7,
     }),
   ),
+
+  /* ---------- Credits ---------- */
+  http.get(u('/credits'), async () => HttpResponse.json(db.credits)),
+  http.post(u('/credits/intents'), async ({ request }) => {
+    const body = (await request.json()) as PurchaseIntentRequest;
+    const pack = CREDIT_PACKS.find((p) => p.productId === body.productId);
+    if (!pack) return err('VALIDATION_FAILED', 422);
+    const intentId = uuid();
+    db.purchaseIntents.set(intentId, { productId: pack.productId, credits: pack.credits });
+    return HttpResponse.json({ intentId, productId: pack.productId, credits: pack.credits });
+  }),
+  http.post(u('/credits/purchases'), async ({ request }) => {
+    const body = (await request.json()) as ConfirmPurchaseRequest;
+    const intent = db.purchaseIntents.get(body.intentId);
+    if (!intent) return err('NOT_FOUND', 404);
+    db.purchaseIntents.delete(body.intentId);
+    db.credits = { ...db.credits, paidBalance: db.credits.paidBalance + intent.credits };
+    return HttpResponse.json(db.credits);
+  }),
 ];
 
 /* ------------------------------------------------------------------ */

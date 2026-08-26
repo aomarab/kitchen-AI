@@ -1,8 +1,8 @@
-# Kitchen AI
+# Mama's Kitchen
 
 Photograph your fridge, pantry and spice rack — get meal plans you can actually cook tonight.
 
-Kitchen AI keeps a live inventory of everything in your kitchen and generates daily, weekly and
+Mama's Kitchen keeps a live inventory of everything in your kitchen and generates daily, weekly and
 monthly meal plans **grounded in what you actually have**. Every recipe comes with steps, the exact
 ingredients it consumes, photos and a YouTube video. Fully bilingual: English and Arabic with real
 RTL mirroring.

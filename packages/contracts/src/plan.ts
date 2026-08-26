@@ -92,8 +92,20 @@ export const listPlansQuerySchema = z.object({
   /** Plans overlapping this date. */
   on: isoDateSchema.optional(),
   status: planStatusSchema.optional(),
+  /**
+   * Language to render the plan's recipes in. A plan is generated in one
+   * language but read in whichever the reader has chosen, and the server holds
+   * both, so the reader's choice has to travel with the request — without it a
+   * plan is permanently stuck in the language it was created in.
+   */
+  locale: localeSchema.optional(),
 });
 export type ListPlansQuery = z.infer<typeof listPlansQuerySchema>;
+
+export const getPlanQuerySchema = z.object({
+  locale: localeSchema.optional(),
+});
+export type GetPlanQuery = z.infer<typeof getPlanQuerySchema>;
 
 /* ------------------------------------------------------------------ */
 /* Pantry coverage — powers the web pantry rail (spec §6.2)            */

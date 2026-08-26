@@ -1,6 +1,7 @@
 import { Pressable } from 'react-native';
 import { Icon, type IconName } from './Icon';
-import { colors, radius } from '../theme';
+import { radius } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export interface FabProps {
   icon?: IconName;
@@ -9,31 +10,38 @@ export interface FabProps {
 }
 
 /**
- * Floating action button. Positioned by its parent; the camera FAB in the tab
- * bar centres it above the tabs (spec §6.1).
+ * The raised circular action, used as the capture button in the tab bar.
+ *
+ * It occupies a column of its own rather than floating over the seam between
+ * two tabs: as an absolutely positioned overlay on a four-tab bar it covered
+ * roughly a third of each neighbour's touch target, so taps near the circle
+ * were ambiguous (spec §6.1).
+ *
+ * Depth comes from the shared `shadow.raised` token rather than a local black
+ * shadow, so it sits in the same light as every other raised surface.
  */
 export function Fab({ icon = 'camera', onPress, accessibilityLabel }: FabProps) {
+  const { colors, shadow } = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 60,
-        height: 60,
+        width: 56,
+        height: 56,
         borderRadius: radius.pill,
-        backgroundColor: colors.primary,
+        backgroundColor: pressed ? colors.primaryPressed : colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 6,
-        opacity: pressed ? 0.9 : 1,
+        ...shadow.raised,
+        // Scale, not opacity: a 10% fade is imperceptible on a filled 56pt
+        // circle, and press feedback only counts if it can be seen.
+        transform: [{ scale: pressed ? 0.94 : 1 }],
       })}
     >
-      <Icon name={icon} size={26} color={colors.textInverse} />
+      <Icon name={icon} size={26} color={colors.onFill} />
     </Pressable>
   );
 }

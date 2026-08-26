@@ -5,23 +5,34 @@ import type {
   UpdateEntryRequest,
 } from '@kitchen/contracts';
 import { api } from '../lib/api';
+import { useLocale } from '../lib/locale';
 import { useMocksReady } from '../mocks/provider';
 import { uuid } from '../lib/uuid';
 
+/**
+ * The reading language travels with the request and is part of the cache key.
+ *
+ * A plan is generated in one language and stored in both, so the server cannot
+ * know which one to render unless it is told — and without the key, switching
+ * language would redisplay the previous language's cached response.
+ */
 export function usePlans(query: ListPlansQuery = {}) {
   const ready = useMocksReady();
+  const { locale } = useLocale();
+  const withLocale = { ...query, locale };
   return useQuery({
-    queryKey: ['plans', query],
-    queryFn: () => api.call('listPlans', { query }),
+    queryKey: ['plans', withLocale],
+    queryFn: () => api.call('listPlans', { query: withLocale }),
     enabled: ready,
   });
 }
 
 export function usePlan(id: string | undefined) {
   const ready = useMocksReady();
+  const { locale } = useLocale();
   return useQuery({
-    queryKey: ['plan', id],
-    queryFn: () => api.call('getPlan', { params: { id: id! } }),
+    queryKey: ['plan', id, locale],
+    queryFn: () => api.call('getPlan', { params: { id: id! }, query: { locale } }),
     enabled: ready && Boolean(id),
   });
 }

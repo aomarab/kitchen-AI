@@ -30,6 +30,22 @@ export const createStorageLocationRequestSchema = storageLocationSchema.omit({
 });
 export type CreateStorageLocationRequest = z.infer<typeof createStorageLocationRequestSchema>;
 
+/** Renaming a place, or correcting what kind of place it is. */
+export const updateStorageLocationRequestSchema = createStorageLocationRequestSchema.partial();
+export type UpdateStorageLocationRequest = z.infer<typeof updateStorageLocationRequestSchema>;
+
+/**
+ * Deleting a place that still holds food.
+ *
+ * Without `moveTo` the request is refused, because a kitchen place and the
+ * food inside it are not the same thing and deleting one must not silently
+ * destroy the other. With it, the contents are moved first and nothing is lost.
+ */
+export const deleteStorageLocationQuerySchema = z.object({
+  moveTo: uuidSchema.optional(),
+});
+export type DeleteStorageLocationQuery = z.infer<typeof deleteStorageLocationQuerySchema>;
+
 /* ------------------------------------------------------------------ */
 /* Inventory items                                                     */
 /* ------------------------------------------------------------------ */
@@ -44,6 +60,15 @@ export const inventoryItemSchema = z.object({
    * addition agrees on it.
    */
   brand: z.string().nullable(),
+  /**
+   * What this household calls this item, overriding the catalog name.
+   *
+   * `ingredient` is a row in a *global* catalog shared by every household, so a
+   * rename belongs to the item and not to it — otherwise one household fixing a
+   * mis-recognised name would rename it for everybody. Null means the catalog
+   * name stands.
+   */
+  label: z.string().min(1).max(120).nullable(),
   locationId: uuidSchema,
   quantity: quantitySchema,
   unit: unitSchema,
@@ -77,6 +102,13 @@ export const inventoryItemInputSchema = z.object({
    * one, and files it under both languages for every household.
    */
   rawNameAr: z.string().min(1).max(120).optional(),
+  /**
+   * What kind of thing this is, as identified by the scan. Same reasoning as
+   * the names: recognition already worked this out and showed it to the user,
+   * so dropping it here files every scanned item under "other" forever, in a
+   * catalog every household reads.
+   */
+  rawCategory: ingredientCategorySchema.optional(),
   /** Manufacturer from a barcode lookup, when the scan produced one. */
   brand: z.string().min(1).max(120).nullable().default(null),
   locationId: uuidSchema,
@@ -102,6 +134,8 @@ export const updateInventoryItemRequestSchema = z
     expiresAt: isoDateSchema.nullable(),
     /** `null` clears a brand the lookup got wrong, or labels a pooled slot. */
     brand: z.string().min(1).max(120).nullable(),
+    /** `null` restores the catalog name. */
+    label: z.string().min(1).max(120).nullable(),
   })
   .partial();
 export type UpdateInventoryItemRequest = z.infer<typeof updateInventoryItemRequestSchema>;

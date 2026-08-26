@@ -2,6 +2,7 @@ import { Inject, Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job as BullJob } from 'bullmq';
 import { JOB_STORE, QUEUE_RECEIPT } from '../ai.constants.js';
+import { CreditsService } from '../../credits/credits.service.js';
 import { ReceiptService } from '../receipt/receipt.service.js';
 import type { JobStore } from './job-store.js';
 import type { ReceiptJobPayload } from './jobs.service.js';
@@ -16,6 +17,7 @@ export class ReceiptProcessor extends WorkerHost {
   constructor(
     @Inject(JOB_STORE) private readonly store: JobStore,
     @Inject(ReceiptService) private readonly receipts: ReceiptService,
+    @Inject(CreditsService) private readonly credits: CreditsService,
   ) {
     super();
   }
@@ -28,8 +30,8 @@ export class ReceiptProcessor extends WorkerHost {
     if (!row) return;
 
     await this.store.markRunning(jobId);
+    const payload = row.payload as unknown as ReceiptJobPayload;
     try {
-      const payload = row.payload as unknown as ReceiptJobPayload;
       const sessionId = await this.receipts.process({
         householdId: row.householdId,
         userId: payload.userId,
@@ -37,9 +39,14 @@ export class ReceiptProcessor extends WorkerHost {
       });
       await this.store.markDone(jobId, { kind: 'recognition_session', id: sessionId });
     } catch (err) {
-      // The persisted error is code-only. Without this line a failed job is
-      // undiagnosable: no schema issues, no model, no reason.
       this.logger.error(`job ${jobId} failed: ${describeJobError(err)}`);
+      if (payload.spendGroupId) {
+        await this.credits
+          .refundSpendGroup(row.householdId, payload.spendGroupId)
+          .catch((refundError) =>
+            this.logger.error(`job ${jobId} credit refund failed: ${String(refundError)}`),
+          );
+      }
       await this.store.markFailed(jobId, toJobError(err));
       throw err;
     }

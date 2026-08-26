@@ -2,20 +2,31 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { Ingredient, Unit } from '@kitchen/contracts';
-import { AppText, Button, Card, Chip, Field, ListRow, QuantityStepper } from '../../components';
+import {
+  AppText,
+  Button,
+  Card,
+  Chip,
+  DateField,
+  Field,
+  ListRow,
+  QuantityStepper,
+} from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useSearchIngredients } from '../../hooks/profile';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
 import { ingredientName, locationLabel, unitLabel } from '../../lib/format';
 import { isValidExpiryInput } from '../../lib/expiry';
 import { errorMessageKey } from '../../lib/errors';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 const COMMON_UNITS: Unit[] = ['piece', 'g', 'kg', 'ml', 'l', 'bunch', 'can', 'packet'];
 
 /** Manual add: search the catalog, then fill quantity, unit, location and expiry. */
 export function ManualAdd() {
   const { t, locale } = useFormat();
+  const { colors } = useTheme();
   const router = useRouter();
   const [term, setTerm] = useState('');
   const [selected, setSelected] = useState<Ingredient | null>(null);
@@ -105,7 +116,12 @@ export function ManualAdd() {
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {COMMON_UNITS.map((u) => (
-              <Chip key={u} label={unitLabel(t, u)} selected={unit === u} onPress={() => setUnit(u)} />
+              <Chip
+                key={u}
+                label={unitLabel(t, u)}
+                selected={unit === u}
+                onPress={() => setUnit(u)}
+              />
             ))}
           </View>
         </View>
@@ -126,19 +142,14 @@ export function ManualAdd() {
           </View>
         </View>
 
-        <Field
+        <DateField
           label={t('inventory.expiryDate')}
-          value={expiresAt}
-          onChangeText={setExpiresAt}
+          value={expiresAt || null}
+          onChange={(next) => setExpiresAt(next ?? '')}
           placeholder={t('mobile.capture.noExpiry')}
-          autoCapitalize="none"
-          autoCorrect={false}
+          clearLabel={t('mobile.capture.clearDate')}
+          doneLabel={t('mobile.capture.pickDate')}
         />
-        {!expiryValid ? (
-          <AppText variant="caption" style={{ color: colors.danger }}>
-            {t('mobile.capture.expiryFormat')}
-          </AppText>
-        ) : null}
       </Card>
 
       <Button

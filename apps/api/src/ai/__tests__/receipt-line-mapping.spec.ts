@@ -73,7 +73,7 @@ function build(extractionLines: string[], mapping: ReceiptMapping) {
     }),
   };
 
-  const storage = { presignCaptureDownload: async () => 'https://example/photo.jpg' };
+  const storage = { providerImageUrl: async () => 'https://example/photo.jpg' };
 
   const service = new ReceiptService(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -191,3 +191,26 @@ export const PROVIDER_MAX_OUTPUT_TOKENS: Record<ModelTier, number> = {
   // measured worst case.
   planning: 16_000,
 };
+
+/**
+ * How much the GPT-5 family is asked to *think* before answering, per tier.
+ *
+ * Reasoning tokens are billed and, more importantly here, waited on: capture is
+ * a person standing in front of an open fridge holding their phone, so latency
+ * is the whole experience. Measured on a real fridge photo, the default effort
+ * spent ~2.2k reasoning tokens and 60s to name what is on the shelves — a
+ * perception task where the deliberation buys nothing, because the model either
+ * sees the yoghurt or it does not.
+ *
+ * Planning is the opposite and is deliberately left at the model default: it
+ * runs as a background job nobody is watching, and the reasoning is what keeps
+ * a plan inside the pantry it was given.
+ *
+ * `undefined` means "send no parameter", which is also required for non-GPT-5
+ * models — they reject it outright.
+ */
+export const PROVIDER_REASONING_EFFORT: Record<ModelTier, 'low' | 'medium' | 'high' | undefined> = {
+  cheap: 'low',
+  vision: 'low',
+  planning: undefined,
+};

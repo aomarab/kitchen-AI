@@ -84,3 +84,23 @@ export function isValidExpiryInput(value: string): boolean {
   if (Number.isNaN(parsed.getTime())) return false;
   return parsed.toISOString().slice(0, 10) === trimmed;
 }
+
+/**
+ * A picker hands back a `Date` in local time; the API stores a calendar day.
+ *
+ * Converting through `toISOString()` would be wrong east or west of UTC: a date
+ * picked as 1 January at local midnight is 31 December in UTC, so the item
+ * would silently expire a day early. Both directions therefore go through the
+ * local calendar fields only.
+ */
+export function isoDateFromDate(date: Date): string {
+  return todayISODate(date);
+}
+
+/** Midday, so a DST shift in either direction cannot roll onto another day. */
+export function dateFromIsoDate(value: string | null): Date | null {
+  if (!value) return null;
+  if (!isValidExpiryInput(value) || value.trim() === '') return null;
+  const [year, month, day] = value.trim().split('-').map(Number);
+  return new Date(year!, month! - 1, day!, 12, 0, 0);
+}

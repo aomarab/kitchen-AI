@@ -5,10 +5,12 @@ import { Screen, AppText, ListRow, Card, Button, Icon } from '../../components';
 import type { IconName } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useAuthStore } from '../../stores/auth';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 export default function More() {
   const { t } = useFormat();
+  const { colors } = useTheme();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
@@ -40,8 +42,9 @@ export default function More() {
         {row(t('mobile.more.shopping'), 'basket', '/shopping')}
         {row(t('mobile.more.household'), 'household', '/settings/household')}
         {row(t('mobile.more.profile'), 'user', '/profile')}
+        {row(t('mobile.more.notifications'), 'bell', '/settings/notifications')}
         {row(t('mobile.more.settings'), 'settings', '/settings')}
-        {row(t('mobile.more.aiUsage'), 'sync', '/ai-usage')}
+        {row(t('mobile.more.credits'), 'wallet', '/ai-usage')}
       </View>
 
       <Button
@@ -54,6 +57,10 @@ export default function More() {
 
       <AppText variant="caption" muted center>
         {t('mobile.more.appVersion', { version })}
+      </AppText>
+      {/* Required by the CC-BY licence the bundled item artwork ships under. */}
+      <AppText variant="caption" muted center>
+        {t('mobile.more.iconCredit')}
       </AppText>
     </Screen>
   );

@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { Unit } from '@kitchen/contracts';
+import { MediaService } from '../recipes/media.service.js';
 import { PlanService } from '../plan/plan.service.js';
 import type { Database } from '../../db/index.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
 import type { CatalogIngredientRef } from '../planner/types.js';
 import { cat, snapshotOf, uuid } from './helpers.js';
 
-const RICE: CatalogIngredientRef = cat({ canonicalNameEn: 'Basmati rice', category: 'grain', defaultUnit: 'g' });
+const RICE: CatalogIngredientRef = cat({
+  canonicalNameEn: 'Basmati rice',
+  category: 'grain',
+  defaultUnit: 'g',
+});
 
 /** Shapes a recipe ingredient row the way the drizzle `with` query returns it. */
 function recipeIngredient(ref: CatalogIngredientRef, quantity: number, unit: Unit) {
@@ -39,7 +44,17 @@ function serviceFor(entries: ReturnType<typeof entry>[], pantry: PantryPort): Pl
       },
     },
   } as unknown as Database;
-  return new PlanService(db, pantry, undefined as never);
+  return new PlanService(
+    db,
+    pantry,
+    undefined as never,
+    {
+      spend: async () => 'fake-group-id',
+      refundSpendGroup: async () => {},
+      assertCanAfford: async () => {},
+    } as never,
+    new MediaService(db, undefined as never),
+  );
 }
 
 /**

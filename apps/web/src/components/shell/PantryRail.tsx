@@ -36,8 +36,8 @@ export function PantryRail({ planId }: { planId: string | undefined }) {
       .map((it) => ({
         id: it.id,
         name: localizedName(locale, {
-          en: it.ingredient.canonicalNameEn,
-          ar: it.ingredient.canonicalNameAr,
+          en: it.label ?? it.ingredient.canonicalNameEn,
+          ar: it.label ?? it.ingredient.canonicalNameAr,
         }),
       }));
 

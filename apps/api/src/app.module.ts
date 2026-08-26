@@ -10,6 +10,7 @@ import { InventoryModule } from './inventory/inventory.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { FeedbackModule } from './feedback/feedback.module.js';
+import { CreditsModule } from './credits/credits.module.js';
 import { RemindersModule } from './reminders/reminders.module.js';
 
 /** Root module. */
@@ -25,6 +26,7 @@ import { RemindersModule } from './reminders/reminders.module.js';
     StorageModule,
     AiModule,
     FeedbackModule,
+    CreditsModule,
     RemindersModule,
   ],
   controllers: [HealthController],

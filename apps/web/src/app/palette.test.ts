@@ -6,6 +6,24 @@ import { channels, contrast, readTokens, type Theme } from '../lib/contrast';
 
 const CSS = readFileSync(fileURLToPath(new URL('./globals.css', import.meta.url)), 'utf8');
 
+const RECIPE_THUMB_SOURCE = readFileSync(
+  fileURLToPath(new URL('../components/ui/RecipeThumb.tsx', import.meta.url)),
+  'utf8',
+);
+
+/**
+ * Read the tone pairs out of the component rather than restating them, so a
+ * tone added there is contrast-checked here automatically instead of silently
+ * escaping the guard.
+ */
+const RECIPE_THUMB_TONES: readonly (readonly [string, string])[] = [
+  ...RECIPE_THUMB_SOURCE.matchAll(/bg:\s*'bg-([\w-]+)',\s*fg:\s*'text-([\w-]+)'/g),
+].map(([, bg, fg]) => [fg, bg] as const);
+
+if (RECIPE_THUMB_TONES.length === 0) {
+  throw new Error('No RecipeThumb tone pairs found — the guard would pass vacuously');
+}
+
 /** Surfaces a text colour can legitimately land on. Dark has no tint. */
 const SURFACES: Record<Theme, readonly string[]> = {
   light: ['canvas', 'canvas-tint', 'background', 'muted'],
@@ -48,6 +66,13 @@ describe.each(['light', 'dark'] as const)('%s palette', (theme) => {
     for (const bg of ['canvas', 'background']) {
       expect(ratio(status, bg), `--${status} border on --${bg}`).toBeGreaterThanOrEqual(AA_NON_TEXT);
     }
+  });
+
+  // The recipe placeholder picks one of these pairs by hashing the dish key, so
+  // every pair must be legible — a tone cannot be added without a partner that
+  // clears the bar on both themes.
+  it.each(RECIPE_THUMB_TONES)('placeholder glyph %s reads on %s', (fg, bg) => {
+    expect(ratio(fg, bg), `--${fg} on --${bg}`).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 
   it('blue-as-text reads wherever it is used', () => {

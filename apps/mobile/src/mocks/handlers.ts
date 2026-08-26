@@ -8,6 +8,7 @@ import {
   type RouteName,
   type ShoppingListItem,
 } from '@kitchen/contracts';
+import { CREDIT_PACKS } from '@kitchen/contracts';
 import {
   buildInventory,
   buildRecognitionSession,
@@ -18,6 +19,7 @@ import {
   locations as seedLocations,
   makeSession,
   mockAiUsage,
+  mockCredits,
   mockHousehold,
   mockId,
   mockProfile,
@@ -53,6 +55,10 @@ const db = {
   catalog: [...catalog],
   plans: new Map<string, MealPlan>(),
   jobs: new Map<string, JobRecord>(),
+  credits: { ...mockCredits },
+  purchaseIntents: new Map<string, { productId: string; credits: number }>(),
+  /** Product reviews, keyed by the product the item is: `ingredientId|brand`. */
+  productReviews: new Map<string, { id: string; rating: number; message: string | null }>(),
 };
 
 let mockLocale: Locale = 'en';
@@ -67,6 +73,15 @@ let idCounter = 9000;
 function nextId(): string {
   idCounter += 1;
   return mockId(`f${idCounter}`);
+}
+
+/**
+ * Which product an item is, for review purposes. Mirrors the server's unique
+ * index: same ingredient and same brand case-insensitively, with no brand
+ * collapsing to `''` rather than staying distinct the way SQL nulls would.
+ */
+function productKey(item: { ingredient: { id: string }; brand: string | null }): string {
+  return `${item.ingredient.id}|${(item.brand ?? '').toLowerCase()}`;
 }
 
 function currentPlan(): MealPlan {
@@ -133,7 +148,11 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
   },
   oauthLogin: () => HttpResponse.json(makeSession(db.user)),
   refresh: () =>
-    HttpResponse.json({ accessToken: 'mock.access.token', refreshToken: 'mock.refresh.token', expiresIn: 900 }),
+    HttpResponse.json({
+      accessToken: 'mock.access.token',
+      refreshToken: 'mock.refresh.token',
+      expiresIn: 900,
+    }),
   logout: okEmpty,
   getMe: () => HttpResponse.json(db.user),
   updateMe: async ({ request }) => {
@@ -169,7 +188,10 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
   leaveHousehold: okEmpty,
   getProfile: () => HttpResponse.json(db.profile),
   submitFeedback: () =>
-    HttpResponse.json({ id: crypto.randomUUID(), createdAt: new Date().toISOString() }, { status: 201 }),
+    HttpResponse.json(
+      { id: crypto.randomUUID(), createdAt: new Date().toISOString() },
+      { status: 201 },
+    ),
   updateProfile: async ({ request }) => {
     const body = await readBody(request);
     db.profile = { ...db.profile, ...(body as object) };
@@ -225,7 +247,41 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     db.locations.push(location);
     return HttpResponse.json(location);
   },
-  deleteLocation: okEmpty,
+  updateLocation: async ({ params, request }) => {
+    const body = await readBody(request);
+    const location = db.locations.find((l) => l.id === String(params.id));
+    if (!location) return notFound();
+    if (body.name !== undefined) location.name = String(body.name);
+    if (body.type !== undefined) location.type = body.type as (typeof db.locations)[number]['type'];
+    return HttpResponse.json(location);
+  },
+  deleteLocation: ({ params, request }) => {
+    const id = String(params.id);
+    const index = db.locations.findIndex((l) => l.id === id);
+    if (index === -1) return notFound();
+
+    const contents = db.inventory.filter((i) => i.locationId === id);
+    const moveTo = query(request).get('moveTo');
+    if (contents.length > 0) {
+      // Mirrors the API: a place is not its contents, so deleting one that
+      // still holds food is refused unless the food is given somewhere to go.
+      if (!moveTo) {
+        return HttpResponse.json(
+          {
+            code: 'CONFLICT',
+            messageKey: 'errors.CONFLICT',
+            details: { reason: 'location_not_empty', itemCount: contents.length },
+          },
+          { status: 409 },
+        );
+      }
+      if (!db.locations.some((l) => l.id === moveTo)) return notFound();
+      for (const item of contents) item.locationId = moveTo;
+    }
+
+    db.locations.splice(index, 1);
+    return HttpResponse.json({ ok: true });
+  },
   listInventory: ({ request }) => {
     const params = query(request);
     const locationId = params.get('locationId');
@@ -241,7 +297,8 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
       items = items.filter(
         (i) =>
           i.ingredient.canonicalNameEn.toLowerCase().includes(q) ||
-          i.ingredient.canonicalNameAr.includes(q),
+          i.ingredient.canonicalNameAr.includes(q) ||
+          (i.label ?? '').toLowerCase().includes(q),
       );
     if (within != null) {
       const max = Number(within);
@@ -264,6 +321,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
         householdId: db.household.id,
         ingredient,
         brand: (input.brand as string | null) ?? null,
+        label: null,
         locationId: String(input.locationId ?? db.locations[0]!.id),
         quantity: Number(input.quantity ?? 1),
         unit: (input.unit as InventoryItem['unit']) ?? ingredient.defaultUnit,
@@ -282,6 +340,49 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     const item = db.inventory.find((i) => i.id === String(params.id));
     return item ? HttpResponse.json(item) : notFound();
   },
+  getProductFeedback: ({ params }) => {
+    const item = db.inventory.find((i) => i.id === String(params.id));
+    if (!item) return notFound();
+    const mine = db.productReviews.get(productKey(item)) ?? null;
+    return HttpResponse.json({
+      mine: mine
+        ? {
+            id: mine.id,
+            ingredientId: item.ingredient.id,
+            brand: item.brand,
+            rating: mine.rating,
+            message: mine.message,
+            createdAt: new Date().toISOString(),
+          }
+        : null,
+      // A fixed stranger average, so the "others" line has something to render
+      // offline. Only the reader's own review is stateful here.
+      averageRating: mine ? Math.round(((mine.rating + 4) / 2) * 100) / 100 : 4,
+      count: mine ? 2 : 1,
+    });
+  },
+  submitProductFeedback: async ({ request, params }) => {
+    const item = db.inventory.find((i) => i.id === String(params.id));
+    if (!item) return notFound();
+    const body = (await readBody(request)) as { rating: number; message?: string };
+    const key = productKey(item);
+    // Upsert, mirroring the unique index: re-reviewing replaces, never stacks.
+    const existing = db.productReviews.get(key);
+    const saved = {
+      id: existing?.id ?? nextId(),
+      rating: body.rating,
+      message: body.message ?? null,
+    };
+    db.productReviews.set(key, saved);
+    return HttpResponse.json({
+      id: saved.id,
+      ingredientId: item.ingredient.id,
+      brand: item.brand,
+      rating: saved.rating,
+      message: saved.message,
+      createdAt: new Date().toISOString(),
+    });
+  },
   updateInventoryItem: async ({ request, params }) => {
     const body = await readBody(request);
     const id = String(params.id);
@@ -292,6 +393,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     if (body.locationId) item.locationId = String(body.locationId);
     if (body.expiresAt !== undefined) item.expiresAt = body.expiresAt as string | null;
     if (body.brand !== undefined) item.brand = body.brand as string | null;
+    if (body.label !== undefined) item.label = body.label as string | null;
     item.updatedAt = isoDateTime(0);
     return HttpResponse.json(item);
   },
@@ -359,7 +461,12 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
         productName: 'Greek Yogurt 500g',
         brand: 'Al Marai',
         imageUrl: 'https://images.kitchenai.dev/products/yogurt.jpg',
-        match: { ingredientId: yogurt.id, strategy: 'alias', confidence: 0.9, rawName: 'Greek Yogurt' },
+        match: {
+          ingredientId: yogurt.id,
+          strategy: 'alias',
+          confidence: 0.9,
+          rawName: 'Greek Yogurt',
+        },
         suggestedQuantity: 500,
         suggestedUnit: 'ml',
       });
@@ -529,12 +636,14 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     for (const id of ids) {
       const shop = db.shopping.find((s) => s.id === id);
       if (!shop) continue;
-      const ingredient = db.catalog.find((i) => i.id === shop.ingredientId) ?? ingredientByKey('onion');
+      const ingredient =
+        db.catalog.find((i) => i.id === shop.ingredientId) ?? ingredientByKey('onion');
       const item: InventoryItem = {
         id: nextId(),
         householdId: db.household.id,
         ingredient,
         brand: null,
+        label: null,
         locationId,
         quantity: shop.quantity,
         unit: shop.unit,
@@ -554,6 +663,30 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
 
   /* ---- Usage ---- */
   getAiUsage: () => HttpResponse.json({ ...mockAiUsage, day: isoDate(0) }),
+
+  /* ---- Credits ---- */
+  getCredits: () => HttpResponse.json(db.credits),
+  createPurchaseIntent: async ({ request }) => {
+    const body = await readBody(request);
+    const pack = CREDIT_PACKS.find((p) => p.productId === body.productId);
+    if (!pack) {
+      return HttpResponse.json(
+        { code: 'VALIDATION_FAILED', messageKey: 'errors.VALIDATION_FAILED' },
+        { status: 422 },
+      );
+    }
+    const intentId = nextId();
+    db.purchaseIntents.set(intentId, { productId: pack.productId, credits: pack.credits });
+    return HttpResponse.json({ intentId, productId: pack.productId, credits: pack.credits });
+  },
+  confirmPurchase: async ({ request }) => {
+    const body = await readBody(request);
+    const intent = db.purchaseIntents.get(String(body.intentId));
+    if (!intent) return notFound();
+    db.purchaseIntents.delete(String(body.intentId));
+    db.credits = { ...db.credits, paidBalance: db.credits.paidBalance + intent.credits };
+    return HttpResponse.json(db.credits);
+  },
 };
 
 /* ------------------------------------------------------------------ */
@@ -563,7 +696,10 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
 function localizedEntry(entry: MealPlan['entries'][number]): MealPlan['entries'][number] {
   const def = recipeDefById(entry.recipe.id);
   if (!def) return entry;
-  return { ...entry, recipe: { ...entry.recipe, title: def.title[mockLocale], locale: mockLocale } };
+  return {
+    ...entry,
+    recipe: { ...entry.recipe, title: def.title[mockLocale], locale: mockLocale },
+  };
 }
 
 function resolveIngredient(input: Body): Ingredient {
@@ -612,7 +748,11 @@ function sortInventory(items: InventoryItem[], sort: string): InventoryItem[] {
   return copy;
 }
 
-function createJob(type: JobRecord['type'], resultKind: JobRecord['resultKind'], resultId: string): JobRecord {
+function createJob(
+  type: JobRecord['type'],
+  resultKind: JobRecord['resultKind'],
+  resultId: string,
+): JobRecord {
   const job: JobRecord = { id: nextId(), type, createdAt: Date.now(), resultKind, resultId };
   db.jobs.set(job.id, job);
   return job;

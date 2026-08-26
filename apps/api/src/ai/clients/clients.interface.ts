@@ -5,7 +5,10 @@ export interface YoutubeVideo {
   title: string;
   channel: string;
   thumbnailUrl: string;
-  durationSeconds: number | null;
+  durationSeconds: number;
+  categoryId: string | null;
+  defaultAudioLanguage: string | null;
+  embeddable: boolean;
 }
 
 /**

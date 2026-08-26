@@ -1,6 +1,7 @@
 import { type ComponentProps } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { type ColorValue, type StyleProp, type TextStyle } from 'react-native';
+import { useTheme } from '../theme/useTheme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -15,6 +16,7 @@ export const IONICONS = {
   plans: 'calendar-outline',
   more: 'ellipsis-horizontal',
   camera: 'camera-outline',
+  cameraReverse: 'camera-reverse-outline',
   barcode: 'barcode-outline',
   receipt: 'receipt-outline',
   manual: 'create-outline',
@@ -24,6 +26,7 @@ export const IONICONS = {
   check: 'checkmark',
   close: 'close',
   clock: 'time-outline',
+  calendar: 'calendar-outline',
   trash: 'trash-outline',
   edit: 'pencil-outline',
   warning: 'warning-outline',
@@ -31,12 +34,16 @@ export const IONICONS = {
   star: 'star',
   starOutline: 'star-outline',
   basket: 'basket-outline',
+  restaurant: 'restaurant-outline',
   settings: 'settings-outline',
+  bell: 'notifications-outline',
   user: 'person-outline',
   household: 'people-outline',
   play: 'play',
   apple: 'logo-apple',
   google: 'logo-google',
+  wallet: 'wallet-outline',
+  sparkles: 'sparkles-outline',
   offline: 'cloud-offline',
   sync: 'sync',
   location: 'location-outline',
@@ -57,11 +64,16 @@ export interface IconProps {
 }
 
 export function Icon({ name, size = 18, color, style }: IconProps) {
+  const { colors } = useTheme();
   return (
     <Ionicons
       name={IONICONS[name]}
       size={size}
-      color={color}
+      // Ionicons has no default colour of its own: an omitted `color` reaches
+      // React Native as `undefined` and renders pure black, which was merely
+      // off-palette while every screen was light and is invisible now that
+      // three of the six palettes have near-black grounds.
+      color={color ?? colors.text}
       style={style}
       accessible={false}
       importantForAccessibility="no"

@@ -16,6 +16,7 @@ import { useLocale } from '../../lib/locale';
 import { cuisineKey, dietKey, healthGoalKey } from '../../lib/labels';
 import { cn } from '../../lib/cn';
 import { useProfile, useUpdateProfile } from '../../hooks/settings';
+import { CreditBalance } from '../credits/CreditBalance';
 import { Card, CardHeader, CardTitle } from '../ui/Card';
 import { Button, buttonClasses } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -84,6 +85,8 @@ export function SettingsView() {
           <LocaleToggle />
         </div>
       </Card>
+
+      <CreditBalance />
 
       <Card>
         <CardHeader>

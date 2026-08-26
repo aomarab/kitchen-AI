@@ -6,18 +6,21 @@ import { Badge } from '../../components/Badge';
 import { ListRow } from '../../components/ListRow';
 import { useFormat } from '../../hooks/useFormat';
 import { formatDateL } from '../../lib/format';
-import { colors, radius, spacing } from '../../theme';
+import { radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 export type PlanView = 'day' | 'week' | 'month';
 
 const SLOT_ORDER: Record<MealSlot, number> = { breakfast: 0, lunch: 1, dinner: 2, snack: 3 };
-const SLOT_KEY: Record<MealSlot, 'plans.breakfast' | 'plans.lunch' | 'plans.dinner' | 'plans.snack'> =
-  {
-    breakfast: 'plans.breakfast',
-    lunch: 'plans.lunch',
-    dinner: 'plans.dinner',
-    snack: 'plans.snack',
-  };
+const SLOT_KEY: Record<
+  MealSlot,
+  'plans.breakfast' | 'plans.lunch' | 'plans.dinner' | 'plans.snack'
+> = {
+  breakfast: 'plans.breakfast',
+  lunch: 'plans.lunch',
+  dinner: 'plans.dinner',
+  snack: 'plans.snack',
+};
 
 function parseDate(iso: string): Date {
   return new Date(`${iso}T00:00:00`);
@@ -79,6 +82,7 @@ export interface PlanBoardProps {
  */
 export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry }: PlanBoardProps) {
   const { t, locale } = useFormat();
+  const { colors } = useTheme();
 
   const byDate = useMemo(() => {
     const map = new Map<string, MealPlanEntry[]>();
@@ -176,7 +180,7 @@ export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry 
                     backgroundColor: selected ? colors.primary : 'transparent',
                   }}
                 >
-                  <AppText style={{ color: selected ? colors.textInverse : colors.text }}>
+                  <AppText style={{ color: selected ? colors.onFill : colors.text }}>
                     {formatDateL(locale, iso, { day: 'numeric' })}
                   </AppText>
                 </View>

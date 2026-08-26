@@ -1,6 +1,7 @@
 import { Pressable } from 'react-native';
 import { AppText } from './AppText';
-import { colors, hitSlop, radius, spacing } from '../theme';
+import { hitSlop, radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export interface ChipProps {
   label: string;
@@ -11,6 +12,8 @@ export interface ChipProps {
 
 /** Selectable pill used for filters, plan slots and preference toggles. */
 export function Chip({ label, selected, onPress, accessibilityLabel }: ChipProps) {
+  const { colors } = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -27,7 +30,7 @@ export function Chip({ label, selected, onPress, accessibilityLabel }: ChipProps
         backgroundColor: selected ? colors.primarySoft : colors.surface,
       }}
     >
-      <AppText variant="label" style={{ color: selected ? colors.primary : colors.textMuted }}>
+      <AppText variant="label" style={{ color: selected ? colors.primaryText : colors.textMuted }}>
         {label}
       </AppText>
     </Pressable>

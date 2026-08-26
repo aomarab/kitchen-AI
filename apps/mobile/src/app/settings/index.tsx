@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { I18nManager, View } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
-import { directionFor, type Locale } from '@kitchen/i18n';
-import { Screen, Header, AppText, Button, Card, Chip, Sheet, ToggleRow, ListRow } from '../../components';
+import { type Locale } from '@kitchen/i18n';
+import { Screen, Header, AppText, Card, Chip, ToggleRow, ListRow } from '../../components';
 import { useLocale } from '../../lib/locale';
 import { useSettingsStore } from '../../stores/settings';
 import { spacing } from '../../theme';
+import { ThemePicker } from '../../features/settings/ThemePicker';
 
 export default function Settings() {
   const { t, locale, setLocale } = useLocale();
@@ -15,14 +15,12 @@ export default function Settings() {
   const setEasternNumerals = useSettingsStore((state) => state.setEasternNumerals);
   const showHijri = useSettingsStore((state) => state.showHijri);
   const setShowHijri = useSettingsStore((state) => state.setShowHijri);
-  const [restart, setRestart] = useState(false);
   const version = Constants.expoConfig?.version ?? '1.0.0';
 
+  // Direction is a style on the root view, so the whole UI mirrors on the next
+  // render — no relaunch, and no restart prompt to dismiss.
   const chooseLocale = (next: Locale) => {
-    if (next === locale) return;
-    const willFlip = (directionFor(next) === 'rtl') !== I18nManager.isRTL;
-    setLocale(next);
-    if (willFlip) setRestart(true);
+    if (next !== locale) setLocale(next);
   };
 
   return (
@@ -51,6 +49,7 @@ export default function Settings() {
         <AppText variant="label" muted>
           {t('mobile.settings.appearance')}
         </AppText>
+        <ThemePicker />
         <ToggleRow
           label={t('mobile.settings.easternNumerals')}
           hint={t('mobile.settings.easternNumeralsHint')}
@@ -64,6 +63,13 @@ export default function Settings() {
           onValueChange={setShowHijri}
         />
       </Card>
+
+      <ListRow
+        title={t('mobile.places.entry')}
+        subtitle={t('mobile.places.entryHint')}
+        showChevron
+        onPress={() => router.push('/settings/places')}
+      />
 
       <ListRow
         title={t('mobile.reminders.entry')}
@@ -94,15 +100,6 @@ export default function Settings() {
           {t('mobile.more.appVersion', { version })}
         </AppText>
       </View>
-
-      <Sheet
-        visible={restart}
-        onClose={() => setRestart(false)}
-        title={t('mobile.settings.rtlRestartTitle')}
-      >
-        <AppText muted>{t('mobile.settings.rtlRestartBody')}</AppText>
-        <Button title={t('mobile.settings.restartLater')} onPress={() => setRestart(false)} />
-      </Sheet>
     </Screen>
   );
 }

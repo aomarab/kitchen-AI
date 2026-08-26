@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { Pressable, View, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, gradientHero, radius, spacing, type Tint } from '../theme';
+import { radius, spacing, type PaletteColors, type Tint } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export interface CardProps {
   children: ReactNode;
@@ -16,14 +17,11 @@ export interface CardProps {
   style?: ViewStyle;
 }
 
-const TONE: Record<NonNullable<CardProps['tone']>, ViewStyle> = {
+const toneFor = (colors: PaletteColors): Record<NonNullable<CardProps['tone']>, ViewStyle> => ({
   surface: { backgroundColor: colors.surface, borderColor: colors.border },
   alt: { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
   primary: { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft },
-};
-
-/** The kit's feature card runs deep violet up into the brand violet. */
-const GRADIENT = gradientHero;
+});
 
 export function Card({
   children,
@@ -34,19 +32,21 @@ export function Card({
   gradient,
   style,
 }: CardProps) {
+  const { colors, gradientHero } = useTheme();
   const base: ViewStyle = {
     borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
-    ...TONE[tone],
+    ...toneFor(colors)[tone],
     ...(tint ? { backgroundColor: tint.bg, borderColor: tint.bg } : null),
     ...(gradient ? { backgroundColor: 'transparent', borderColor: 'transparent' } : null),
   };
 
+  /** The kit's feature card runs deep violet up into the brand violet. */
   const body = gradient ? (
     <LinearGradient
-      colors={GRADIENT}
+      colors={gradientHero as unknown as readonly [string, string, ...string[]]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{ borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm }}

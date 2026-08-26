@@ -1,5 +1,5 @@
-import { ApiError, ContractViolationError, NetworkError } from '@kitchen/api-client';
-import type { MessageKey } from '@kitchen/i18n';
+import { ApiError, ContractViolationError, NetworkError, TimeoutError } from '@kitchen/api-client';
+import { isMessageKey, type MessageKey } from '@kitchen/i18n';
 import { OAuthUnavailableError } from './oauth-errors';
 
 /**
@@ -9,10 +9,31 @@ import { OAuthUnavailableError } from './oauth-errors';
  */
 export function errorMessageKey(error: unknown): MessageKey {
   if (error instanceof ApiError) return error.messageKey as MessageKey;
+  // Before NetworkError: TimeoutError extends it, and "you're offline" is the
+  // wrong advice for a request that reached the server and ran long.
+  if (error instanceof TimeoutError) return 'errors.timedOut';
   if (error instanceof NetworkError) return 'errors.offline';
   if (error instanceof OAuthUnavailableError) return error.messageKey;
   if (error instanceof ContractViolationError) return 'errors.INTERNAL_ERROR';
   return 'errors.INTERNAL_ERROR';
+}
+
+/**
+ * The message for a finished job that failed.
+ *
+ * The job envelope carries the server's own `messageKey` (spec §8), but the
+ * screens polling it used to ignore it and print one generic "something went
+ * wrong" — so a household told exactly why a plan was impossible ("there isn't
+ * enough in your kitchen") saw a dead end instead, and retried the same
+ * doomed request. The key is validated because it crosses a version boundary:
+ * a newer server may name a message this build has never heard of.
+ */
+export function jobErrorKey(
+  error: { readonly code?: string; readonly messageKey?: string } | null | undefined,
+  fallback: MessageKey,
+): MessageKey {
+  const key = error?.messageKey;
+  return key && isMessageKey(key) ? key : fallback;
 }
 
 /** True when retrying the same call could plausibly succeed. */
@@ -25,4 +46,20 @@ export function isRetryable(error: unknown): boolean {
 /** True when the error means the session is no longer authenticated. */
 export function isAuthError(error: unknown): boolean {
   return error instanceof ApiError && error.isAuthError;
+}
+
+/**
+ * True when an action failed because the household is out of credits (HTTP 402,
+ * spec §7). It is not a transport error but an expected, recoverable state, so
+ * the UI answers it by routing to buy credits rather than a bare retry. Handles
+ * both a real `ApiError` and the plain `{ code }` envelopes some call sites hand
+ * to `ErrorState`.
+ */
+export function isInsufficientCredits(error: unknown): boolean {
+  if (error instanceof ApiError) return error.code === 'INSUFFICIENT_CREDITS';
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'INSUFFICIENT_CREDITS'
+  );
 }

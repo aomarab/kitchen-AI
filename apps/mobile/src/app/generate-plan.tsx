@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { Cuisine, MealSlot, PlanScope } from '@kitchen/contracts';
+import type { Cuisine, CreditAction, MealSlot, PlanScope } from '@kitchen/contracts';
 import type { MessageKey } from '@kitchen/i18n';
 import {
   Screen,
@@ -11,15 +11,27 @@ import {
   Card,
   Chip,
   Field,
+  Icon,
   QuantityStepper,
   SegmentedControl,
 } from '../components';
 import { useFormat } from '../hooks/useFormat';
 import { useGeneratePlan } from '../hooks/plans';
+import { useCredits } from '../hooks/credits';
 import { useJob, isTerminal } from '../hooks/job';
+import { canAfford, costOf, creditsShort } from '../lib/credits';
+import { jobErrorKey } from '../lib/errors';
 import { todayISODate } from '../lib/expiry';
-import { formatMinutes } from '../lib/format';
-import { colors, radius, spacing } from '../theme';
+import { formatMinutes, formatQty } from '../lib/format';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
+
+/** Each plan scope maps to the billable action it triggers (spec §3). */
+const SCOPE_ACTION: Record<PlanScope, CreditAction> = {
+  daily: 'plan.daily',
+  weekly: 'plan.weekly',
+  monthly: 'plan.monthly',
+};
 
 const SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const COOK_TIMES = [30, 45, 60, 90];
@@ -55,6 +67,7 @@ function toggle<T>(set: readonly T[], value: T): T[] {
 export default function GeneratePlan() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
+  const { colors } = useTheme();
 
   const [scope, setScope] = useState<PlanScope>('weekly');
   const [startsOn, setStartsOn] = useState(todayISODate());
@@ -64,10 +77,20 @@ export default function GeneratePlan() {
   const [maxCook, setMaxCook] = useState<number | null>(null);
 
   const generate = useGeneratePlan();
+  const credits = useCredits();
   const [jobId, setJobId] = useState<string | null>(null);
   const job = useJob(jobId);
   const running = !!jobId && !isTerminal(job.data);
   const failed = job.data?.status === 'failed';
+
+  const action = SCOPE_ACTION[scope];
+  const cost = costOf(action);
+  // Only surface a cost for actions dearer than a daily plan (spec §8 gating).
+  const showCost = cost > costOf('plan.daily');
+  // Never block while the balance is still loading; a known balance that cannot
+  // cover the action is what gates generation.
+  const affordable = credits.data ? canAfford(credits.data, action) : true;
+  const shortfall = credits.data ? creditsShort(credits.data, action) : 0;
 
   useEffect(() => {
     if (job.data?.status === 'done' && job.data.resultRef) {
@@ -75,7 +98,15 @@ export default function GeneratePlan() {
     }
   }, [job.data, router]);
 
+  const goBuyCredits = () => router.push(`/buy-credits?action=${action}`);
+
   const submit = async () => {
+    // Tell the user before spending: route to top up rather than firing a
+    // request the server would reject with 402.
+    if (!affordable) {
+      goBuyCredits();
+      return;
+    }
     const started = await generate.mutateAsync({
       scope,
       startsOn,
@@ -101,8 +132,8 @@ export default function GeneratePlan() {
                 height: 8,
                 borderRadius: radius.pill,
                 backgroundColor: colors.primary,
-                // No alignSelf: the root layout calls I18nManager.forceRTL, so the
-                // flex start edge is already the right edge in Arabic. Setting
+                // No alignSelf: the root view carries `direction`, so the flex
+                // start edge is already the right edge in Arabic. Setting
                 // flex-end here flipped it a second time and filled from the left.
                 width: `${Math.round((job.data?.progress ?? 0.1) * 100)}%`,
               }}
@@ -113,7 +144,9 @@ export default function GeneratePlan() {
 
       {failed ? (
         <Card tone="alt" style={{ gap: spacing.sm }}>
-          <AppText color="danger">{t('mobile.job.generationFailed')}</AppText>
+          <AppText color="danger">
+            {t(jobErrorKey(job.data?.error, 'mobile.job.generationFailed'))}
+          </AppText>
           <Button title={t('common.retry')} onPress={() => setJobId(null)} />
         </Card>
       ) : null}
@@ -183,7 +216,9 @@ export default function GeneratePlan() {
           {COOK_TIMES.map((minutes) => (
             <Chip
               key={minutes}
-              label={t('mobile.plans.minutesValue', { minutes: formatMinutes(locale, minutes, prefs) })}
+              label={t('mobile.plans.minutesValue', {
+                minutes: formatMinutes(locale, minutes, prefs),
+              })}
               selected={maxCook === minutes}
               onPress={() => setMaxCook(minutes)}
             />
@@ -207,13 +242,38 @@ export default function GeneratePlan() {
         </View>
       </View>
 
-      <Button
-        title={t('mobile.plans.generateCta')}
-        icon="plans"
-        loading={generate.isPending || running}
-        disabled={running}
-        onPress={() => void submit()}
-      />
+      {showCost && affordable ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            paddingHorizontal: spacing.xs,
+          }}
+        >
+          <Icon name="sparkles" size={16} color={colors.textMuted} />
+          <AppText variant="caption" muted>
+            {t('mobile.credits.costNotice', { cost: formatQty(locale, cost, prefs) })}
+          </AppText>
+        </View>
+      ) : null}
+
+      {!affordable ? (
+        <Card tone="alt" style={{ gap: spacing.sm }}>
+          <AppText variant="bodyStrong" accessibilityRole="alert">
+            {t('mobile.credits.needMore', { needed: formatQty(locale, shortfall, prefs) })}
+          </AppText>
+          <Button title={t('mobile.credits.getMore')} icon="wallet" onPress={goBuyCredits} />
+        </Card>
+      ) : (
+        <Button
+          title={t('mobile.plans.generateCta')}
+          icon="plans"
+          loading={generate.isPending || running}
+          disabled={running}
+          onPress={() => void submit()}
+        />
+      )}
     </Screen>
   );
 }

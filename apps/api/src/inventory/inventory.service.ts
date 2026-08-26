@@ -16,7 +16,7 @@ import { ingredients, inventoryEvents, inventoryItems, storageLocations } from '
 import { AppError } from '../common/errors.js';
 import { numeric, toNumber } from '../common/serialization.js';
 import { decodeCursor, toPage, type Page } from '../common/pagination.js';
-import { ingredientNameMatches } from '../catalog/normalize.js';
+import { inventoryNameMatches } from '../catalog/normalize.js';
 import { CatalogService } from '../catalog/catalog.service.js';
 import { areCompatible, convertQuantity } from './units.js';
 import {
@@ -78,7 +78,7 @@ export class InventoryService {
     const conditions: SQL[] = [eq(inventoryItems.householdId, householdId)];
     if (query.locationId) conditions.push(eq(inventoryItems.locationId, query.locationId));
     if (query.category) conditions.push(eq(ingredients.category, query.category));
-    if (query.q) conditions.push(ingredientNameMatches(query.q));
+    if (query.q) conditions.push(inventoryNameMatches(query.q, inventoryItems.label));
     if (query.expiringWithinDays !== undefined) {
       conditions.push(isNotNull(inventoryItems.expiresAt));
       conditions.push(
@@ -203,6 +203,7 @@ export class InventoryService {
       if (dto.unit !== undefined) patch.unit = finalUnit;
       if (dto.expiresAt !== undefined) patch.expiresAt = dto.expiresAt;
       if (dto.brand !== undefined) patch.brand = dto.brand;
+      if (dto.label !== undefined) patch.label = dto.label;
       if (dto.quantity !== undefined || (dto.unit && dto.unit !== current.unit)) {
         patch.quantity = numeric(finalQuantity);
       }
@@ -359,7 +360,10 @@ export class InventoryService {
   private async resolveIngredientId(input: InventoryItemInput): Promise<string> {
     if (input.ingredientId) return input.ingredientId;
     if (!input.rawName) throw AppError.validation({ reason: 'missing_ingredient' });
-    return this.catalog.resolveOrCreate(input.rawName, input.rawNameAr);
+    return this.catalog.resolveOrCreate(input.rawName, input.rawNameAr, {
+      category: input.rawCategory,
+      unit: input.unit,
+    });
   }
 
   private async addStock(tx: Tx, input: AddStockInput): Promise<string> {
@@ -461,6 +465,19 @@ export class InventoryService {
       .where(
         and(eq(inventoryItems.householdId, householdId), inArray(inventoryItems.id, itemIds)),
       );
-    return rows.map((row) => toInventoryItem(row.item as InventoryItemRow, row.ingredient));
+
+    // Returned in the order asked for. A bare select has no order at all, and
+    // `bulkCreate` hands this array straight back to a caller that pairs it
+    // with its own input by position — so an arbitrary row order silently
+    // attaches each result to the wrong submitted item.
+    const byId = new Map(
+      rows.map((row) => [
+        row.item.id,
+        toInventoryItem(row.item as InventoryItemRow, row.ingredient),
+      ]),
+    );
+    return itemIds
+      .map((id) => byId.get(id))
+      .filter((item): item is InventoryItem => item !== undefined);
   }
 }

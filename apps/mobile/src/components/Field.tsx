@@ -1,7 +1,8 @@
 import { forwardRef } from 'react';
 import { TextInput, View, type TextInputProps } from 'react-native';
 import { AppText } from './AppText';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 import { resolveFontFamily, useFontStore } from '../lib/fonts';
 
@@ -16,6 +17,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
   { label, error, hint, style, ...rest },
   ref,
 ) {
+  const { colors } = useTheme();
   const { dir, locale } = useLocale();
   const fontsLoaded = useFontStore((state) => state.loaded);
   const fontFamily = resolveFontFamily(locale, fontsLoaded);
@@ -40,7 +42,11 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
             color: colors.text,
             fontSize: 16,
             fontFamily,
-            textAlign: dir === 'rtl' ? 'right' : 'left',
+            // Same reasoning as AppText: iOS resolves `textAlign: 'auto'` from
+            // the writing direction, whereas an explicit 'left'/'right' is
+            // absolute on iOS but mirrored on Android — which put the caret on
+            // opposite sides of the same field across the two platforms.
+            textAlign: 'auto',
             writingDirection: dir,
           },
           style,

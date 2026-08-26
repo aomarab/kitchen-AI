@@ -107,6 +107,75 @@ describe('InventoryService (live DB)', () => {
     expect(merged!.unit).toBe('kg');
   });
 
+  /**
+   * `ingredients` is a global catalog shared by every household, so a household
+   * correcting a name it does not recognise must not rename it for everyone —
+   * the new name lives on their item.
+   */
+  describe('renaming an item', () => {
+    it('keeps the household name and leaves the shared catalog alone', async () => {
+      const [ingredient] = await seedIngredients(ctx.db, 1);
+      seededIngredients.push(ingredient!);
+      const [created] = await service.bulkCreate(hhA, userId, {
+        items: [itemInput({ ingredientId: ingredient!, locationId: locA, quantity: 1, unit: 'piece' })],
+      });
+
+      const renamed = await service.update(hhA, userId, created!.id, { label: "Mama's labneh" });
+
+      expect(renamed.label).toBe("Mama's labneh");
+      expect(renamed.ingredient.canonicalNameEn).toBe(created!.ingredient.canonicalNameEn);
+      expect((await service.get(hhA, created!.id)).label).toBe("Mama's labneh");
+    });
+
+    /** Searching for the name you just gave something has to find it. */
+    it('finds the item by the name the household gave it', async () => {
+      const [ingredient] = await seedIngredients(ctx.db, 1);
+      seededIngredients.push(ingredient!);
+      const [created] = await service.bulkCreate(hhA, userId, {
+        items: [itemInput({ ingredientId: ingredient!, locationId: locA, quantity: 1, unit: 'piece' })],
+      });
+      await service.update(hhA, userId, created!.id, { label: 'Zaatar from Nablus' });
+
+      const found = await service.list(hhA, { q: 'nablus', sort: 'name' } as never);
+      const catalogStillMatches = await service.list(hhA, { q: 'Test ingredient', sort: 'name' } as never);
+
+      expect(found.items.map((item) => item.id)).toContain(created!.id);
+      expect(catalogStillMatches.items.map((item) => item.id)).toContain(created!.id);
+    });
+
+    it('restores the catalog name when the label is cleared', async () => {
+      const [ingredient] = await seedIngredients(ctx.db, 1);
+      seededIngredients.push(ingredient!);
+      const [created] = await service.bulkCreate(hhA, userId, {
+        items: [itemInput({ ingredientId: ingredient!, locationId: locA, quantity: 1, unit: 'piece' })],
+      });
+      await service.update(hhA, userId, created!.id, { label: 'Temporary' });
+
+      expect((await service.update(hhA, userId, created!.id, { label: null })).label).toBeNull();
+    });
+
+    /**
+     * Stock pools into one row per ingredient and place, and a later scan
+     * supplies the catalog name — so a merge must not quietly undo the rename.
+     */
+    it('survives more stock arriving in the same slot', async () => {
+      const [ingredient] = await seedIngredients(ctx.db, 1);
+      seededIngredients.push(ingredient!);
+      const [created] = await service.bulkCreate(hhA, userId, {
+        items: [itemInput({ ingredientId: ingredient!, locationId: locA, quantity: 1, unit: 'piece' })],
+      });
+      await service.update(hhA, userId, created!.id, { label: 'Baba ganoush jar' });
+
+      const [merged] = await service.bulkCreate(hhA, userId, {
+        items: [itemInput({ ingredientId: ingredient!, locationId: locA, quantity: 2, unit: 'piece' })],
+      });
+
+      expect(merged!.id).toBe(created!.id);
+      expect(merged!.quantity).toBe(3);
+      expect(merged!.label).toBe('Baba ganoush jar');
+    });
+  });
+
   it('rejects an incompatible unit for an existing item', async () => {
     await expectAppError(
       service.bulkCreate(hhA, userId, {
@@ -312,6 +381,28 @@ describe('InventoryService (live DB)', () => {
     expect(fetched.ingredient.id).toBe(ingE);
 
     await expectAppError(service.get(hhA, randomUUID()), 'NOT_FOUND');
+  });
+
+  /**
+   * The capture flow submits a reviewed list and pairs each result with the row
+   * the user edited, by position. A bare select has no defined order, so this
+   * used to come back shuffled — attaching quantities and expiry dates to the
+   * wrong ingredients, and showing up only as an occasional failure elsewhere
+   * in this file.
+   */
+  it('returns bulk-created items in the order they were submitted', async () => {
+    // Its own ingredients: every other fixture already holds stock at locA, and
+    // merging into it would hide the ordering this asserts.
+    const fresh = await seedIngredients(ctx.db, 4);
+    seededIngredients.push(...fresh);
+    const submitted = fresh.map((ingredientId, i) =>
+      itemInput({ ingredientId, locationId: locA, quantity: i + 1, unit: 'piece' }),
+    );
+
+    const created = await service.bulkCreate(hhA, userId, { items: submitted });
+
+    expect(created.map((item) => item.ingredient.id)).toEqual(fresh);
+    expect(created.map((item) => item.quantity)).toEqual([1, 2, 3, 4]);
   });
 
   it('reports an incompatible-unit sync event as rejected rather than swallowing it', async () => {

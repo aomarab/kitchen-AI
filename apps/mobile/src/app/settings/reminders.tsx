@@ -16,10 +16,12 @@ import {
 import { useFormat } from '../../hooks/useFormat';
 import { useReminderSettings, useUpdateReminderSettings } from '../../hooks/reminders';
 import { BREAK_CADENCES, clampHydrationGoal, clampQuietHour } from '../../lib/reminders';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 export default function Reminders() {
   const { t } = useFormat();
+  const { colors } = useTheme();
   const router = useRouter();
   const query = useReminderSettings();
   const update = useUpdateReminderSettings();

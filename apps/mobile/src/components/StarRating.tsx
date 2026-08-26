@@ -1,6 +1,7 @@
 import { Pressable, View } from 'react-native';
 import { Icon } from './Icon';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 export interface StarRatingProps {
   value: number;
@@ -20,6 +21,7 @@ const STARS = [1, 2, 3, 4, 5];
  * one-star sits on the right — the direction the eye scans from.
  */
 export function StarRating({ value, onChange, labelFor, disabled }: StarRatingProps) {
+  const { colors } = useTheme();
   return (
     <View style={{ flexDirection: 'row', gap: spacing.xs }} accessibilityRole="radiogroup">
       {STARS.map((star) => (
@@ -41,7 +43,7 @@ export function StarRating({ value, onChange, labelFor, disabled }: StarRatingPr
           <Icon
             name={star <= value ? 'star' : 'starOutline'}
             size={30}
-            color={star <= value ? colors.primary : colors.textMuted}
+            color={star <= value ? colors.primaryText : colors.textMuted}
           />
         </Pressable>
       ))}

@@ -14,6 +14,7 @@ import { AppError } from '../../common/errors.js';
 import { DB, type Database } from '../../db/index.js';
 import { recognitionSessions, users } from '../../db/schema.js';
 import { StorageService } from '../../storage/storage.service.js';
+import { CreditsService } from '../../credits/credits.service.js';
 import { AiGateway } from '../ai-gateway.service.js';
 import { CATALOG_PORT } from '../ai.constants.js';
 import type { IngredientResolverPort } from '../catalog/ingredient-resolver.port.js';
@@ -41,10 +42,12 @@ export class RecognitionService {
     @Inject(CATALOG_PORT) private readonly catalog: IngredientResolverPort,
     @Inject(AiGateway) private readonly gateway: AiGateway,
     @Inject(StorageService) private readonly storage: StorageService,
+    @Inject(CreditsService) private readonly credits: CreditsService,
   ) {}
 
   async recognize(input: RecognizeInput): Promise<RecognitionSession> {
     const { householdId, request } = input;
+    await this.credits.assertCanAfford(householdId, 'pantry.scan');
     const locale = await this.localeFor(input.userId);
     const hint = request.locationHint;
 
@@ -53,14 +56,16 @@ export class RecognitionService {
     const seen = new Set<string>();
 
     for (const photoKey of request.photoKeys) {
-      // The provider fetches the image over HTTP, so it needs a signed URL, not
-      // an object key. `presignCaptureDownload` rejects any key outside this
+      // The provider fetches the image, so it needs something it can actually
+      // dereference. `providerImageUrl` presigns for public storage and inlines
+      // a `data:` URL when storage is private (loopback/RFC1918), which a real
+      // vision provider cannot reach. It rejects any key outside this
       // household's prefix — `photoKeys` are opaque client strings, and without
       // that check a caller could name another household's photo, or an
       // arbitrary URL, and have the model fetch it for them. It also rejects a
       // key uploaded under a non-capture purpose (recipe_image, avatar), which
       // would otherwise bypass the 2 MB capture ceiling.
-      const imageUrl = await this.storage.presignCaptureDownload(householdId, photoKey);
+      const imageUrl = await this.storage.providerImageUrl(householdId, photoKey);
       const vision = await this.gateway.execute<VisionResult>({
         householdId,
         operation: 'vision.recognize',
@@ -88,7 +93,12 @@ export class RecognitionService {
     }
 
     const resolved = await this.catalog.resolve(
-      collected.map(({ item }) => ({ name: item.nameEn, nameAr: item.nameAr, category: item.category, defaultUnit: item.unit })),
+      collected.map(({ item }) => ({
+        name: item.nameEn,
+        nameAr: item.nameAr,
+        category: item.category,
+        defaultUnit: item.unit,
+      })),
       { createIfMissing: false },
     );
 
@@ -109,7 +119,10 @@ export class RecognitionService {
         unit: item.unit,
         confidence: item.confidence,
         suggestedExpiresAt: suggestedExpiry(item.category),
-        suggestedLocationType: suggestedLocation(item.category, hint as StorageLocationType | undefined),
+        suggestedLocationType: suggestedLocation(
+          item.category,
+          hint as StorageLocationType | undefined,
+        ),
         photoKey,
       };
     });
@@ -123,6 +136,8 @@ export class RecognitionService {
         emptyPhotoKeys,
       })
       .returning({ id: recognitionSessions.id, createdAt: recognitionSessions.createdAt });
+
+    await this.credits.spend(householdId, 'pantry.scan');
 
     return {
       id: row!.id,

@@ -9,7 +9,7 @@ import { useRecipe, useMarkCooked } from '../../hooks/recipes';
 import { Card, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { AppImage } from '../ui/AppImage';
+import { RecipeThumb } from '../ui/RecipeThumb';
 import { LoadingState, ErrorState } from '../ui/states';
 import { FlameIcon, PlayIcon, CheckIcon } from '../ui/icons';
 import { CookMode } from './CookMode';
@@ -32,15 +32,14 @@ export function RecipeView({ id }: { id: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {recipe.heroImageUrl ? (
-        <AppImage
-          src={recipe.heroImageUrl}
-          alt={recipe.title}
-          priority
-          sizes="(max-width: 1024px) 100vw, 900px"
-          className="aspect-[21/9] w-full rounded-2xl"
-        />
-      ) : null}
+      <RecipeThumb
+        heroImageUrl={recipe.heroImageUrl}
+        title={recipe.title}
+        dishKey={`${recipe.locale}:${recipe.title}`}
+        priority
+        sizes="(max-width: 1024px) 100vw, 900px"
+        className="aspect-[21/9] w-full rounded-2xl"
+      />
 
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">

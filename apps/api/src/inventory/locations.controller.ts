@@ -1,9 +1,24 @@
-import { Body, Controller, Delete, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   createStorageLocationRequestSchema,
+  deleteStorageLocationQuerySchema,
+  updateStorageLocationRequestSchema,
   uuidSchema,
   type CreateStorageLocationRequest,
+  type DeleteStorageLocationQuery,
   type StorageLocation,
+  type UpdateStorageLocationRequest,
 } from '@kitchen/contracts';
 import { ZodPipe } from '../common/http.js';
 import { AuthGuard } from '../common/auth.guard.js';
@@ -30,12 +45,22 @@ export class LocationsController {
     return this.locations.create(household.id, body);
   }
 
+  @Patch(':id')
+  update(
+    @CurrentHousehold() household: HouseholdContext,
+    @Param('id', new ZodPipe(uuidSchema)) id: string,
+    @Body(new ZodPipe(updateStorageLocationRequestSchema)) body: UpdateStorageLocationRequest,
+  ): Promise<StorageLocation> {
+    return this.locations.update(household.id, id, body);
+  }
+
   @Delete(':id')
   async delete(
     @CurrentHousehold() household: HouseholdContext,
     @Param('id', new ZodPipe(uuidSchema)) id: string,
+    @Query(new ZodPipe(deleteStorageLocationQuerySchema)) query: DeleteStorageLocationQuery,
   ): Promise<{ ok: true }> {
-    await this.locations.delete(household.id, id);
+    await this.locations.delete(household.id, id, query);
     return { ok: true };
   }
 }

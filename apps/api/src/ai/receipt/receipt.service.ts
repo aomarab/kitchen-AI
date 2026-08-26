@@ -51,13 +51,15 @@ export class ReceiptService {
     const { householdId, request } = input;
     const locale = await this.localeFor(input.userId);
 
-    // Signed URLs, not object keys — the provider fetches the image over HTTP.
-    // This rejects any key outside the household's prefix and any key uploaded
+    // The provider fetches the image, so it needs a dereferenceable URL:
+    // `providerImageUrl` presigns for public storage and inlines a `data:` URL
+    // when storage is private (a real provider cannot reach loopback/RFC1918).
+    // It rejects any key outside the household's prefix and any key uploaded
     // under a non-capture purpose (recipe_image, avatar), which would otherwise
     // bypass the 2 MB capture ceiling.
     const images = await Promise.all(
       request.photoKeys.map(async (key) => ({
-        url: await this.storage.presignCaptureDownload(householdId, key),
+        url: await this.storage.providerImageUrl(householdId, key),
       })),
     );
 

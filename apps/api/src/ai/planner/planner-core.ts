@@ -144,7 +144,9 @@ function validateCell(
  *
  *  - Unsafe recipes (allergy/halal) are never accepted, in any scope.
  *  - Daily: the whole day must be fully covered; otherwise regenerate (up to
- *    `maxDailyRetries`), then fail with `PLAN_INFEASIBLE`.
+ *    `maxDailyRetries`), then fail with `PLAN_INFEASIBLE` naming the
+ *    shortfalls. An attempt that covers nothing at all stops the retries
+ *    early — see `planDaily`.
  *  - Weekly/monthly: shortfalls are allowed and aggregated into shopping items.
  *  - Monthly is generated week-by-week; because consumption is applied as each
  *    entry is accepted, week 3 already reflects what weeks 1–2 used.
@@ -195,6 +197,7 @@ async function planDaily(
   usedTitles: string[],
 ): Promise<{ snapshot: PantrySnapshot; entries: PlanCoreEntry[] }> {
   const cells = orderedCells(dates, input.slots);
+  let missing: Shortfall[] = [];
 
   for (let attempt = 0; attempt <= input.maxDailyRetries; attempt++) {
     const trial = cloneSnapshot(working);
@@ -208,26 +211,45 @@ async function planDaily(
     const resolvedNames = await resolvePlan(plan, input.resolve);
 
     const entries: PlanCoreEntry[] = [];
-    let feasible = true;
+    const shortfalls: Shortfall[] = [];
+    // Every cell is judged, rather than stopping at the first failure. A
+    // rejected day is the expensive case — it costs another model call — so it
+    // is worth learning from the whole attempt instead of only its first bad
+    // cell: how close the day came, and everything it ran short of.
     for (const cell of cells) {
       const gen = findEntry(plan, cell);
-      if (!gen) {
-        feasible = false;
-        break;
-      }
+      if (!gen) continue;
       const entry = validateCell(gen, resolvedNames, trial, input.constraints);
-      if (!entry.validation.safe || entry.validation.shortfalls.length > 0) {
-        feasible = false;
-        break;
+      if (!entry.validation.safe) continue; // never surface an unsafe recipe
+      if (entry.validation.shortfalls.length > 0) {
+        shortfalls.push(...entry.validation.shortfalls);
+        continue;
       }
       applyConsumption(trial, entry);
       entries.push(entry);
     }
 
-    if (feasible) return { snapshot: trial, entries };
+    if (entries.length === cells.length) return { snapshot: trial, entries };
+    missing = shortfalls;
+
+    // Not one meal in the day could be cooked from these shelves. Retrying
+    // samples the same model against the same pantry, so it will not suddenly
+    // become possible — and every attempt is a paid call the household is
+    // sitting and waiting on. Stop and say what is missing. A day that got
+    // *partly* there is a different matter: the model may simply have spent
+    // an ingredient early, and another arrangement can still work.
+    if (entries.length === 0) break;
   }
 
   throw new AppError('PLAN_INFEASIBLE', 'errors.PLAN_INFEASIBLE', {
     retries: input.maxDailyRetries,
+    // What to buy, or what to relax the plan around, instead of a dead end.
+    missing: mergeShortfalls(missing).map((s) => ({
+      ingredientId: s.ingredientId,
+      nameEn: s.nameEn,
+      nameAr: s.nameAr,
+      shortfall: s.shortfall,
+      unit: s.unit,
+    })),
   });
 }

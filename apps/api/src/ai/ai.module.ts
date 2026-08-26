@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Redis } from 'ioredis';
 import { ENV, type Env } from '../config/env.js';
 import { StorageModule } from '../storage/storage.module.js';
+import { CreditsModule } from '../credits/credits.module.js';
 import type { AiProvider } from './providers/ai-provider.interface.js';
 import {
   AI_PROVIDER,
@@ -45,6 +46,8 @@ import { CaptureController } from './recognition/capture.controller.js';
 import { BarcodeService } from './barcode/barcode.service.js';
 import { ReceiptService } from './receipt/receipt.service.js';
 import { RecipesService } from './recipes/recipes.service.js';
+import { MediaService } from './recipes/media.service.js';
+import { RecipeTranslationService } from './recipes/translation.service.js';
 import { RecipesController } from './recipes/recipes.controller.js';
 import { PlannerService } from './planner/planner.service.js';
 import { PlanService } from './plan/plan.service.js';
@@ -116,6 +119,7 @@ export function createAiProvider(env: Env): AiProvider {
     BullModule.registerQueue({ name: QUEUE_PLAN }, { name: QUEUE_RECEIPT }),
     // Vision needs presigned GET URLs for uploaded photos.
     StorageModule,
+    CreditsModule,
   ],
   controllers: [
     CaptureController,
@@ -169,6 +173,8 @@ export function createAiProvider(env: Env): AiProvider {
     BarcodeService,
     ReceiptService,
     RecipesService,
+    MediaService,
+    RecipeTranslationService,
     PlannerService,
     PlanService,
     ShoppingService,

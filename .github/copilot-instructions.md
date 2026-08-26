@@ -4,25 +4,27 @@ Photograph your kitchen, get meal plans grounded in what you actually have. pnpm
 monorepo: NestJS API, Next.js web, Expo mobile, four shared packages. Fully bilingual en/ar with
 real RTL mirroring.
 
-Authoritative docs: `README.md`, the design spec `docs/superpowers/specs/2026-07-26-kitchen-ai-design.md`
-(sections are cited throughout the code as "spec §N"), the UI spec
-`docs/superpowers/specs/2026-07-27-slack-inspired-ui-design.md`, and the camera-capture spec
-`docs/superpowers/specs/2026-07-27-web-camera-capture-design.md`. Later per-feature specs live beside
-them in `docs/superpowers/specs/` (feedback admin console, device compatibility, publishing
-compliance, recipe media resolution) — read the matching spec before touching that feature.
+Authoritative docs: `README.md` and the design specs in `docs/superpowers/specs/`. Code comments cite
+them as "spec §N" — the section number belongs to the spec that owns that subsystem, so match the
+file to the feature: `2026-07-26-kitchen-ai-design.md` (system baseline),
+`2026-07-27-slack-inspired-ui-design.md` (UI), `2026-07-27-web-camera-capture-design.md` (capture),
+`2026-08-09-product-feedback-admin-console-design.md`, `2026-08-10-device-compatibility-design.md`,
+`2026-08-10-publishing-compliance-design.md`, `2026-08-11-ai-credits-design.md`,
+`2026-08-11-recipe-media-resolution-design.md`. Adding a subsystem means adding a spec, not just
+code.
 
 ## Commands
 
 Run everything from the repo root. The repository pins pnpm 10.34.5 and requires Node >= 20; CI
 uses Node 22 and installs with `pnpm install --frozen-lockfile`.
 
-| Command                                        | Does                                                                                      |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `pnpm dev` / `pnpm build`                      | All apps (turbo). Web dev serves on **3100** (`WEB_PORT`), API on 3333                     |
-| `pnpm typecheck` / `pnpm lint` / `pnpm test`   | Whole workspace                                                                            |
-| `pnpm infra:up` / `infra:down`                 | Docker: PostgreSQL 17 + pgvector, Redis, MinIO                                             |
-| `pnpm db:generate` / `db:migrate` / `db:seed`  | Drizzle migrations + bilingual ingredient catalog (`db:seed -- --dry-run` validates only) |
-| `pnpm format`                                  | Prettier over the repo                                                                     |
+| Command                                       | Does                                                                                      |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `pnpm dev` / `pnpm build`                     | All apps (turbo). Web dev serves on **3100** (`WEB_PORT`), API on 3333                    |
+| `pnpm typecheck` / `pnpm lint` / `pnpm test`  | Whole workspace                                                                           |
+| `pnpm infra:up` / `infra:down`                | Docker: PostgreSQL 17 + pgvector, Redis, MinIO                                            |
+| `pnpm db:generate` / `db:migrate` / `db:seed` | Drizzle migrations + bilingual ingredient catalog (`db:seed -- --dry-run` validates only) |
+| `pnpm format`                                 | Prettier over the repo                                                                    |
 
 CI runs `pnpm build`, `pnpm typecheck`, `pnpm lint`, then `pnpm test`.
 
@@ -94,6 +96,20 @@ Non-obvious system rules:
   `ai.constants.ts`). New external calls follow the same port/adapter shape.
 - **YouTube video ids always come from the YouTube Data API**, never from the model, and are cached
   per recipe.
+- **Every model call goes through `AiGateway`** (`src/ai/ai-gateway.service.ts`). It is the single
+  choke-point: budget check before the call, schema-guarded provider call with one repair retry,
+  usage recorded after. A service that calls a provider directly bypasses cost control and output
+  validation — always route through the gateway.
+- **AI is paid for in credits, not requests.** `CREDIT_COSTS` / `FREE_MONTHLY_GRANT` live in
+  `packages/contracts/src/credits.ts` because prices are contract, not server detail. A household
+  has two buckets — a free grant that resets each calendar month and a purchased balance that never
+  expires (Apple Guideline 3.1.1) — and free is always spent first. `CreditsService.spend` locks the
+  balance row `FOR UPDATE`; that lock is required for split correctness, not an optimisation. Spends
+  return a spend-group id so `refundSpendGroup` can reverse them idempotently when the job fails.
+- **Staff surfaces are guarded server-side.** `@UseGuards(AuthGuard, StaffGuard)` is the security
+  boundary for `/admin/*`; the web `AdminGate` only hides UI. Guard order matters — `AuthGuard` must
+  populate `request.authUser` before `StaffGuard` reads the role. In Nest controllers, declare
+  literal routes (`@Get('stats')`) before `:id` routes.
 
 ## API conventions (`apps/api`)
 

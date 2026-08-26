@@ -6,6 +6,7 @@ import { useFeedbackList, useFeedbackStats } from '../../../hooks/admin';
 import { FeedbackFilters, type FeedbackFilterValue } from '../../../components/admin/FeedbackFilters';
 import { FeedbackList } from '../../../components/admin/FeedbackList';
 import { FeedbackStats } from '../../../components/admin/FeedbackStats';
+import { FeedbackExportButton } from '../../../components/admin/FeedbackExportButton';
 import { Button } from '../../../components/ui/Button';
 import { LoadingState, ErrorState } from '../../../components/ui/states';
 
@@ -23,7 +24,11 @@ export default function AdminPage() {
 
       {stats.data ? <FeedbackStats stats={stats.data} /> : null}
 
-      <FeedbackFilters value={filters} onChange={setFilters} />
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <FeedbackFilters value={filters} onChange={setFilters} />
+        {/* Exports what the filters currently select, not just the loaded pages. */}
+        <FeedbackExportButton filters={filters} />
+      </div>
 
       {list.isLoading ? <LoadingState /> : null}
       {list.isError ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : null}

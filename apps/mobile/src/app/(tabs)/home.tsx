@@ -13,19 +13,35 @@ import {
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { usePlans } from '../../hooks/plans';
-import { useInventory } from '../../hooks/inventory';
-import { ingredientName, formatExpiryLabel, formatMinutes } from '../../lib/format';
-import { todayISODate } from '../../lib/expiry';
-import { colors, radius, spacing, tintFor } from '../../theme';
+import { useInventory, useInventorySnapshot, useLocations } from '../../hooks/inventory';
+import { useShoppingList } from '../../hooks/shopping';
+import { StatTiles } from '../../features/home/StatTiles';
+import { KitchenGlance } from '../../features/home/KitchenGlance';
+import { WeekStrip } from '../../features/home/WeekStrip';
+import { itemName, formatExpiryLabel, formatMinutes } from '../../lib/format';
+import { isExpiringSoon, todayISODate } from '../../lib/expiry';
+import { weekBars } from '../../lib/home-stats';
+import { radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 function ProgressBar({ ratio }: { ratio: number }) {
+  const { colors } = useTheme();
   return (
-    <View style={{ height: 8, borderRadius: radius.pill, backgroundColor: colors.surfaceAlt }}>
+    <View
+      style={{
+        height: 8,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceAlt,
+      }}
+    >
       <View
         style={{
           height: 8,
           borderRadius: radius.pill,
-          backgroundColor: colors.accent,
+          // The week's cooked meals are a brand metric, not an informational
+          // one. This was the only place in the app that painted `accent`, so a
+          // blue bar sat alone on an otherwise violet screen.
+          backgroundColor: colors.primary,
           width: `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%`,
         }}
       />
@@ -34,10 +50,14 @@ function ProgressBar({ ratio }: { ratio: number }) {
 }
 
 export default function Home() {
+  const { colors, tintFor } = useTheme();
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const plansQuery = usePlans();
   const expiringQuery = useInventory({ expiringWithinDays: 3, sort: 'expiry' });
+  const snapshotQuery = useInventorySnapshot();
+  const locationsQuery = useLocations();
+  const shoppingQuery = useShoppingList();
 
   const plan = plansQuery.data?.[0];
   const today = todayISODate();
@@ -48,11 +68,25 @@ export default function Home() {
     return todays.find((entry) => entry.slot === 'dinner') ?? todays[0];
   }, [plan, today]);
 
+  // The bars and the "N of M cooked" line are both read off the same seven
+  // days, so the card can never state a total its own chart contradicts.
+  const week = useMemo(() => (plan ? weekBars(plan.entries, plan.startsOn) : null), [plan]);
   const weekProgress = useMemo(() => {
-    if (!plan || plan.entries.length === 0) return null;
-    const cooked = plan.entries.filter((entry) => entry.state === 'cooked').length;
-    return { cooked, total: plan.entries.length };
-  }, [plan]);
+    if (!week) return null;
+    const total = week.reduce((sum, bar) => sum + bar.planned, 0);
+    if (total === 0) return null;
+    return { cooked: week.reduce((sum, bar) => sum + bar.cooked, 0), total };
+  }, [week]);
+
+  const stock = useMemo(() => snapshotQuery.data?.items ?? [], [snapshotQuery.data]);
+  const soonCount = useMemo(
+    () => stock.filter((item) => isExpiringSoon(item.expiresAt)).length,
+    [stock],
+  );
+  const toBuy = useMemo(
+    () => (shoppingQuery.data ?? []).filter((entry) => !entry.purchased).length,
+    [shoppingQuery.data],
+  );
 
   const expiring = expiringQuery.data?.items ?? [];
 
@@ -78,7 +112,13 @@ export default function Home() {
               {'  ·  '}
               {t('recipe.servings', { count: tonight.servings })}
             </AppText>
-            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: spacing.lg,
+                marginTop: spacing.sm,
+              }}
+            >
               <Button
                 title={t('mobile.home.viewRecipe')}
                 variant="primaryInverse"
@@ -98,8 +138,16 @@ export default function Home() {
         )}
       </Card>
 
+      <StatTiles items={stock.length} expiring={soonCount} shopping={toBuy} />
+
       <View style={{ gap: spacing.sm }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <AppText variant="heading">{t('mobile.home.expiringStrip')}</AppText>
           <Button
             title={t('mobile.home.seeAll')}
@@ -123,7 +171,7 @@ export default function Home() {
                   style={{ width: 150 }}
                 >
                   <AppText variant="bodyStrong" numberOfLines={1}>
-                    {ingredientName(locale, item.ingredient)}
+                    {itemName(locale, item)}
                   </AppText>
                   <Badge
                     tone="warn"
@@ -136,6 +184,8 @@ export default function Home() {
         )}
       </View>
 
+      <KitchenGlance items={stock} locations={locationsQuery.data ?? []} />
+
       {weekProgress ? (
         <Card>
           <AppText variant="heading">{t('mobile.home.weekTitle')}</AppText>
@@ -143,6 +193,7 @@ export default function Home() {
             {t('mobile.home.weekProgress', weekProgress)}
           </AppText>
           <ProgressBar ratio={weekProgress.cooked / weekProgress.total} />
+          <WeekStrip bars={week ?? []} today={today} />
         </Card>
       ) : (
         <Card>
@@ -157,19 +208,16 @@ export default function Home() {
         <ListRow
           title={t('capture.photo')}
           leading={<Icon name="camera" size={22} color={colors.primary} />}
-          showChevron
           onPress={() => router.push('/capture?method=photo')}
         />
         <ListRow
           title={t('capture.barcode')}
           leading={<Icon name="barcode" size={22} color={colors.primary} />}
-          showChevron
           onPress={() => router.push('/capture?method=barcode')}
         />
         <ListRow
           title={t('capture.receipt')}
           leading={<Icon name="receipt" size={22} color={colors.primary} />}
-          showChevron
           onPress={() => router.push('/capture?method=receipt')}
         />
       </View>

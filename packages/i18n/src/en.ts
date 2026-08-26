@@ -35,7 +35,7 @@ export const en = {
   },
 
   common: {
-    appName: 'Kitchen AI',
+    appName: "Mama's Kitchen",
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
@@ -66,6 +66,7 @@ export const en = {
     HOUSEHOLD_REQUIRED: 'Create or join a household first.',
     RATE_LIMITED: 'Too many requests. Please wait a moment.',
     QUOTA_EXCEEDED: "You've used today's AI allowance. It resets tomorrow.",
+    INSUFFICIENT_CREDITS: "You don't have enough credits for this. Top up to keep cooking.",
     AI_UNAVAILABLE: 'The AI service is unavailable right now. Please try again shortly.',
     AI_INVALID_OUTPUT: "The AI response couldn't be read. Please try again.",
     AI_NO_RESULT: 'Nothing was recognised. Try another photo or add items manually.',
@@ -74,6 +75,9 @@ export const en = {
     JOB_FAILED: 'That task failed. You can retry it.',
     INTERNAL_ERROR: 'Something went wrong on our side.',
     offline: "You're offline. Changes will sync when you reconnect.",
+    timedOut: 'That took longer than expected. It may still have finished — check before retrying.',
+    emptyPantry:
+      'Your kitchen is empty, so there is nothing to plan around yet. Add a few items — or snap a photo of your shelves — and try again.',
     feedbackRateLimited: "You've sent us plenty of feedback today. Please try again tomorrow.",
   },
 
@@ -201,7 +205,10 @@ export const en = {
       one: '{count} item missing',
       other: '{count} items missing',
     }),
-    daysCovered: '{covered} of {total} days covered by your pantry',
+    daysCovered: plural('total', {
+      one: '{covered} of 1 day covered by your pantry',
+      other: '{covered} of {total} days covered by your pantry',
+    }),
     empty: 'No plan yet. Generate one from what you have.',
   },
 
@@ -247,7 +254,8 @@ export const en = {
   },
 
   /** Keyed by `cuisineSchema.options` — shared by web and mobile. */
-  cuisine: {    levantine: 'Levantine',
+  cuisine: {
+    levantine: 'Levantine',
     gulf: 'Gulf',
     egyptian: 'Egyptian',
     moroccan: 'Moroccan',

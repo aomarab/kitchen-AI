@@ -1,5 +1,6 @@
 import type {
   AiUsageSummary,
+  CreditBalance,
   Household,
   Ingredient,
   InventoryItem,
@@ -18,6 +19,7 @@ import type {
   Unit,
   User,
 } from '@kitchen/contracts';
+import { FREE_MONTHLY_GRANT } from '@kitchen/contracts';
 
 /* ------------------------------------------------------------------ */
 /* id + date helpers                                                   */
@@ -25,7 +27,10 @@ import type {
 
 /** Deterministic, contract-valid UUID (v4 shape) from a short suffix. */
 export function mockId(suffix: string): string {
-  const tail = suffix.replace(/[^0-9a-f]/gi, '').padStart(12, '0').slice(-12);
+  const tail = suffix
+    .replace(/[^0-9a-f]/gi, '')
+    .padStart(12, '0')
+    .slice(-12);
   return `00000000-0000-4000-8000-${tail}`;
 }
 
@@ -133,12 +138,33 @@ interface IngredientSeed {
 const INGREDIENT_SEEDS: IngredientSeed[] = [
   { key: 'onion', en: 'Onion', ar: 'بصل', category: 'vegetable', unit: 'piece', aliases: ['بصلة'] },
   { key: 'garlic', en: 'Garlic', ar: 'ثوم', category: 'vegetable', unit: 'clove' },
-  { key: 'chicken', en: 'Chicken breast', ar: 'صدر دجاج', category: 'poultry', unit: 'kg', aliases: ['دجاج'] },
-  { key: 'tomato', en: 'Tomato', ar: 'طماطم', category: 'vegetable', unit: 'piece', aliases: ['بندورة'] },
+  {
+    key: 'chicken',
+    en: 'Chicken breast',
+    ar: 'صدر دجاج',
+    category: 'poultry',
+    unit: 'kg',
+    aliases: ['دجاج'],
+  },
+  {
+    key: 'tomato',
+    en: 'Tomato',
+    ar: 'طماطم',
+    category: 'vegetable',
+    unit: 'piece',
+    aliases: ['بندورة'],
+  },
   { key: 'rice', en: 'White rice', ar: 'أرز أبيض', category: 'grain', unit: 'kg', aliases: ['رز'] },
   { key: 'oliveoil', en: 'Olive oil', ar: 'زيت زيتون', category: 'oil', unit: 'ml', staple: true },
   { key: 'salt', en: 'Salt', ar: 'ملح', category: 'spice', unit: 'g', staple: true },
-  { key: 'pepper', en: 'Black pepper', ar: 'فلفل أسود', category: 'spice', unit: 'g', staple: true },
+  {
+    key: 'pepper',
+    en: 'Black pepper',
+    ar: 'فلفل أسود',
+    category: 'spice',
+    unit: 'g',
+    staple: true,
+  },
   { key: 'cumin', en: 'Cumin', ar: 'كمون', category: 'spice', unit: 'g' },
   { key: 'yogurt', en: 'Yogurt', ar: 'لبن زبادي', category: 'dairy', unit: 'ml' },
   { key: 'eggs', en: 'Eggs', ar: 'بيض', category: 'egg', unit: 'piece' },
@@ -203,19 +229,108 @@ interface ItemSeed {
 }
 
 const ITEM_SEEDS: ItemSeed[] = [
-  { key: 'chicken', quantity: 0.8, unit: 'kg', location: FRIDGE, expiresInDays: 1, source: 'photo', confidence: 0.82 },
-  { key: 'yogurt', quantity: 500, unit: 'ml', location: FRIDGE, expiresInDays: 2, source: 'barcode', brand: 'Al Marai' },
-  { key: 'parsley', quantity: 1, unit: 'bunch', location: FRIDGE, expiresInDays: 0, source: 'photo', confidence: 0.55 },
-  { key: 'tomato', quantity: 6, unit: 'piece', location: FRIDGE, expiresInDays: 4, source: 'photo', confidence: 0.9 },
-  { key: 'eggs', quantity: 10, unit: 'piece', location: FRIDGE, expiresInDays: 12, source: 'manual' },
-  { key: 'lemon', quantity: 4, unit: 'piece', location: FRIDGE, expiresInDays: 6, source: 'photo', confidence: 0.88 },
-  { key: 'onion', quantity: 5, unit: 'piece', location: PANTRY, expiresInDays: null, source: 'manual' },
-  { key: 'potato', quantity: 2, unit: 'kg', location: PANTRY, expiresInDays: 20, source: 'receipt' },
-  { key: 'rice', quantity: 1.5, unit: 'kg', location: PANTRY, expiresInDays: null, source: 'manual' },
-  { key: 'oliveoil', quantity: 750, unit: 'ml', location: PANTRY, expiresInDays: null, source: 'manual' },
-  { key: 'garlic', quantity: 8, unit: 'clove', location: PANTRY, expiresInDays: 30, source: 'manual' },
+  {
+    key: 'chicken',
+    quantity: 0.8,
+    unit: 'kg',
+    location: FRIDGE,
+    expiresInDays: 1,
+    source: 'photo',
+    confidence: 0.82,
+  },
+  {
+    key: 'yogurt',
+    quantity: 500,
+    unit: 'ml',
+    location: FRIDGE,
+    expiresInDays: 2,
+    source: 'barcode',
+    brand: 'Al Marai',
+  },
+  {
+    key: 'parsley',
+    quantity: 1,
+    unit: 'bunch',
+    location: FRIDGE,
+    expiresInDays: 0,
+    source: 'photo',
+    confidence: 0.55,
+  },
+  {
+    key: 'tomato',
+    quantity: 6,
+    unit: 'piece',
+    location: FRIDGE,
+    expiresInDays: 4,
+    source: 'photo',
+    confidence: 0.9,
+  },
+  {
+    key: 'eggs',
+    quantity: 10,
+    unit: 'piece',
+    location: FRIDGE,
+    expiresInDays: 12,
+    source: 'manual',
+  },
+  {
+    key: 'lemon',
+    quantity: 4,
+    unit: 'piece',
+    location: FRIDGE,
+    expiresInDays: 6,
+    source: 'photo',
+    confidence: 0.88,
+  },
+  {
+    key: 'onion',
+    quantity: 5,
+    unit: 'piece',
+    location: PANTRY,
+    expiresInDays: null,
+    source: 'manual',
+  },
+  {
+    key: 'potato',
+    quantity: 2,
+    unit: 'kg',
+    location: PANTRY,
+    expiresInDays: 20,
+    source: 'receipt',
+  },
+  {
+    key: 'rice',
+    quantity: 1.5,
+    unit: 'kg',
+    location: PANTRY,
+    expiresInDays: null,
+    source: 'manual',
+  },
+  {
+    key: 'oliveoil',
+    quantity: 750,
+    unit: 'ml',
+    location: PANTRY,
+    expiresInDays: null,
+    source: 'manual',
+  },
+  {
+    key: 'garlic',
+    quantity: 8,
+    unit: 'clove',
+    location: PANTRY,
+    expiresInDays: 30,
+    source: 'manual',
+  },
   { key: 'salt', quantity: 500, unit: 'g', location: SPICE, expiresInDays: null, source: 'manual' },
-  { key: 'cumin', quantity: 100, unit: 'g', location: SPICE, expiresInDays: null, source: 'manual' },
+  {
+    key: 'cumin',
+    quantity: 100,
+    unit: 'g',
+    location: SPICE,
+    expiresInDays: null,
+    source: 'manual',
+  },
 ];
 
 export function buildInventory(): InventoryItem[] {
@@ -226,6 +341,7 @@ export function buildInventory(): InventoryItem[] {
       householdId: HOUSEHOLD_ID,
       ingredient,
       brand: seed.brand ?? null,
+      label: null,
       locationId: seed.location,
       quantity: seed.quantity,
       unit: seed.unit,
@@ -624,6 +740,24 @@ export const mockAiUsage: AiUsageSummary = {
   spentUsd: 0.42,
   budgetUsd: 2,
   callCount: 7,
+};
+
+/* ------------------------------------------------------------------ */
+/* Credits                                                             */
+/* ------------------------------------------------------------------ */
+
+/** The `YYYY-MM` month the free grant currently belongs to (spec §7). */
+function currentGrantPeriod(): string {
+  return NOW.toISOString().slice(0, 7);
+}
+
+/** The balance the app boots with in mock mode: a full free grant, nothing bought. */
+export const mockCredits: CreditBalance = {
+  householdId: HOUSEHOLD_ID,
+  freeBalance: FREE_MONTHLY_GRANT,
+  paidBalance: 0,
+  grantPeriod: currentGrantPeriod(),
+  freeGrant: FREE_MONTHLY_GRANT,
 };
 
 export { HOUSEHOLD_ID, USER_ID, isoDate, isoDateTime };

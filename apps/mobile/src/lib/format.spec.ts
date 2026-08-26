@@ -6,6 +6,7 @@ import { unitSchema, storageLocationTypeSchema, type Unit } from '@kitchen/contr
 import {
   formatExpiryLabel,
   ingredientName,
+  itemName,
   localizedName,
   locationLabel,
   unitLabel,
@@ -93,10 +94,44 @@ describe('storage location labels', () => {
     }
   });
 
-  it('ignores the server-supplied name', () => {
+  it('ignores a seeded English name so Arabic does not read "Fridge"', () => {
     const t = createTranslator('ar');
-    expect(locationLabel(t, { type: 'fridge', name: 'Fridge' } as never)).toBe(
+    expect(locationLabel(t, { type: 'fridge', name: 'Fridge' })).toBe(
       locationLabel(t, { type: 'fridge' }),
     );
+  });
+
+  // A place the household added is named in the user's own words, in whichever
+  // language they typed. Translating that to "Other" loses the only thing that
+  // told them which shelf it was.
+  it('shows a name the household chose itself', () => {
+    const ar = createTranslator('ar');
+    const en = createTranslator('en');
+    expect(locationLabel(ar, { type: 'other', name: 'رف فوق الفرن' })).toBe('رف فوق الفرن');
+    expect(locationLabel(en, { type: 'fridge', name: 'Garage fridge' })).toBe('Garage fridge');
+  });
+
+  it('falls back to the type when the chosen name is blank', () => {
+    const t = createTranslator('en');
+    expect(locationLabel(t, { type: 'pantry', name: '   ' })).toBe(
+      locationLabel(t, { type: 'pantry' }),
+    );
+  });
+});
+
+describe('itemName', () => {
+  const ingredient = { canonicalNameEn: 'Tomato', canonicalNameAr: 'طماطم' } as never;
+
+  it('uses the catalog name in the reader language when the item is not renamed', () => {
+    expect(itemName('en', { label: null, ingredient })).toBe('Tomato');
+    expect(itemName('ar', { label: null, ingredient })).toBe('طماطم');
+  });
+
+  it("prefers the household's own name for the item", () => {
+    expect(itemName('en', { label: 'Cherry toms', ingredient })).toBe('Cherry toms');
+  });
+
+  it('keeps that name in both languages, because the household wrote it once', () => {
+    expect(itemName('ar', { label: 'Cherry toms', ingredient })).toBe('Cherry toms');
   });
 });

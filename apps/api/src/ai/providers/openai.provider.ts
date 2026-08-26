@@ -1,13 +1,10 @@
 import OpenAI from 'openai';
 import { AppError } from '../../common/errors.js';
-import type {
-  AiProvider,
-  StructuredRequest,
-  StructuredResponse,
-} from './ai-provider.interface.js';
+import type { AiProvider, StructuredRequest, StructuredResponse } from './ai-provider.interface.js';
 import {
   PROVIDER_MAX_OUTPUT_TOKENS,
   PROVIDER_MAX_RETRIES,
+  PROVIDER_REASONING_EFFORT,
   PROVIDER_TIMEOUT_MS,
   type ModelTier,
 } from '../ai.constants.js';
@@ -34,7 +31,11 @@ export function toProviderError(error: unknown, operation: string, model: string
   const message = (error as { message?: string }).message ?? String(error);
 
   if (status === 429) {
-    return new AppError('RATE_LIMITED', 'errors.RATE_LIMITED', { operation, model, provider: true });
+    return new AppError('RATE_LIMITED', 'errors.RATE_LIMITED', {
+      operation,
+      model,
+      provider: true,
+    });
   }
   if (status != null && status >= 400 && status < 500) {
     // A rejected request shape (a bad parameter, an unsupported model) is our
@@ -112,6 +113,10 @@ export class OpenAiProvider implements AiProvider {
     }
 
     const maxOutputTokens = PROVIDER_MAX_OUTPUT_TOKENS[request.tier];
+    // Only the reasoning models accept this, and the others 400 on it.
+    const reasoningEffort = usesMaxCompletionTokens(model)
+      ? PROVIDER_REASONING_EFFORT[request.tier]
+      : undefined;
     let completion;
     try {
       completion = await this.client.chat.completions.create(
@@ -122,6 +127,7 @@ export class OpenAiProvider implements AiProvider {
           ...(usesMaxCompletionTokens(model)
             ? { max_completion_tokens: maxOutputTokens }
             : { max_tokens: maxOutputTokens }),
+          ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
         },
         {
           timeout: PROVIDER_TIMEOUT_MS[request.tier],

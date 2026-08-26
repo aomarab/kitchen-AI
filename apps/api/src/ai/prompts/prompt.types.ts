@@ -72,6 +72,12 @@ export interface NameResolveContext {
   candidateNames: string[];
 }
 
+export interface TranslateTitlesContext {
+  fromLocale: Locale;
+  toLocale: Locale;
+  titles: string[];
+}
+
 export interface TranslateRecipeContext {
   fromLocale: Locale;
   toLocale: Locale;

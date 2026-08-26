@@ -5,32 +5,36 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, I18nManager, View } from 'react-native';
-import { directionFor, type Locale } from '@kitchen/i18n';
 import { queryClient } from '../lib/queryClient';
+import { normalizeNativeDirection } from '../lib/direction';
 import { useLocale } from '../lib/locale';
 import { useBootstrap } from '../lib/bootstrap';
 import { useAppFonts } from '../lib/font-loader';
 import { useOfflineSync } from '../hooks/offline-sync';
+import { useNotificationScheduler } from '../hooks/notifications';
+import { configureNotificationHandler } from '../lib/notification-scheduler';
 import { setMockLocale } from '../mocks';
 import { startConnectivityMonitor } from '../stores/connectivity';
 import { useAuthStore } from '../stores/auth';
+import { shouldRedirectSignedOut } from '../lib/entry-route';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { SyncFailuresBanner } from '../components/SyncFailuresBanner';
-import { colors } from '../theme';
+import { useTheme } from '../theme/useTheme';
 
 /**
- * Apply layout direction from the active locale. `I18nManager.forceRTL` only
- * takes full effect after an app reload, so switching language in Settings
- * prompts the user to restart (see settings screen). On a fresh launch the
- * device locale is already applied here.
+ * Layout direction is a *style*, not a native flag.
+ *
+ * `I18nManager.forceRTL` only takes effect at launch, so switching language
+ * used to leave Arabic text inside an English layout until the user restarted
+ * the app — the "corruption" people reported, and the reason Settings had to
+ * show a restart prompt. Every component here is written in logical properties
+ * (`start`/`end`, `marginStart`, `writingDirection`), which is precisely what
+ * Yoga's `direction` resolves, so setting `direction` on the root view mirrors
+ * the whole tree the moment the locale changes.
+ *
+ * The persisted native flag is still cleared once at startup, or an install
+ * upgraded from a build that called `forceRTL(true)` would mirror twice.
  */
-function applyDirection(locale: Locale): void {
-  const rtl = directionFor(locale) === 'rtl';
-  if (I18nManager.isRTL !== rtl) {
-    I18nManager.allowRTL(rtl);
-    I18nManager.forceRTL(rtl);
-  }
-}
 
 /**
  * Sends the user to sign-in the moment the session ends, from wherever they
@@ -44,22 +48,41 @@ function useSignedOutRedirect(ready: boolean): void {
   const status = useAuthStore((state) => state.status);
 
   useEffect(() => {
-    if (!ready || status !== 'signedOut') return;
-    // The auth group is already the destination; redirecting again would fight
-    // the user typing their password.
-    if (segments[0] === '(auth)') return;
+    if (!shouldRedirectSignedOut(ready, status, segments)) return;
     router.replace('/sign-in');
   }, [ready, status, segments, router]);
 }
 
+/**
+ * Hooks that read the TanStack Query *context* cannot live in `RootLayout`,
+ * because `RootLayout` is the component that renders `QueryClientProvider` —
+ * a provider is not inside its own value. Calling one there throws
+ * "No QueryClient set" and takes the entire app down to a red screen.
+ *
+ * `useOfflineSync` gets away with sitting in `RootLayout` only because it
+ * imports the `queryClient` singleton directly instead of reading context.
+ * Anything using `useQuery` needs to be mounted here instead.
+ */
+function QueryScopedEffects() {
+  useNotificationScheduler();
+  return null;
+}
+
 export default function RootLayout() {
-  const { locale } = useLocale();
+  const { locale, dir } = useLocale();
+  const { colors, isDark } = useTheme();
   const ready = useBootstrap();
-  applyDirection(locale);
   useAppFonts();
   useOfflineSync();
   useSignedOutRedirect(ready);
 
+  useEffect(() => {
+    configureNotificationHandler();
+  }, []);
+
+  useEffect(() => {
+    normalizeNativeDirection(I18nManager);
+  }, []);
   // Mocks have no locale header; mirror the app locale into the mock layer so
   // AI-generated plan/entry content comes back in the right language.
   useEffect(() => {
@@ -70,15 +93,21 @@ export default function RootLayout() {
   useEffect(() => startConnectivityMonitor(), []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, direction: dir }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="dark" />
+          <QueryScopedEffects />
+          {/* Follows the *resolved* mode, not the OS: someone who has pinned
+              light on a dark phone would otherwise get dark glyphs on a light
+              bar. `style` names the content, so dark mode wants 'light'. */}
+          <StatusBar style={isDark ? 'light' : 'dark'} />
           <Stack
             screenOptions={{
               headerShown: false,
               contentStyle: { backgroundColor: colors.bg },
-              animation: 'slide_from_right',
+              // Push has to travel *with* the reading direction, or Arabic
+              // screens arrive from the side the back gesture lives on.
+              animation: dir === 'rtl' ? 'slide_from_left' : 'slide_from_right',
             }}
           />
           {ready ? null : (
@@ -94,7 +123,7 @@ export default function RootLayout() {
                 backgroundColor: colors.bg,
               }}
             >
-              <ActivityIndicator size="large" color={colors.primary} />
+              <ActivityIndicator size="large" color={colors.primaryText} />
             </View>
           )}
           <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, start: 0, end: 0 }}>

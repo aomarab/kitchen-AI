@@ -4,6 +4,7 @@ import type {
   StorageLocation,
   StorageLocationType,
   Unit,
+  IngredientCategory,
 } from '@kitchen/contracts';
 import type { CaptureSource } from '../stores/capture';
 
@@ -30,6 +31,7 @@ export interface ReviewRow {
   expiresAt: string | null;
   confidence: number;
   photoKey: string | null;
+  category: IngredientCategory;
   include: boolean;
 }
 
@@ -62,6 +64,7 @@ export function initialReviewRows(
     expiresAt: item.suggestedExpiresAt,
     confidence: item.confidence,
     photoKey: item.photoKey,
+    category: item.category,
     include: true,
   }));
 }
@@ -79,6 +82,9 @@ export function buildInventoryInputs(
       // Recognition returns both names. Sending only one makes the API file it
       // under both languages in the globally shared ingredient catalog.
       rawNameAr: row.ingredientId ? undefined : row.nameAr,
+      // Recognition already worked out what kind of thing this is. Dropping it
+      // files the item under "other" in the shared catalog, permanently.
+      rawCategory: row.ingredientId ? undefined : row.category,
       locationId: row.locationId,
       quantity: row.quantity,
       unit: row.unit,

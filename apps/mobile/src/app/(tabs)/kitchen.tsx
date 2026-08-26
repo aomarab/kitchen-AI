@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlatList, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { InventoryItem, StorageLocation } from '@kitchen/contracts';
 import {
   Screen,
@@ -10,6 +10,7 @@ import {
   ListRow,
   Badge,
   SegmentedControl,
+  FoodIcon,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -17,7 +18,7 @@ import {
 import type { BadgeTone } from '../../components/Badge';
 import { useFormat } from '../../hooks/useFormat';
 import { useInventory, useLocations } from '../../hooks/inventory';
-import { ingredientName, formatMeasure, formatExpiryLabel, locationLabel } from '../../lib/format';
+import { itemName, formatMeasure, formatExpiryLabel, locationLabel } from '../../lib/format';
 import { expiryStatus, type ExpiryStatus } from '../../lib/expiry';
 import { spacing } from '../../theme';
 
@@ -34,8 +35,11 @@ const EXPIRY_TONE: Record<ExpiryStatus, BadgeTone> = {
 export default function Kitchen() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
+  // Arriving from the home dashboard's location chart opens this list already
+  // filtered; the chips stay live afterwards, so the param is only a seed.
+  const params = useLocalSearchParams<{ locationId?: string }>();
   const [search, setSearch] = useState('');
-  const [locationId, setLocationId] = useState<string | undefined>(undefined);
+  const [locationId, setLocationId] = useState<string | undefined>(params.locationId);
   const [sort, setSort] = useState<Sort>('expiry');
 
   const locations = useLocations();
@@ -47,11 +51,23 @@ export default function Kitchen() {
     const expiryLabel = formatExpiryLabel(t, locale, item.expiresAt, prefs);
     return (
       <ListRow
-        title={ingredientName(locale, item.ingredient)}
+        title={itemName(locale, item)}
         subtitle={formatMeasure(t, locale, item.quantity, item.unit, prefs)}
         onPress={() => router.push(`/item/${item.id}`)}
         showChevron
-        trailing={expiryLabel ? <Badge tone={EXPIRY_TONE[status]} label={expiryLabel} /> : undefined}
+        leading={
+          <FoodIcon
+            item={{
+              label: item.label,
+              nameEn: item.ingredient.canonicalNameEn,
+              nameAr: item.ingredient.canonicalNameAr,
+              category: item.ingredient.category,
+            }}
+          />
+        }
+        trailing={
+          expiryLabel ? <Badge tone={EXPIRY_TONE[status]} label={expiryLabel} /> : undefined
+        }
       />
     );
   };
@@ -107,7 +123,11 @@ export default function Kitchen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: spacing.lg, paddingTop: 0, gap: spacing.sm }}
+          contentContainerStyle={{
+            padding: spacing.lg,
+            paddingTop: 0,
+            gap: spacing.sm,
+          }}
           refreshing={inventory.isRefetching}
           onRefresh={() => void inventory.refetch()}
         />

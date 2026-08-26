@@ -13,6 +13,7 @@ import {
 import {
   ContractViolationError,
   NetworkError,
+  TimeoutError,
   createMemoryTokenStore,
   parseErrorBody,
   type TokenStore,
@@ -49,6 +50,13 @@ export interface CallOptions<K extends RouteName> {
   /** Sent as `idempotency-key`; required by job-creating routes to be safe on retry. */
   idempotencyKey?: string;
   signal?: AbortSignal;
+  /**
+   * Overrides the client-wide timeout for this one call. Routes that wait on a
+   * model (vision recognition) legitimately run far longer than an ordinary
+   * request, and the default budget would abort work the server then completes
+   * anyway — spending the user's AI credit on a result they never see.
+   */
+  timeoutMs?: number;
 }
 
 type RequiredKeys<K extends RouteName> =
@@ -206,14 +214,25 @@ export function createApiClient(options: ApiClientOptions) {
       payload = JSON.stringify(callOptions.body);
     }
 
+    const budget = callOptions.timeoutMs ?? timeoutMs;
     const timeout = new AbortController();
-    const timer = setTimeout(() => timeout.abort(), timeoutMs);
+    const timer = setTimeout(() => timeout.abort(), budget);
     const { signal, dispose } = combineSignals(callOptions.signal, timeout.signal);
 
     let response: Response;
     try {
       response = await doFetch(url, { method: route.method, headers, body: payload, signal });
     } catch (cause) {
+      // Which controller fired decides what actually went wrong. Reporting all
+      // three as one "network failed" is what made a slow AI call look like a
+      // dropped connection.
+      if (timeout.signal.aborted) {
+        throw new TimeoutError(
+          `Request to ${route.method} ${path} timed out after ${budget}ms`,
+          budget,
+        );
+      }
+      if (callOptions.signal?.aborted) throw cause;
       throw new NetworkError(`Request to ${route.method} ${path} failed`, cause);
     } finally {
       clearTimeout(timer);

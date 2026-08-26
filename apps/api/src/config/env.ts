@@ -78,6 +78,27 @@ const envSchema = z.object({
 
   YOUTUBE_API_KEY: z.string().default(''),
   OPEN_FOOD_FACTS_URL: z.string().url().default('https://world.openfoodfacts.org'),
+
+  /**
+   * When true, store receipts are accepted without calling RevenueCat, so the
+   * whole purchase path runs offline and free with no RevenueCat account —
+   * exactly like AI_MOCK, and defaulting the same way. The enum+transform (not
+   * `z.coerce.boolean`, which coerces the string "false" to true) is deliberate:
+   * an operator setting `PAYMENTS_MOCK=false` must actually switch to the real
+   * verifier, not silently stay on the always-approves mock.
+   */
+  PAYMENTS_MOCK: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
+  /** RevenueCat REST key; used by the verifier to confirm a store receipt. */
+  REVENUECAT_API_KEY: z.string().default(''),
+  /**
+   * Shared secret compared (constant-time) against the webhook's Authorization
+   * header. This is the only thing standing between the internet and free
+   * credits — the webhook is machine-to-machine and behind no user auth.
+   */
+  REVENUECAT_WEBHOOK_SECRET: z.string().default(''),
 });
 
 const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
@@ -94,6 +115,20 @@ const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
       path: ['OPENAI_API_KEY'],
       message: 'is required when AI_MOCK is false',
     });
+  }
+  // With payments live the webhook signature is the only barrier to free
+  // credits, and the verifier cannot call RevenueCat without a key — a missing
+  // secret or key would silently open or break the money path.
+  if (env.NODE_ENV === 'production' && !env.PAYMENTS_MOCK) {
+    for (const key of ['REVENUECAT_API_KEY', 'REVENUECAT_WEBHOOK_SECRET'] as const) {
+      if (env[key].trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: 'is required when PAYMENTS_MOCK is false',
+        });
+      }
+    }
   }
   if (
     env.NODE_ENV === 'production' &&

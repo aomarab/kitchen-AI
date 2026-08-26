@@ -1,4 +1,5 @@
 import type { Locale } from '@kitchen/i18n';
+import type { Palette, ThemeMode, Tint } from './palettes';
 
 /**
  * Design tokens. Kept flat and dependency-free so any component can pull colours,
@@ -7,93 +8,8 @@ import type { Locale } from '@kitchen/i18n';
  * logical style keys (start/end) at the call site.
  */
 
-export const colors = {
-  /** The page. Sampled from the requested reference, whose grounds measure
-   *  #eef0f2–#f5f7fb across three screens with pure-white cards on top; this is
-   *  their neutral centre, carrying two units of blue so the violet family
-   *  still owns the screen. Not pure white: a white page and a white card are
-   *  the same surface, and the card stops existing — `palette.spec` holds them
-   *  apart. */
-  bg: '#F4F4F8',
-  surface: '#FFFFFF',
-  /** Deepened when the page went near-white. At #F6F0FE it measured 7.5 from
-   *  the new ground — an `alt` card that had quietly stopped being a card,
-   *  which the surface-separation guard caught on its first run. */
-  surfaceAlt: '#EDE6FB',
-  /** Neutralised when the page went near-white. At the old lavender #D9C9F5 a
-   *  card's outline was more saturated than either surface it sat between, so
-   *  white cards on a near-white page picked up a visible purple fringe. Same
-   *  lightness, violet only as a cast. */
-  border: '#E2DFE9',
-  /** The kit sets body copy in pure black. Carrying a little of the violet
-   *  into it keeps the screen feeling like one family. */
-  text: '#1B1130',
-  textMuted: '#584D75',
-  textInverse: '#FFFFFF',
-  /** The kit's violet, verbatim: measured at 90% of the CTA fill's interior
-   *  pixels, so this is the real value and not an antialiased edge. */
-  primary: '#814BE3',
-  primaryPressed: '#6229C4',
-  primarySoft: '#F4EDFE',
-  /** Cook mode inverts, where `primary` sits at 1.2:1 and the fill vanishes. */
-  primaryInverse: '#D6C2FF',
-  /** The kit's chart/chat blue is #3478F7, which is 3.1:1 on white and fails
-   *  AA as text. Darkened until it passes while staying the same blue. */
-  accent: '#2F5FD0',
-  accentSoft: '#E7EEFD',
-  /** The kit's amber #F6C855 is a chart fill, far too light to set text in. */
-  warn: '#845309',
-  warnSoft: '#FCF0D9',
-  danger: '#B32F51',
-  dangerSoft: '#FDECF0',
-  success: '#1E7A4C',
-  successSoft: '#E4F3EA',
-  /** Cook mode runs inverted. Named so the intent survives a palette change. */
-  surfaceInverse: '#1E1236',
-  textInverseMuted: '#B9A9D9',
-  overlay: 'rgba(27,17,48,0.45)',
-} as const;
-
-/**
- * The reference fills cards with low-saturation tints rather than white, and
- * rotates through them down a list. Each tint carries its own foreground so a
- * caller never has to guess which text colour clears AA on it — `palette.spec`
- * asserts every pair. Solid colours, never an opacity tint: a translucent fill
- * composites against whatever is behind it and the contrast maths stops holding.
- */
-export const tints = [
-  { bg: '#DED0FA', fg: '#5B21B6', name: 'lavender' },
-  { bg: '#E6F5EE', fg: '#166B48', name: 'mint' },
-  { bg: '#FCE9F1', fg: '#9C2A5C', name: 'blush' },
-  { bg: '#DCE8FA', fg: '#1F4FA8', name: 'sky' },
-] as const;
-
-export type Tint = (typeof tints)[number];
-
-/**
- * The hero gradient, deep violet running up toward the brand violet. Every
- * stop — and every colour interpolated between them — stays dark enough that
- * `textInverse`, `textInverseMuted` and `primaryInverse` all clear AA on it;
- * the worst interpolated point measures 4.58:1.
- *
- * Ending on the kit's own #814BE3 is the tempting move and it does not work:
- * that violet is light enough to drop `primaryInverse` to 2.79:1, so the ghost
- * button's label on the hero would fail. The ramp stops at #5320A6, the
- * lightest violet that still carries all three. `palette.spec` samples the
- * interpolation rather than the three stops, because a gradient's midpoint can
- * be lighter than either end it was mixed from.
- */
-export const gradientHero = ['#2E1065', '#3F1C87', '#5320A6'] as const;
-
-/** Rotates the tints down a list so adjacent cards never repeat. Negative
- *  indices wrap forwards rather than falling off the front of the tuple. */
-export function tintFor(index: number): Tint {
-  const count = tints.length;
-  const wrapped = ((Math.trunc(index) % count) + count) % count;
-  return tints[wrapped] ?? tints[0];
-}
-
-export type ColorToken = keyof typeof colors;
+export { paletteFor, palettes, THEME_FAMILIES, DEFAULT_THEME_FAMILY } from './palettes';
+export type { Palette, PaletteColors, Tint, ThemeFamily, ThemeMode, ColorToken } from './palettes';
 
 export const spacing = {
   xs: 4,
@@ -124,22 +40,27 @@ export const radius = {
  * carried most of the separation on its own and the shadow only had to hint.
  * White-on-near-white leaves the shadow doing that work alone.
  */
-export const shadow = {
-  card: {
-    shadowColor: '#1B1130',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
-  },
-  raised: {
-    shadowColor: '#1B1130',
-    shadowOpacity: 0.14,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
-  },
-} as const;
+export function shadowFor(palette: Palette) {
+  const { shadowColor, shadowScale } = palette;
+  return {
+    card: {
+      shadowColor,
+      shadowOpacity: 0.08 * shadowScale,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 3,
+    },
+    raised: {
+      shadowColor,
+      shadowOpacity: 0.14 * shadowScale,
+      shadowRadius: 28,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 8,
+    },
+  } as const;
+}
+
+export type Shadow = ReturnType<typeof shadowFor>;
 
 /**
  * Typography scale. Arabic runs at a larger line-height than Latin per spec §7,
@@ -171,7 +92,10 @@ const SCALE = {
   button: { fontSize: 16, fontWeight: '700' as const, letterSpacing: 0.2 },
   label: { fontSize: 14, fontWeight: '500' as const, letterSpacing: 0.1 },
   caption: { fontSize: 12, fontWeight: '500' as const, letterSpacing: 0.1 },
-} satisfies Record<string, { fontSize: number; fontWeight: TextStyleToken['fontWeight']; letterSpacing: number }>;
+} satisfies Record<
+  string,
+  { fontSize: number; fontWeight: TextStyleToken['fontWeight']; letterSpacing: number }
+>;
 
 export type TypographyVariant = keyof typeof SCALE;
 
@@ -182,7 +106,7 @@ export type TypographyVariant = keyof typeof SCALE;
  * it stops at 1.6x. Content is uncapped: at the largest accessibility sizes the
  * user has asked for very large text and long-form copy should give it to them.
  */
-const CHROME_MAX_FONT_SCALE = 1.6;
+export const CHROME_MAX_FONT_SCALE = 1.6;
 const CHROME_VARIANTS: readonly TypographyVariant[] = ['button', 'label', 'caption'];
 
 /**
@@ -211,3 +135,37 @@ export function typography(locale: Locale): Record<TypographyVariant, TextStyleT
 }
 
 export const hitSlop = 12 as const;
+
+/**
+ * Turns the stored preference into the mode actually rendered.
+ *
+ * Split out of the hook and kept free of React Native so it can be tested
+ * directly: `useColorScheme` returns `null` before the OS has reported in, and
+ * on that tick 'system' has to resolve to *something*. Light is the honest
+ * default — it is what every install before the picker existed rendered — but
+ * the branch is easy to write as `scheme !== 'light' ? 'dark' : 'light'`, which
+ * flashes a dark screen at every cold start on a light phone.
+ */
+export function resolveThemeMode(
+  preference: 'system' | ThemeMode,
+  // Widened past `'light' | 'dark'` on purpose: React Native's
+  // `ColorSchemeName` also carries `'unspecified'`, which must land on light
+  // rather than being narrowed away at the call site with a cast.
+  systemScheme: string | null | undefined,
+): ThemeMode {
+  if (preference !== 'system') return preference;
+  return systemScheme === 'dark' ? 'dark' : 'light';
+}
+
+/**
+ * Rotates the tints down a list so adjacent cards never repeat. Negative
+ * indices wrap forwards rather than falling off the front of the tuple.
+ *
+ * Kept as a free function taking the tuple, so the palette guard can exercise
+ * the wrapping arithmetic without standing up a React renderer.
+ */
+export function tintIn(tints: readonly Tint[], index: number): Tint {
+  const count = tints.length;
+  const wrapped = ((Math.trunc(index) % count) + count) % count;
+  return tints[wrapped] ?? tints[0]!;
+}

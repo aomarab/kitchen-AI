@@ -7,7 +7,8 @@ import { AppText, Button, Badge, LoadingState } from '../../../components';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe } from '../../../hooks/recipe';
 import { formatMinutes } from '../../../lib/format';
-import { colors, spacing } from '../../../theme';
+import { spacing } from '../../../theme';
+import { useTheme } from '../../../theme/useTheme';
 
 /**
  * Full-screen cook mode: one step at a time, large type, forward/back stepping.
@@ -19,6 +20,7 @@ export default function CookMode() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useTheme();
   const recipe = useRecipe(id ?? null, locale);
   const [step, setStep] = useState(0);
 
@@ -37,7 +39,9 @@ export default function CookMode() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.surfaceInverse }}>
       <View style={{ flex: 1, padding: spacing.xl, gap: spacing.lg }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
           <AppText variant="label" style={{ color: colors.textInverseMuted }}>
             {t('mobile.recipe.stepProgress', {
               current: formatMinutes(locale, step + 1, prefs),
@@ -55,7 +59,7 @@ export default function CookMode() {
         <View style={{ flex: 1, justifyContent: 'center', gap: spacing.lg }}>
           {current.durationMinutes ? (
             <Badge
-              tone="warn"
+              tone="inverse"
               label={t('recipe.cookTime', {
                 minutes: formatMinutes(locale, current.durationMinutes, prefs),
               })}
@@ -73,7 +77,7 @@ export default function CookMode() {
         <View style={{ flexDirection: 'row', gap: spacing.md }}>
           <Button
             title={t('mobile.recipe.prev')}
-            variant="secondary"
+            variant="secondaryInverse"
             disabled={step === 0}
             onPress={() => setStep((s) => Math.max(0, s - 1))}
             style={{ flex: 1 }}

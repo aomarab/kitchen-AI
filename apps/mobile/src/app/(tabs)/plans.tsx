@@ -23,17 +23,23 @@ export default function Plans() {
   const [selectedDate, setSelectedDate] = useState(todayISODate());
   const plans = usePlans();
   const plan = plans.data?.[0];
+  // The empty state carries its own generate CTA. Showing the header button
+  // too put two identical primary actions on one screen.
+  const isEmpty = !plan || plan.entries.length === 0;
+  const showHeaderAction = !plans.isLoading && !plans.isError && !isEmpty;
 
   return (
     <Screen scroll refreshing={plans.isRefetching} onRefresh={() => void plans.refetch()}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <AppText variant="title">{t('plans.title')}</AppText>
-        <Button
-          title={t('plans.generate')}
-          icon="plus"
-          fullWidth={false}
-          onPress={() => router.push('/generate-plan')}
-        />
+        {showHeaderAction ? (
+          <Button
+            title={t('plans.generate')}
+            icon="plus"
+            fullWidth={false}
+            onPress={() => router.push('/generate-plan')}
+          />
+        ) : null}
       </View>
 
       <SegmentedControl<PlanView>
@@ -51,7 +57,7 @@ export default function Plans() {
           <LoadingState />
         ) : plans.isError ? (
           <ErrorState error={plans.error} onRetry={() => void plans.refetch()} />
-        ) : !plan || plan.entries.length === 0 ? (
+        ) : isEmpty ? (
           <EmptyState
             icon="plans"
             title={t('plans.empty')}

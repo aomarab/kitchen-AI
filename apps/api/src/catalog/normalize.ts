@@ -60,6 +60,19 @@ export function ingredientNameMatches(rawQuery: string): SQL {
   )`;
 }
 
+/**
+ * The same match, widened to a household's own name for an item.
+ *
+ * A household that renames an item then searched for the name it just gave
+ * it and found nothing, because the query only ever saw the global catalog.
+ * Catalog search deliberately keeps using {@link ingredientNameMatches} — a
+ * label belongs to one household's shelf, not to the shared dictionary.
+ */
+export function inventoryNameMatches(rawQuery: string, label: AnyColumn): SQL {
+  const like = `%${escapeLike(normalizeArabic(rawQuery))}%`;
+  return sql`(${ingredientNameMatches(rawQuery)} or ${normalizedSql(label)} like ${like})`;
+}
+
 /** A WHERE condition for an exact normalized match (used to resolve names). */
 export function ingredientNameEquals(rawName: string): SQL {
   const normalized = normalizeArabic(rawName);

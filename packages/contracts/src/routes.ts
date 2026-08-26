@@ -26,6 +26,7 @@ import {
 import {
   bulkCreateInventoryRequestSchema,
   createStorageLocationRequestSchema,
+  deleteStorageLocationQuerySchema,
   inventoryEventSchema,
   inventoryItemSchema,
   listInventoryQuerySchema,
@@ -35,6 +36,7 @@ import {
   syncEventsRequestSchema,
   syncEventsResponseSchema,
   updateInventoryItemRequestSchema,
+  updateStorageLocationRequestSchema,
 } from './inventory.js';
 import {
   getRecipeQuerySchema,
@@ -47,6 +49,7 @@ import {
   addShoppingItemsRequestSchema,
   checkoutShoppingRequestSchema,
   generatePlanRequestSchema,
+  getPlanQuerySchema,
   listPlansQuerySchema,
   mealPlanEntrySchema,
   mealPlanSchema,
@@ -70,8 +73,15 @@ import {
   feedbackStatsSchema,
   feedbackSummarySchema,
   listFeedbackQuerySchema,
+  listProductCommentsQuerySchema,
+  listProductFeedbackQuerySchema,
+  productCommentSchema,
+  productFeedbackRowSchema,
+  productFeedbackSchema,
+  productFeedbackSummarySchema,
   submitFeedbackRequestSchema,
   submitFeedbackResponseSchema,
+  submitProductFeedbackRequestSchema,
   updateFeedbackRequestSchema,
 } from './feedback.js';
 import {
@@ -79,6 +89,12 @@ import {
   updateReminderSettingsRequestSchema,
 } from './reminders.js';
 import { idParamSchema, paginatedSchema, uuidSchema } from './common.js';
+import {
+  creditBalanceSchema,
+  confirmPurchaseRequestSchema,
+  purchaseIntentRequestSchema,
+  purchaseIntentSchema,
+} from './credits.js';
 
 /**
  * Single registry of every HTTP endpoint. `@kitchen/api-client` and the MSW
@@ -273,12 +289,22 @@ export const routes = {
     body: createStorageLocationRequestSchema,
     response: storageLocationSchema,
   },
+  updateLocation: {
+    method: 'PATCH',
+    path: '/inventory/locations/:id',
+    auth: true,
+    household: true,
+    params: idParamSchema,
+    body: updateStorageLocationRequestSchema,
+    response: storageLocationSchema,
+  },
   deleteLocation: {
     method: 'DELETE',
     path: '/inventory/locations/:id',
     auth: true,
     household: true,
     params: idParamSchema,
+    query: deleteStorageLocationQuerySchema,
     response: emptyResponse,
   },
   listInventory: {
@@ -441,6 +467,7 @@ export const routes = {
     auth: true,
     household: true,
     params: idParamSchema,
+    query: getPlanQuerySchema,
     response: mealPlanSchema,
   },
   deletePlan: {
@@ -568,6 +595,70 @@ export const routes = {
     params: idParamSchema,
     body: updateFeedbackRequestSchema,
     response: feedbackDetailSchema,
+  },
+
+  /* ---------------- Product feedback ---------------- */
+  // Household-scoped: the route names an item in your kitchen, and the server
+  // resolves which product that is. You cannot review what you do not have.
+  submitProductFeedback: {
+    method: 'POST',
+    path: '/inventory/items/:id/feedback',
+    auth: true,
+    household: true,
+    params: idParamSchema,
+    body: submitProductFeedbackRequestSchema,
+    response: productFeedbackSchema,
+  },
+  getProductFeedback: {
+    method: 'GET',
+    path: '/inventory/items/:id/feedback',
+    auth: true,
+    household: true,
+    params: idParamSchema,
+    response: productFeedbackSummarySchema,
+  },
+  adminListProductFeedback: {
+    method: 'GET',
+    path: '/admin/product-feedback',
+    auth: true,
+    household: false,
+    staff: true,
+    query: listProductFeedbackQuerySchema,
+    response: paginatedSchema(productFeedbackRowSchema),
+  },
+  adminListProductComments: {
+    method: 'GET',
+    path: '/admin/product-feedback/comments',
+    auth: true,
+    household: false,
+    staff: true,
+    query: listProductCommentsQuerySchema,
+    response: paginatedSchema(productCommentSchema),
+  },
+
+  /* ---------------- Credits ---------------- */
+  getCredits: {
+    method: 'GET',
+    path: '/credits',
+    auth: true,
+    household: true,
+    response: creditBalanceSchema,
+  },
+  createPurchaseIntent: {
+    method: 'POST',
+    path: '/credits/intents',
+    auth: true,
+    household: true,
+    body: purchaseIntentRequestSchema,
+    response: purchaseIntentSchema,
+  },
+  confirmPurchase: {
+    method: 'POST',
+    path: '/credits/purchases',
+    auth: true,
+    household: true,
+    body: confirmPurchaseRequestSchema,
+    response: creditBalanceSchema,
   },
 
   /* ---------------- Wellness reminders ---------------- */

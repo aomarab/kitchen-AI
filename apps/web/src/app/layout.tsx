@@ -20,7 +20,7 @@ const tajawal = Tajawal({
 });
 
 export const metadata: Metadata = {
-  title: 'Kitchen AI',
+  title: "Mama's Kitchen",
   description: 'Turn what is already in your kitchen into a meal plan.',
 };
 
