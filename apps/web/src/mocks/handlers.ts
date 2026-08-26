@@ -23,6 +23,7 @@ import type {
   UpdateInventoryItemRequest,
   UpdateMeRequest,
   UpdateProfileRequest,
+  UpdateReminderSettingsRequest,
 } from '@kitchen/contracts';
 import { DEFAULT_SLOTS_BY_SCOPE } from '@kitchen/contracts';
 import { API_URL } from '../lib/config';
@@ -210,6 +211,12 @@ export const handlers = [
     const body = (await request.json()) as UpdateProfileRequest;
     db.profile = { ...db.profile, ...body };
     return HttpResponse.json(db.profile);
+  }),
+  http.get(u('/reminders/settings'), async () => HttpResponse.json(db.reminderSettings)),
+  http.patch(u('/reminders/settings'), async ({ request }) => {
+    const body = (await request.json()) as UpdateReminderSettingsRequest;
+    db.reminderSettings = { ...db.reminderSettings, ...body };
+    return HttpResponse.json(db.reminderSettings);
   }),
 
   /* ---------- Catalog ---------- */
