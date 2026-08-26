@@ -57,10 +57,26 @@ describe('ReminderSettingsView', () => {
   it('clamps the hydration goal to the contract max on blur', async () => {
     call.mockResolvedValue(settings);
     renderView();
-    const input = await screen.findByLabelText(/daily water goal/i);
+    const input = (await screen.findByLabelText(/daily water goal/i)) as HTMLInputElement;
     fireEvent.change(input, { target: { value: '99' } });
     fireEvent.blur(input);
     await waitFor(() => expect(call).toHaveBeenCalledWith('updateReminderSettings', { body: { hydrationGoalCups: 20 } }));
+    // the uncontrolled field must not keep showing the rejected out-of-range entry
+    expect(input.value).toBe('20');
+  });
+
+  it('snaps the field to the bound even when the clamp yields no patch', async () => {
+    call.mockResolvedValue({ ...settings, hydrationGoalCups: 20 });
+    renderView();
+    const input = (await screen.findByLabelText(/daily water goal/i)) as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe('20'));
+    fireEvent.change(input, { target: { value: '25' } });
+    fireEvent.blur(input);
+    // 25 clamps to 20, which equals the persisted value → no mutation …
+    await new Promise((r) => setTimeout(r, 0));
+    expect(call).not.toHaveBeenCalledWith('updateReminderSettings', { body: { hydrationGoalCups: 20 } });
+    // … but the display must still correct itself from 25 back to 20
+    expect(input.value).toBe('20');
   });
 
   it('does not patch when the hydration goal is unchanged', async () => {

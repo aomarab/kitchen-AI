@@ -1,5 +1,6 @@
 'use client';
 
+import type { FocusEvent } from 'react';
 import type { BreakCadenceMinutes, ReminderSettings, UpdateReminderSettingsRequest } from '@kitchen/contracts';
 import { translateErrorKey } from '@kitchen/i18n';
 import { useLocale } from '../../lib/locale';
@@ -34,9 +35,17 @@ export function ReminderSettingsView() {
     { key: 'hydrationEnabled', label: t('web.reminders.hydrationLabel'), hint: t('web.reminders.hydrationHint') },
   ];
 
-  const clampHour = (raw: string, current: number, key: 'quietHoursStart' | 'quietHoursEnd') => {
-    const next = Math.min(23, Math.max(0, Math.round(Number(raw))));
-    if (Number.isFinite(next) && next !== current) save({ [key]: next });
+  const clampHour = (
+    e: FocusEvent<HTMLInputElement>,
+    current: number,
+    key: 'quietHoursStart' | 'quietHoursEnd',
+  ) => {
+    const parsed = Math.round(Number(e.target.value));
+    const next = Number.isFinite(parsed) ? Math.min(23, Math.max(0, parsed)) : current;
+    // Snap the uncontrolled field to the clamped value so it never shows an
+    // out-of-range entry that differs from what was persisted.
+    e.target.value = String(next);
+    if (next !== current) save({ [key]: next });
   };
 
   return (
@@ -108,8 +117,12 @@ export function ReminderSettingsView() {
             max={20}
             defaultValue={settings.hydrationGoalCups}
             onBlur={(e) => {
-              const next = Math.min(20, Math.max(1, Math.round(Number(e.target.value))));
-              if (Number.isFinite(next) && next !== settings.hydrationGoalCups) save({ hydrationGoalCups: next });
+              const parsed = Math.round(Number(e.target.value));
+              const next = Number.isFinite(parsed)
+                ? Math.min(20, Math.max(1, parsed))
+                : settings.hydrationGoalCups;
+              e.target.value = String(next);
+              if (next !== settings.hydrationGoalCups) save({ hydrationGoalCups: next });
             }}
             className="w-32"
           />
@@ -130,7 +143,7 @@ export function ReminderSettingsView() {
               min={0}
               max={23}
               defaultValue={settings.quietHoursStart}
-              onBlur={(e) => clampHour(e.target.value, settings.quietHoursStart, 'quietHoursStart')}
+              onBlur={(e) => clampHour(e, settings.quietHoursStart, 'quietHoursStart')}
               className="w-24"
             />
           </Field>
@@ -142,7 +155,7 @@ export function ReminderSettingsView() {
               min={0}
               max={23}
               defaultValue={settings.quietHoursEnd}
-              onBlur={(e) => clampHour(e.target.value, settings.quietHoursEnd, 'quietHoursEnd')}
+              onBlur={(e) => clampHour(e, settings.quietHoursEnd, 'quietHoursEnd')}
               className="w-24"
             />
           </Field>
