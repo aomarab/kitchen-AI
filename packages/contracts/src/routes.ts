@@ -74,6 +74,10 @@ import {
   submitFeedbackResponseSchema,
   updateFeedbackRequestSchema,
 } from './feedback.js';
+import {
+  reminderSettingsSchema,
+  updateReminderSettingsRequestSchema,
+} from './reminders.js';
 import { idParamSchema, paginatedSchema, uuidSchema } from './common.js';
 
 /**
@@ -564,6 +568,23 @@ export const routes = {
     params: idParamSchema,
     body: updateFeedbackRequestSchema,
     response: feedbackDetailSchema,
+  },
+
+  /* ---------------- Wellness reminders ---------------- */
+  getReminderSettings: {
+    method: 'GET',
+    path: '/reminders/settings',
+    auth: true,
+    household: true,
+    response: reminderSettingsSchema,
+  },
+  updateReminderSettings: {
+    method: 'PATCH',
+    path: '/reminders/settings',
+    auth: true,
+    household: true,
+    body: updateReminderSettingsRequestSchema,
+    response: reminderSettingsSchema,
   },
 } as const satisfies Record<string, RouteDefinition>;
 
