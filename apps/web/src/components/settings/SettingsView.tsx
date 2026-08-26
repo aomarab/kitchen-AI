@@ -209,6 +209,16 @@ export function SettingsView() {
 
       <Card>
         <CardHeader>
+          <CardTitle>{t('web.assistant.entry')}</CardTitle>
+        </CardHeader>
+        <p className="text-sm text-muted-foreground">{t('web.assistant.entryHint')}</p>
+        <Link href="/assistant" className={buttonClasses({ className: 'mt-4' })}>
+          {t('web.assistant.open')}
+        </Link>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>{t('web.feedback.entry')}</CardTitle>
         </CardHeader>
         <p className="text-sm text-muted-foreground">{t('web.feedback.entryHint')}</p>
