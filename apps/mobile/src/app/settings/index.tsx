@@ -66,6 +66,13 @@ export default function Settings() {
       </Card>
 
       <ListRow
+        title={t('mobile.reminders.entry')}
+        subtitle={t('mobile.reminders.entryHint')}
+        showChevron
+        onPress={() => router.push('/settings/reminders')}
+      />
+
+      <ListRow
         title={t('mobile.feedback.entry')}
         subtitle={t('mobile.feedback.entryHint')}
         showChevron
