@@ -14,6 +14,7 @@ import { api } from '../../lib/api';
 import { expoPhotoUploader } from '../../lib/photo-uploader';
 import { uploadPhotos } from '../../lib/upload';
 import { captureErrorKey } from '../../lib/capture-error';
+import { resizeForUpload } from '../../lib/image';
 import { useCaptureStore, type CaptureSource } from '../../stores/capture';
 import { maxPhotosFor } from './limits';
 import { radius, spacing } from '../../theme';
@@ -74,7 +75,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
     setCaptureError(false);
     try {
       const shot = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
-      if (shot?.uri) addPhoto(shot.uri);
+      if (shot?.uri) addPhoto(await resizeForUpload(shot.uri, shot.width, shot.height));
     } catch {
       // takePictureAsync rejects when the camera is still warming up, the
       // session was interrupted (a call, another app) or storage is full.
@@ -95,8 +96,14 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
         selectionLimit: remaining,
       });
       // `selectionLimit` is advisory on some Android pickers, so still trim.
-      if (!result.canceled)
-        result.assets.slice(0, remaining).forEach((asset) => addPhoto(asset.uri));
+      if (!result.canceled) {
+        const resized = await Promise.all(
+          result.assets
+            .slice(0, remaining)
+            .map((asset) => resizeForUpload(asset.uri, asset.width, asset.height)),
+        );
+        resized.forEach(addPhoto);
+      }
     } catch {
       setCaptureError(true);
     }

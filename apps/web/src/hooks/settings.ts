@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Profile, UpdateProfileRequest } from '@kitchen/contracts';
+import type { Profile, ReminderSettings, UpdateProfileRequest, UpdateReminderSettingsRequest } from '@kitchen/contracts';
 import { api } from '../lib/api';
 import { useMocksReady } from '../mocks/provider';
 
@@ -87,5 +87,45 @@ export function useHousehold() {
       return households[0] ?? null;
     },
     enabled: ready,
+  });
+}
+
+export function useAiUsage() {
+  const ready = useMocksReady();
+  return useQuery({
+    queryKey: ['ai-usage'],
+    queryFn: () => api.call('getAiUsage'),
+    enabled: ready,
+  });
+}
+
+export function useReminderSettings() {
+  const ready = useMocksReady();
+  return useQuery({
+    queryKey: ['reminders'],
+    queryFn: () => api.call('getReminderSettings'),
+    enabled: ready,
+  });
+}
+
+export function useUpdateReminderSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateReminderSettingsRequest) => api.call('updateReminderSettings', { body }),
+    onMutate: async (body) => {
+      await qc.cancelQueries({ queryKey: ['reminders'] });
+      const previous = qc.getQueryData<ReminderSettings>(['reminders']);
+      if (previous) qc.setQueryData<ReminderSettings>(['reminders'], { ...previous, ...body });
+      const optimistic = previous ? qc.getQueryData<ReminderSettings>(['reminders']) : undefined;
+      return { previous, optimistic };
+    },
+    onError: (_error, _body, context) => {
+      if (!context?.previous || !context.optimistic) return;
+      if (qc.getQueryData<ReminderSettings>(['reminders']) !== context.optimistic) return;
+      qc.setQueryData(['reminders'], context.previous);
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['reminders'] });
+    },
   });
 }

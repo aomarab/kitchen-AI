@@ -192,6 +192,36 @@ export function SettingsView() {
 
       <Card>
         <CardHeader>
+          <CardTitle>{t('web.reminders.entry')}</CardTitle>
+        </CardHeader>
+        <p className="text-sm text-muted-foreground">{t('web.reminders.entryHint')}</p>
+        <Link href="/settings/reminders" className={buttonClasses({ className: 'mt-4' })}>
+          {t('web.reminders.title')}
+        </Link>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('web.screen.entry')}</CardTitle>
+        </CardHeader>
+        <p className="text-sm text-muted-foreground">{t('web.screen.entryHint')}</p>
+        <Link href="/screen" className={buttonClasses({ className: 'mt-4' })}>
+          {t('web.screen.open')}
+        </Link>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('web.assistant.entry')}</CardTitle>
+        </CardHeader>
+        <p className="text-sm text-muted-foreground">{t('web.assistant.entryHint')}</p>
+        <Link href="/assistant" className={buttonClasses({ className: 'mt-4' })}>
+          {t('web.assistant.open')}
+        </Link>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>{t('web.feedback.entry')}</CardTitle>
         </CardHeader>
         <p className="text-sm text-muted-foreground">{t('web.feedback.entryHint')}</p>

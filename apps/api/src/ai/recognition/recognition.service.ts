@@ -56,11 +56,15 @@ export class RecognitionService {
     const seen = new Set<string>();
 
     for (const photoKey of request.photoKeys) {
-      // The provider needs something it can actually dereference, not an
-      // object key. `providerImageUrl` also rejects any key outside this
+      // The provider fetches the image, so it needs something it can actually
+      // dereference. `providerImageUrl` presigns for public storage and inlines
+      // a `data:` URL when storage is private (loopback/RFC1918), which a real
+      // vision provider cannot reach. It rejects any key outside this
       // household's prefix — `photoKeys` are opaque client strings, and without
       // that check a caller could name another household's photo, or an
-      // arbitrary URL, and have the model fetch it for them.
+      // arbitrary URL, and have the model fetch it for them. It also rejects a
+      // key uploaded under a non-capture purpose (recipe_image, avatar), which
+      // would otherwise bypass the 2 MB capture ceiling.
       const imageUrl = await this.storage.providerImageUrl(householdId, photoKey);
       const vision = await this.gateway.execute<VisionResult>({
         householdId,

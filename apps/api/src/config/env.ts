@@ -62,6 +62,13 @@ const envSchema = z.object({
   OPENAI_MODEL_PLANNING: z.string().default('gpt-5'),
   OPENAI_MODEL_VISION: z.string().default('gpt-5'),
   OPENAI_MODEL_CHEAP: z.string().default('gpt-5-mini'),
+  GEMINI_API_KEY: z.string().default(''),
+  GEMINI_MODEL_VISION: z.string().default('gemini-3-flash'),
+  /**
+   * Which vendor serves the vision tier. Defaults to `openai` so a missing or
+   * half-finished Gemini setup degrades to today's behaviour instead of failing.
+   */
+  AI_VISION_VENDOR: z.enum(['openai', 'gemini']).default('openai'),
   /** When true, AI services return recorded fixtures instead of calling OpenAI. */
   AI_MOCK: z
     .enum(['true', 'false'])
@@ -122,6 +129,18 @@ const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
         });
       }
     }
+  }
+  if (
+    env.NODE_ENV === 'production' &&
+    !env.AI_MOCK &&
+    env.AI_VISION_VENDOR === 'gemini' &&
+    env.GEMINI_API_KEY.trim() === ''
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['GEMINI_API_KEY'],
+      message: 'is required when AI_VISION_VENDOR is gemini',
+    });
   }
   // Without a client id the `aud` claim cannot be pinned, and an ID token
   // minted for any other OAuth client — including the attacker's own — is

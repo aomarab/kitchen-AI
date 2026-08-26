@@ -12,6 +12,7 @@ import type {
   RecipeSummary,
   RecipeVideo,
   RecognitionSession,
+  ReminderSettings,
   Session,
   ShoppingListItem,
   StorageLocation,
@@ -94,6 +95,18 @@ export const mockProfile: Profile = {
   cuisinePrefs: ['levantine', 'mediterranean'],
   householdSize: 4,
   healthGoals: ['maintenance'],
+};
+
+export const mockReminderSettings: ReminderSettings = {
+  householdId: HOUSEHOLD_ID,
+  breakEnabled: true,
+  stretchEnabled: true,
+  morningEnabled: true,
+  hydrationEnabled: true,
+  breakCadenceMinutes: 60,
+  hydrationGoalCups: 8,
+  quietHoursStart: 22,
+  quietHoursEnd: 7,
 };
 
 export function makeSession(user: User = mockUser): Session {

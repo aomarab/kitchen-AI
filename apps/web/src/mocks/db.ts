@@ -13,6 +13,7 @@ import type {
   RecipeIngredient,
   RecipeSummary,
   RecipeVideo,
+  ReminderSettings,
   ShoppingListItem,
   StorageLocation,
   StorageLocationType,
@@ -104,6 +105,7 @@ interface DbShape {
   credits: CreditBalance;
   /** Purchase intents awaiting confirmation, keyed by intent id. */
   purchaseIntents: Map<string, { productId: string; credits: number }>;
+  reminderSettings: ReminderSettings;
 }
 
 export const db = {} as DbShape;
@@ -481,6 +483,17 @@ export function seed(): void {
     freeGrant: FREE_MONTHLY_GRANT,
   };
   db.purchaseIntents = new Map();
+  db.reminderSettings = {
+    householdId: DEFAULT_HOUSEHOLD_ID,
+    breakEnabled: true,
+    stretchEnabled: true,
+    morningEnabled: true,
+    hydrationEnabled: true,
+    breakCadenceMinutes: 60,
+    hydrationGoalCups: 8,
+    quietHoursStart: 22,
+    quietHoursEnd: 7,
+  };
 }
 
 /**

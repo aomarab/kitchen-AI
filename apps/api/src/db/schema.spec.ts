@@ -32,3 +32,24 @@ describe('drizzle relational schema', () => {
     expect(() => query?.findFirst({ with: { [relation]: true } }).toSQL()).not.toThrow();
   });
 });
+
+describe('reminderSettings table', () => {
+  it('is keyed by household and carries every wellness setting column', async () => {
+    const { reminderSettings } = await import('./schema.js');
+    const columns = Object.keys(reminderSettings);
+    expect(columns).toEqual(
+      expect.arrayContaining([
+        'householdId',
+        'breakEnabled',
+        'stretchEnabled',
+        'morningEnabled',
+        'hydrationEnabled',
+        'breakCadenceMinutes',
+        'hydrationGoalCups',
+        'quietHoursStart',
+        'quietHoursEnd',
+        'updatedAt',
+      ]),
+    );
+  });
+});

@@ -23,6 +23,7 @@ import {
   mockHousehold,
   mockId,
   mockProfile,
+  mockReminderSettings,
   mockUser,
   recipeDefById,
   recipeVideos,
@@ -47,6 +48,7 @@ const db = {
   user: { ...mockUser },
   household: { ...mockHousehold },
   profile: { ...mockProfile },
+  reminderSettings: { ...mockReminderSettings },
   locations: [...seedLocations],
   inventory: buildInventory(),
   shopping: buildShoppingList(),
@@ -194,6 +196,12 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     const body = await readBody(request);
     db.profile = { ...db.profile, ...(body as object) };
     return HttpResponse.json(db.profile);
+  },
+  getReminderSettings: () => HttpResponse.json(db.reminderSettings),
+  updateReminderSettings: async ({ request }) => {
+    const body = await readBody(request);
+    db.reminderSettings = { ...db.reminderSettings, ...(body as object) };
+    return HttpResponse.json(db.reminderSettings);
   },
 
   /* ---- Catalog ---- */

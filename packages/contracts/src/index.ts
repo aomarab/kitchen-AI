@@ -8,4 +8,5 @@ export * from './plan.js';
 export * from './ai.js';
 export * from './credits.js';
 export * from './feedback.js';
+export * from './reminders.js';
 export * from './routes.js';

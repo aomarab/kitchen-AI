@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { OpenAiProvider } from '../providers/openai.provider.js';
 import { SchemaGuard } from '../validation/schema-guard.js';
-import { readSpend } from '../ai-spend.js';
+import { attachPriorAttempts, attachSpend, readPriorAttempts, readSpend } from '../ai-spend.js';
 import { PROVIDER_MAX_OUTPUT_TOKENS } from '../ai.constants.js';
 import type { AiProvider, StructuredRequest } from '../providers/ai-provider.interface.js';
 import { z } from 'zod';
 import { AiGateway } from '../ai-gateway.service.js';
-import { attachSpend } from '../ai-spend.js';
 
 function providerWith(
   create: ReturnType<typeof vi.fn>,
@@ -219,5 +218,260 @@ describe('OpenAiProvider reasoning effort', () => {
     );
 
     expect(create.mock.calls[0]![0]).not.toHaveProperty('reasoning_effort');
+  });
+});
+
+describe('SchemaGuard priorAttempts propagation on throwing paths', () => {
+  /**
+   * Finding B: SchemaGuard's two throwing paths dropped priorAttempts entirely.
+   * If the first call returned priorAttempts (i.e. a routed fallback already
+   * happened), those billed-but-superseded rows must survive onto the error so
+   * AiGateway can record them.
+   */
+  it('carries first.priorAttempts on the error when the repair call throws', async () => {
+    const priorSpend = { usage: { inputTokens: 900, outputTokens: 100 }, model: 'gemini' };
+    const provider: AiProvider = {
+      kind: 'openai',
+      complete: vi
+        .fn()
+        .mockResolvedValueOnce({
+          raw: { wrong: true },
+          usage: { inputTokens: 10, outputTokens: 20 },
+          model: 'gpt-5',
+          priorAttempts: [priorSpend],
+        })
+        .mockRejectedValueOnce(new Error('network on repair')),
+    };
+
+    const error = await new SchemaGuard()
+      .run(provider, request(), z.object({ ok: z.literal(true) }))
+      .catch((e: unknown) => e);
+
+    // The main spend (first call) must still be on the error.
+    expect(readSpend(error)?.usage).toEqual({ inputTokens: 10, outputTokens: 20 });
+    // The prior attempt from the routed fallback must also survive.
+    expect(readPriorAttempts(error)).toEqual([priorSpend]);
+  });
+
+  it('carries concatenated priorAttempts on the error when both calls produce invalid output', async () => {
+    const priorSpend1 = { usage: { inputTokens: 900, outputTokens: 100 }, model: 'gemini' };
+    const priorSpend2 = { usage: { inputTokens: 850, outputTokens: 90 }, model: 'gemini' };
+    const provider: AiProvider = {
+      kind: 'openai',
+      complete: vi
+        .fn()
+        .mockResolvedValueOnce({
+          raw: { wrong: true },
+          usage: { inputTokens: 10, outputTokens: 20 },
+          model: 'gpt-5',
+          priorAttempts: [priorSpend1],
+        })
+        .mockResolvedValueOnce({
+          raw: { still: 'wrong' },
+          usage: { inputTokens: 30, outputTokens: 40 },
+          model: 'gpt-5',
+          priorAttempts: [priorSpend2],
+        }),
+    };
+
+    const error = await new SchemaGuard()
+      .run(provider, request(), z.object({ ok: z.literal(true) }))
+      .catch((e: unknown) => e);
+
+    expect(readPriorAttempts(error)).toEqual([priorSpend1, priorSpend2]);
+    // Confirm the main spend is still there and not contaminated.
+    expect(readSpend(error)?.usage).toEqual({ inputTokens: 40, outputTokens: 60 });
+  });
+});
+
+describe('SchemaGuard cross-vendor billing (Issue 2)', () => {
+  /**
+   * When the repair goes to a *different* vendor than the first call (Gemini
+   * throws its repair, OpenAI serves it), the two calls bill per-token at
+   * different rates. Summing them into one row keyed by the second model prices
+   * Gemini's tokens at OpenAI's rate. They must stay two rows.
+   */
+  it('keeps the first call as its own priorAttempt when the repaired call is a different model', async () => {
+    const provider: AiProvider = {
+      kind: 'routed',
+      complete: vi
+        .fn()
+        .mockResolvedValueOnce({
+          raw: { wrong: true },
+          usage: { inputTokens: 900, outputTokens: 100 },
+          model: 'gemini-3-flash',
+        })
+        .mockResolvedValueOnce({
+          raw: { ok: true },
+          usage: { inputTokens: 50, outputTokens: 80 },
+          model: 'gpt-5',
+        }),
+    };
+
+    const result = await new SchemaGuard().run(
+      provider,
+      request({ operation: 'vision.recognize', tier: 'vision' }),
+      z.object({ ok: z.literal(true) }),
+    );
+
+    // The recorded row for the successful call is the second (OpenAI) call only.
+    expect(result.model).toBe('gpt-5');
+    expect(result.usage).toEqual({ inputTokens: 50, outputTokens: 80 });
+    // The superseded Gemini call rides along as its own priorAttempt, keyed by
+    // its own model — NOT summed into the row above.
+    expect(result.priorAttempts).toEqual([
+      { model: 'gemini-3-flash', usage: { inputTokens: 900, outputTokens: 100 } },
+    ]);
+    // Prove the two were not merged.
+    expect(result.usage.inputTokens).not.toBe(950);
+  });
+
+  it('carries the first call as a priorAttempt when both cross-vendor calls are invalid', async () => {
+    const provider: AiProvider = {
+      kind: 'routed',
+      complete: vi
+        .fn()
+        .mockResolvedValueOnce({
+          raw: { wrong: true },
+          usage: { inputTokens: 900, outputTokens: 100 },
+          model: 'gemini-3-flash',
+        })
+        .mockResolvedValueOnce({
+          raw: { still: 'wrong' },
+          usage: { inputTokens: 50, outputTokens: 80 },
+          model: 'gpt-5',
+        }),
+    };
+
+    const error = await new SchemaGuard()
+      .run(provider, request({ operation: 'vision.recognize', tier: 'vision' }), z.object({ ok: z.literal(true) }))
+      .catch((e: unknown) => e);
+
+    // The throwing (second) call's own spend is the OpenAI row.
+    expect(readSpend(error)).toEqual({
+      model: 'gpt-5',
+      usage: { inputTokens: 50, outputTokens: 80 },
+    });
+    // Gemini's first call is a separately-keyed prior attempt, not summed in.
+    expect(readPriorAttempts(error)).toEqual([
+      { model: 'gemini-3-flash', usage: { inputTokens: 900, outputTokens: 100 } },
+    ]);
+  });
+
+  it('carries the first call as a priorAttempt when a cross-vendor repair throws with its own spend', async () => {
+    // Gemini answers invalid, the OpenAI repair itself throws but was still
+    // billed. The throwing error must carry the OpenAI spend, with Gemini's
+    // first call carried separately at its own rate.
+    const repairError = attachSpend(new Error('openai truncated'), {
+      usage: { inputTokens: 60, outputTokens: 90 },
+      model: 'gpt-5',
+    });
+    const provider: AiProvider = {
+      kind: 'routed',
+      complete: vi
+        .fn()
+        .mockResolvedValueOnce({
+          raw: { wrong: true },
+          usage: { inputTokens: 900, outputTokens: 100 },
+          model: 'gemini-3-flash',
+        })
+        .mockRejectedValueOnce(repairError),
+    };
+
+    const error = await new SchemaGuard()
+      .run(provider, request({ operation: 'vision.recognize', tier: 'vision' }), z.object({ ok: z.literal(true) }))
+      .catch((e: unknown) => e);
+
+    expect(readSpend(error)).toEqual({
+      model: 'gpt-5',
+      usage: { inputTokens: 60, outputTokens: 90 },
+    });
+    expect(readPriorAttempts(error)).toEqual([
+      { model: 'gemini-3-flash', usage: { inputTokens: 900, outputTokens: 100 } },
+    ]);
+  });
+});
+
+describe('AiGateway prior-attempts billing', () => {
+  /**
+   * Finding C: the priorAttempts loop and the throw-path priorAttempts
+   * recording had zero test coverage. Deleting either loop left the suite green.
+   */
+  it('records the successful call first, then prior-attempt rows separately (not summed)', async () => {
+    const record = vi.fn().mockResolvedValue(undefined);
+    const budget = { assertWithinBudget: vi.fn().mockResolvedValue(undefined), record };
+    const guard = {
+      run: vi.fn().mockResolvedValue({
+        data: { ok: true },
+        usage: { inputTokens: 50, outputTokens: 80 },
+        model: 'gpt-5',
+        attempts: 1,
+        priorAttempts: [{ model: 'gemini-3-flash', usage: { inputTokens: 900, outputTokens: 100 } }],
+      }),
+    };
+
+    const gateway = new AiGateway(
+      { kind: 'openai', complete: vi.fn() },
+      guard as never,
+      budget as never,
+    );
+
+    await gateway.execute({
+      householdId: 'hh',
+      operation: 'vision.recognize',
+      prompt: { system: 's', user: 'u', version: 'v1' },
+      schema: z.unknown(),
+    });
+
+    expect(record).toHaveBeenCalledTimes(2);
+
+    // First call must be the successful row.
+    expect(record.mock.calls[0]![0]).toMatchObject({
+      model: 'gpt-5',
+      usage: { inputTokens: 50, outputTokens: 80 },
+    });
+    // Second call must be the prior attempt at its own rate — not summed.
+    expect(record.mock.calls[1]![0]).toMatchObject({
+      model: 'gemini-3-flash',
+      usage: { inputTokens: 900, outputTokens: 100 },
+    });
+    // Confirm the two usages were NOT summed into one row.
+    expect(record.mock.calls[0]![0].usage.inputTokens).not.toBe(950);
+  });
+
+  it('records prior-attempt rows on the throw path alongside the main spend row', async () => {
+    const record = vi.fn().mockResolvedValue(undefined);
+    const budget = { assertWithinBudget: vi.fn().mockResolvedValue(undefined), record };
+
+    const mainError = attachSpend(new Error('truncated'), {
+      usage: { inputTokens: 50, outputTokens: 8000 },
+      model: 'gpt-5',
+    });
+    attachPriorAttempts(mainError, [
+      { model: 'gemini-3-flash', usage: { inputTokens: 900, outputTokens: 100 } },
+    ]);
+
+    const guard = { run: vi.fn().mockRejectedValue(mainError) };
+
+    const gateway = new AiGateway(
+      { kind: 'openai', complete: vi.fn() },
+      guard as never,
+      budget as never,
+    );
+
+    await expect(
+      gateway.execute({
+        householdId: 'hh',
+        operation: 'vision.recognize',
+        prompt: { system: 's', user: 'u', version: 'v1' },
+        schema: z.unknown(),
+      }),
+    ).rejects.toThrow('truncated');
+
+    // Two rows: one for the main spend, one for the prior attempt.
+    expect(record).toHaveBeenCalledTimes(2);
+    const models = record.mock.calls.map((c: unknown[]) => (c[0] as { model: string }).model);
+    expect(models).toContain('gpt-5');
+    expect(models).toContain('gemini-3-flash');
   });
 });

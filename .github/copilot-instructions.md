@@ -72,6 +72,11 @@ Non-obvious system rules:
 - **Households own data, not users.** Household-scoped routes require the `x-household-id` header;
   controllers combine `@UseGuards(AuthGuard, HouseholdGuard)` with `@CurrentHousehold()` /
   `@CurrentUser()`.
+- **Staff is a third authorization axis.** Routes declared `staff: true` in the registry (the
+  `/admin/*` surface, e.g. feedback triage) sit behind `@UseGuards(AuthGuard, StaffGuard)`.
+  `common/staff.guard.ts` reads the global `users.role` from the database on every request — never
+  from the token — so revoking a staff member takes effect immediately instead of after the access
+  TTL.
 - **Inventory is an append-only event ledger.** `inventory_items.quantity` is materialized state
   derived from `inventory_events`; writes must add an event and adjust quantity in the same
   transaction, or offline replay stops summing. Mobile queues writes as events

@@ -6,6 +6,7 @@ export const qk = {
   me: ['me'] as const,
   households: ['households'] as const,
   profile: ['profile'] as const,
+  reminders: ['reminders'] as const,
   locations: ['locations'] as const,
   inventory: ['inventory'] as const,
   inventorySnapshot: ['inventory', 'snapshot'] as const,

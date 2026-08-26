@@ -10,4 +10,16 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.spec.ts'],
   },
+  resolve: {
+    alias: {
+      // expo-image-manipulator pulls in native Expo modules that cannot run in
+      // the node test environment. The stub lets resizeForUpload be tested here
+      // by recording the actions passed to the manipulator. Baked EXIF
+      // orientation is the one behaviour that remains a device-only manual gate.
+      'expo-image-manipulator': new URL(
+        './src/mocks/expo-image-manipulator.ts',
+        import.meta.url,
+      ).pathname,
+    },
+  },
 });

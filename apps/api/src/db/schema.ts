@@ -233,6 +233,21 @@ export const profiles = pgTable('profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const reminderSettings = pgTable('reminder_settings', {
+  householdId: uuid('household_id')
+    .primaryKey()
+    .references(() => households.id, { onDelete: 'cascade' }),
+  breakEnabled: boolean('break_enabled').notNull().default(true),
+  stretchEnabled: boolean('stretch_enabled').notNull().default(true),
+  morningEnabled: boolean('morning_enabled').notNull().default(true),
+  hydrationEnabled: boolean('hydration_enabled').notNull().default(true),
+  breakCadenceMinutes: integer('break_cadence_minutes').notNull().default(60),
+  hydrationGoalCups: integer('hydration_goal_cups').notNull().default(8),
+  quietHoursStart: integer('quiet_hours_start').notNull().default(22),
+  quietHoursEnd: integer('quiet_hours_end').notNull().default(7),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 /* ------------------------------------------------------------------ */
 /* Catalog & inventory                                                 */
 /* ------------------------------------------------------------------ */
