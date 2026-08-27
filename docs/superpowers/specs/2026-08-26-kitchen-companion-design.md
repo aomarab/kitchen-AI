@@ -105,7 +105,7 @@ that was proven to fail (`apps/mobile/src/lib/screen-surfaces.spec.ts`):
   while nothing counts down.
 - **It is the only screen allowed to rotate.** This is the part that nearly shipped broken. The app
   was pinned with `"orientation": "portrait"` in `app.json`, and on iOS
-  `UISupportedInterfaceOrientations` is a *ceiling*, not a default — a runtime `unlockAsync` under it
+  `UISupportedInterfaceOrientations` is a _ceiling_, not a default — a runtime `unlockAsync` under it
   compiles, ships, and rotates nothing. The manifest now permits landscape and `useOrientationLock`
   in the root layout takes it back at runtime, so the kiosk is the one screen that opts out and
   restores the lock on the way out. `store-policy.spec.ts` pins both halves together.
@@ -227,7 +227,7 @@ were decided differently from the sketch above, and the reasons matter more than
   spend → mint → refund-on-throw. Charging after minting would make the credit check advisory: we
   would already have been billed by the provider before discovering we must refuse.
 - **`REALTIME_SECRET_TTL_SEC` is pinned to the provider floor of 10s as a cost control**, not a UX
-  knob. One client secret may start *any number of sessions* until it expires, so the TTL — not the
+  knob. One client secret may start _any number of sessions_ until it expires, so the TTL — not the
   session length — is what bounds a single paid mint.
 - **Session duration is not bounded and cannot be.** Once connected, the session is between client
   and provider and there is no server-set hard limit to rely on. `'assistant.session'` is therefore
@@ -252,10 +252,20 @@ were decided differently from the sketch above, and the reasons matter more than
   session it states is real; a deployment with `AI_MOCK=true` mints an unusable secret and the
   client hands over to the scripted adapter with the badge still lit.
 
-Not built in Phase B: the Stage-A pantry snapshot is **not** yet injected as session context, so the
-assistant is not grounded in real inventory — it can describe what it sees but not what you own.
-Fault injection for the above lives in `scripts/fault-inject-assistant.mjs` (12 defects, each caught
-by the check that names it).
+- **Grounding reuses the planner's Stage-A snapshot**, rendered to text by
+  `apps/api/src/ai/assistant/pantry-brief.ts` and sent as session context — not a second inventory
+  reader, because two readers would eventually disagree and an assistant that contradicts the meal
+  plan about what is in the fridge is worse than one that knows nothing. The read happens _before_
+  the debit, so a failed query never charges anyone. The brief is capped at `MAX_PANTRY_LINES = 60`
+  (instructions are charged for on every mint), ordered expiry-first so the cut falls where it
+  matters least, and carries two disclaimers that are load-bearing rather than decorative: it lists
+  only what is **tracked**, not everything the user owns; and when it was truncated it says so, and
+  by how much. A partial list presented as complete makes the model tell the user they are out of
+  something they can see on the counter.
+
+Fault injection for all of the above lives in `scripts/fault-inject-assistant.mjs` (21 defects, each
+caught by the check that names it). Still unverified: none of this has been run against a real
+OpenAI account.
 
 ---
 
