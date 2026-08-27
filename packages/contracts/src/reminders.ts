@@ -18,6 +18,19 @@ export const breakCadenceMinutesSchema = z.union([
 ]);
 export type BreakCadenceMinutes = z.infer<typeof breakCadenceMinutesSchema>;
 
+/**
+ * Stretch cadence, in minutes. Same four intervals as the break cadence
+ * because they are the same kind of choice, but a *separate* setting: a break
+ * is "stop working", a stretch is "move your body", and a household that wants
+ * hourly breaks does not necessarily want hourly stretches.
+ *
+ * Its existence is what lets the engine fire `stretch` at all. Until it was
+ * added the type was declared and never scheduled, and the UI promised a nudge
+ * that could not arrive.
+ */
+export const stretchCadenceMinutesSchema = breakCadenceMinutesSchema;
+export type StretchCadenceMinutes = z.infer<typeof stretchCadenceMinutesSchema>;
+
 export const reminderSettingsSchema = z.object({
   householdId: uuidSchema,
   breakEnabled: z.boolean().default(true),
@@ -25,6 +38,11 @@ export const reminderSettingsSchema = z.object({
   morningEnabled: z.boolean().default(true),
   hydrationEnabled: z.boolean().default(true),
   breakCadenceMinutes: breakCadenceMinutesSchema.default(60),
+  /**
+   * Stretch cadence. Defaults to 90 rather than the break's 60 so the two do
+   * not sit on top of each other for a household that changes neither.
+   */
+  stretchCadenceMinutes: stretchCadenceMinutesSchema.default(90),
   /** Cups of water per day. */
   hydrationGoalCups: z.number().int().min(1).max(20).default(8),
   /** Quiet-hours window as whole hours 0–23; nudges are suppressed inside it. */
@@ -180,9 +198,10 @@ export interface FiredState {
 /**
  * Which nudges are due right now.
  *
- * `stretch` is deliberately never returned: no setting in the spec or the
- * prototype determines its cadence, and inventing one would be fabrication.
- * The toggle is honoured for the other types only until a cadence is specified.
+ * Break and stretch run on independent clocks and are allowed to fall due in
+ * the same sweep. They are not deduplicated: they ask for different things
+ * (stop working vs. move your body), and silently dropping one would make a
+ * cadence the household chose not happen.
  */
 export function dueReminderTypes(
   settings: ReminderSettings,
@@ -213,6 +232,13 @@ export function dueReminderTypes(
     if (since >= settings.breakCadenceMinutes) due.push('break');
   }
 
+  // Stretch: every `stretchCadenceMinutes`, on its own clock, counted from
+  // waking when none has fired yet in this window.
+  if (settings.stretchEnabled) {
+    const since = elapsed('stretch') ?? sinceWaking;
+    if (since >= settings.stretchCadenceMinutes) due.push('stretch');
+  }
+
   // Hydration: `hydrationGoalCups` evenly spaced, and never more than the goal.
   if (settings.hydrationEnabled && (state.countToday.hydration ?? 0) < settings.hydrationGoalCups) {
     const since = elapsed('hydration') ?? sinceWaking;
@@ -225,19 +251,17 @@ export function dueReminderTypes(
 /**
  * The reminder types the firing engine is actually able to schedule.
  *
- * `stretch` is absent for the reason given on `dueReminderTypes`: nothing in
- * the spec or the prototype determines its cadence, so the engine never fires
- * it. That refusal used to live only in the engine, which meant every client
- * was free to disagree with it — and the kitchen kiosk did, listing stretch in
- * "today's wellness plan" for a nudge that could never arrive. Naming the set
- * here makes the engine's silence something a UI can read.
+ * This list used to omit `stretch`, because nothing determined its cadence and
+ * the engine therefore never fired it — while the UI kept offering a toggle,
+ * promising a nudge that could not arrive. `stretchCadenceMinutes` closed that
+ * gap, so the type belongs here now.
  *
  * `reminders.spec.ts` cross-checks this list against `dueReminderTypes` under
- * a sweep of settings, so the two cannot drift apart: implementing a stretch
- * cadence without adding it here fails, and so does removing a branch without
+ * a sweep of settings, so the two cannot drift apart: adding a type here
+ * without a branch in the engine fails, and so does removing a branch without
  * removing it here.
  */
-export const SCHEDULED_REMINDER_TYPES = ['morning', 'break', 'hydration'] as const;
+export const SCHEDULED_REMINDER_TYPES = ['morning', 'break', 'stretch', 'hydration'] as const;
 
 /** Whether the firing engine can ever produce this type. */
 export function isScheduledReminderType(type: ReminderType): boolean {

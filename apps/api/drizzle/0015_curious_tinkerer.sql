@@ -1,0 +1,1 @@
+ALTER TABLE "reminder_settings" ADD COLUMN "stretch_cadence_minutes" integer DEFAULT 90 NOT NULL;

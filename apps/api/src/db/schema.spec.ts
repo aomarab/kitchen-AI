@@ -45,6 +45,7 @@ describe('reminderSettings table', () => {
         'morningEnabled',
         'hydrationEnabled',
         'breakCadenceMinutes',
+        'stretchCadenceMinutes',
         'hydrationGoalCups',
         'quietHoursStart',
         'quietHoursEnd',

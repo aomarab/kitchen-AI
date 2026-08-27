@@ -200,6 +200,7 @@ interface SettingsRow {
   morningEnabled: boolean;
   hydrationEnabled: boolean;
   breakCadenceMinutes: number;
+  stretchCadenceMinutes: number;
   hydrationGoalCups: number;
   quietHoursStart: number;
   quietHoursEnd: number;
@@ -214,6 +215,7 @@ function toSettings(row: SettingsRow): ReminderSettings {
     morningEnabled: row.morningEnabled,
     hydrationEnabled: row.hydrationEnabled,
     breakCadenceMinutes: row.breakCadenceMinutes as ReminderSettings['breakCadenceMinutes'],
+    stretchCadenceMinutes: row.stretchCadenceMinutes as ReminderSettings['stretchCadenceMinutes'],
     hydrationGoalCups: row.hydrationGoalCups,
     quietHoursStart: row.quietHoursStart,
     quietHoursEnd: row.quietHoursEnd,

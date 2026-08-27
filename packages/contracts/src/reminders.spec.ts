@@ -10,6 +10,7 @@ import {
   minutesSinceWaking,
   reminderSettingsSchema,
   reminderTypeSchema,
+  stretchCadenceMinutesSchema,
   updateReminderSettingsRequestSchema,
   wakingWindowMinutes,
   REMINDER_MESSAGE_KEYS,
@@ -33,6 +34,7 @@ describe('reminderSettingsSchema', () => {
       morningEnabled: true,
       hydrationEnabled: true,
       breakCadenceMinutes: 60,
+      stretchCadenceMinutes: 90,
       hydrationGoalCups: 8,
       quietHoursStart: 22,
       quietHoursEnd: 7,
@@ -53,6 +55,24 @@ describe('breakCadenceMinutesSchema', () => {
     for (const value of [0, 45, 100, 120.5, -30]) {
       expect(breakCadenceMinutesSchema.safeParse(value).success).toBe(false);
     }
+  });
+});
+
+describe('stretchCadenceMinutesSchema', () => {
+  it('accepts only the four supported cadences', () => {
+    for (const value of [30, 60, 90, 120]) {
+      expect(stretchCadenceMinutesSchema.safeParse(value).success).toBe(true);
+    }
+    for (const value of [0, 45, 100, 120.5, -30]) {
+      expect(stretchCadenceMinutesSchema.safeParse(value).success).toBe(false);
+    }
+  });
+
+  it('rejects a cadence the settings schema would also reject', () => {
+    expect(
+      reminderSettingsSchema.safeParse({ householdId: HOUSEHOLD_ID, stretchCadenceMinutes: 45 })
+        .success,
+    ).toBe(false);
   });
 });
 
@@ -79,10 +99,18 @@ describe('updateReminderSettingsRequestSchema', () => {
   });
 
   it('rejects an out-of-range quiet hour and an out-of-range hydration goal', () => {
-    expect(updateReminderSettingsRequestSchema.safeParse({ quietHoursStart: 24 }).success).toBe(false);
-    expect(updateReminderSettingsRequestSchema.safeParse({ quietHoursEnd: -1 }).success).toBe(false);
-    expect(updateReminderSettingsRequestSchema.safeParse({ hydrationGoalCups: 0 }).success).toBe(false);
-    expect(updateReminderSettingsRequestSchema.safeParse({ hydrationGoalCups: 21 }).success).toBe(false);
+    expect(updateReminderSettingsRequestSchema.safeParse({ quietHoursStart: 24 }).success).toBe(
+      false,
+    );
+    expect(updateReminderSettingsRequestSchema.safeParse({ quietHoursEnd: -1 }).success).toBe(
+      false,
+    );
+    expect(updateReminderSettingsRequestSchema.safeParse({ hydrationGoalCups: 0 }).success).toBe(
+      false,
+    );
+    expect(updateReminderSettingsRequestSchema.safeParse({ hydrationGoalCups: 21 }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -203,16 +231,51 @@ describe('dueReminderTypes', () => {
   it('honours the per-type toggles', () => {
     const off = settings({
       breakEnabled: false,
+      stretchEnabled: false,
       morningEnabled: false,
       hydrationEnabled: false,
     });
     expect(dueReminderTypes(off, noneFired, at(12, 0))).toEqual([]);
   });
 
-  it('never fires stretch, because no setting defines its cadence', () => {
-    const state: FiredState = { lastFiredAt: {}, countToday: {} };
-    for (let hour = 0; hour < 24; hour += 1) {
-      expect(dueReminderTypes(settings(), state, at(hour, 0))).not.toContain('stretch');
+  it('waits one stretch cadence after waking for the first stretch', () => {
+    const s = settings({ stretchCadenceMinutes: 90 });
+    expect(dueReminderTypes(s, noneFired, at(8, 29))).not.toContain('stretch');
+    expect(dueReminderTypes(s, noneFired, at(8, 30))).toContain('stretch');
+  });
+
+  it('spaces later stretches by the chosen cadence', () => {
+    const state: FiredState = {
+      lastFiredAt: { stretch: at(10, 0) },
+      countToday: { stretch: 1 },
+    };
+    const s = settings({ stretchCadenceMinutes: 30 });
+    expect(dueReminderTypes(s, state, at(10, 20))).not.toContain('stretch');
+    expect(dueReminderTypes(s, state, at(10, 30))).toContain('stretch');
+  });
+
+  it('runs stretch on its own clock, not the break cadence', () => {
+    const s = settings({ breakCadenceMinutes: 30, stretchCadenceMinutes: 120 });
+    const state: FiredState = {
+      lastFiredAt: { break: at(10, 0), stretch: at(10, 0) },
+      countToday: { break: 1, stretch: 1 },
+    };
+    const due = dueReminderTypes(s, state, at(10, 45));
+    expect(due).toContain('break');
+    expect(due).not.toContain('stretch');
+  });
+
+  it('lets a stretch and a break fall due together rather than dropping one', () => {
+    const s = settings({ breakCadenceMinutes: 60, stretchCadenceMinutes: 60 });
+    const due = dueReminderTypes(s, noneFired, at(8, 0));
+    expect(due).toContain('break');
+    expect(due).toContain('stretch');
+  });
+
+  it('fires no stretch while its toggle is off, whatever the cadence', () => {
+    const s = settings({ stretchEnabled: false, stretchCadenceMinutes: 30 });
+    for (let hour = 8; hour < 22; hour += 1) {
+      expect(dueReminderTypes(s, noneFired, at(hour, 0))).not.toContain('stretch');
     }
   });
 });
@@ -293,7 +356,6 @@ describe('pendingNudge / pendingNudges', () => {
   });
 });
 
-
 describe('SCHEDULED_REMINDER_TYPES', () => {
   const settings = (over: Partial<ReminderSettings> = {}): ReminderSettings =>
     reminderSettingsSchema.parse({ householdId: HOUSEHOLD_ID, ...over });
@@ -315,6 +377,7 @@ describe('SCHEDULED_REMINDER_TYPES', () => {
       for (const goal of [1, 4, 8, 20]) {
         const s = settings({
           breakCadenceMinutes: cadence,
+          stretchCadenceMinutes: cadence,
           hydrationGoalCups: goal,
           quietHoursStart: 22,
           quietHoursEnd: 7,
@@ -341,23 +404,23 @@ describe('SCHEDULED_REMINDER_TYPES', () => {
 
   it('names exactly the types the firing engine can produce', () => {
     // The point of the list: a client reading it must reach the same answer
-    // the engine would. Implementing a stretch cadence without adding it here
+    // the engine would. Adding a type here without a branch in the engine
     // fails, and so does deleting a branch without removing it here.
     expect([...typesTheEngineCanProduce()].sort()).toEqual([...SCHEDULED_REMINDER_TYPES].sort());
   });
 
-  it('leaves stretch out, because no cadence is specified anywhere', () => {
-    expect(isScheduledReminderType('stretch')).toBe(false);
+  it('includes stretch, now that a cadence setting decides when it fires', () => {
+    expect(isScheduledReminderType('stretch')).toBe(true);
     expect(reminderTypeSchema.options).toContain('stretch');
   });
 
-  it('omits stretch from a household plan even when its toggle is on', () => {
-    expect(scheduledReminderTypes(settings({ stretchEnabled: true }))).not.toContain('stretch');
+  it('keeps stretch in a household plan when its toggle is on', () => {
+    expect(scheduledReminderTypes(settings({ stretchEnabled: true }))).toContain('stretch');
   });
 
-  it('reports an empty plan for a household that has only stretch on', () => {
-    // The case the kiosk got wrong: it showed a wellness plan that could
-    // never produce a single nudge.
+  it('reports a stretch-only plan for a household that has only stretch on', () => {
+    // The case the kiosk once got wrong in the other direction: it showed a
+    // wellness plan that could never produce a single nudge.
     expect(
       scheduledReminderTypes(
         settings({
@@ -367,14 +430,20 @@ describe('SCHEDULED_REMINDER_TYPES', () => {
           hydrationEnabled: false,
         }),
       ),
-    ).toEqual([]);
+    ).toEqual(['stretch']);
   });
 
   it('honours the other toggles', () => {
     expect(scheduledReminderTypes(settings({ breakEnabled: false }))).toEqual([
       'morning',
+      'stretch',
       'hydration',
     ]);
-    expect(scheduledReminderTypes(settings())).toEqual(['morning', 'break', 'hydration']);
+    expect(scheduledReminderTypes(settings())).toEqual([
+      'morning',
+      'break',
+      'stretch',
+      'hydration',
+    ]);
   });
 });

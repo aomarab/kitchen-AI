@@ -12,8 +12,10 @@ import type { Translator } from '@kitchen/i18n';
  * fire it.
  *
  * Switched-on is not enough. A household with only stretch enabled used to
- * see a wellness plan on the kitchen screen, and would then wait all day for
- * a nudge the firing engine is documented never to produce.
+ * see a wellness plan on the kitchen screen and then wait all day for a nudge
+ * the engine could not produce, because stretch had no cadence. It has one
+ * now, but the check stays: it is what stops the next unschedulable type from
+ * being advertised here.
  */
 export function hasAnyNudge(settings: ReminderSettings): boolean {
   return scheduledReminderTypes(settings).length > 0;
@@ -27,14 +29,18 @@ export function hasAnyNudge(settings: ReminderSettings): boolean {
  * directly, so this screen cannot promise a nudge the engine will not send.
  */
 export function wellnessPlanLines(settings: ReminderSettings, t: Translator): string[] {
+  const every = (minutes: number) => t('web.reminders.cadenceEvery', { minutes });
   return scheduledReminderTypes(settings).map((type) => {
-    if (type === 'break') {
-      return `${t('web.reminders.breakLabel')} · ${t('web.reminders.cadenceEvery', {
-        minutes: settings.breakCadenceMinutes,
-      })}`;
+    switch (type) {
+      case 'break':
+        return `${t('web.reminders.breakLabel')} · ${every(settings.breakCadenceMinutes)}`;
+      case 'stretch':
+        return `${t('web.reminders.stretchLabel')} · ${every(settings.stretchCadenceMinutes)}`;
+      case 'morning':
+        return t('web.reminders.morningLabel');
+      case 'hydration':
+        return t('web.reminders.hydrationLabel');
     }
-    if (type === 'morning') return t('web.reminders.morningLabel');
-    return t('web.reminders.hydrationLabel');
   });
 }
 

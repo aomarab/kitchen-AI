@@ -35,6 +35,7 @@ const settings = (hydrationGoalCups: number) =>
     morningEnabled: true,
     hydrationEnabled: true,
     breakCadenceMinutes: 60,
+    stretchCadenceMinutes: 90,
     hydrationGoalCups,
     quietHoursStart: 22,
     quietHoursEnd: 7,

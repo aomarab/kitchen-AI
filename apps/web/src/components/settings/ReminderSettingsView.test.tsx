@@ -1,6 +1,7 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { SCHEDULED_REMINDER_TYPES } from '@kitchen/contracts';
 import { LocaleProvider } from '../../lib/locale';
 import { ReminderSettingsView } from './ReminderSettingsView';
 
@@ -15,6 +16,7 @@ const settings = {
   morningEnabled: true,
   hydrationEnabled: true,
   breakCadenceMinutes: 60,
+  stretchCadenceMinutes: 90,
   hydrationGoalCups: 8,
   quietHoursStart: 22,
   quietHoursEnd: 7,
@@ -59,22 +61,17 @@ describe('ReminderSettingsView', () => {
     );
   });
 
-  it('offers no stretch toggle, because no stretch nudge is ever fired', async () => {
-    // It defaulted to on, so every household was told stretch reminders were
-    // running. `SCHEDULED_REMINDER_TYPES` in the contract is the source of
-    // truth for which toggles the engine can act on.
+  it('offers a switch for exactly the nudges the engine can fire', async () => {
+    // The stretch switch was removed once, because the engine had no cadence
+    // for it and it defaulted to on — telling every household that stretch
+    // reminders were running. A cadence setting brought it back.
+    // `SCHEDULED_REMINDER_TYPES` in the contract decides, not this screen.
     call.mockResolvedValue(settings);
     renderView();
     await screen.findByRole('switch', { name: /hydration reminders/i });
-    expect(screen.queryByRole('switch', { name: /stretch/i })).toBeNull();
-  });
-
-  it('still offers the three nudges the engine does fire', async () => {
-    // Guards the test above from passing because the toggles stopped
-    // rendering altogether.
-    call.mockResolvedValue(settings);
-    renderView();
-    expect(await screen.findByRole('switch', { name: /movement breaks/i })).toBeTruthy();
+    expect(screen.getAllByRole('switch')).toHaveLength(SCHEDULED_REMINDER_TYPES.length);
+    expect(screen.getByRole('switch', { name: /movement breaks/i })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: /stretch reminders/i })).toBeTruthy();
     expect(screen.getByRole('switch', { name: /morning/i })).toBeTruthy();
     expect(screen.getByRole('switch', { name: /hydration reminders/i })).toBeTruthy();
   });
@@ -82,8 +79,8 @@ describe('ReminderSettingsView', () => {
   it('choosing a cadence patches breakCadenceMinutes with a number', async () => {
     call.mockResolvedValue(settings);
     renderView();
-    const chip = await screen.findByRole('button', { name: /every 90 min/i });
-    fireEvent.click(chip);
+    const group = await screen.findByRole('group', { name: /break frequency/i });
+    fireEvent.click(within(group).getByRole('button', { name: /every 90 min/i }));
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith(
         'updateReminderSettings',
@@ -91,7 +88,47 @@ describe('ReminderSettingsView', () => {
       ),
     );
     const updateCall = call.mock.calls.filter((c) => c[0] === 'updateReminderSettings').at(-1);
-    expect(typeof (updateCall![1] as { body: { breakCadenceMinutes: number } }).body.breakCadenceMinutes).toBe('number');
+    expect(
+      typeof (updateCall![1] as { body: { breakCadenceMinutes: number } }).body.breakCadenceMinutes,
+    ).toBe('number');
+  });
+
+  it('patches the stretch cadence from its own group, not the break one', async () => {
+    // Two identical chip rows are on screen. Picking from the stretch group
+    // must never move the break cadence — the defect a shared handler makes.
+    call.mockResolvedValue(settings);
+    renderView();
+    const group = await screen.findByRole('group', { name: /stretch frequency/i });
+    fireEvent.click(within(group).getByRole('button', { name: /every 30 min/i }));
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith(
+        'updateReminderSettings',
+        saved({ stretchCadenceMinutes: 30 }),
+      ),
+    );
+    expect(call).not.toHaveBeenCalledWith(
+      'updateReminderSettings',
+      saved({ breakCadenceMinutes: 30 }),
+    );
+  });
+
+  it('marks the chip that matches each saved cadence, separately', async () => {
+    call.mockResolvedValue({ ...settings, breakCadenceMinutes: 60, stretchCadenceMinutes: 120 });
+    renderView();
+    const breaks = await screen.findByRole('group', { name: /break frequency/i });
+    const stretch = screen.getByRole('group', { name: /stretch frequency/i });
+    expect(within(breaks).getByRole('button', { name: /every 60 min/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(stretch).getByRole('button', { name: /every 120 min/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(stretch).getByRole('button', { name: /every 60 min/i })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('clamps the hydration goal to the contract max on blur', async () => {

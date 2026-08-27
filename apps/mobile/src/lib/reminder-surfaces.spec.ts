@@ -9,37 +9,52 @@ import { SCHEDULED_REMINDER_TYPES, reminderTypeSchema } from '@kitchen/contracts
  * `apps/web/src/lib/token-usage.test.ts` uses to police design tokens.
  *
  * What it protects: a toggle for a reminder type the firing engine never
- * fires. `stretchEnabled` shipped as a switch that defaulted to on and
- * changed nothing, so every household was told stretch reminders were
- * running. If a cadence is ever specified, adding `stretch` to
- * `SCHEDULED_REMINDER_TYPES` is what re-permits the toggle here.
+ * fires. `stretchEnabled` shipped as a switch that defaulted to on and changed
+ * nothing, so every household was told stretch reminders were running.
+ *
+ * The earlier version of this file looked for the *name* of every unscheduled
+ * type in the source. Two things killed that check. Every type is scheduled
+ * today, so the list it swept was empty and it asserted nothing; and the
+ * screen now carries an exhaustive `Record<ReminderType, …>` of labels, so
+ * every type name appears in the source whether or not it is offered — it
+ * would have passed for a hand-added stretch row.
+ *
+ * What replaces it is structural, and it is the property that actually
+ * matters: the screen renders **one** `ToggleRow`, inside a map over
+ * `SCHEDULED_REMINDER_TYPES`. A screen shaped that way cannot offer a switch
+ * the engine will ignore, whatever the contract's list becomes.
  */
 const source = (relative: string) =>
   readFileSync(join(__dirname, '..', ...relative.split('/')), 'utf8');
 
+const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
+
 describe('mobile reminder surfaces', () => {
   const screen = source('app/settings/reminders.tsx');
 
-  const unscheduled = reminderTypeSchema.options.filter(
-    (type) => !(SCHEDULED_REMINDER_TYPES as readonly string[]).includes(type),
-  );
-
-  it('has at least one unscheduled type to police', () => {
-    // Otherwise the sweep below would be vacuous.
-    expect(unscheduled).toEqual(['stretch']);
+  it('reads the toggle list from the contract instead of hand-listing it', () => {
+    expect(screen).toContain('SCHEDULED_REMINDER_TYPES.map');
   });
 
-  it('offers no toggle for a reminder type the engine never fires', () => {
-    for (const type of unscheduled) {
-      expect(screen).not.toContain(`${type}Enabled`);
-    }
+  it('renders exactly one ToggleRow, so no nudge can be offered off-list', () => {
+    // A hand-added row for a type the engine ignores is the defect this file
+    // exists for, and it shows up here as a second `<ToggleRow`.
+    expect(occurrences(screen, '<ToggleRow')).toBe(1);
   });
 
-  it('still offers the types the engine does fire', () => {
-    // Guards the sweep above from passing because the screen lost all its
-    // toggles, or was renamed and now reads as an empty string.
-    for (const type of SCHEDULED_REMINDER_TYPES) {
+  it('labels every reminder type, so the derived list can never render blank', () => {
+    // The map above only produces rows for types `toggleCopy` can describe.
+    // TypeScript enforces exhaustiveness; this states the consequence.
+    for (const type of reminderTypeSchema.options) {
       expect(screen).toContain(`${type}Enabled`);
     }
+  });
+
+  it('offers a cadence control for every setting that has one', () => {
+    // Break and stretch each run on their own clock. A cadence setting with no
+    // control is a setting the household cannot reach.
+    expect(screen).toContain('breakCadenceMinutes');
+    expect(screen).toContain('stretchCadenceMinutes');
+    expect(SCHEDULED_REMINDER_TYPES).toContain('stretch');
   });
 });

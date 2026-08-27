@@ -11,6 +11,7 @@ const base: ReminderSettings = {
   morningEnabled: false,
   hydrationEnabled: false,
   breakCadenceMinutes: 90,
+  stretchCadenceMinutes: 120,
   hydrationGoalCups: 8,
   quietHoursStart: 22,
   quietHoursEnd: 7,
@@ -37,13 +38,18 @@ describe('screen helpers', () => {
   });
 
   it('lists a line per enabled nudge, with cadence on the break line', () => {
-    const settings = { ...base, breakEnabled: true, hydrationEnabled: true, breakCadenceMinutes: 60 as const };
+    const settings = {
+      ...base,
+      breakEnabled: true,
+      hydrationEnabled: true,
+      breakCadenceMinutes: 60 as const,
+    };
     expect(hasAnyNudge(settings)).toBe(true);
     const lines = wellnessPlanLines(settings, t);
     expect(lines).toEqual(['Movement breaks · Every 60 min', 'Hydration reminders']);
   });
 
-  it('keeps the plan in firing order: morning → break → hydration', () => {
+  it('keeps the plan in firing order: morning → break → stretch → hydration', () => {
     const settings = {
       ...base,
       breakEnabled: true,
@@ -51,20 +57,28 @@ describe('screen helpers', () => {
       morningEnabled: true,
       hydrationEnabled: true,
     };
-    // Stretch is absent even with its toggle on. The firing engine has no
-    // cadence for it and never produces one, so listing it here promised the
-    // household a nudge that could not arrive.
     expect(wellnessPlanLines(settings, t)).toEqual([
       'Morning kickstart',
       'Movement breaks · Every 90 min',
+      'Stretch reminders · Every 120 min',
       'Hydration reminders',
     ]);
   });
 
-  it('shows no plan at all for a household that has only stretch on', () => {
+  it('gives stretch its own cadence, not the break one', () => {
+    const settings = {
+      ...base,
+      stretchEnabled: true,
+      breakCadenceMinutes: 30 as const,
+      stretchCadenceMinutes: 120 as const,
+    };
+    expect(wellnessPlanLines(settings, t)).toEqual(['Stretch reminders · Every 120 min']);
+  });
+
+  it('shows a stretch-only plan for a household that has only stretch on', () => {
     const settings = { ...base, stretchEnabled: true };
-    expect(hasAnyNudge(settings)).toBe(false);
-    expect(wellnessPlanLines(settings, t)).toEqual([]);
+    expect(hasAnyNudge(settings)).toBe(true);
+    expect(wellnessPlanLines(settings, t)).toEqual(['Stretch reminders · Every 120 min']);
   });
 
   it('renders the configured water goal, not a consumed count', () => {
