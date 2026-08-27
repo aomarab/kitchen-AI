@@ -89,6 +89,30 @@ voice-alert hero (deep-violet `--inverse`) · active-timer and hydration mini-ca
 inventory) plus the new timers/reminders — little new server state of its own beyond a "screen
 config" (which household, which panels, wake hours).
 
+**As built.** Both surfaces exist: `apps/web/src/components/screen/SmartScreenView.tsx` and
+`apps/mobile/src/app/screen.tsx`, each a thin arrangement over a pure `lib/screen.ts`. They share no
+code and duplicate no decisions — which nudges are schedulable, which one is outstanding, and how
+many cups count all come from `@kitchen/contracts`, because that is the part which, if duplicated,
+would let the kiosk and the phone disagree.
+
+Three things turned out to distinguish a kiosk from another list, and each is asserted by a check
+that was proven to fail (`apps/mobile/src/lib/screen-surfaces.spec.ts`):
+
+- **It holds the display awake** (`useKeepAwake`). A view that sleeps after thirty seconds is not
+  something you glance at with wet hands.
+- **Its one-second tick is gated on a timer actually running.** The kiosk is left open for the
+  length of a roast; an ungated tick would re-render it tens of thousands of times over an evening
+  while nothing counts down.
+- **It is the only screen allowed to rotate.** This is the part that nearly shipped broken. The app
+  was pinned with `"orientation": "portrait"` in `app.json`, and on iOS
+  `UISupportedInterfaceOrientations` is a *ceiling*, not a default — a runtime `unlockAsync` under it
+  compiles, ships, and rotates nothing. The manifest now permits landscape and `useOrientationLock`
+  in the root layout takes it back at runtime, so the kiosk is the one screen that opts out and
+  restores the lock on the way out. `store-policy.spec.ts` pins both halves together.
+
+Still unbuilt from the sketch above: the wifi indicator, the "يتحدث الآن" speaking state (Feature 5),
+and the persisted screen config — the mobile kiosk is a route you open, not a device you provision.
+
 ## Feature 2 — Wellness reminders engine
 
 **Data model (new tables):**

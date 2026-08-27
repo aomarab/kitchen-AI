@@ -4,7 +4,7 @@
     "slug": "kitchen-ai",
     "scheme": "kitchenai",
     "version": "0.1.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -63,6 +63,11 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Mama's Kitchen uses the camera to recognise ingredients in your kitchen.",
         "NSPhotoLibraryUsageDescription": "Mama's Kitchen reads photos of your kitchen to build your inventory.",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
         "UISupportedInterfaceOrientations~ipad": [
           "UIInterfaceOrientationPortrait",
           "UIInterfaceOrientationPortraitUpsideDown",

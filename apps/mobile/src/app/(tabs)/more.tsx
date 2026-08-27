@@ -39,6 +39,7 @@ export default function More() {
       ) : null}
 
       <View style={{ gap: spacing.sm }}>
+        {row(t('mobile.screen.entry'), 'screen', '/screen')}
         {row(t('mobile.more.shopping'), 'basket', '/shopping')}
         {row(t('mobile.timers.entry'), 'clock', '/timers')}
         {row(t('mobile.wellness.entry'), 'sunrise', '/wellness')}
