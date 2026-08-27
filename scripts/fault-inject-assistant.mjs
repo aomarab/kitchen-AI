@@ -21,11 +21,13 @@ const SERVICE = 'apps/api/src/ai/assistant/assistant.service.ts';
 const PROVIDER = 'apps/api/src/ai/assistant/openai-realtime.provider.ts';
 const CONTRACT = 'packages/contracts/src/assistant.ts';
 const VIEW = 'apps/web/src/components/assistant/LiveAssistantView.tsx';
+const BRIEF = 'apps/api/src/ai/assistant/pantry-brief.ts';
 
 const WEB_SPEC = ['@kitchen/web', 'src/lib/assistant/openai-realtime.test.ts'];
 const API_SPEC = ['@kitchen/api', 'src/ai/assistant/assistant.service.spec.ts'];
 const CONTRACT_SPEC = ['@kitchen/contracts', 'src/assistant.spec.ts'];
 const VIEW_SPEC = ['@kitchen/web', 'src/components/assistant/LiveAssistantView.test.tsx'];
+const BRIEF_SPEC = ['@kitchen/api', 'src/ai/assistant/pantry-brief.spec.ts'];
 
 const CASES = [
   {
@@ -92,8 +94,8 @@ const CASES = [
     file: SERVICE,
     spec: API_SPEC,
     check: 'charges before minting, so an unaffordable session never reaches the provider',
-    from: "    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');\n\n    try {\n      return await this.provider.mint(locale);",
-    to: "    const session = await this.provider.mint(locale);\n    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');\n\n    try {\n      return session;",
+    from: "    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');\n\n    try {\n      return await this.provider.mint(locale, brief);",
+    to: "    const session = await this.provider.mint(locale, brief);\n    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');\n\n    try {\n      return session;",
   },
   {
     name: 'a failed mint keeps the money',
@@ -128,6 +130,70 @@ const CASES = [
     // identical on screen while never charging or contacting the provider.
     from: "      api.call('createRealtimeSession', { body: { locale: locale as 'en' | 'ar' } }),",
     to: "      Promise.resolve({\n        clientSecret: 'x',\n        expiresAt: new Date().toISOString(),\n        model: 'x',\n        callsUrl: 'https://example.invalid/c',\n        isMock: true,\n      }),",
+  },
+  {
+    name: 'the pantry list is no longer ordered by expiry',
+    file: BRIEF,
+    spec: BRIEF_SPEC,
+    check: 'lists items soonest-to-expire first',
+    from: '  const entries = pantryLinesByExpiry(snapshot);',
+    to: '  const entries = [...snapshot.byIngredientId.values()];',
+  },
+  {
+    name: 'the cap is removed, so a large pantry is sent in full every mint',
+    file: BRIEF,
+    spec: BRIEF_SPEC,
+    check: 'caps the list and says how many items it left out',
+    from: '  const shown = entries.slice(0, MAX_PANTRY_LINES);',
+    to: '  const shown = entries;',
+  },
+  {
+    name: 'a truncated list is presented as if it were complete',
+    file: BRIEF,
+    spec: BRIEF_SPEC,
+    check: 'caps the list and says how many items it left out',
+    from: "    omitted > 0 ? `There are ${omitted} more tracked items not listed here; your list is partial.` : '',",
+    to: "    '',",
+  },
+  {
+    name: 'quantities are reported in base units instead of the display unit',
+    file: BRIEF,
+    spec: BRIEF_SPEC,
+    check: 'reports quantities in the display unit, not the base unit',
+    from: '    const quantity = Math.round(fromBase(entry.baseQuantity, entry.displayUnit) * 100) / 100;',
+    to: '    const quantity = entry.baseQuantity;',
+  },
+  {
+    name: 'an Arabic session is given English ingredient names',
+    file: BRIEF,
+    spec: BRIEF_SPEC,
+    check: 'uses Arabic names in an Arabic session',
+    from: "    const name = locale === 'ar' ? entry.nameAr : entry.nameEn;",
+    to: '    const name = entry.nameEn;',
+  },
+  {
+    name: 'the assistant is allowed to read an absent item as an absent item',
+    file: BRIEF,
+    spec: BRIEF_SPEC,
+    check: 'warns that the list is only what is tracked, in both languages',
+    from: "    'This lists only what is tracked, not everything the user owns. Do not tell them they lack an item just because it is missing from this list — ask instead.',",
+    to: "    '',",
+  },
+  {
+    name: 'the pantry is read after the household has already been charged',
+    file: SERVICE,
+    spec: API_SPEC,
+    check: 'does not charge when the pantry read fails',
+    from: '    const snapshot = await this.pantry.snapshot(householdId);\n    const brief = pantryBrief(snapshot, locale);\n\n    const spendGroupId',
+    to: "    const spendGroupId0 = await this.credits.spend(householdId, 'assistant.session');\n    void spendGroupId0;\n    const snapshot = await this.pantry.snapshot(householdId);\n    const brief = pantryBrief(snapshot, locale);\n\n    const spendGroupId",
+  },
+  {
+    name: 'the pantry brief is built and then dropped instead of being sent',
+    file: PROVIDER,
+    spec: API_SPEC,
+    check: 'never sends the provider key to the client, and asks for the pinned TTL',
+    from: 'instructions: instructions(locale, pantryBrief),',
+    to: "instructions: instructions(locale, ''),",
   },
   {
     name: 'the secret TTL is raised to the provider default',

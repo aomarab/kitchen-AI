@@ -18,7 +18,7 @@ import type { RealtimeSessionProvider } from './realtime-provider.interface.js';
 export class MockRealtimeSessionProvider implements RealtimeSessionProvider {
   readonly isMock = true;
 
-  async mint(_locale: Locale): Promise<RealtimeSession> {
+  async mint(_locale: Locale, _pantryBrief: string): Promise<RealtimeSession> {
     return {
       // Deliberately not a plausible `ek_…` token. If this ever reaches a real
       // provider the request should fail loudly rather than half-work.

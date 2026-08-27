@@ -21,6 +21,10 @@ export interface RealtimeSessionProvider {
    * Throws rather than returning a partial session: a caller that received a
    * session without a usable secret would charge the household and then fail
    * to connect.
+   *
+   * `pantryBrief` is the household's Stage-A snapshot rendered as text. It is
+   * passed in rather than fetched here so this port stays a pure vendor
+   * adapter with no database of its own.
    */
-  mint(locale: Locale): Promise<RealtimeSession>;
+  mint(locale: Locale, pantryBrief: string): Promise<RealtimeSession>;
 }

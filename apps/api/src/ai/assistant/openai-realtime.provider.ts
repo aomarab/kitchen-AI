@@ -37,22 +37,27 @@ interface ClientSecretResponse {
  * through the normal append-only inventory event path with a human confirming,
  * not through a model with a tool call.
  */
-function instructions(locale: Locale): string {
-  return locale === 'ar'
-    ? [
-        'أنتِ مساعدة مطبخ ترى ما تريه الكاميرا وتتحدث بالعربية المحكية الطبيعية.',
-        'صِفي ما ترينه من مكوّنات بإيجاز، واقترحي ما يمكن طهيه منها.',
-        'لا تدّعي أنكِ ترين شيئًا غير واضح؛ قولي إنكِ لستِ متأكدة.',
-        'لا يمكنكِ تعديل المخزون بنفسك — اطلبي من المستخدم تأكيد الإضافة.',
-        'استدعي report_items كلما تغيّرت الأصناف التي ترينها.',
-      ].join(' ')
-    : [
-        'You are a kitchen assistant who can see through the camera and speaks naturally.',
-        'Briefly describe the ingredients you can see and suggest what could be cooked from them.',
-        'Never claim to see something you cannot make out — say you are unsure instead.',
-        'You cannot change the inventory yourself — ask the user to confirm any addition.',
-        'Call report_items whenever the set of items you can see changes.',
-      ].join(' ');
+function instructions(locale: Locale, pantryBrief: string): string {
+  // The pantry goes last: it is the longest section, and the behavioural rules
+  // above it are the ones that must not be crowded out.
+  const persona =
+    locale === 'ar'
+      ? [
+          'أنتِ مساعدة مطبخ ترى ما تريه الكاميرا وتتحدث بالعربية المحكية الطبيعية.',
+          'صِفي ما ترينه من مكوّنات بإيجاز، واقترحي ما يمكن طهيه منها.',
+          'لا تدّعي أنكِ ترين شيئًا غير واضح؛ قولي إنكِ لستِ متأكدة.',
+          'لا يمكنكِ تعديل المخزون بنفسك — اطلبي من المستخدم تأكيد الإضافة.',
+          'استدعي report_items كلما تغيّرت الأصناف التي ترينها.',
+        ].join(' ')
+      : [
+          'You are a kitchen assistant who can see through the camera and speaks naturally.',
+          'Briefly describe the ingredients you can see and suggest what could be cooked from them.',
+          'Never claim to see something you cannot make out — say you are unsure instead.',
+          'You cannot change the inventory yourself — ask the user to confirm any addition.',
+          'Call report_items whenever the set of items you can see changes.',
+        ].join(' ');
+
+  return `${persona}\n\n${pantryBrief}`;
 }
 
 /**
@@ -113,7 +118,7 @@ export class OpenAiRealtimeSessionProvider implements RealtimeSessionProvider {
     private readonly model: string,
   ) {}
 
-  async mint(locale: Locale): Promise<RealtimeSession> {
+  async mint(locale: Locale, pantryBrief: string): Promise<RealtimeSession> {
     // The provider rejects anything outside its own bounds, and a rejected mint
     // is indistinguishable to the caller from an outage. Fail on our side, where
     // the message can name the real cause.
@@ -131,7 +136,7 @@ export class OpenAiRealtimeSessionProvider implements RealtimeSessionProvider {
       session: {
         type: 'realtime',
         model: this.model,
-        instructions: instructions(locale),
+        instructions: instructions(locale, pantryBrief),
         tools: [REPORT_ITEMS_TOOL],
       },
     };
