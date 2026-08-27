@@ -10,7 +10,8 @@ import { cn } from '../../lib/cn';
 import { localizedName } from '../../lib/name';
 import { useLiveMedia } from '../../lib/useLiveMedia';
 import { useLocations } from '../../hooks/inventory';
-import { MockRealtimeAssistantClient } from '../../lib/assistant/mock-realtime';
+import { OpenAiRealtimeAssistantClient } from '../../lib/assistant/openai-realtime';
+import { api } from '../../lib/api';
 import type {
   AssistantStatus,
   DetectedItem,
@@ -35,8 +36,24 @@ import { ReviewList } from '../kitchen/ReviewList';
  * `createClient` is an injection seam (default: the mock) so tests drive a
  * deterministic session; it is the same port/adapter shape used across the app.
  */
+/**
+ * Builds the transport.
+ *
+ * There is one path, not two. The client cannot tell a scripted deployment from
+ * a live one by looking at its own configuration, so it does not try: it mints,
+ * and the session it gets back says whether it is real. Under MSW that mint is
+ * answered by the mock handler with `isMock: true`, and the adapter hands over
+ * to the scripted client with the demo badge still lit.
+ */
+function defaultClient(): RealtimeAssistantClient {
+  return new OpenAiRealtimeAssistantClient({
+    createSession: (locale) =>
+      api.call('createRealtimeSession', { body: { locale: locale as 'en' | 'ar' } }),
+  });
+}
+
 export function LiveAssistantView({
-  createClient = () => new MockRealtimeAssistantClient(),
+  createClient = defaultClient,
 }: {
   createClient?: () => RealtimeAssistantClient;
 }) {
@@ -306,7 +323,12 @@ function toRecognized(items: DetectedItem[]): RecognizedItem[] {
     tempId: item.id,
     // `created` + null id: the API resolves/creates the catalog row on confirm,
     // exactly as the photo-recognition path does.
-    match: { ingredientId: null, strategy: 'created', confidence: item.confidence, rawName: item.nameEn },
+    match: {
+      ingredientId: null,
+      strategy: 'created',
+      confidence: item.confidence,
+      rawName: item.nameEn,
+    },
     nameEn: item.nameEn,
     nameAr: item.nameAr,
     category: item.category,
@@ -350,7 +372,10 @@ function GateCard({
       ) : null}
       <div className="mt-2 w-full">{action}</div>
       {secondaryHref && secondaryLabel ? (
-        <Link href={secondaryHref} className="text-sm font-semibold text-muted-foreground hover:text-foreground">
+        <Link
+          href={secondaryHref}
+          className="text-sm font-semibold text-muted-foreground hover:text-foreground"
+        >
           {secondaryLabel}
         </Link>
       ) : null}
@@ -404,7 +429,16 @@ function ControlButton({
 /* --------------------------- icons --------------------------- */
 function MicIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
       <path d="M19 10a7 7 0 0 1-14 0" />
       <line x1="12" y1="19" x2="12" y2="22" />
@@ -414,7 +448,16 @@ function MicIcon() {
 
 function MicOffIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <line x1="3" y1="3" x2="21" y2="21" />
       <path d="M9 9v2a3 3 0 0 0 5.12 2.12M15 9.34V5a3 3 0 0 0-5.94-.6" />
       <path d="M19 10a7 7 0 0 1-.11 1.23M5 10a7 7 0 0 0 10.09 6.3" />
@@ -425,7 +468,16 @@ function MicOffIcon() {
 
 function CaptionsIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <rect x="3" y="5" width="18" height="14" rx="3" />
       <path d="M7 12h3M14 12h3M7 15h6" />
     </svg>
@@ -435,14 +487,25 @@ function CaptionsIcon() {
 function EndIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor" aria-hidden="true">
-      <path d="M21 15.5c-1.2 0-2.4-.2-3.5-.6a1 1 0 0 0-1 .2l-1.5 1.5a15 15 0 0 1-6.6-6.6L9.4 8.5a1 1 0 0 0 .2-1C9.2 6.4 9 5.2 9 4a1 1 0 0 0-1-1H4.5A1.5 1.5 0 0 0 3 4.6 18 18 0 0 0 19.4 21 1.5 1.5 0 0 0 21 19.5V16a.5.5 0 0 0-.5-.5z" transform="rotate(135 12 12)" />
+      <path
+        d="M21 15.5c-1.2 0-2.4-.2-3.5-.6a1 1 0 0 0-1 .2l-1.5 1.5a15 15 0 0 1-6.6-6.6L9.4 8.5a1 1 0 0 0 .2-1C9.2 6.4 9 5.2 9 4a1 1 0 0 0-1-1H4.5A1.5 1.5 0 0 0 3 4.6 18 18 0 0 0 19.4 21 1.5 1.5 0 0 0 21 19.5V16a.5.5 0 0 0-.5-.5z"
+        transform="rotate(135 12 12)"
+      />
     </svg>
   );
 }
 
 function PlusIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
@@ -451,7 +514,16 @@ function PlusIcon() {
 
 function CameraGlyph() {
   return (
-    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-7 w-7"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M3 7h3l2-2h8l2 2h3v13H3z" />
       <circle cx="12" cy="13" r="3.5" />
     </svg>

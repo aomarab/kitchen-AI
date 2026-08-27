@@ -206,6 +206,57 @@ recipe steps as context. No new write path.
 
 Prototype: `06-live-assistant.html`.
 
+### As built — Phase A (client, offline)
+
+The port (`apps/web/src/lib/assistant/realtime-port.ts`), the scripted
+`MockRealtimeAssistantClient`, real camera+mic consent, and the confirm-before-write step reusing
+`ReviewList` → `bulkCreateInventory`. `isMock` drives a persistent "Demo" badge.
+
+### As built — Phase B (the real transport)
+
+The real adapter now ships: `POST /assistant/sessions` mints an ephemeral OpenAI Realtime client
+secret, and `OpenAiRealtimeAssistantClient` opens the WebRTC peer connection with it. Several things
+were decided differently from the sketch above, and the reasons matter more than the code:
+
+- **No `assistant_sessions` table, no `endAssistantSession`, no tool-call callbacks to the API.**
+  The sketch assumed the API stays in the loop for the life of a session. It cannot: the transport
+  is browser↔provider by design, so a server-side session row would record only that a credential
+  was minted, not whether it was used or for how long. A table that looks like session accounting
+  but is not would be worse than no table.
+- **The mint is the only server-side moment, so it is where the charge happens.** Order is
+  spend → mint → refund-on-throw. Charging after minting would make the credit check advisory: we
+  would already have been billed by the provider before discovering we must refuse.
+- **`REALTIME_SECRET_TTL_SEC` is pinned to the provider floor of 10s as a cost control**, not a UX
+  knob. One client secret may start *any number of sessions* until it expires, so the TTL — not the
+  session length — is what bounds a single paid mint.
+- **Session duration is not bounded and cannot be.** Once connected, the session is between client
+  and provider and there is no server-set hard limit to rely on. `'assistant.session'` is therefore
+  priced at **25 credits as an estimate of a typical short session**, not a measured cost. Long
+  sessions are under-charged. This is a stated limitation, not an oversight; metering it would
+  require relaying the audio, which is the round trip the design exists to avoid.
+- **This is a deliberate exception to "every model call goes through `AiGateway`."** The gateway's
+  contract is budget-check → schema-guarded call → usage recorded, around a call whose token counts
+  we can see. Here we see none of the traffic, so routing through it would produce a usage row that
+  is a fiction.
+- **No frame sampling, because no video is sent at all.** The published track is audio only. The
+  model is speech-to-speech; a video track would ship the user's kitchen to the provider for a
+  benefit they were never promised. "Vision" in this feature is the still-image scan path, which is
+  unchanged.
+- **Detections come from a `report_items` tool, not from parsing the transcript**, and the tool's
+  `unit`/`category` enums are generated from the contract schemas so they cannot drift. The client
+  re-validates every item and **drops** what fails rather than coercing it — a silently corrected
+  item is indistinguishable from one the model actually saw. There is deliberately no
+  `add_to_inventory` tool: a detection is a suggestion, and the write goes through the normal
+  append-only inventory event path after a human confirms it.
+- **The demo badge fails safe.** `isMock` starts `true` and drops only once the API returns a
+  session it states is real; a deployment with `AI_MOCK=true` mints an unusable secret and the
+  client hands over to the scripted adapter with the badge still lit.
+
+Not built in Phase B: the Stage-A pantry snapshot is **not** yet injected as session context, so the
+assistant is not grounded in real inventory — it can describe what it sees but not what you own.
+Fault injection for the above lives in `scripts/fault-inject-assistant.mjs` (12 defects, each caught
+by the check that names it).
+
 ---
 
 ## New contract surface (summary)
@@ -218,6 +269,8 @@ New schema files in `packages/contracts/src/` — `reminders.ts`, `timers.ts`, `
 - Timers: `listTimers`, `createTimer`, `updateTimer`, `deleteTimer`
 - Voice: `getVoicePrefs`, `updateVoicePrefs`, `previewVoice`
 - Assistant: `startAssistantSession`, `endAssistantSession`, `assistantAddDetectedItems`
+  — **as built this reduced to a single `createRealtimeSession` (`POST /assistant/sessions`)**; see
+  Phase B above for why there is no session row to end and no server-side add path.
 - Screen: `getScreenConfig`, `updateScreenConfig`
 
 All household-scoped except voice/tone (user-scoped). New DB tables:

@@ -34,6 +34,7 @@ import type {
 import {
   CREDIT_PACKS,
   DEFAULT_SLOTS_BY_SCOPE,
+  REALTIME_SECRET_TTL_SEC,
   applyTimerAction,
   projectTimer,
   wakingStart,
@@ -129,7 +130,11 @@ function generatePlan(body: GeneratePlanRequest, locale: Locale): string {
   // Daily plans are guaranteed cookable from stock (spec §5.4), so drop the one
   // uncovered recipe from the pool for that scope.
   const pool =
-    body.scope === 'daily' ? GEN_POOL.filter((k) => coverageForRecipe(db.seedById.get(db.recipeIdByKey.get(k)!)!).fullyCovered) : GEN_POOL;
+    body.scope === 'daily'
+      ? GEN_POOL.filter(
+          (k) => coverageForRecipe(db.seedById.get(db.recipeIdByKey.get(k)!)!).fullyCovered,
+        )
+      : GEN_POOL;
 
   const entries = [];
   let n = 0;
@@ -181,18 +186,30 @@ export const handlers = [
   }),
   http.post(u('/auth/login'), async ({ request }) => {
     const body = (await request.json()) as LoginRequest;
-    return HttpResponse.json(makeSession(body.email, db.user?.displayName ?? 'Chef', db.user?.locale ?? 'en'));
+    return HttpResponse.json(
+      makeSession(body.email, db.user?.displayName ?? 'Chef', db.user?.locale ?? 'en'),
+    );
   }),
   http.post(u('/auth/oauth'), async () =>
     HttpResponse.json(
-      makeSession(db.user?.email ?? 'chef@example.com', db.user?.displayName ?? 'Chef', db.user?.locale ?? 'en'),
+      makeSession(
+        db.user?.email ?? 'chef@example.com',
+        db.user?.displayName ?? 'Chef',
+        db.user?.locale ?? 'en',
+      ),
     ),
   ),
   http.post(u('/auth/refresh'), async () =>
-    HttpResponse.json({ accessToken: `mock.${uuid()}`, refreshToken: `mock.${uuid()}`, expiresIn: 900 }),
+    HttpResponse.json({
+      accessToken: `mock.${uuid()}`,
+      refreshToken: `mock.${uuid()}`,
+      expiresIn: 900,
+    }),
   ),
   http.post(u('/auth/logout'), async () => HttpResponse.json({ ok: true })),
-  http.get(u('/me'), async () => (db.user ? HttpResponse.json(db.user) : err('UNAUTHENTICATED', 401))),
+  http.get(u('/me'), async () =>
+    db.user ? HttpResponse.json(db.user) : err('UNAUTHENTICATED', 401),
+  ),
   http.patch(u('/me'), async ({ request }) => {
     const body = (await request.json()) as UpdateMeRequest;
     const current = db.user;
@@ -294,6 +311,19 @@ export const handlers = [
     return HttpResponse.json({ ok: true });
   }),
 
+  /* ---------- Live assistant ---------- */
+  // `isMock: true` keeps the client on the scripted adapter and the demo badge
+  // lit; the secret is deliberately unusable.
+  http.post(u('/assistant/sessions'), async () =>
+    HttpResponse.json({
+      clientSecret: 'mock-realtime-secret',
+      expiresAt: new Date(Date.now() + REALTIME_SECRET_TTL_SEC * 1000).toISOString(),
+      model: 'mock-realtime',
+      callsUrl: 'https://example.invalid/realtime/calls',
+      isMock: true,
+    }),
+  ),
+
   /* ---------- Catalog ---------- */
   http.get(u('/ingredients'), async ({ request }) => {
     const q = new URL(request.url).searchParams.get('q')?.toLowerCase() ?? '';
@@ -356,7 +386,8 @@ export const handlers = [
       items = items.filter((i) => i.expiresAt !== null && i.expiresAt <= limit);
     }
     items.sort((a, b) => {
-      if (sort === 'name') return a.ingredient.canonicalNameEn.localeCompare(b.ingredient.canonicalNameEn);
+      if (sort === 'name')
+        return a.ingredient.canonicalNameEn.localeCompare(b.ingredient.canonicalNameEn);
       if (sort === 'recent') return b.createdAt.localeCompare(a.createdAt);
       const ae = a.expiresAt ?? '9999-12-31';
       const be = b.expiresAt ?? '9999-12-31';
@@ -424,7 +455,9 @@ export const handlers = [
     }),
   ),
   http.post(u('/inventory/recognize'), async ({ request }) => {
-    const body = (await request.json()) as { locationHint?: 'fridge' | 'freezer' | 'pantry' | 'spice_rack' };
+    const body = (await request.json()) as {
+      locationHint?: 'fridge' | 'freezer' | 'pantry' | 'spice_rack';
+    };
     const session = buildRecognitionSession(body.locationHint);
     db.recognitions.set(session.id, session);
     return HttpResponse.json(session);
@@ -453,7 +486,12 @@ export const handlers = [
       productName: 'Canned Chickpeas 400g',
       brand: 'Al Wadi',
       imageUrl: 'https://picsum.photos/seed/barcode/400/400',
-      match: { ingredientId: ingredient.id, strategy: 'alias', confidence: 0.9, rawName: 'Canned Chickpeas' },
+      match: {
+        ingredientId: ingredient.id,
+        strategy: 'alias',
+        confidence: 0.9,
+        rawName: 'Canned Chickpeas',
+      },
       suggestedQuantity: 400,
       suggestedUnit: 'g',
     });
@@ -499,7 +537,9 @@ export const handlers = [
     for (const ri of seed.ingredients) {
       const ingredient = db.ingredientsByKey.get(ri.ref)!;
       if (ingredient.isStaple) continue;
-      const item = db.inventory.find((i) => i.ingredient.id === ingredient.id && i.unit === ri.unit);
+      const item = db.inventory.find(
+        (i) => i.ingredient.id === ingredient.id && i.unit === ri.unit,
+      );
       if (item && item.quantity >= ri.quantity) {
         item.quantity -= ri.quantity;
         item.updatedAt = iso();
@@ -696,7 +736,9 @@ export const handlers = [
     const nextCursor = offset + limit < filtered.length ? encodeMockCursor(offset + limit) : null;
 
     return HttpResponse.json({
-      items: page.map(({ submitter: _submitter, adminNote: _note, reviewedAt: _at, ...rest }) => rest),
+      items: page.map(
+        ({ submitter: _submitter, adminNote: _note, reviewedAt: _at, ...rest }) => rest,
+      ),
       nextCursor,
     });
   }),
@@ -769,7 +811,10 @@ export const handlers = [
   http.patch(u('/admin/feedback/:id'), async ({ params, request }) => {
     const item = db.feedback.find((f) => f.id === params.id);
     if (!item) return err('NOT_FOUND', 404);
-    const body = (await request.json()) as { status?: typeof item.status; adminNote?: string | null };
+    const body = (await request.json()) as {
+      status?: typeof item.status;
+      adminNote?: string | null;
+    };
     if (body.status !== undefined) item.status = body.status;
     if (body.adminNote !== undefined) item.adminNote = body.adminNote;
     item.reviewedAt = iso();
@@ -814,7 +859,13 @@ export const handlers = [
 function jobView(id: string) {
   const job = db.jobs.get(id)!;
   job.polls += 1;
-  const status = job.fail ? 'failed' : job.polls >= 3 ? 'done' : job.polls === 2 ? 'running' : 'queued';
+  const status = job.fail
+    ? 'failed'
+    : job.polls >= 3
+      ? 'done'
+      : job.polls === 2
+        ? 'running'
+        : 'queued';
   const progress = job.fail ? 0 : job.polls >= 3 ? 1 : job.polls === 2 ? 0.5 : 0.1;
 
   if (status === 'done' && job.resultKind === 'meal_plan') {

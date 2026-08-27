@@ -14,6 +14,7 @@ export const USAGE_REPOSITORY = Symbol('USAGE_REPOSITORY');
 export const PANTRY_PORT = Symbol('PANTRY_PORT');
 export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
 export const JOB_STORE = Symbol('JOB_STORE');
+export const REALTIME_SESSION_PROVIDER = Symbol('REALTIME_SESSION_PROVIDER');
 
 /** BullMQ queue names. Mirrors the `jobs.type` enum in the contract. */
 export const QUEUE_PLAN = 'plan.generate';

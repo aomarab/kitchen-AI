@@ -72,6 +72,18 @@ beforeEach(() => {
     if (route === 'bulkCreateInventory') {
       return Promise.resolve((opts?.body?.items ?? []).map((_, i) => ({ id: `it-${i}` })));
     }
+    // The default transport mints before it can do anything else. `isMock: true`
+    // is what a deployment running on mocks returns, and what keeps the view on
+    // the scripted client.
+    if (route === 'createRealtimeSession') {
+      return Promise.resolve({
+        clientSecret: 'mock-realtime-secret',
+        expiresAt: new Date(Date.now() + 10_000).toISOString(),
+        model: 'mock-realtime',
+        callsUrl: 'https://example.invalid/realtime/calls',
+        isMock: true,
+      });
+    }
     return Promise.resolve(undefined);
   });
 });
@@ -134,7 +146,7 @@ describe('LiveAssistantView', () => {
     expect(screen.getByText('اطبخ مع مساعد مباشر')).toBeInTheDocument();
   });
 
-  it('does not loop when using the default (mock) client factory', async () => {
+  it('does not loop, and falls back to the scripted client, on the default factory', async () => {
     // Regression: the default `createClient` prop is a new function each render.
     // If it were an effect dependency, going live would restart the session on
     // every render. jsdom resolves the live view before React's update-depth
@@ -154,6 +166,9 @@ describe('LiveAssistantView', () => {
     await screen.findByTestId('assistant-live');
     // Let any runaway re-render loop accumulate before we count.
     await new Promise((resolve) => setTimeout(resolve, 50));
+    // Exactly one: the default factory mints once, sees `isMock`, and hands to
+    // the scripted client. More than one is the re-render loop this guards.
     expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(call.mock.calls.filter((c) => c[0] === 'createRealtimeSession')).toHaveLength(1);
   });
 });

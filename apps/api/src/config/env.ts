@@ -62,6 +62,13 @@ const envSchema = z.object({
   OPENAI_MODEL_PLANNING: z.string().default('gpt-5'),
   OPENAI_MODEL_VISION: z.string().default('gpt-5'),
   OPENAI_MODEL_CHEAP: z.string().default('gpt-5-mini'),
+  /**
+   * Realtime speech-to-speech model for the live assistant (spec Feature 5).
+   * Kept separate from the tiers above because it is not routed by
+   * `OPERATION_TIER` — the realtime session never passes through `AiGateway`,
+   * since its traffic goes client↔provider and we never see a token count.
+   */
+  OPENAI_MODEL_REALTIME: z.string().default('gpt-realtime'),
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_MODEL_VISION: z.string().default('gemini-3-flash'),
   /**

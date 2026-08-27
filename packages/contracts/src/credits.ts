@@ -16,6 +16,7 @@ export const creditActionSchema = z.enum([
   'plan.weekly',
   'plan.monthly',
   'plan.regenerateEntry',
+  'assistant.session',
 ]);
 export type CreditAction = z.infer<typeof creditActionSchema>;
 
@@ -33,6 +34,18 @@ export const CREDIT_COSTS: Record<CreditAction, number> = {
   'plan.weekly': 20,
   'plan.monthly': 50,
   'plan.regenerateEntry': 2,
+  // Charged when a realtime client secret is minted, because that is the only
+  // moment the server sees. Realtime audio is billed by the provider per minute
+  // of conversation, which we never observe, so unlike every other action here
+  // this price is an *estimate of a typical session* rather than a measured
+  // cost: ~2 minutes of speech-to-speech at gpt-realtime rates. Two consequences
+  // are deliberate and must not be quietly "fixed":
+  //   - a long session is under-charged, which is why the client secret's TTL is
+  //     at the provider floor (see REALTIME_SECRET_TTL_SEC) — one mint buys one
+  //     connection, and staying longer is the only thing we cannot meter;
+  //   - a session abandoned after five seconds is over-charged, so the mint is
+  //     refunded when the connection never opens.
+  'assistant.session': 25,
 };
 
 /**

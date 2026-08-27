@@ -5,6 +5,7 @@ import {
   routes,
   wakingStart,
   REMINDER_MESSAGE_KEYS,
+  REALTIME_SECRET_TTL_SEC,
   type CookingTimer,
   type CreateTimerRequest,
   type Ingredient,
@@ -299,9 +300,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
   listReminderOccurrences: ({ request }) => {
     const since = query(request).get('since');
     const from = since ? new Date(since) : wakingStart(db.reminderSettings, new Date());
-    return HttpResponse.json(
-      db.reminderOccurrences.filter((o) => new Date(o.firedAt) >= from),
-    );
+    return HttpResponse.json(db.reminderOccurrences.filter((o) => new Date(o.firedAt) >= from));
   },
   acknowledgeReminder: ({ params }) => {
     const found = db.reminderOccurrences.find((o) => o.id === params.id);
@@ -309,6 +308,19 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     if (!found.acknowledgedAt) found.acknowledgedAt = new Date().toISOString();
     return HttpResponse.json(found);
   },
+
+  /* ---- Live assistant ---- */
+  // `isMock: true` is the load-bearing field: it is what keeps the client on
+  // the scripted adapter and the demo badge lit. The secret is deliberately
+  // implausible so it can never be mistaken for a usable credential.
+  createRealtimeSession: () =>
+    HttpResponse.json({
+      clientSecret: 'mock-realtime-secret',
+      expiresAt: new Date(Date.now() + REALTIME_SECRET_TTL_SEC * 1000).toISOString(),
+      model: 'mock-realtime',
+      callsUrl: 'https://example.invalid/realtime/calls',
+      isMock: true,
+    }),
 
   /* ---- Catalog ---- */
   searchIngredients: ({ request }) => {
