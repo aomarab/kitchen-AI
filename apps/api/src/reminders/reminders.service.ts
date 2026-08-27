@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import {
   reminderSettingsSchema,
   type BreakCadenceMinutes,
+  type StretchCadenceMinutes,
   type ReminderSettings,
   type UpdateReminderSettingsRequest,
 } from '@kitchen/contracts';
@@ -16,6 +17,7 @@ interface ReminderSettingsRow {
   morningEnabled: boolean;
   hydrationEnabled: boolean;
   breakCadenceMinutes: number;
+  stretchCadenceMinutes: number;
   hydrationGoalCups: number;
   quietHoursStart: number;
   quietHoursEnd: number;
@@ -30,6 +32,7 @@ function toReminderSettings(row: ReminderSettingsRow): ReminderSettings {
     morningEnabled: row.morningEnabled,
     hydrationEnabled: row.hydrationEnabled,
     breakCadenceMinutes: row.breakCadenceMinutes as BreakCadenceMinutes,
+    stretchCadenceMinutes: row.stretchCadenceMinutes as StretchCadenceMinutes,
     hydrationGoalCups: row.hydrationGoalCups,
     quietHoursStart: row.quietHoursStart,
     quietHoursEnd: row.quietHoursEnd,

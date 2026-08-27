@@ -61,6 +61,7 @@ describe('RemindersFiringService (live DB)', () => {
     await settings.update(household, {
       breakEnabled: false,
       hydrationEnabled: false,
+      stretchEnabled: false,
     });
 
     const first = await firing.sweepHousehold(household, at(7, 1));
@@ -84,6 +85,7 @@ describe('RemindersFiringService (live DB)', () => {
       morningEnabled: false,
       hydrationEnabled: false,
       breakCadenceMinutes: 60,
+      stretchEnabled: false,
     });
 
     expect(await firing.sweepHousehold(household, at(7, 45))).toEqual([]);
@@ -100,6 +102,7 @@ describe('RemindersFiringService (live DB)', () => {
       morningEnabled: false,
       breakEnabled: false,
       hydrationGoalCups: 2,
+      stretchEnabled: false,
     });
 
     // 15 waking hours split into 3 gaps = a cup every 5 hours, at 12:00 and
@@ -117,6 +120,7 @@ describe('RemindersFiringService (live DB)', () => {
       timeZone: 'Asia/Amman',
       breakEnabled: false,
       hydrationEnabled: false,
+      stretchEnabled: false,
     });
     // 20:00 UTC is 23:00 in Amman — inside quiet hours there, outside in UTC.
     expect(await firing.sweepHousehold(household, at(20, 0))).toEqual([]);
@@ -124,12 +128,50 @@ describe('RemindersFiringService (live DB)', () => {
     await settings.update(other, {
       breakEnabled: false,
       hydrationEnabled: false,
+      stretchEnabled: false,
     });
     expect((await firing.sweepHousehold(other, at(20, 0))).map((o) => o.type)).toEqual(['morning']);
   });
 
-  it('never fires stretch, because no setting defines its cadence', async () => {
-    await settings.update(household, { stretchEnabled: true });
+  it('fires a stretch one cadence after waking, on its own clock', async () => {
+    await settings.update(household, {
+      morningEnabled: false,
+      breakEnabled: false,
+      hydrationEnabled: false,
+      stretchEnabled: true,
+      stretchCadenceMinutes: 120,
+    });
+
+    // Waking is 07:00, so the first stretch is due at 09:00 and the next at
+    // 11:00 — never at the 60-minute break cadence the household did not pick.
+    expect(await firing.sweepHousehold(household, at(8, 59))).toEqual([]);
+    const first = await firing.sweepHousehold(household, at(9, 0));
+    expect(first.map((o) => o.type)).toEqual(['stretch']);
+    expect(first[0]!.messageKey).toBe(REMINDER_MESSAGE_KEYS.stretch);
+
+    expect(await firing.sweepHousehold(household, at(10, 0))).toEqual([]);
+    const second = await firing.sweepHousehold(household, at(11, 0));
+    expect(second.map((o) => o.type)).toEqual(['stretch']);
+  });
+
+  it('fires a break and a stretch together rather than dropping one', async () => {
+    await settings.update(household, {
+      morningEnabled: false,
+      hydrationEnabled: false,
+      stretchEnabled: true,
+      breakCadenceMinutes: 60,
+      stretchCadenceMinutes: 60,
+    });
+
+    const fired = await firing.sweepHousehold(household, at(8, 0));
+    expect(fired.map((o) => o.type).sort()).toEqual(['break', 'stretch']);
+  });
+
+  it('fires no stretch while its toggle is off, whatever the cadence', async () => {
+    await settings.update(household, {
+      stretchEnabled: false,
+      stretchCadenceMinutes: 30,
+    });
     const fired: string[] = [];
     for (let hour = 0; hour < 24; hour += 1) {
       fired.push(...(await firing.sweepHousehold(household, at(hour, 0))).map((o) => o.type));
@@ -142,10 +184,12 @@ describe('RemindersFiringService (live DB)', () => {
     await settings.update(household, {
       breakEnabled: false,
       hydrationEnabled: false,
+      stretchEnabled: false,
     });
     await settings.update(other, {
       breakEnabled: false,
       hydrationEnabled: false,
+      stretchEnabled: false,
     });
 
     const fired = (await firing.sweep(at(8, 0))).filter((o) =>
@@ -163,6 +207,7 @@ describe('RemindersFiringService (live DB)', () => {
     await settings.update(household, {
       breakEnabled: false,
       hydrationEnabled: false,
+      stretchEnabled: false,
     });
     await firing.sweepHousehold(household, at(8, 0));
 
@@ -175,6 +220,7 @@ describe('RemindersFiringService (live DB)', () => {
     await settings.update(household, {
       breakEnabled: false,
       morningEnabled: false,
+      stretchEnabled: false,
     });
     const [cup] = await firing.sweepHousehold(household, at(12, 0));
     expect(cup!.acknowledgedAt).toBeNull();
@@ -190,6 +236,7 @@ describe('RemindersFiringService (live DB)', () => {
     await settings.update(household, {
       breakEnabled: false,
       hydrationEnabled: false,
+      stretchEnabled: false,
     });
     const [nudge] = await firing.sweepHousehold(household, at(8, 0));
     await expect(firing.acknowledge(other, nudge!.id, at(8, 1))).rejects.toBeInstanceOf(AppError);
@@ -205,6 +252,7 @@ describe('RemindersFiringService (live DB)', () => {
     await settings.update(household, {
       breakEnabled: false,
       hydrationEnabled: false,
+      stretchEnabled: false,
     });
     const [a, b] = await Promise.all([
       firing.sweepHousehold(household, at(8, 0)),
@@ -221,7 +269,11 @@ describe('RemindersFiringService (live DB)', () => {
    * *waits*. Remove the lock and the sweep sails past, so the check goes red.
    */
   it('waits for a lock another transaction holds on the settings row', async () => {
-    await settings.update(household, { breakEnabled: false, hydrationEnabled: false });
+    await settings.update(household, {
+      breakEnabled: false,
+      hydrationEnabled: false,
+      stretchEnabled: false,
+    });
 
     let release!: () => void;
     const held = new Promise<void>((resolve) => {
@@ -250,6 +302,7 @@ describe('RemindersFiringService (live DB)', () => {
     await settings.update(household, {
       breakEnabled: false,
       hydrationEnabled: false,
+      stretchEnabled: false,
     });
     const [nudge] = await firing.sweepHousehold(household, at(8, 0));
     await expect(

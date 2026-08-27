@@ -104,6 +104,7 @@ export const mockReminderSettings: ReminderSettings = {
   morningEnabled: true,
   hydrationEnabled: true,
   breakCadenceMinutes: 60,
+  stretchCadenceMinutes: 90,
   hydrationGoalCups: 8,
   quietHoursStart: 22,
   quietHoursEnd: 7,

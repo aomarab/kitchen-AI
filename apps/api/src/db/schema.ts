@@ -254,6 +254,11 @@ export const reminderSettings = pgTable('reminder_settings', {
   morningEnabled: boolean('morning_enabled').notNull().default(true),
   hydrationEnabled: boolean('hydration_enabled').notNull().default(true),
   breakCadenceMinutes: integer('break_cadence_minutes').notNull().default(60),
+  /**
+   * Stretch runs on its own clock, not the break's: 90 by default so the two
+   * do not collide for a household that changes neither.
+   */
+  stretchCadenceMinutes: integer('stretch_cadence_minutes').notNull().default(90),
   hydrationGoalCups: integer('hydration_goal_cups').notNull().default(8),
   quietHoursStart: integer('quiet_hours_start').notNull().default(22),
   quietHoursEnd: integer('quiet_hours_end').notNull().default(7),

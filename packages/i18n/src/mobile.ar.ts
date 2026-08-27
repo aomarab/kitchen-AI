@@ -410,7 +410,14 @@ export const mobileAr: MobileMessages = {
       hydrationLabel: 'تذكيرات الترطيب',
       hydrationHint: 'تذكير بشرب الماء.',
       cadenceTitle: 'تكرار الفترات',
-      cadenceEvery: 'كل {minutes} دقيقة',
+      stretchCadenceTitle: 'تكرار التمدد',
+      cadenceEvery: plural('minutes', {
+        one: 'كل دقيقة',
+        two: 'كل دقيقتين',
+        few: 'كل {minutes} دقائق',
+        many: 'كل {minutes} دقيقةً',
+        other: 'كل {minutes} دقيقة',
+      }),
       hydrationGoalTitle: 'هدف الماء اليومي',
       hydrationGoalValue: plural('count', {
         one: 'كوب واحد',

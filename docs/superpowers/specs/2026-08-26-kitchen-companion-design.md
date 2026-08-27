@@ -61,9 +61,9 @@ channel (feature 5), which is called out explicitly.
   - `TTS_PORT` → `MockTts` (returns a silent/stub audio fixture) / `OpenAiTts`.
   - `REALTIME_ASSISTANT_PORT` → `MockRealtimeAssistant` (scripted transcript + fixture detections) /
     `OpenAiRealtimeAssistant`.
-  New `AiOperation` values (`voice.synthesize`, `assistant.realtime`) join `OPERATION_TIER` and the
-  cost table so budget accounting and fixtures keep working. `AI_MOCK` stays the default, so the
-  whole system still runs offline and free.
+    New `AiOperation` values (`voice.synthesize`, `assistant.realtime`) join `OPERATION_TIER` and the
+    cost table so budget accounting and fixtures keep working. `AI_MOCK` stays the default, so the
+    whole system still runs offline and free.
 - **Scheduling is BullMQ.** The reminders engine adds a repeatable-job queue (`QUEUE_REMINDER`)
   next to `QUEUE_PLAN`/`QUEUE_RECEIPT`, registered in `ai.module.ts` with a `ReminderProcessor`.
 - **Inventory writes stay append-only.** Live-mode "add to inventory" emits `inventory_events` and
@@ -94,7 +94,17 @@ config" (which household, which panels, wake hours).
 **Data model (new tables):**
 
 - `reminder_settings` — household-scoped: per-type enabled flag (`break`, `stretch`, `morning`,
-  `hydration`), break cadence (30/60/90/120 min), quiet hours, hydration goal (cups/day).
+  `hydration`), break cadence (30/60/90/120 min), **stretch cadence (the same four intervals, on an
+  independent clock, default 90)**, quiet hours, hydration goal (cups/day).
+
+  The stretch cadence was not in the original spec, and its absence had a cost worth recording. The
+  `stretch` toggle shipped and defaulted to on, but the engine could not schedule the type — nothing
+  said how often — so every household was told stretch reminders were running while none could ever
+  fire. The toggle was withdrawn rather than given an invented interval, and returned only once this
+  setting existed. Break and stretch are separate settings because they ask for different things:
+  stop working, versus move your body. When both fall due in the same sweep, **both fire**;
+  suppressing one would silently cancel a cadence the household chose.
+
 - `reminder_occurrences` — a log of fired reminders (type, firedAt, channel, acknowledged) so the
   screen can show "5 of 8 cups" and we can avoid double-firing.
 
@@ -142,8 +152,8 @@ session**.
 realtime multimodal model. **Recommended provider: OpenAI Realtime API**, because the repo already
 standardizes on OpenAI (`OpenAiProvider`, `OPENAI_API_KEY`) — behind `REALTIME_ASSISTANT_PORT` so a
 `Mock` implementation keeps `AI_MOCK` dev offline (scripted transcript + fixture detections, exactly
-what prototype `06` shows). *(Open question: OpenAI Realtime vs Gemini Live — decide at build time
-on latency/vision quality/cost.)*
+what prototype `06` shows). _(Open question: OpenAI Realtime vs Gemini Live — decide at build time
+on latency/vision quality/cost.)_
 
 **Session lifecycle:** client calls `startAssistantSession` → API mints a short-lived, scoped
 realtime credential (ephemeral token; the standing `OPENAI_API_KEY` never reaches the client) and
@@ -163,6 +173,7 @@ existing `CATALOG_PORT`/bilingual catalog, not free text.
 recipe steps as context. No new write path.
 
 **Cost, privacy, safety (must-haves, not polish):**
+
 - Explicit camera + mic consent per session; a persistent on-screen "مباشر/LIVE" indicator.
 - **Frame sampling**, not full-motion video, to bound cost and bandwidth; enforce a per-session and
   per-household budget cap through the existing spend guard before/again during a session.

@@ -1,7 +1,13 @@
 'use client';
 
 import type { FocusEvent } from 'react';
-import type { BreakCadenceMinutes, ReminderSettings, UpdateReminderSettingsRequest } from '@kitchen/contracts';
+import {
+  SCHEDULED_REMINDER_TYPES,
+  type BreakCadenceMinutes,
+  type ReminderSettings,
+  type ReminderType,
+  type UpdateReminderSettingsRequest,
+} from '@kitchen/contracts';
 import { translateErrorKey } from '@kitchen/i18n';
 import { useLocale } from '../../lib/locale';
 import { resolveErrorKey } from '../../lib/errors';
@@ -15,16 +21,20 @@ import { LoadingState, ErrorState } from '../ui/states';
 const CADENCES: BreakCadenceMinutes[] = [30, 60, 90, 120];
 
 /**
- * `stretchEnabled` is deliberately not offered.
+ * The toggles offered are derived from `SCHEDULED_REMINDER_TYPES`, never
+ * hand-listed.
  *
- * The firing engine has no cadence for stretch — none is specified in the
- * spec or the prototype — so `SCHEDULED_REMINDER_TYPES` excludes it and no
- * stretch nudge is ever produced. A switch that changes nothing is worse than
- * no switch: it defaults to on, so it told every household that stretch
- * reminders were running. The column is kept in the contract and the database
- * so the preference survives for whenever a cadence is decided.
+ * This screen once offered a stretch switch the engine could not act on: it
+ * defaulted to on, so it told every household that stretch reminders were
+ * running when none could ever fire. #14 removed the switch; a cadence setting
+ * has since made stretch schedulable and the switch is back. Reading the
+ * contract's list is what makes that swing automatic instead of a thing
+ * somebody has to remember.
+ *
+ * `Record<ReminderType, …>` is exhaustive on purpose: a new nudge type in the
+ * contract fails to compile here until it is given a label.
  */
-type ToggleKey = 'breakEnabled' | 'morningEnabled' | 'hydrationEnabled';
+type ToggleKey = `${ReminderType}Enabled`;
 
 export function ReminderSettingsView() {
   const { t, locale } = useLocale();
@@ -38,11 +48,55 @@ export function ReminderSettingsView() {
   const settings: ReminderSettings = query.data;
   const save = (patch: UpdateReminderSettingsRequest) => update.mutate(patch);
 
-  const toggles: { key: ToggleKey; label: string; hint: string }[] = [
-    { key: 'breakEnabled', label: t('web.reminders.breakLabel'), hint: t('web.reminders.breakHint') },
-    { key: 'morningEnabled', label: t('web.reminders.morningLabel'), hint: t('web.reminders.morningHint') },
-    { key: 'hydrationEnabled', label: t('web.reminders.hydrationLabel'), hint: t('web.reminders.hydrationHint') },
-  ];
+  const copy: Record<ReminderType, { key: ToggleKey; label: string; hint: string }> = {
+    break: {
+      key: 'breakEnabled',
+      label: t('web.reminders.breakLabel'),
+      hint: t('web.reminders.breakHint'),
+    },
+    stretch: {
+      key: 'stretchEnabled',
+      label: t('web.reminders.stretchLabel'),
+      hint: t('web.reminders.stretchHint'),
+    },
+    morning: {
+      key: 'morningEnabled',
+      label: t('web.reminders.morningLabel'),
+      hint: t('web.reminders.morningHint'),
+    },
+    hydration: {
+      key: 'hydrationEnabled',
+      label: t('web.reminders.hydrationLabel'),
+      hint: t('web.reminders.hydrationHint'),
+    },
+  };
+  const toggles = SCHEDULED_REMINDER_TYPES.map((type) => copy[type]);
+
+  const cadenceCard = (title: string, key: 'breakCadenceMinutes' | 'stretchCadenceMinutes') => (
+    <Card className="flex flex-col gap-3">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={title}>
+        {CADENCES.map((c) => (
+          <button
+            key={c}
+            type="button"
+            aria-pressed={settings[key] === c}
+            onClick={() => save({ [key]: c })}
+            className={cn(
+              'rounded-full border px-3 py-1.5 text-sm font-medium transition',
+              settings[key] === c
+                ? 'border-primary-text bg-primary-soft text-primary-text'
+                : 'border-border text-muted-foreground hover:bg-muted',
+            )}
+          >
+            {t('web.reminders.cadenceEvery', { minutes: c })}
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
 
   const clampHour = (
     e: FocusEvent<HTMLInputElement>,
@@ -89,29 +143,8 @@ export function ReminderSettingsView() {
         ))}
       </Card>
 
-      <Card className="flex flex-col gap-3">
-        <CardHeader>
-          <CardTitle>{t('web.reminders.cadenceTitle')}</CardTitle>
-        </CardHeader>
-        <div className="flex flex-wrap gap-2">
-          {CADENCES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              aria-pressed={settings.breakCadenceMinutes === c}
-              onClick={() => save({ breakCadenceMinutes: c })}
-              className={cn(
-                'rounded-full border px-3 py-1.5 text-sm font-medium transition',
-                settings.breakCadenceMinutes === c
-                  ? 'border-primary-text bg-primary-soft text-primary-text'
-                  : 'border-border text-muted-foreground hover:bg-muted',
-              )}
-            >
-              {t('web.reminders.cadenceEvery', { minutes: c })}
-            </button>
-          ))}
-        </div>
-      </Card>
+      {cadenceCard(t('web.reminders.cadenceTitle'), 'breakCadenceMinutes')}
+      {cadenceCard(t('web.reminders.stretchCadenceTitle'), 'stretchCadenceMinutes')}
 
       <Card className="flex flex-col gap-4">
         <CardHeader>

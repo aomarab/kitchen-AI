@@ -1,6 +1,11 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
-import type { BreakCadenceMinutes } from '@kitchen/contracts';
+import {
+  SCHEDULED_REMINDER_TYPES,
+  type BreakCadenceMinutes,
+  type ReminderType,
+  type StretchCadenceMinutes,
+} from '@kitchen/contracts';
 import {
   Screen,
   Header,
@@ -34,7 +39,8 @@ export default function Reminders() {
   );
 
   if (query.isLoading) return frame(<LoadingState />);
-  if (query.isError) return frame(<ErrorState error={query.error} onRetry={() => void query.refetch()} />);
+  if (query.isError)
+    return frame(<ErrorState error={query.error} onRetry={() => void query.refetch()} />);
   if (!query.data) return frame(null);
 
   const s = query.data;
@@ -42,6 +48,34 @@ export default function Reminders() {
     value: String(c),
     label: t('mobile.reminders.cadenceEvery', { minutes: c }),
   }));
+
+  // Exhaustive on ReminderType: a new nudge type in the contract fails to
+  // compile here until it is given a label.
+  const toggleCopy: Record<
+    ReminderType,
+    { key: `${ReminderType}Enabled`; label: string; hint: string }
+  > = {
+    break: {
+      key: 'breakEnabled',
+      label: t('mobile.reminders.breakLabel'),
+      hint: t('mobile.reminders.breakHint'),
+    },
+    stretch: {
+      key: 'stretchEnabled',
+      label: t('mobile.reminders.stretchLabel'),
+      hint: t('mobile.reminders.stretchHint'),
+    },
+    morning: {
+      key: 'morningEnabled',
+      label: t('mobile.reminders.morningLabel'),
+      hint: t('mobile.reminders.morningHint'),
+    },
+    hydration: {
+      key: 'hydrationEnabled',
+      label: t('mobile.reminders.hydrationLabel'),
+      hint: t('mobile.reminders.hydrationHint'),
+    },
+  };
 
   return (
     <Screen scroll>
@@ -59,28 +93,23 @@ export default function Reminders() {
           {t('mobile.reminders.nudgesTitle')}
         </AppText>
         {/*
-          No stretch toggle: the firing engine has no cadence for it, so it
-          never fires. See SCHEDULED_REMINDER_TYPES in @kitchen/contracts. The
-          setting itself is kept server-side for whenever one is decided.
+          The rows are derived from SCHEDULED_REMINDER_TYPES, not hand-listed,
+          so this screen can only offer a switch the firing engine can act on.
+          Stretch was absent until a cadence setting existed; it is back for
+          the same reason, without anyone having to edit this list.
         */}
-        <ToggleRow
-          label={t('mobile.reminders.breakLabel')}
-          hint={t('mobile.reminders.breakHint')}
-          value={s.breakEnabled}
-          onValueChange={(v) => update.mutate({ breakEnabled: v })}
-        />
-        <ToggleRow
-          label={t('mobile.reminders.morningLabel')}
-          hint={t('mobile.reminders.morningHint')}
-          value={s.morningEnabled}
-          onValueChange={(v) => update.mutate({ morningEnabled: v })}
-        />
-        <ToggleRow
-          label={t('mobile.reminders.hydrationLabel')}
-          hint={t('mobile.reminders.hydrationHint')}
-          value={s.hydrationEnabled}
-          onValueChange={(v) => update.mutate({ hydrationEnabled: v })}
-        />
+        {SCHEDULED_REMINDER_TYPES.map((type) => {
+          const row = toggleCopy[type];
+          return (
+            <ToggleRow
+              key={type}
+              label={row.label}
+              hint={row.hint}
+              value={s[row.key]}
+              onValueChange={(v) => update.mutate({ [row.key]: v })}
+            />
+          );
+        })}
       </Card>
 
       <Card style={{ gap: spacing.sm }}>
@@ -91,6 +120,19 @@ export default function Reminders() {
           options={cadenceOptions}
           value={String(s.breakCadenceMinutes)}
           onChange={(v) => update.mutate({ breakCadenceMinutes: Number(v) as BreakCadenceMinutes })}
+        />
+      </Card>
+
+      <Card style={{ gap: spacing.sm }}>
+        <AppText variant="label" muted>
+          {t('mobile.reminders.stretchCadenceTitle')}
+        </AppText>
+        <SegmentedControl
+          options={cadenceOptions}
+          value={String(s.stretchCadenceMinutes)}
+          onChange={(v) =>
+            update.mutate({ stretchCadenceMinutes: Number(v) as StretchCadenceMinutes })
+          }
         />
       </Card>
 

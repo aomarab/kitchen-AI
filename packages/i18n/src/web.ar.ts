@@ -260,7 +260,14 @@ export const webAr: WebMessages = {
       hydrationLabel: 'تذكيرات الترطيب',
       hydrationHint: 'تذكير بشرب الماء.',
       cadenceTitle: 'تكرار الفترات',
-      cadenceEvery: 'كل {minutes} دقيقة',
+      stretchCadenceTitle: 'تكرار التمدد',
+      cadenceEvery: plural('minutes', {
+        one: 'كل دقيقة',
+        two: 'كل دقيقتين',
+        few: 'كل {minutes} دقائق',
+        many: 'كل {minutes} دقيقةً',
+        other: 'كل {minutes} دقيقة',
+      }),
       hydrationGoalTitle: 'هدف الماء اليومي',
       hydrationGoalValue: plural('count', {
         one: 'كوب واحد',
@@ -341,7 +348,8 @@ export const webAr: WebMessages = {
       deniedBody: 'اسمح بالوصول من إعدادات المتصفّح ثم حاول مرة أخرى.',
       retry: 'حاول مجدّدًا',
       unavailableTitle: 'لا كاميرا مباشرة هنا',
-      unavailableBody: 'هذا الجهاز أو المتصفّح لا يستطيع فتح كاميرا مباشرة. جرّب التقاط الصور بدلًا من ذلك.',
+      unavailableBody:
+        'هذا الجهاز أو المتصفّح لا يستطيع فتح كاميرا مباشرة. جرّب التقاط الصور بدلًا من ذلك.',
       liveBadge: 'مباشر',
       demoBadge: 'تجريبي',
       demoNote: 'مساعد تجريبي — ليس ذكاءً مباشرًا بعد',
