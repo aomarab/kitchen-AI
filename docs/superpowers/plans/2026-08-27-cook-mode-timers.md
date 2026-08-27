@@ -66,12 +66,36 @@ so an empty or moved file reddens rather than silently passing.
 bundles everything under `src/app` into the app, so that file would have shipped inside the
 binary and crashed it at launch by importing `vitest` at runtime. Moved to `src/lib`.
 
+## A defect this found, that only the device could find
+
+The button first shipped as a flat i18n string, `ابدأ مؤقتًا {minutes} دقيقة`. On the simulator it
+rendered **`ابدأ مؤقتًا 5 دقيقة`** directly beneath a badge reading **`الطهي 5 دقائق`** — two controls,
+same number, same screen, disagreeing about the word for "minutes". Arabic takes the plural for
+3–10 and the singular accusative for 11–99, and `recipe.cookTime` already used the repo's CLDR
+`plural()` helper while my new key did not.
+
+Fixed by making `startStepTimer` a `plural()` message with `one`/`two`/`few`/`many`/`other`. Two
+checks now pin it in `packages/i18n/src/plural.spec.ts`; reverting the key to a flat string reddens
+both, verified and restored byte-for-byte.
+
+The cross-check compares the grammatical **number** the two controls chose, not the surface form —
+`الطهي دقيقتان` (nominative) and `ابدأ مؤقتًا دقيقتين` (accusative) are both correct, and an earlier
+draft of the test wrongly demanded they match exactly. The rule was fixed, not the strings.
+
+## Verified on device
+
+iPhone 17 simulator, locale Arabic, driven with `idb`:
+
+1. Cook mode opens with `الخطوة 1 من 4`; previous/next are mirrored (`السابق` right, `التالي` left).
+2. Steps 1 and 2 have no duration and show **no** timer button — the refusal is real, not styling.
+3. Step 3 shows `ابدأ مؤقتًا 30 دقيقةً`, step 4 `ابدأ مؤقتًا 5 دقائق`; both agree with their badge.
+4. Tapping the step-4 button replaced it with `المؤقت يعمل · 4:54`, and eight seconds later it read
+   `4:45` — the tick and `projectTimer` are live, not a static render.
+
 ## Not verified
 
-- **Not run on a device or simulator.** No slice since PR #11 has been. The Simulator exposes
-  zero AX windows while booted, so synthetic taps are impossible; only `simctl io screenshot`
-  works. Nobody has watched this button start a timer.
-- **The Arabic strings have not been read on a real RTL screen.** They typecheck and the key
-  set is complete, which is not the same as reading correctly.
-- **The notification from PR #13 has still never been observed firing**, so the end of this
-  loop — the step timer that actually tells you it is done — remains unproven in practice.
+- **The #13 timer notification has still never been observed firing**, so the end of this loop —
+  the step timer that tells you it is done while you are elsewhere — remains unproven.
+- Only the mock data set was exercised; no step in the fixtures exceeds `MAX_TIMER_DURATION_SEC`,
+  so the `too_long` refusal is proven by test only, never seen on a screen.
+- English cook mode was not re-checked on device after the plural change (the Arabic path was).
