@@ -3,9 +3,13 @@ import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { formatRemaining, projectTimer, type CookingTimer } from '@kitchen/contracts';
 import { AppText, Button, Badge, LoadingState } from '../../../components';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe } from '../../../hooks/recipe';
+import { useCreateTimer, useTimers } from '../../../hooks/timers';
+import { existingStepTimer, stepTimerPlan, type StepTimerPlan } from '../../../lib/cook-timers';
+import { hasRunningTimer, useTimerTick } from '../../../lib/timers';
 import { formatMinutes } from '../../../lib/format';
 import { spacing } from '../../../theme';
 import { useTheme } from '../../../theme/useTheme';
@@ -17,6 +21,18 @@ import { useTheme } from '../../../theme/useTheme';
  */
 export default function CookMode() {
   useKeepAwake();
+  // Ticks only while a timer is worth watching, so a recipe with no timer
+  // running does not re-render this screen once a second for no reason.
+  const timers = useTimers();
+  const createTimer = useCreateTimer();
+  /*
+   * Every hook here runs before the loading early-return below, which is why
+   * the tick is gated on a value read straight from the query rather than on
+   * the current step's timer: the step is not known until the recipe has
+   * loaded, and a hook cannot be called conditionally.
+   */
+  const anyRunning = hasRunningTimer(timers.data?.items ?? [], new Date());
+  const now = useTimerTick(anyRunning);
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,6 +51,19 @@ export default function CookMode() {
   const steps = recipe.data.steps;
   const current = steps[step]!;
   const isLast = step === steps.length - 1;
+
+  const plan = stepTimerPlan({
+    recipeTitle: recipe.data.title,
+    stepNumber: step + 1,
+    stepWord: t('mobile.recipe.stepWord'),
+    durationMinutes: current.durationMinutes,
+  });
+  const existing = plan.ok
+    ? existingStepTimer(timers.data?.items ?? [], plan.body.label)
+    : null;
+  // Projected, not the status the server last wrote: a timer that ran out
+  // while this screen was open is finished, whatever the cached row says.
+  const projected = existing ? projectTimer(existing, now) : null;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.surfaceInverse }}>
@@ -65,6 +94,16 @@ export default function CookMode() {
               })}
             />
           ) : null}
+
+          <StepTimerControl
+            plan={plan}
+            projected={projected}
+            pending={createTimer.isPending}
+            durationMinutes={current.durationMinutes ?? 0}
+            onStart={() => {
+              if (plan.ok) createTimer.mutate(plan.body);
+            }}
+          />
           <AppText variant="display" style={{ color: colors.textInverse }}>
             {current.text}
           </AppText>
@@ -101,5 +140,61 @@ export default function CookMode() {
         </View>
       </View>
     </SafeAreaView>
+  );
+}
+
+/**
+ * The one control cook mode adds: start this step's timer, or watch it.
+ *
+ * Renders nothing for an untimed step, and nothing for a step longer than
+ * `MAX_TIMER_DURATION_SEC` — a button that the contract would refuse is worse
+ * than no button, and a twelve-hour prove is not something anyone stands in
+ * front of the phone waiting for.
+ */
+function StepTimerControl({
+  plan,
+  projected,
+  pending,
+  durationMinutes,
+  onStart,
+}: {
+  plan: StepTimerPlan;
+  projected: CookingTimer | null;
+  pending: boolean;
+  durationMinutes: number;
+  onStart: () => void;
+}) {
+  const { t, locale, prefs } = useFormat();
+  const { colors } = useTheme();
+
+  if (!plan.ok) return null;
+
+  if (projected) {
+    const finished = projected.status === 'done';
+    return (
+      <AppText
+        variant="label"
+        style={{ color: finished ? colors.textInverse : colors.textInverseMuted }}
+      >
+        {finished
+          ? t('mobile.recipe.stepTimerDone')
+          : t('mobile.recipe.stepTimerRunning', {
+              remaining: formatRemaining(projected.remainingSec),
+            })}
+      </AppText>
+    );
+  }
+
+  return (
+    <Button
+      title={t('mobile.recipe.startStepTimer', {
+        minutes: formatMinutes(locale, durationMinutes, prefs),
+      })}
+      icon="clock"
+      variant="secondaryInverse"
+      fullWidth={false}
+      disabled={pending}
+      onPress={onStart}
+    />
   );
 }
