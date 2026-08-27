@@ -19,7 +19,7 @@
     "db:reset": "pnpm --filter @kitchen/api db:reset",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --config packages/config/prettier.config.mjs --write \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {
     "prettier": "^3.4.2",

@@ -3,15 +3,24 @@
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import { formatDate } from '@kitchen/i18n';
-import { formatRemaining } from '@kitchen/contracts';
+import { formatRemaining, REMINDER_MESSAGE_KEYS } from '@kitchen/contracts';
 import { useLocale } from '../../lib/locale';
 import { cn } from '../../lib/cn';
 import { useOrientation } from '../../lib/useOrientation';
 import { useHousehold } from '../../hooks/settings';
-import { useReminderSettings } from '../../hooks/reminders';
+import {
+  useAcknowledgeReminder,
+  useReminderOccurrences,
+  useReminderSettings,
+} from '../../hooks/reminders';
 import { useTimers } from '../../hooks/timers';
 import { featuredTimer, hasRunningTimer, useTimerTick } from '../../lib/timers';
-import { hasAnyNudge, hydrationGoalText, wellnessPlanLines } from '../../lib/screen';
+import {
+  activeNudge,
+  hasAnyNudge,
+  hydrationProgressText,
+  wellnessPlanLines,
+} from '../../lib/screen';
 import { LoadingState, ErrorState } from '../ui/states';
 
 function useClock(): Date | null {
@@ -30,6 +39,8 @@ export function SmartScreenView() {
   const householdQuery = useHousehold();
   const settingsQuery = useReminderSettings();
   const timersQuery = useTimers();
+  const occurrencesQuery = useReminderOccurrences();
+  const acknowledge = useAcknowledgeReminder();
   const now = useClock();
   const timers = timersQuery.data?.items ?? [];
   const tick = useTimerTick(hasRunningTimer(timers, new Date()));
@@ -54,6 +65,8 @@ export function SmartScreenView() {
   const settings = settingsQuery.data;
   const householdName = householdQuery.data?.name ?? t('web.screen.wordmark');
   const planLines = wellnessPlanLines(settings, t);
+  const occurrences = occurrencesQuery.data ?? [];
+  const nudge = activeNudge(occurrences);
   const clock = now ? formatDate(locale, now, { hour: '2-digit', minute: '2-digit' }) : '—';
   const isLandscape = orientation === 'landscape';
 
@@ -89,7 +102,21 @@ export function SmartScreenView() {
             </span>
           </div>
 
-          {planLines.length > 0 ? (
+          {nudge ? (
+            <div className="flex flex-col items-start gap-4" data-testid="screen-nudge">
+              <p className="text-2xl font-semibold leading-snug">
+                {t(REMINDER_MESSAGE_KEYS[nudge.type])}
+              </p>
+              <button
+                type="button"
+                onClick={() => acknowledge.mutate(nudge.id)}
+                disabled={acknowledge.isPending}
+                className="rounded-full bg-inverse-foreground px-5 py-2 text-sm font-bold text-inverse disabled:opacity-50"
+              >
+                {t('web.screen.nudgeAcknowledge')}
+              </button>
+            </div>
+          ) : planLines.length > 0 ? (
             <ul className="flex flex-col gap-2">
               {planLines.map((line) => (
                 <li key={line} className="text-xl font-semibold leading-snug">
@@ -122,7 +149,8 @@ export function SmartScreenView() {
             tone="accent"
             icon={<WaterIcon />}
             label={t('web.screen.hydrationLabel')}
-            value={hydrationGoalText(settings, t)}
+            value={hydrationProgressText(occurrences, settings, t)}
+            testId="screen-hydration"
           />
         </div>
       </main>

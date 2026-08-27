@@ -84,7 +84,13 @@ import {
   submitProductFeedbackRequestSchema,
   updateFeedbackRequestSchema,
 } from './feedback.js';
-import { reminderSettingsSchema, updateReminderSettingsRequestSchema } from './reminders.js';
+import {
+  listReminderOccurrencesQuerySchema,
+  reminderOccurrenceListSchema,
+  reminderOccurrenceSchema,
+  reminderSettingsSchema,
+  updateReminderSettingsRequestSchema,
+} from './reminders.js';
 import {
   cookingTimerSchema,
   createTimerRequestSchema,
@@ -679,6 +685,22 @@ export const routes = {
     household: true,
     body: updateReminderSettingsRequestSchema,
     response: reminderSettingsSchema,
+  },
+  listReminderOccurrences: {
+    method: 'GET',
+    path: '/reminders/occurrences',
+    auth: true,
+    household: true,
+    query: listReminderOccurrencesQuerySchema,
+    response: reminderOccurrenceListSchema,
+  },
+  acknowledgeReminder: {
+    method: 'POST',
+    path: '/reminders/occurrences/:id/acknowledge',
+    auth: true,
+    household: true,
+    params: idParamSchema,
+    response: reminderOccurrenceSchema,
   },
 
   /* ---------------- Cooking timers ---------------- */

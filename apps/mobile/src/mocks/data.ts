@@ -107,6 +107,7 @@ export const mockReminderSettings: ReminderSettings = {
   hydrationGoalCups: 8,
   quietHoursStart: 22,
   quietHoursEnd: 7,
+  timeZone: 'UTC',
 };
 
 export function makeSession(user: User = mockUser): Session {

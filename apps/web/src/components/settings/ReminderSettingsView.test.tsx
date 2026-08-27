@@ -33,6 +33,16 @@ function renderView(locale: 'en' | 'ar' = 'en') {
   );
 }
 
+/**
+ * Every save also carries the browser time zone (quiet hours are wall-clock
+ * hours). Building the expectation here keeps the *negative* assertions below
+ * honest: a bare `{ body: { … } }` would no longer match anything, so they
+ * would pass even if the component did fire the mutation.
+ */
+const saved = (patch: Record<string, unknown>) => ({
+  body: { ...patch, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+});
+
 describe('ReminderSettingsView', () => {
   beforeEach(() => call.mockReset());
 
@@ -41,7 +51,12 @@ describe('ReminderSettingsView', () => {
     renderView();
     const toggle = await screen.findByRole('switch', { name: /hydration reminders/i });
     fireEvent.click(toggle);
-    await waitFor(() => expect(call).toHaveBeenCalledWith('updateReminderSettings', { body: { hydrationEnabled: false } }));
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith(
+        'updateReminderSettings',
+        saved({ hydrationEnabled: false }),
+      ),
+    );
   });
 
   it('choosing a cadence patches breakCadenceMinutes with a number', async () => {
@@ -49,7 +64,12 @@ describe('ReminderSettingsView', () => {
     renderView();
     const chip = await screen.findByRole('button', { name: /every 90 min/i });
     fireEvent.click(chip);
-    await waitFor(() => expect(call).toHaveBeenCalledWith('updateReminderSettings', { body: { breakCadenceMinutes: 90 } }));
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith(
+        'updateReminderSettings',
+        saved({ breakCadenceMinutes: 90 }),
+      ),
+    );
     const updateCall = call.mock.calls.filter((c) => c[0] === 'updateReminderSettings').at(-1);
     expect(typeof (updateCall![1] as { body: { breakCadenceMinutes: number } }).body.breakCadenceMinutes).toBe('number');
   });
@@ -60,7 +80,9 @@ describe('ReminderSettingsView', () => {
     const input = (await screen.findByLabelText(/daily water goal/i)) as HTMLInputElement;
     fireEvent.change(input, { target: { value: '99' } });
     fireEvent.blur(input);
-    await waitFor(() => expect(call).toHaveBeenCalledWith('updateReminderSettings', { body: { hydrationGoalCups: 20 } }));
+    await waitFor(() =>
+      expect(call).toHaveBeenCalledWith('updateReminderSettings', saved({ hydrationGoalCups: 20 })),
+    );
     // the uncontrolled field must not keep showing the rejected out-of-range entry
     expect(input.value).toBe('20');
   });
@@ -74,7 +96,10 @@ describe('ReminderSettingsView', () => {
     fireEvent.blur(input);
     // 25 clamps to 20, which equals the persisted value → no mutation …
     await new Promise((r) => setTimeout(r, 0));
-    expect(call).not.toHaveBeenCalledWith('updateReminderSettings', { body: { hydrationGoalCups: 20 } });
+    expect(call).not.toHaveBeenCalledWith(
+      'updateReminderSettings',
+      saved({ hydrationGoalCups: 20 }),
+    );
     // … but the display must still correct itself from 25 back to 20
     expect(input.value).toBe('20');
   });
@@ -87,7 +112,10 @@ describe('ReminderSettingsView', () => {
     fireEvent.blur(input);
     // give any erroneous mutation a chance to fire
     await new Promise((r) => setTimeout(r, 0));
-    expect(call).not.toHaveBeenCalledWith('updateReminderSettings', { body: { hydrationGoalCups: 8 } });
+    expect(call).not.toHaveBeenCalledWith(
+      'updateReminderSettings',
+      saved({ hydrationGoalCups: 8 }),
+    );
   });
 
   it('renders in Arabic without throwing', async () => {

@@ -26,9 +26,12 @@ uses Node 22 and installs with `pnpm install --frozen-lockfile`.
 | `pnpm infra:up` / `infra:down`                | Docker: PostgreSQL 17 + pgvector, Redis, MinIO                                            |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Drizzle migrations + bilingual ingredient catalog (`db:seed -- --dry-run` validates only) |
 | `pnpm db:reset`                               | Drops and rebuilds the local database, then re-seeds                                      |
-| `pnpm format`                                 | Prettier over the repo                                                                    |
+| `pnpm format`                                 | Prettier over the **whole** repo — see the warning below                                   |
 
-CI runs `pnpm build`, `pnpm typecheck`, `pnpm lint`, then `pnpm test`.
+CI runs `pnpm build`, `pnpm typecheck`, `pnpm lint`, then `pnpm test`. Note CI does **not** check
+formatting, and the tree has never been uniformly Prettier-formatted, so `pnpm format` rewrites
+~700 files it has no business touching. Format only what you changed:
+`npx prettier --config packages/config/prettier.config.mjs --write <paths>`.
 
 Drizzle Studio is API-only: `pnpm --filter @kitchen/api db:studio`.
 

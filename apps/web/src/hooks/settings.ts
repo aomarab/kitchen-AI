@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Profile, ReminderSettings, UpdateProfileRequest, UpdateReminderSettingsRequest } from '@kitchen/contracts';
+import type {
+  Profile,
+  ReminderSettings,
+  UpdateProfileRequest,
+  UpdateReminderSettingsRequest,
+} from '@kitchen/contracts';
 import { api } from '../lib/api';
 import { useMocksReady } from '../mocks/provider';
 
@@ -108,10 +113,23 @@ export function useReminderSettings() {
   });
 }
 
+/**
+ * Quiet hours are wall-clock hours, so the firing engine cannot honour them
+ * without knowing where the household is. Nothing in the product asks the user
+ * for a zone, and the browser's is the only evidence that exists — so every
+ * save carries it, unless the caller stated one explicitly.
+ */
+function withTimeZone(body: UpdateReminderSettingsRequest): UpdateReminderSettingsRequest {
+  if (body.timeZone) return body;
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return zone ? { ...body, timeZone: zone } : body;
+}
+
 export function useUpdateReminderSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: UpdateReminderSettingsRequest) => api.call('updateReminderSettings', { body }),
+    mutationFn: (body: UpdateReminderSettingsRequest) =>
+      api.call('updateReminderSettings', { body: withTimeZone(body) }),
     onMutate: async (body) => {
       await qc.cancelQueries({ queryKey: ['reminders'] });
       const previous = qc.getQueryData<ReminderSettings>(['reminders']);
