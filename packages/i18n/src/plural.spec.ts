@@ -164,6 +164,51 @@ describe('plural messages', () => {
     }
   });
 
+  it('conjugates the water goal, which reaches the 11-99 range the settings allow', () => {
+    // `hydrationGoalCups` is capped at 20, so the goal crosses the 3-10 →
+    // 11-99 boundary within the range a household can actually choose. The
+    // string was flat, and rendered "من 12 أكواب".
+    const cups = (goal: number) =>
+      translate('ar', 'mobile.wellness.hydrationProgress', { count: 0, goal });
+    expect(cups(1)).toContain('كوب واحد');
+    expect(cups(2)).toContain('كوبين');
+    expect(cups(8)).toContain('أكواب');
+    expect(cups(12)).toContain('كوبًا');
+    expect(cups(12)).not.toContain('أكواب');
+  });
+
+  it('agrees with itself on the kiosk and the phone about the same goal', () => {
+    // Two surfaces, one sentence. They read different namespaces, so nothing
+    // but a test stops one of them regressing to a flat template.
+    for (const goal of [1, 2, 8, 12, 20]) {
+      const args = { count: 3, goal };
+      expect(translate('ar', 'mobile.wellness.hydrationProgress', args)).toBe(
+        translate('ar', 'web.screen.hydrationProgress', args),
+      );
+    }
+  });
+
+  it('conjugates "x minutes ago" instead of always saying دقيقة', () => {
+    const ago = (minutes: number) => translate('ar', 'mobile.wellness.minutesAgo', { minutes });
+    expect(ago(1)).toBe('قبل دقيقة');
+    expect(ago(2)).toBe('قبل دقيقتين');
+    expect(ago(5)).toBe('قبل 5 دقائق');
+    expect(ago(25)).toBe('قبل 25 دقيقةً');
+  });
+
+  it('conjugates every reminder cadence the contract offers', () => {
+    // All four cadences (30/60/90/120) land in Arabic's `many` category —
+    // `many` is n % 100 = 11..99, and 120 % 100 = 20 — so every one of them
+    // wants the singular accusative, which the flat template never gave.
+    const every = (minutes: number) =>
+      translate('ar', 'mobile.reminders.cadenceEvery', { minutes });
+    for (const minutes of [30, 60, 90, 120]) {
+      expect(every(minutes)).toBe(`كل ${minutes} دقيقةً`);
+    }
+    // 100 is `other`, and is the form the old flat string always produced.
+    expect(every(100)).toBe('كل 100 دقيقة');
+  });
+
   it('uses the Arabic plural for 3-10 and the singular accusative for 11-99', () => {
     expect(translate('ar', 'mobile.recipe.startStepTimer', { minutes: 5 })).toBe(
       'ابدأ مؤقتًا 5 دقائق',

@@ -528,9 +528,15 @@ export const mobileEn = {
       acknowledge: 'Done',
       answered: 'Answered',
       justNow: 'Just now',
-      minutesAgo: '{minutes} min ago',
+      minutesAgo: plural('minutes', {
+        one: 'A minute ago',
+        other: '{minutes} min ago',
+      }),
       hydrationTitle: 'Water',
-      hydrationProgress: '{count} of {goal} cups',
+      hydrationProgress: plural('goal', {
+        one: '{count} of {goal} cup',
+        other: '{count} of {goal} cups',
+      }),
       hydrationHint: 'Counts cups you marked as done, not reminders sent.',
       editSettings: 'Reminder settings',
     },
