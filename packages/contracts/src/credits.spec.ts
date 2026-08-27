@@ -23,6 +23,7 @@ describe('credit contracts', () => {
       'plan.weekly': 20,
       'plan.monthly': 50,
       'plan.regenerateEntry': 2,
+      'assistant.session': 25,
     });
   });
 

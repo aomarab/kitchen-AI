@@ -14,6 +14,7 @@ import {
   PANTRY_PORT,
   QUEUE_PLAN,
   QUEUE_RECEIPT,
+  REALTIME_SESSION_PROVIDER,
   REDIS_CLIENT,
   RESPONSE_CACHE,
   USAGE_REPOSITORY,
@@ -36,6 +37,10 @@ import { MockYoutubeClient } from './clients/mock-youtube.client.js';
 import { HttpYoutubeClient } from './clients/http-youtube.client.js';
 import { MockOpenFoodFactsClient } from './clients/mock-open-food-facts.client.js';
 import { HttpOpenFoodFactsClient } from './clients/http-open-food-facts.client.js';
+import { MockRealtimeSessionProvider } from './assistant/mock-realtime.provider.js';
+import { OpenAiRealtimeSessionProvider } from './assistant/openai-realtime.provider.js';
+import { AssistantService } from './assistant/assistant.service.js';
+import { AssistantController } from './assistant/assistant.controller.js';
 import { DrizzleJobStore } from './jobs/job-store.js';
 import { JobsService } from './jobs/jobs.service.js';
 import { JobsController } from './jobs/jobs.controller.js';
@@ -116,6 +121,7 @@ export function createAiProvider(env: Env): AiProvider {
     PlanController,
     ShoppingController,
     UsageController,
+    AssistantController,
   ],
   providers: [
     {
@@ -134,6 +140,15 @@ export function createAiProvider(env: Env): AiProvider {
       useFactory: (env: Env) =>
         env.AI_MOCK ? new MockYoutubeClient() : new HttpYoutubeClient(env.YOUTUBE_API_KEY),
     },
+    {
+      provide: REALTIME_SESSION_PROVIDER,
+      inject: [ENV],
+      useFactory: (env: Env) =>
+        env.AI_MOCK
+          ? new MockRealtimeSessionProvider()
+          : new OpenAiRealtimeSessionProvider(env.OPENAI_API_KEY, env.OPENAI_MODEL_REALTIME),
+    },
+    AssistantService,
     {
       provide: OPEN_FOOD_FACTS_CLIENT,
       inject: [ENV],

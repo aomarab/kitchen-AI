@@ -105,7 +105,7 @@ that was proven to fail (`apps/mobile/src/lib/screen-surfaces.spec.ts`):
   while nothing counts down.
 - **It is the only screen allowed to rotate.** This is the part that nearly shipped broken. The app
   was pinned with `"orientation": "portrait"` in `app.json`, and on iOS
-  `UISupportedInterfaceOrientations` is a *ceiling*, not a default — a runtime `unlockAsync` under it
+  `UISupportedInterfaceOrientations` is a _ceiling_, not a default — a runtime `unlockAsync` under it
   compiles, ships, and rotates nothing. The manifest now permits landscape and `useOrientationLock`
   in the root layout takes it back at runtime, so the kiosk is the one screen that opts out and
   restores the lock on the way out. `store-policy.spec.ts` pins both halves together.
@@ -206,6 +206,92 @@ recipe steps as context. No new write path.
 
 Prototype: `06-live-assistant.html`.
 
+### As built — Phase A (client, offline)
+
+The port (`apps/web/src/lib/assistant/realtime-port.ts`), the scripted
+`MockRealtimeAssistantClient`, real camera+mic consent, and the confirm-before-write step reusing
+`ReviewList` → `bulkCreateInventory`. `isMock` drives a persistent "Demo" badge.
+
+### As built — Phase B (the real transport)
+
+The real adapter now ships: `POST /assistant/sessions` mints an ephemeral OpenAI Realtime client
+secret, and `OpenAiRealtimeAssistantClient` opens the WebRTC peer connection with it. Several things
+were decided differently from the sketch above, and the reasons matter more than the code:
+
+- **No `assistant_sessions` table, no `endAssistantSession`, no tool-call callbacks to the API.**
+  The sketch assumed the API stays in the loop for the life of a session. It cannot: the transport
+  is browser↔provider by design, so a server-side session row would record only that a credential
+  was minted, not whether it was used or for how long. A table that looks like session accounting
+  but is not would be worse than no table.
+- **The mint is the only server-side moment, so it is where the charge happens.** Order is
+  spend → mint → refund-on-throw. Charging after minting would make the credit check advisory: we
+  would already have been billed by the provider before discovering we must refuse.
+- **`REALTIME_SECRET_TTL_SEC` is pinned to the provider floor of 10s as a cost control**, not a UX
+  knob. One client secret may start _any number of sessions_ until it expires, so the TTL — not the
+  session length — is what bounds a single paid mint.
+- **Session duration is not bounded and cannot be.** Once connected, the session is between client
+  and provider and there is no server-set hard limit to rely on. `'assistant.session'` is therefore
+  priced at **25 credits as an estimate of a typical short session**, not a measured cost. Long
+  sessions are under-charged. This is a stated limitation, not an oversight; metering it would
+  require relaying the audio, which is the round trip the design exists to avoid.
+- **This is a deliberate exception to "every model call goes through `AiGateway`."** The gateway's
+  contract is budget-check → schema-guarded call → usage recorded, around a call whose token counts
+  we can see. Here we see none of the traffic, so routing through it would produce a usage row that
+  is a fiction.
+- **No frame sampling, because no video is sent at all.** The published track is audio only. The
+  model is speech-to-speech; a video track would ship the user's kitchen to the provider for a
+  benefit they were never promised. "Vision" in this feature is the still-image scan path, which is
+  unchanged.
+- **Detections come from a `report_items` tool, not from parsing the transcript**, and the tool's
+  `unit`/`category` enums are generated from the contract schemas so they cannot drift. The client
+  re-validates every item and **drops** what fails rather than coercing it — a silently corrected
+  item is indistinguishable from one the model actually saw. There is deliberately no
+  `add_to_inventory` tool: a detection is a suggestion, and the write goes through the normal
+  append-only inventory event path after a human confirms it.
+- **The demo badge fails safe.** `isMock` starts `true` and drops only once the API returns a
+  session it states is real; a deployment with `AI_MOCK=true` mints an unusable secret and the
+  client hands over to the scripted adapter with the badge still lit.
+
+- **Grounding reuses the planner's Stage-A snapshot**, rendered to text by
+  `apps/api/src/ai/assistant/pantry-brief.ts` and sent as session context — not a second inventory
+  reader, because two readers would eventually disagree and an assistant that contradicts the meal
+  plan about what is in the fridge is worse than one that knows nothing. The read happens _before_
+  the debit, so a failed query never charges anyone. The brief is capped at `MAX_PANTRY_LINES = 60`
+  (instructions are charged for on every mint), ordered expiry-first so the cut falls where it
+  matters least, and carries two disclaimers that are load-bearing rather than decorative: it lists
+  only what is **tracked**, not everything the user owns; and when it was truncated it says so, and
+  by how much. A partial list presented as complete makes the model tell the user they are out of
+  something they can see on the counter. Every part of a line is localised — name, unit and expiry
+  label — via an exhaustive `Record<Locale, Record<Unit, string>>`, so adding a unit to the contract
+  fails the build rather than leaking `piece` into an Arabic prompt. That leak was live once: the
+  brief localised the name and nothing else, and the test that should have caught it only asserted
+  on the name, which was the one part that was already correct. Arabic spells units out in full
+  rather than reusing the `@kitchen/i18n` display abbreviations, which are sized for tight layouts
+  and which a speech model would read aloud as letters.
+
+Fault injection for all of the above lives in `scripts/fault-inject-assistant.mjs` (25 defects, each
+caught by the check that names it). Run it **after** Prettier: anchors are string-exact, and one of
+them silently went stale when Prettier rewrapped a ternary, leaving that rule unproven until the
+harness was re-run and reported `anchor not found`.
+
+Verified against a real OpenAI account on 2026-08-27: `gpt-realtime` is a valid model id, and
+`POST /v1/realtime/client_secrets` returns a secret our provider parses — an `ek_`-prefixed value,
+`expires_at` honouring the pinned 10-second floor, and the model echoed back. The mint carried our
+own `report_items` definition, so the tool schema is accepted as sent, including the
+`["number", "null"]` quantity that a stricter validator would have rejected.
+
+The browser half was then driven in real Chromium (Playwright) rather than jsdom, replaying the
+adapter's handshake exactly: publish an audio track, open `oai-events`, `POST` the SDP offer to
+`/v1/realtime/calls?model=…` with the ephemeral secret. It returned `201`, the peer connection
+reached `connected`, the remote audio track arrived, and `session.created` came back over the data
+channel. Prompted to report what it could see, the model emitted
+`response.function_call_arguments.done` naming `report_items` with two valid items. That exact
+payload — padding and all — is now a fixture in `openai-realtime.test.ts`, because every other
+payload in that suite is one we invented.
+
+Still unverified: the credit cost of a real session. 25 credits remains an estimate, and a long
+session is under-charged by construction — session length is not observable to us.
+
 ---
 
 ## New contract surface (summary)
@@ -218,6 +304,8 @@ New schema files in `packages/contracts/src/` — `reminders.ts`, `timers.ts`, `
 - Timers: `listTimers`, `createTimer`, `updateTimer`, `deleteTimer`
 - Voice: `getVoicePrefs`, `updateVoicePrefs`, `previewVoice`
 - Assistant: `startAssistantSession`, `endAssistantSession`, `assistantAddDetectedItems`
+  — **as built this reduced to a single `createRealtimeSession` (`POST /assistant/sessions`)**; see
+  Phase B above for why there is no session row to end and no server-side add path.
 - Screen: `getScreenConfig`, `updateScreenConfig`
 
 All household-scoped except voice/tone (user-scoped). New DB tables:

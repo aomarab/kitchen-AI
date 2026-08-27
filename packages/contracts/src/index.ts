@@ -10,4 +10,5 @@ export * from './credits.js';
 export * from './feedback.js';
 export * from './reminders.js';
 export * from './timers.js';
+export * from './assistant.js';
 export * from './routes.js';

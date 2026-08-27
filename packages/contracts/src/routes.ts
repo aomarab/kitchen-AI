@@ -97,6 +97,7 @@ import {
   timerListSchema,
   updateTimerRequestSchema,
 } from './timers.js';
+import { createRealtimeSessionRequestSchema, realtimeSessionSchema } from './assistant.js';
 import { idParamSchema, paginatedSchema, uuidSchema } from './common.js';
 import {
   creditBalanceSchema,
@@ -735,6 +736,16 @@ export const routes = {
     household: true,
     params: idParamSchema,
     response: emptyResponse,
+  },
+
+  /* ---------------- Live assistant ---------------- */
+  createRealtimeSession: {
+    method: 'POST',
+    path: '/assistant/sessions',
+    auth: true,
+    household: true,
+    body: createRealtimeSessionRequestSchema,
+    response: realtimeSessionSchema,
   },
 } as const satisfies Record<string, RouteDefinition>;
 
