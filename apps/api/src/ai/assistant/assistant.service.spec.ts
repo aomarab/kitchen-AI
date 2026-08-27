@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { REALTIME_SECRET_TTL_SEC } from '@kitchen/contracts';
-import type { Locale, RealtimeSession } from '@kitchen/contracts';
+import { ASSISTANT_PERSONAS, REALTIME_SECRET_TTL_SEC, profileSchema } from '@kitchen/contracts';
+import type { AssistantPersona, Locale, RealtimeSession } from '@kitchen/contracts';
 import { AssistantService } from './assistant.service.js';
 import { MockRealtimeSessionProvider } from './mock-realtime.provider.js';
 import { OpenAiRealtimeSessionProvider } from './openai-realtime.provider.js';
 import type { CreditsService } from '../../credits/credits.service.js';
+import type { ProfilesService } from '../../profiles/profiles.service.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { buildSnapshot } from '../planner/pantry-snapshot.js';
 import type { RealtimeSessionProvider } from './realtime-provider.interface.js';
@@ -32,16 +33,37 @@ function creditsStub() {
 }
 
 function providerStub(
-  mint: (locale: Locale, brief: string) => Promise<RealtimeSession>,
+  mint: (locale: Locale, brief: string, persona: AssistantPersona) => Promise<RealtimeSession>,
   calls: string[],
 ): RealtimeSessionProvider {
   return {
     isMock: false,
-    mint: async (locale, brief) => {
+    mint: async (locale, brief, persona) => {
       calls.push('mint');
-      return mint(locale, brief);
+      return mint(locale, brief, persona);
     },
   };
+}
+
+/**
+ * The persona read.
+ *
+ * Note what is deliberately *not* tested here: the fallback for a stored id
+ * that has left the catalog. `ProfilesService.get` returns a typed `Profile`,
+ * so an invalid persona cannot reach this service without casting a lie into
+ * the stub. That rule is enforced where a stale id can actually come from —
+ * the database — in `profiles.service.spec.ts`.
+ */
+function profilesStub(calls: string[], assistantPersona: string = 'layla'): ProfilesService {
+  return {
+    get: async () => {
+      calls.push('profile');
+      return profileSchema.parse({
+        userId: '00000000-0000-4000-8000-000000000001',
+        assistantPersona,
+      });
+    },
+  } as unknown as ProfilesService;
 }
 
 function pantryStub(calls: string[], rows: Parameters<typeof buildSnapshot>[0] = []): PantryPort {
@@ -68,13 +90,14 @@ describe('AssistantService', () => {
       credits,
       providerStub(async () => SESSION, calls),
       pantryStub(calls),
+      profilesStub(calls),
     );
 
-    await service.createSession('household-1', 'en');
+    await service.createSession('household-1', 'user-1', 'en');
 
     // Minting first would make the credit check advisory: we would already have
     // been billed by the provider by the time we discovered we must refuse.
-    expect(calls).toEqual(['pantry', 'spend', 'mint']);
+    expect(calls).toEqual(['pantry', 'profile', 'spend', 'mint']);
   });
 
   it('refunds the spend group when the mint throws', async () => {
@@ -85,11 +108,14 @@ describe('AssistantService', () => {
         throw new Error('provider down');
       }, calls),
       pantryStub(calls),
+      profilesStub(calls),
     );
 
-    await expect(service.createSession('household-1', 'en')).rejects.toThrow('provider down');
+    await expect(service.createSession('household-1', 'user-1', 'en')).rejects.toThrow(
+      'provider down',
+    );
 
-    expect(calls).toEqual(['pantry', 'spend', 'mint', 'refund']);
+    expect(calls).toEqual(['pantry', 'profile', 'spend', 'mint', 'refund']);
     // The group id from the debit — refunding anything else would leave the
     // real debit standing and reverse someone's unrelated spend.
     expect(spy.refundSpendGroup).toHaveBeenCalledWith('household-1', 'group-1');
@@ -101,9 +127,10 @@ describe('AssistantService', () => {
       credits,
       providerStub(async () => SESSION, calls),
       pantryStub(calls),
+      profilesStub(calls),
     );
 
-    await service.createSession('household-1', 'en');
+    await service.createSession('household-1', 'user-1', 'en');
 
     expect(calls).not.toContain('refund');
   });
@@ -116,8 +143,9 @@ describe('AssistantService', () => {
         throw new Error('provider down');
       }, calls),
       pantryStub(calls),
+      profilesStub(calls),
     );
-    await expect(service.createSession('household-1', 'en')).rejects.toThrow();
+    await expect(service.createSession('household-1', 'user-1', 'en')).rejects.toThrow();
   });
 
   it('grounds the session in the household pantry', async () => {
@@ -141,9 +169,10 @@ describe('AssistantService', () => {
           expiresOn: null,
         },
       ]),
+      profilesStub(calls),
     );
 
-    await service.createSession('household-1', 'en');
+    await service.createSession('household-1', 'user-1', 'en');
     // Without this the assistant can describe what it sees but not what the
     // user owns, which is the whole point of grounding it.
     expect(received).toContain('Rice: 2 kg');
@@ -159,9 +188,10 @@ describe('AssistantService', () => {
           throw new Error('db down');
         },
       },
+      profilesStub([]),
     );
 
-    await expect(service.createSession('household-1', 'en')).rejects.toThrow('db down');
+    await expect(service.createSession('household-1', 'user-1', 'en')).rejects.toThrow('db down');
     // Reading before charging is what makes this possible: there is no debit to
     // refund, so there is no refund path to get wrong.
     expect(spy.spend).not.toHaveBeenCalled();
@@ -180,11 +210,60 @@ describe('AssistantService', () => {
       credits,
       providerStub(async () => SESSION, calls),
       pantryStub(calls),
+      profilesStub(calls),
     );
 
-    await expect(service.createSession('household-1', 'en')).rejects.toThrow();
+    await expect(service.createSession('household-1', 'user-1', 'en')).rejects.toThrow();
     // Nothing to refund, and crucially no mint: we were never billed.
-    expect(calls).toEqual(['pantry']);
+    expect(calls).toEqual(['pantry', 'profile']);
+  });
+
+  it('reads the persona before charging', async () => {
+    const { calls, credits } = creditsStub();
+    const service = new AssistantService(
+      credits,
+      providerStub(async () => SESSION, calls),
+      pantryStub(calls),
+      profilesStub(calls),
+    );
+
+    await service.createSession('household-1', 'user-1', 'en');
+
+    // Same argument as the pantry read: a query that can fail must not run
+    // after the debit, or a failure means refunding a spend we should never
+    // have made.
+    expect(calls.indexOf('profile')).toBeLessThan(calls.indexOf('spend'));
+  });
+
+  it('sends the caller their own persona', async () => {
+    const { calls, credits } = creditsStub();
+    let received: AssistantPersona | null = null;
+    const service = new AssistantService(
+      credits,
+      providerStub(async (_locale, _brief, persona) => {
+        received = persona;
+        return SESSION;
+      }, calls),
+      pantryStub(calls),
+      profilesStub(calls, 'salma'),
+    );
+
+    await service.createSession('household-1', 'user-1', 'ar');
+
+    expect(received).toBe('salma');
+  });
+
+  it('does not charge when the persona read fails', async () => {
+    const { credits, spy } = creditsStub();
+    const service = new AssistantService(
+      credits,
+      providerStub(async () => SESSION, []),
+      pantryStub([]),
+      { get: async () => Promise.reject(new Error('db down')) } as unknown as ProfilesService,
+    );
+
+    await expect(service.createSession('household-1', 'user-1', 'en')).rejects.toThrow('db down');
+    expect(spy.spend).not.toHaveBeenCalled();
   });
 });
 
@@ -192,11 +271,11 @@ describe('MockRealtimeSessionProvider', () => {
   it('declares itself mock — this flag is what lights the demo badge', async () => {
     const provider = new MockRealtimeSessionProvider();
     expect(provider.isMock).toBe(true);
-    expect((await provider.mint('en', 'PANTRY')).isMock).toBe(true);
+    expect((await provider.mint('en', 'PANTRY', 'layla')).isMock).toBe(true);
   });
 
   it('mints a secret no one could mistake for a real credential', async () => {
-    const session = await new MockRealtimeSessionProvider().mint('en', 'PANTRY');
+    const session = await new MockRealtimeSessionProvider().mint('en', 'PANTRY', 'layla');
     // Real provider secrets start `ek_`. A mock one that looked plausible could
     // be pasted into a real request and fail somewhere far from here.
     expect(session.clientSecret).not.toMatch(/^ek_/);
@@ -231,7 +310,7 @@ describe('OpenAiRealtimeSessionProvider', () => {
       // empty clientSecret would hand the client a session it cannot connect
       // with and no error to explain why.
       await expect(
-        new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime').mint('en', 'PANTRY'),
+        new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime').mint('en', 'PANTRY', 'layla'),
       ).rejects.toMatchObject({ code: 'AI_UNAVAILABLE' });
     } finally {
       restore();
@@ -244,7 +323,7 @@ describe('OpenAiRealtimeSessionProvider', () => {
     );
     try {
       await expect(
-        new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime').mint('en', 'PANTRY'),
+        new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime').mint('en', 'PANTRY', 'layla'),
       ).rejects.toMatchObject({ code: 'AI_UNAVAILABLE' });
     } finally {
       restore();
@@ -257,7 +336,7 @@ describe('OpenAiRealtimeSessionProvider', () => {
     }) as typeof globalThis.fetch);
     try {
       await expect(
-        new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime').mint('en', 'PANTRY'),
+        new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime').mint('en', 'PANTRY', 'layla'),
       ).rejects.toMatchObject({ code: 'AI_UNAVAILABLE' });
     } finally {
       restore();
@@ -278,6 +357,7 @@ describe('OpenAiRealtimeSessionProvider', () => {
       const session = await new OpenAiRealtimeSessionProvider('sk-secret', 'gpt-realtime').mint(
         'ar',
         'PANTRY BRIEF',
+        'layla',
       );
       const body = JSON.parse(String(sent!.init.body)) as {
         expires_after: { seconds: number };
@@ -314,8 +394,87 @@ describe('OpenAiRealtimeSessionProvider', () => {
       const session = await new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime').mint(
         'en',
         'PANTRY',
+        'layla',
       );
       expect(session.model).toBe('gpt-realtime-2025-08-28');
+    } finally {
+      restore();
+    }
+  });
+
+  it('sends the persona voice', async () => {
+    let sent = '';
+    const restore = withFetch((async (_url: string, init: RequestInit) => {
+      sent = String(init.body);
+      return new Response(JSON.stringify({ value: 'ek_live' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as unknown as typeof globalThis.fetch);
+
+    try {
+      await new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime').mint(
+        'ar',
+        'PANTRY',
+        'salma',
+      );
+      const body = JSON.parse(sent) as { session: { audio?: { output?: { voice?: string } } } };
+      // The provider validates this and rejects an unknown id with a 400 —
+      // after the household has been charged. Verified live.
+      expect(body.session.audio?.output?.voice).toBe(ASSISTANT_PERSONAS.salma.voice);
+    } finally {
+      restore();
+    }
+  });
+
+  it('steers dialect only in Arabic', async () => {
+    const bodies: string[] = [];
+    const restore = withFetch((async (_url: string, init: RequestInit) => {
+      bodies.push(String(init.body));
+      return new Response(JSON.stringify({ value: 'ek_live' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as unknown as typeof globalThis.fetch);
+
+    try {
+      const provider = new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime');
+      await provider.mint('ar', 'PANTRY', 'salma');
+      await provider.mint('en', 'PANTRY', 'salma');
+
+      const [arabic, english] = bodies.map(
+        (b) => (JSON.parse(b) as { session: { instructions: string } }).session.instructions,
+      );
+
+      expect(arabic).toContain('اللهجة المصرية');
+      // Levantine and Egyptian are varieties of *Arabic*. Telling an English
+      // session to use one would produce code-switching or an invented accent.
+      expect(english).not.toContain('اللهجة');
+      expect(english).toContain('brightly');
+    } finally {
+      restore();
+    }
+  });
+
+  it('puts the persona ahead of the pantry brief', async () => {
+    let sent = '';
+    const restore = withFetch((async (_url: string, init: RequestInit) => {
+      sent = String(init.body);
+      return new Response(JSON.stringify({ value: 'ek_live' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as unknown as typeof globalThis.fetch);
+
+    try {
+      await new OpenAiRealtimeSessionProvider('sk-test', 'gpt-realtime').mint(
+        'en',
+        'PANTRY_MARKER',
+        'salma',
+      );
+      const { instructions } = (JSON.parse(sent) as { session: { instructions: string } }).session;
+      // The brief is the longest section and can bury a rule placed after it.
+      expect(instructions.indexOf('brightly')).toBeLessThan(instructions.indexOf('PANTRY_MARKER'));
     } finally {
       restore();
     }

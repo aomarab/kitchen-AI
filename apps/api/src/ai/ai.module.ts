@@ -4,6 +4,7 @@ import { Redis } from 'ioredis';
 import { ENV, type Env } from '../config/env.js';
 import { StorageModule } from '../storage/storage.module.js';
 import { CreditsModule } from '../credits/credits.module.js';
+import { ProfilesModule } from '../profiles/profiles.module.js';
 import type { AiProvider } from './providers/ai-provider.interface.js';
 import {
   AI_PROVIDER,
@@ -113,6 +114,8 @@ export function createAiProvider(env: Env): AiProvider {
     // Vision needs presigned GET URLs for uploaded photos.
     StorageModule,
     CreditsModule,
+    // The live assistant reads the caller's assistant persona before minting.
+    ProfilesModule,
   ],
   controllers: [
     CaptureController,

@@ -1,5 +1,12 @@
-import type { Locale, RealtimeSession } from '@kitchen/contracts';
+import type {
+  AssistantDialect,
+  AssistantPersona,
+  AssistantTone,
+  Locale,
+  RealtimeSession,
+} from '@kitchen/contracts';
 import {
+  ASSISTANT_PERSONAS,
   REALTIME_SECRET_TTL_MAX_SEC,
   REALTIME_SECRET_TTL_MIN_SEC,
   REALTIME_SECRET_TTL_SEC,
@@ -37,10 +44,50 @@ interface ClientSecretResponse {
  * through the normal append-only inventory event path with a human confirming,
  * not through a model with a tool call.
  */
-function instructions(locale: Locale, pantryBrief: string): string {
+const TONE_INSTRUCTIONS: Record<Locale, Record<AssistantTone, string>> = {
+  en: {
+    warm: 'Speak warmly and unhurriedly, the way a friend talks someone through a recipe.',
+    neutral: 'Speak calmly and evenly, and keep to the point.',
+    energetic: 'Speak brightly and briskly, with energy.',
+  },
+  ar: {
+    warm: 'تحدّثي بدفء وعلى مهلك، كما تشرح صديقة وصفةً لصديقتها.',
+    neutral: 'تحدّثي بهدوء واتزان، وادخلي في صلب الموضوع.',
+    energetic: 'تحدّثي بحيوية وسرعة ونشاط.',
+  },
+};
+
+/**
+ * Dialect steering, in Arabic only.
+ *
+ * There is no English half to this record and there must not be: Levantine and
+ * Egyptian are varieties of Arabic, so instructing an English session to use
+ * one would produce either code-switching or an invented accent. In English a
+ * persona contributes its voice and tone and nothing else.
+ *
+ * Verified empirically rather than assumed — steering produced genuinely
+ * different lexis *and* culinary reference (Levantine «يخنة … على جنب» vs
+ * Egyptian «طاجن … كشري مصري»), not a relabelled default. It does **not**
+ * change accent; see the spec's known limitations.
+ */
+const DIALECT_INSTRUCTIONS: Record<AssistantDialect, string> = {
+  levantine: 'تحدّثي باللهجة الشامية الطبيعية، واستخدمي مفرداتها وأسماء أطباقها.',
+  gulf: 'تحدّثي باللهجة الخليجية الطبيعية، واستخدمي مفرداتها وأسماء أطباقها.',
+  egyptian: 'تحدّثي باللهجة المصرية الطبيعية، واستخدمي مفرداتها وأسماء أطباقها.',
+  msa: 'تحدّثي بالعربية الفصحى الواضحة دون لهجة محلية.',
+};
+
+function personaInstructions(locale: Locale, persona: AssistantPersona): string {
+  const profile = ASSISTANT_PERSONAS[persona];
+  const lines = [TONE_INSTRUCTIONS[locale][profile.tone]];
+  if (locale === 'ar') lines.push(DIALECT_INSTRUCTIONS[profile.dialect]);
+  return lines.join(' ');
+}
+
+function instructions(locale: Locale, pantryBrief: string, persona: AssistantPersona): string {
   // The pantry goes last: it is the longest section, and the behavioural rules
   // above it are the ones that must not be crowded out.
-  const persona =
+  const role =
     locale === 'ar'
       ? [
           'أنتِ مساعدة مطبخ ترى ما تريه الكاميرا وتتحدث بالعربية المحكية الطبيعية.',
@@ -57,7 +104,9 @@ function instructions(locale: Locale, pantryBrief: string): string {
           'Call report_items whenever the set of items you can see changes.',
         ].join(' ');
 
-  return `${persona}\n\n${pantryBrief}`;
+  // Persona goes first: it governs *how* every following sentence is delivered,
+  // and the pantry brief is long enough to bury a rule placed after it.
+  return `${personaInstructions(locale, persona)}\n\n${role}\n\n${pantryBrief}`;
 }
 
 /**
@@ -118,7 +167,11 @@ export class OpenAiRealtimeSessionProvider implements RealtimeSessionProvider {
     private readonly model: string,
   ) {}
 
-  async mint(locale: Locale, pantryBrief: string): Promise<RealtimeSession> {
+  async mint(
+    locale: Locale,
+    pantryBrief: string,
+    persona: AssistantPersona,
+  ): Promise<RealtimeSession> {
     // The provider rejects anything outside its own bounds, and a rejected mint
     // is indistinguishable to the caller from an outage. Fail on our side, where
     // the message can name the real cause.
@@ -136,7 +189,10 @@ export class OpenAiRealtimeSessionProvider implements RealtimeSessionProvider {
       session: {
         type: 'realtime',
         model: this.model,
-        instructions: instructions(locale, pantryBrief),
+        instructions: instructions(locale, pantryBrief, persona),
+        // The provider validates this against its own list and rejects an
+        // unknown id with a 400 — which is why the catalog is contract.
+        audio: { output: { voice: ASSISTANT_PERSONAS[persona].voice } },
         tools: [REPORT_ITEMS_TOOL],
       },
     };

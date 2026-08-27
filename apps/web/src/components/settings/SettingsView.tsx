@@ -36,7 +36,8 @@ export function SettingsView() {
   const [allergyDraft, setAllergyDraft] = useState('');
 
   if (profileQuery.isLoading) return <LoadingState />;
-  if (profileQuery.isError) return <ErrorState error={profileQuery.error} onRetry={() => void profileQuery.refetch()} />;
+  if (profileQuery.isError)
+    return <ErrorState error={profileQuery.error} onRetry={() => void profileQuery.refetch()} />;
   if (!profileQuery.data) return null;
 
   const profile = profileQuery.data;
@@ -97,7 +98,11 @@ export function SettingsView() {
             <h3 className="text-sm font-medium">{t('profile.dietary')}</h3>
             <div className="flex flex-wrap gap-2">
               {DIETS.map((d) => (
-                <Chip key={d} active={profile.dietaryPrefs.includes(d)} onClick={() => toggleDiet(d)}>
+                <Chip
+                  key={d}
+                  active={profile.dietaryPrefs.includes(d)}
+                  onClick={() => toggleDiet(d)}
+                >
                   {t(dietKey(d))}
                 </Chip>
               ))}
@@ -108,7 +113,11 @@ export function SettingsView() {
             <h3 className="text-sm font-medium">{t('profile.cuisines')}</h3>
             <div className="flex flex-wrap gap-2">
               {CUISINES.map((c) => (
-                <Chip key={c} active={profile.cuisinePrefs.includes(c)} onClick={() => toggleCuisine(c)}>
+                <Chip
+                  key={c}
+                  active={profile.cuisinePrefs.includes(c)}
+                  onClick={() => toggleCuisine(c)}
+                >
                   {t(cuisineKey(c))}
                 </Chip>
               ))}
@@ -119,7 +128,11 @@ export function SettingsView() {
             <h3 className="text-sm font-medium">{t('profile.healthGoals')}</h3>
             <div className="flex flex-wrap gap-2">
               {HEALTH_GOALS.map((g) => (
-                <Chip key={g} active={profile.healthGoals.includes(g)} onClick={() => toggleHealthGoal(g)}>
+                <Chip
+                  key={g}
+                  active={profile.healthGoals.includes(g)}
+                  onClick={() => toggleHealthGoal(g)}
+                >
                   {t(healthGoalKey(g))}
                 </Chip>
               ))}
@@ -131,9 +144,16 @@ export function SettingsView() {
             <p className="text-xs text-muted-foreground">{t('profile.allergiesHint')}</p>
             <div className="flex flex-wrap gap-2">
               {profile.allergies.map((a) => (
-                <span key={a} className="flex items-center gap-1 rounded-full border border-danger bg-danger-soft px-3 py-1 text-sm text-danger">
+                <span
+                  key={a}
+                  className="flex items-center gap-1 rounded-full border border-danger bg-danger-soft px-3 py-1 text-sm text-danger"
+                >
                   {a}
-                  <button type="button" aria-label={t('common.delete')} onClick={() => removeAllergy(a)}>
+                  <button
+                    type="button"
+                    aria-label={t('common.delete')}
+                    onClick={() => removeAllergy(a)}
+                  >
                     <CloseIcon className="h-3.5 w-3.5" />
                   </button>
                 </span>
@@ -151,7 +171,11 @@ export function SettingsView() {
                 }}
                 placeholder={t('web.settings.allergyPlaceholder')}
               />
-              <Button variant="outline" onClick={addAllergy} disabled={allergyDraft.trim().length === 0}>
+              <Button
+                variant="outline"
+                onClick={addAllergy}
+                disabled={allergyDraft.trim().length === 0}
+              >
                 {t('common.add')}
               </Button>
             </div>
@@ -181,7 +205,8 @@ export function SettingsView() {
                 defaultValue={formatNumber(locale, profile.householdSize)}
                 onBlur={(e) => {
                   const next = Number(e.target.value);
-                  if (next >= 1 && next <= 20 && next !== profile.householdSize) save({ householdSize: next });
+                  if (next >= 1 && next <= 20 && next !== profile.householdSize)
+                    save({ householdSize: next });
                 }}
                 className="w-32"
               />
@@ -217,6 +242,16 @@ export function SettingsView() {
         <p className="text-sm text-muted-foreground">{t('web.assistant.entryHint')}</p>
         <Link href="/assistant" className={buttonClasses({ className: 'mt-4' })}>
           {t('web.assistant.open')}
+        </Link>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('web.assistant.personaEntry')}</CardTitle>
+        </CardHeader>
+        <p className="text-sm text-muted-foreground">{t('web.assistant.personaEntryHint')}</p>
+        <Link href="/settings/assistant" className={buttonClasses({ className: 'mt-4' })}>
+          {t('web.assistant.personaTitle')}
         </Link>
       </Card>
 
@@ -262,7 +297,9 @@ function Chip({
       onClick={onClick}
       className={cn(
         'rounded-full border px-3 py-1.5 text-sm font-medium transition',
-        active ? 'border-primary-text bg-primary-soft text-primary-text' : 'border-border text-muted-foreground hover:bg-muted',
+        active
+          ? 'border-primary-text bg-primary-soft text-primary-text'
+          : 'border-border text-muted-foreground hover:bg-muted',
       )}
     >
       {children}

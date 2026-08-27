@@ -242,6 +242,10 @@ export const profiles = pgTable('profiles', {
     .array()
     .notNull()
     .default(sql`ARRAY[]::text[]`),
+  // Stored as the persona id alone, not the resolved voice/dialect/tone: the
+  // catalog in @kitchen/contracts stays authoritative, so a persona can be
+  // retuned without a backfill (voice & personalization spec §3).
+  assistantPersona: text('assistant_persona').notNull().default('layla'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

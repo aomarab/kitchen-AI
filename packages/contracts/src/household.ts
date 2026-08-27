@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isoDateTimeSchema, uuidSchema } from './common.js';
+import { DEFAULT_ASSISTANT_PERSONA, assistantPersonaSchema } from './voice.js';
 
 /* ------------------------------------------------------------------ */
 /* Household                                                           */
@@ -96,6 +97,12 @@ export const profileSchema = z.object({
   cuisinePrefs: z.array(cuisineSchema).default([]),
   householdSize: z.number().int().min(1).max(20).default(2),
   healthGoals: z.array(healthGoalSchema).default([]),
+  /**
+   * Which persona the live assistant speaks as. Per-user rather than
+   * household-scoped: two people sharing a kitchen should not have to agree on
+   * one voice. See the voice & personalization spec.
+   */
+  assistantPersona: assistantPersonaSchema.default(DEFAULT_ASSISTANT_PERSONA),
 });
 export type Profile = z.infer<typeof profileSchema>;
 

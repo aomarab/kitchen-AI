@@ -297,6 +297,30 @@ export const en = {
     heart_healthy: 'Heart-healthy',
   },
 
+  /**
+   * Assistant persona names and the dialect each one speaks. Keyed by the
+   * contract enums, so `catalog.spec.ts` fails if a persona ships without a
+   * label in either language.
+   */
+  persona: {
+    layla: 'Layla',
+    noor: 'Noor',
+    salma: 'Salma',
+    omar: 'Omar',
+  },
+  personaDescription: {
+    layla: 'Warm and unhurried, the way a friend talks you through a recipe.',
+    noor: 'Calm and even, keeps to the point.',
+    salma: 'Bright and quick, good company in a busy kitchen.',
+    omar: 'Measured and clear, speaks standard Arabic.',
+  },
+  dialect: {
+    levantine: 'Levantine Arabic',
+    gulf: 'Gulf Arabic',
+    egyptian: 'Egyptian Arabic',
+    msa: 'Modern Standard Arabic',
+  },
+
   shopping: {
     title: 'Shopping list',
     empty: 'Your shopping list is empty.',

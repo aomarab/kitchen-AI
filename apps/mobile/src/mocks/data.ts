@@ -19,7 +19,7 @@ import type {
   Unit,
   User,
 } from '@kitchen/contracts';
-import { FREE_MONTHLY_GRANT } from '@kitchen/contracts';
+import { DEFAULT_ASSISTANT_PERSONA, FREE_MONTHLY_GRANT } from '@kitchen/contracts';
 
 /* ------------------------------------------------------------------ */
 /* id + date helpers                                                   */
@@ -89,6 +89,7 @@ export const mockHousehold: Household = {
 
 export const mockProfile: Profile = {
   userId: USER_ID,
+  assistantPersona: DEFAULT_ASSISTANT_PERSONA,
   dietaryPrefs: ['high_protein'],
   allergies: [],
   halal: true,

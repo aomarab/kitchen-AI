@@ -4,7 +4,8 @@ import { createRealtimeSessionRequestSchema } from '@kitchen/contracts';
 import { AuthGuard } from '../../common/auth.guard.js';
 import { HouseholdGuard } from '../../common/household.guard.js';
 import { CurrentHousehold } from '../../common/current-household.decorator.js';
-import type { HouseholdContext } from '../../common/request-context.js';
+import { CurrentUser } from '../../common/current-user.decorator.js';
+import type { AuthUser, HouseholdContext } from '../../common/request-context.js';
 import { ZodPipe } from '../../common/http.js';
 import { AssistantService } from './assistant.service.js';
 
@@ -23,8 +24,10 @@ export class AssistantController {
   @Post('assistant/sessions')
   create(
     @CurrentHousehold() household: HouseholdContext,
+    @CurrentUser() user: AuthUser,
     @Body(new ZodPipe(createRealtimeSessionRequestSchema)) body: CreateRealtimeSessionRequest,
   ): Promise<RealtimeSession> {
-    return this.assistant.createSession(household.id, body.locale);
+    // Household pays, user picks the voice.
+    return this.assistant.createSession(household.id, user.userId, body.locale);
   }
 }
