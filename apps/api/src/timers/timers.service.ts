@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq } from 'drizzle-orm';
 import {
+  applyTimerAction,
   MAX_TIMER_DURATION_SEC,
   projectTimer,
   type CookingTimer,
@@ -23,13 +24,17 @@ interface TimerRow {
   createdAt: Date;
 }
 
-/** The columns that make up a timer's state, as they are written back. */
-interface TimerState {
-  status: 'running' | 'paused' | 'done';
-  endsAt: Date | null;
-  remainingSec: number;
-  durationSec: number;
-}
+/**
+ * The contract's state machine refuses in its own vocabulary so every surface
+ * can share it; the API is the only caller that turns a refusal into an error
+ * envelope, so the mapping lives here.
+ */
+const REFUSALS: Record<'not_running' | 'not_paused' | 'too_long', () => AppError> = {
+  not_running: () => AppError.conflict('errors.timerNotRunning'),
+  not_paused: () => AppError.conflict('errors.timerNotPaused'),
+  too_long: () =>
+    AppError.conflict('errors.timerTooLong', { maxSec: MAX_TIMER_DURATION_SEC }),
+};
 
 function toTimer(row: TimerRow): CookingTimer {
   return {
@@ -95,11 +100,19 @@ export class TimersService {
     now: Date = new Date(),
   ): Promise<CookingTimer> {
     const current = projectTimer(await this.require(householdId, id), now);
-    const next = this.transition(current, body, now);
+    const result = applyTimerAction(current, body, now);
+    if (!result.ok) throw REFUSALS[result.reason]();
+    const next = result.timer;
 
     const [row] = await this.db
       .update(cookingTimers)
-      .set({ ...next, updatedAt: now })
+      .set({
+        status: next.status,
+        endsAt: next.endsAt === null ? null : new Date(next.endsAt),
+        remainingSec: next.remainingSec,
+        durationSec: next.durationSec,
+        updatedAt: now,
+      })
       .where(and(eq(cookingTimers.id, id), eq(cookingTimers.householdId, householdId)))
       .returning();
     return toTimer(row!);
@@ -111,58 +124,6 @@ export class TimersService {
       .where(and(eq(cookingTimers.id, id), eq(cookingTimers.householdId, householdId)))
       .returning({ id: cookingTimers.id });
     if (deleted.length === 0) throw AppError.notFound('errors.NOT_FOUND');
-  }
-
-  private transition(timer: CookingTimer, body: UpdateTimerRequest, now: Date): TimerState {
-    switch (body.action) {
-      case 'pause': {
-        if (timer.status !== 'running') throw AppError.conflict('errors.timerNotRunning');
-        return {
-          status: 'paused',
-          endsAt: null,
-          remainingSec: timer.remainingSec,
-          durationSec: timer.durationSec,
-        };
-      }
-      case 'resume': {
-        if (timer.status !== 'paused') throw AppError.conflict('errors.timerNotPaused');
-        return {
-          status: 'running',
-          endsAt: new Date(now.getTime() + timer.remainingSec * 1000),
-          remainingSec: timer.remainingSec,
-          durationSec: timer.durationSec,
-        };
-      }
-      case 'stop': {
-        // Stopping an already-finished timer is a no-op rather than a conflict:
-        // it is the same button on the same card the user is looking at.
-        return {
-          status: 'done',
-          endsAt: null,
-          remainingSec: 0,
-          durationSec: timer.durationSec,
-        };
-      }
-      case 'extend': {
-        const durationSec = timer.durationSec + body.seconds;
-        if (durationSec > MAX_TIMER_DURATION_SEC) {
-          throw AppError.conflict('errors.timerTooLong', { maxSec: MAX_TIMER_DURATION_SEC });
-        }
-        // "+1 min" on a card that is already ringing means give it another
-        // minute, so extending a finished timer restarts it rather than failing.
-        const remainingSec =
-          timer.status === 'done' ? body.seconds : timer.remainingSec + body.seconds;
-        if (timer.status === 'paused') {
-          return { status: 'paused', endsAt: null, remainingSec, durationSec };
-        }
-        return {
-          status: 'running',
-          endsAt: new Date(now.getTime() + remainingSec * 1000),
-          remainingSec,
-          durationSec,
-        };
-      }
-    }
   }
 
   private async require(householdId: string, id: string): Promise<CookingTimer> {

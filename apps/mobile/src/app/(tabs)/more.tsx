@@ -40,6 +40,7 @@ export default function More() {
 
       <View style={{ gap: spacing.sm }}>
         {row(t('mobile.more.shopping'), 'basket', '/shopping')}
+        {row(t('mobile.timers.entry'), 'clock', '/timers')}
         {row(t('mobile.more.household'), 'household', '/settings/household')}
         {row(t('mobile.more.profile'), 'user', '/profile')}
         {row(t('mobile.more.notifications'), 'bell', '/settings/notifications')}
