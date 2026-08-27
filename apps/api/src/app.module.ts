@@ -12,6 +12,7 @@ import { AiModule } from './ai/ai.module.js';
 import { FeedbackModule } from './feedback/feedback.module.js';
 import { CreditsModule } from './credits/credits.module.js';
 import { RemindersModule } from './reminders/reminders.module.js';
+import { TimersModule } from './timers/timers.module.js';
 
 /** Root module. */
 @Module({
@@ -28,6 +29,7 @@ import { RemindersModule } from './reminders/reminders.module.js';
     FeedbackModule,
     CreditsModule,
     RemindersModule,
+    TimersModule,
   ],
   controllers: [HealthController],
 })

@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import { formatDate } from '@kitchen/i18n';
+import { formatRemaining } from '@kitchen/contracts';
 import { useLocale } from '../../lib/locale';
 import { cn } from '../../lib/cn';
 import { useOrientation } from '../../lib/useOrientation';
 import { useHousehold } from '../../hooks/settings';
 import { useReminderSettings } from '../../hooks/reminders';
+import { useTimers } from '../../hooks/timers';
+import { featuredTimer, hasRunningTimer, useTimerTick } from '../../lib/timers';
 import { hasAnyNudge, hydrationGoalText, wellnessPlanLines } from '../../lib/screen';
 import { LoadingState, ErrorState } from '../ui/states';
 
@@ -26,7 +29,11 @@ export function SmartScreenView() {
   const orientation = useOrientation();
   const householdQuery = useHousehold();
   const settingsQuery = useReminderSettings();
+  const timersQuery = useTimers();
   const now = useClock();
+  const timers = timersQuery.data?.items ?? [];
+  const tick = useTimerTick(hasRunningTimer(timers, new Date()));
+  const timer = featuredTimer(timers, tick);
 
   if (settingsQuery.isLoading || householdQuery.isLoading) {
     return (
@@ -107,8 +114,9 @@ export function SmartScreenView() {
           <MiniCard
             tone="primary"
             icon={<TimerIcon />}
-            label={t('web.screen.timerLabel')}
-            value={t('web.screen.timerEmpty')}
+            label={timer ? timer.label : t('web.screen.timerLabel')}
+            value={timer ? formatRemaining(timer.remainingSec) : t('web.screen.timerEmpty')}
+            testId="screen-timer"
           />
           <MiniCard
             tone="accent"
@@ -120,7 +128,7 @@ export function SmartScreenView() {
       </main>
 
       <nav className="grid grid-cols-4 gap-2 border-t border-border bg-background px-4 py-3">
-        <NavItem icon={<TimerIcon />} label={t('web.screen.navTimers')} />
+        <NavItem icon={<TimerIcon />} label={t('web.screen.navTimers')} href="/timers" />
         <NavItem icon={<BookIcon />} label={t('web.screen.navRecipes')} href="/recipes" />
         <NavItem icon={<NoteIcon />} label={t('web.screen.navNotes')} />
         <NavItem icon={<BellIcon />} label={t('web.screen.navAlerts')} href="/settings/reminders" active />
@@ -134,14 +142,19 @@ function MiniCard({
   icon,
   label,
   value,
+  testId,
 }: {
   tone: 'primary' | 'accent';
   icon: ReactNode;
   label: string;
   value: string;
+  testId?: string;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-border bg-background p-5 shadow-card">
+    <div
+      data-testid={testId}
+      className="flex items-center gap-4 rounded-2xl border border-border bg-background p-5 shadow-card"
+    >
       <span
         className={cn(
           'grid h-12 w-12 flex-none place-items-center rounded-xl',

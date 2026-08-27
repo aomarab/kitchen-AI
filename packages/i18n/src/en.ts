@@ -79,6 +79,9 @@ export const en = {
     emptyPantry:
       'Your kitchen is empty, so there is nothing to plan around yet. Add a few items — or snap a photo of your shelves — and try again.',
     feedbackRateLimited: "You've sent us plenty of feedback today. Please try again tomorrow.",
+    timerNotRunning: 'That timer is not running.',
+    timerNotPaused: 'That timer is not paused.',
+    timerTooLong: 'A timer cannot run longer than 12 hours.',
   },
 
   auth: {

@@ -1,6 +1,7 @@
 import type { ComponentType, SVGProps } from 'react';
 import type { MessageKey } from '@kitchen/i18n';
 import {
+  ClockIcon,
   DashboardIcon,
   HouseholdIcon,
   KitchenIcon,
@@ -22,6 +23,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: '/plans', labelKey: 'web.nav.plans', icon: PlansIcon },
   { href: '/recipes', labelKey: 'web.nav.recipes', icon: RecipesIcon },
   { href: '/shopping', labelKey: 'web.nav.shopping', icon: ShoppingIcon },
+  { href: '/timers', labelKey: 'web.nav.timers', icon: ClockIcon },
 ];
 
 export const ACCOUNT_NAV: NavItem[] = [

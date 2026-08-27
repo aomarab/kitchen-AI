@@ -27,8 +27,16 @@ import type {
   UpdateMeRequest,
   UpdateProfileRequest,
   UpdateReminderSettingsRequest,
+  CookingTimer,
+  CreateTimerRequest,
+  UpdateTimerRequest,
 } from '@kitchen/contracts';
-import { CREDIT_PACKS, DEFAULT_SLOTS_BY_SCOPE } from '@kitchen/contracts';
+import {
+  CREDIT_PACKS,
+  DEFAULT_SLOTS_BY_SCOPE,
+  MAX_TIMER_DURATION_SEC,
+  projectTimer,
+} from '@kitchen/contracts';
 import { API_URL } from '../lib/config';
 import {
   buildRecognitionSession,
@@ -230,6 +238,80 @@ export const handlers = [
     const body = (await request.json()) as UpdateReminderSettingsRequest;
     db.reminderSettings = { ...db.reminderSettings, ...body };
     return HttpResponse.json(db.reminderSettings);
+  }),
+
+  /* ---------- Cooking timers ---------- */
+  http.get(u('/timers'), async () => {
+    const now = new Date();
+    return HttpResponse.json({ items: db.timers.map((timer) => projectTimer(timer, now)) });
+  }),
+  http.post(u('/timers'), async ({ request }) => {
+    const body = (await request.json()) as CreateTimerRequest;
+    const now = new Date();
+    const timer: CookingTimer = {
+      id: uuid(),
+      householdId: db.household.id,
+      label: body.label.trim(),
+      durationSec: body.durationSec,
+      status: 'running',
+      endsAt: new Date(now.getTime() + body.durationSec * 1000).toISOString(),
+      remainingSec: body.durationSec,
+      createdAt: now.toISOString(),
+    };
+    db.timers = [...db.timers, timer];
+    return HttpResponse.json(timer, { status: 201 });
+  }),
+  http.patch(u('/timers/:id'), async ({ request, params }) => {
+    const body = (await request.json()) as UpdateTimerRequest;
+    const now = new Date();
+    const index = db.timers.findIndex((t) => t.id === params.id);
+    if (index === -1) return err('NOT_FOUND', 404);
+    const current = projectTimer(db.timers[index]!, now);
+
+    let next: CookingTimer;
+    switch (body.action) {
+      case 'pause':
+        if (current.status !== 'running') return err('CONFLICT', 409);
+        next = { ...current, status: 'paused', endsAt: null };
+        break;
+      case 'resume':
+        if (current.status !== 'paused') return err('CONFLICT', 409);
+        next = {
+          ...current,
+          status: 'running',
+          endsAt: new Date(now.getTime() + current.remainingSec * 1000).toISOString(),
+        };
+        break;
+      case 'stop':
+        next = { ...current, status: 'done', endsAt: null, remainingSec: 0 };
+        break;
+      case 'extend': {
+        const seconds = body.seconds ?? 60;
+        const durationSec = current.durationSec + seconds;
+        if (durationSec > MAX_TIMER_DURATION_SEC) return err('CONFLICT', 409);
+        const remainingSec =
+          current.status === 'done' ? seconds : current.remainingSec + seconds;
+        next =
+          current.status === 'paused'
+            ? { ...current, durationSec, remainingSec }
+            : {
+                ...current,
+                status: 'running',
+                durationSec,
+                remainingSec,
+                endsAt: new Date(now.getTime() + remainingSec * 1000).toISOString(),
+              };
+        break;
+      }
+    }
+    db.timers = db.timers.map((t) => (t.id === next.id ? next : t));
+    return HttpResponse.json(next);
+  }),
+  http.delete(u('/timers/:id'), async ({ params }) => {
+    const before = db.timers.length;
+    db.timers = db.timers.filter((t) => t.id !== params.id);
+    if (db.timers.length === before) return err('NOT_FOUND', 404);
+    return HttpResponse.json({ ok: true });
   }),
 
   /* ---------- Catalog ---------- */
