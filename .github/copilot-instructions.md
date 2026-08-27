@@ -10,8 +10,9 @@ file to the feature: `2026-07-26-kitchen-ai-design.md` (system baseline),
 `2026-07-27-slack-inspired-ui-design.md` (UI), `2026-07-27-web-camera-capture-design.md` (capture),
 `2026-08-09-product-feedback-admin-console-design.md`, `2026-08-10-device-compatibility-design.md`,
 `2026-08-10-publishing-compliance-design.md`, `2026-08-11-ai-credits-design.md`,
-`2026-08-11-recipe-media-resolution-design.md`. Adding a subsystem means adding a spec, not just
-code.
+`2026-08-11-recipe-media-resolution-design.md`, `2026-08-11-model-routing-design.md` (vision
+vendor + per-model cost), `2026-08-26-kitchen-companion-design.md` (smart screen, reminders,
+timers, live assistant). Adding a subsystem means adding a spec, not just code.
 
 ## Commands
 
@@ -24,6 +25,7 @@ uses Node 22 and installs with `pnpm install --frozen-lockfile`.
 | `pnpm typecheck` / `pnpm lint` / `pnpm test`  | Whole workspace                                                                           |
 | `pnpm infra:up` / `infra:down`                | Docker: PostgreSQL 17 + pgvector, Redis, MinIO                                            |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Drizzle migrations + bilingual ingredient catalog (`db:seed -- --dry-run` validates only) |
+| `pnpm db:reset`                               | Drops and rebuilds the local database, then re-seeds                                      |
 | `pnpm format`                                 | Prettier over the repo                                                                    |
 
 CI runs `pnpm build`, `pnpm typecheck`, `pnpm lint`, then `pnpm test`.
@@ -85,8 +87,11 @@ Non-obvious system rules:
 - **Long work is a job, not a request.** Receipt parsing and plan generation return a job id and are
   processed by BullMQ (`src/ai/jobs`); clients poll. Job-creating routes take an `idempotency-key`
   header.
-- **Photos never traverse the API.** Client gets a presigned S3/MinIO URL, uploads directly, then
-  sends only the object key.
+- **Photos never traverse the API — and are resized first.** Client gets a presigned S3/MinIO URL,
+  uploads directly, then sends only the object key. Vision billing is driven by image _dimensions_,
+  not file size, so capture resizes to `MAX_IMAGE_EDGE_PX = 1024` / `IMAGE_JPEG_QUALITY = 0.7`
+  (`apps/mobile/src/lib/image.ts`) **before** presigning — `presign` is given `contentLength`, so a
+  resize after it makes the presign wrong.
 - **Meal planning is three stages** (spec §5): A deterministic SQL pantry snapshot → B LLM candidate
   recipes as structured output → C deterministic re-validation against the pantry. Daily plans that
   fail C regenerate (max 2 retries); weekly/monthly convert shortfalls into shopping-list items.
@@ -94,6 +99,12 @@ Non-obvious system rules:
 - **AI providers swap on `env.AI_MOCK`** in `src/ai/ai.module.ts` (OpenAI, YouTube, Open Food Facts,
   embeddings each have a Mock* and an Http*/OpenAi* implementation behind a DI token in
   `ai.constants.ts`). New external calls follow the same port/adapter shape.
+- **Tiers pick a model; pricing follows the model, not the tier.** `OPERATION_TIER` maps an
+  `AiOperation` to `cheap` / `vision` / `planning`, but cost is resolved per served model
+  (`resolveModelRate` in `ai.constants.ts`) because the `vision` tier can route to a second vendor:
+  `AI_VISION_VENDOR=gemini` + `GEMINI_API_KEY` swaps only that tier (`ai.module.ts`). Adding a model
+  means adding its rate — an unpriced model silently misprices the `ai_usage` ledger that credit
+  pricing is derived from.
 - **YouTube video ids always come from the YouTube Data API**, never from the model, and are cached
   per recipe.
 - **Every model call goes through `AiGateway`** (`src/ai/ai-gateway.service.ts`). It is the single
@@ -172,6 +183,16 @@ palette; the Slack-inspired UI spec supersedes it where they disagree.
   - Mobile uses MSW unless `EXPO_PUBLIC_USE_MOCKS=false`.
 - Server state is TanStack Query, client/session state is Zustand. Web uses the `@/*` alias to
   `src/`; mobile and web relative imports have no file extension (unlike the API).
+- **Web locale is a cookie, not a URL segment.** There is no `[locale]` route; the root layout reads
+  `getRequestLocale()` (`src/lib/locale.server.ts`) and sets `<html lang dir>`. Routes are grouped by
+  shell: `(app)` (signed-in), `(auth)`, `(admin)` (behind `AdminGate` + server `StaffGuard`), and
+  `(screen)` — the full-screen kiosk surface (`/screen`, `/assistant`) for a wall-mounted tablet.
+- **The live assistant is a client↔provider transport, not an API route.** `LiveAssistantView` talks
+  to a `RealtimeAssistantClient` port (`src/lib/assistant/realtime-port.ts`); only the mock adapter
+  ships today, and a real WebRTC/WebSocket adapter would use an ephemeral token minted by the API.
+  The port exposes `isMock` so the UI wears a persistent demo badge — a real camera feed paired with
+  a scripted assistant must never read as real vision. Detections are never auto-written to
+  inventory; a confirmed write goes through the normal append-only inventory event path.
 
 ## MCP servers
 

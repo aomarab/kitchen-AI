@@ -84,10 +84,13 @@ import {
   submitProductFeedbackRequestSchema,
   updateFeedbackRequestSchema,
 } from './feedback.js';
+import { reminderSettingsSchema, updateReminderSettingsRequestSchema } from './reminders.js';
 import {
-  reminderSettingsSchema,
-  updateReminderSettingsRequestSchema,
-} from './reminders.js';
+  cookingTimerSchema,
+  createTimerRequestSchema,
+  timerListSchema,
+  updateTimerRequestSchema,
+} from './timers.js';
 import { idParamSchema, paginatedSchema, uuidSchema } from './common.js';
 import {
   creditBalanceSchema,
@@ -676,6 +679,40 @@ export const routes = {
     household: true,
     body: updateReminderSettingsRequestSchema,
     response: reminderSettingsSchema,
+  },
+
+  /* ---------------- Cooking timers ---------------- */
+  listTimers: {
+    method: 'GET',
+    path: '/timers',
+    auth: true,
+    household: true,
+    response: timerListSchema,
+  },
+  createTimer: {
+    method: 'POST',
+    path: '/timers',
+    auth: true,
+    household: true,
+    body: createTimerRequestSchema,
+    response: cookingTimerSchema,
+  },
+  updateTimer: {
+    method: 'PATCH',
+    path: '/timers/:id',
+    auth: true,
+    household: true,
+    params: idParamSchema,
+    body: updateTimerRequestSchema,
+    response: cookingTimerSchema,
+  },
+  deleteTimer: {
+    method: 'DELETE',
+    path: '/timers/:id',
+    auth: true,
+    household: true,
+    params: idParamSchema,
+    response: emptyResponse,
   },
 } as const satisfies Record<string, RouteDefinition>;
 

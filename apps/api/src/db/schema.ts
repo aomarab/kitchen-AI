@@ -26,6 +26,7 @@ import {
 export const localeEnum = pgEnum('locale', ['en', 'ar']);
 export const householdRoleEnum = pgEnum('household_role', ['owner', 'member']);
 export const userRoleEnum = pgEnum('user_role', ['user', 'staff']);
+export const timerStatusEnum = pgEnum('timer_status', ['running', 'paused', 'done']);
 export const feedbackStatusEnum = pgEnum('feedback_status', [
   'new',
   'triaged',
@@ -247,6 +248,42 @@ export const reminderSettings = pgTable('reminder_settings', {
   quietHoursEnd: integer('quiet_hours_end').notNull().default(7),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Cooking timers (kitchen companion spec — Feature 3). Persisted server-side so
+ * the kiosk and a phone agree and a reload does not lose the countdown.
+ *
+ * `ends_at` is the deadline of a running timer; `remaining_sec` holds the time
+ * left once it is paused or stopped. The check constraint carries the same
+ * invariant as `cookingTimerSchema` in `@kitchen/contracts` — a running row
+ * without a deadline has no countdown at all, and it must not be reachable by
+ * a migration, a seed or a hand-written UPDATE either.
+ */
+export const cookingTimers = pgTable(
+  'cooking_timers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    label: text('label').notNull(),
+    durationSec: integer('duration_sec').notNull(),
+    status: timerStatusEnum('status').notNull().default('running'),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    remainingSec: integer('remaining_sec').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      'cooking_timer_running_has_deadline',
+      sql`(${table.status} = 'running') = (${table.endsAt} is not null)`,
+    ),
+    check('cooking_timer_duration_positive', sql`${table.durationSec} > 0`),
+    check('cooking_timer_remaining_nonnegative', sql`${table.remainingSec} >= 0`),
+    index('cooking_timers_household_created_idx').on(table.householdId, table.createdAt),
+  ],
+);
 
 /* ------------------------------------------------------------------ */
 /* Catalog & inventory                                                 */

@@ -1,4 +1,5 @@
 import type {
+  CookingTimer,
   FeedbackDetail,
   Household,
   Ingredient,
@@ -106,6 +107,7 @@ interface DbShape {
   /** Purchase intents awaiting confirmation, keyed by intent id. */
   purchaseIntents: Map<string, { productId: string; credits: number }>;
   reminderSettings: ReminderSettings;
+  timers: CookingTimer[];
 }
 
 export const db = {} as DbShape;
@@ -494,6 +496,7 @@ export function seed(): void {
     quietHoursStart: 22,
     quietHoursEnd: 7,
   };
+  db.timers = [];
 }
 
 /**
