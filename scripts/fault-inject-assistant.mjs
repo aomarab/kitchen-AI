@@ -31,6 +31,18 @@ const BRIEF_SPEC = ['@kitchen/api', 'src/ai/assistant/pantry-brief.spec.ts'];
 
 const CASES = [
   {
+    // Real provider output arrives padded and multi-item; a parser that took
+    // only the first item would halve the pantry the user is asked to confirm,
+    // and every hand-written fixture in the suite is single-item, so nothing
+    // else in the file could see it.
+    name: 'only the first reported item survives parsing',
+    file: WEB,
+    spec: WEB_SPEC,
+    check: 'accepts the exact arguments a live gpt-realtime session produced',
+    from: '    return result.data.items.map((item, index) => ({',
+    to: '    return result.data.items.slice(0, 1).map((item, index) => ({',
+  },
+  {
     name: 'the demo badge comes off before a real session is minted',
     file: WEB,
     spec: WEB_SPEC,

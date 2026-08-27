@@ -271,6 +271,42 @@ describe('OpenAiRealtimeAssistantClient', () => {
     });
   });
 
+  it('accepts the exact arguments a live gpt-realtime session produced', async () => {
+    // Captured from a real session on 2026-08-27 (model gpt-realtime, our own
+    // REPORT_ITEMS_TOOL definition), byte for byte including the stray padding
+    // the model wrapped the JSON in. Every other payload in this file is one we
+    // invented, so this is the only evidence that what the provider actually
+    // emits survives our parser.
+    const LIVE_ARGS =
+      '{  \n  "items": [\n    {\n      "nameEn": "tomato",\n      "nameAr": "طماطم",\n' +
+      '      "quantity": 3,\n      "unit": "piece",\n      "confidence": 0.99,\n' +
+      '      "category": "vegetable"\n    },\n    {\n      "nameEn": "rice",\n' +
+      '      "nameAr": "أرز",\n      "quantity": 2,\n      "unit": "kg",\n' +
+      '      "confidence": 0.99,\n      "category": "grain"\n    }\n  ]\n}  \n';
+
+    const { pc, events, start } = setup();
+    await start();
+
+    pc.channel.message({
+      type: 'response.function_call_arguments.done',
+      name: 'report_items',
+      arguments: LIVE_ARGS,
+    });
+
+    const detections = events.find((event) => event.type === 'detections');
+    expect(detections).toBeDefined();
+    // Both items, not one: a schema that rejected either would silently halve
+    // the pantry the user is asked to confirm.
+    expect(detections!.type === 'detections' && detections!.items).toHaveLength(2);
+    expect(detections!.type === 'detections' && detections!.items[1]).toMatchObject({
+      nameEn: 'rice',
+      nameAr: 'أرز',
+      quantity: 2,
+      unit: 'kg',
+      category: 'grain',
+    });
+  });
+
   it('drops a report whose items do not validate, rather than coercing them', async () => {
     const { pc, events, start } = setup();
     await start();

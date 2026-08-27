@@ -269,16 +269,28 @@ were decided differently from the sketch above, and the reasons matter more than
   rather than reusing the `@kitchen/i18n` display abbreviations, which are sized for tight layouts
   and which a speech model would read aloud as letters.
 
-Fault injection for all of the above lives in `scripts/fault-inject-assistant.mjs` (24 defects, each
+Fault injection for all of the above lives in `scripts/fault-inject-assistant.mjs` (25 defects, each
 caught by the check that names it). Run it **after** Prettier: anchors are string-exact, and one of
 them silently went stale when Prettier rewrapped a ternary, leaving that rule unproven until the
 harness was re-run and reported `anchor not found`.
 
 Verified against a real OpenAI account on 2026-08-27: `gpt-realtime` is a valid model id, and
 `POST /v1/realtime/client_secrets` returns a secret our provider parses — an `ek_`-prefixed value,
-`expires_at` honouring the pinned 10-second floor, and the model echoed back. Still unverified: the
-browser SDP exchange against `/v1/realtime/calls`, which needs a real `RTCPeerConnection` that jsdom
-does not provide, and the credit cost of a real session.
+`expires_at` honouring the pinned 10-second floor, and the model echoed back. The mint carried our
+own `report_items` definition, so the tool schema is accepted as sent, including the
+`["number", "null"]` quantity that a stricter validator would have rejected.
+
+The browser half was then driven in real Chromium (Playwright) rather than jsdom, replaying the
+adapter's handshake exactly: publish an audio track, open `oai-events`, `POST` the SDP offer to
+`/v1/realtime/calls?model=…` with the ephemeral secret. It returned `201`, the peer connection
+reached `connected`, the remote audio track arrived, and `session.created` came back over the data
+channel. Prompted to report what it could see, the model emitted
+`response.function_call_arguments.done` naming `report_items` with two valid items. That exact
+payload — padding and all — is now a fixture in `openai-realtime.test.ts`, because every other
+payload in that suite is one we invented.
+
+Still unverified: the credit cost of a real session. 25 credits remains an estimate, and a long
+session is under-charged by construction — session length is not observable to us.
 
 ---
 
