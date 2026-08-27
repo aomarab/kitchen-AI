@@ -58,17 +58,16 @@ export default function Reminders() {
         <AppText variant="label" muted>
           {t('mobile.reminders.nudgesTitle')}
         </AppText>
+        {/*
+          No stretch toggle: the firing engine has no cadence for it, so it
+          never fires. See SCHEDULED_REMINDER_TYPES in @kitchen/contracts. The
+          setting itself is kept server-side for whenever one is decided.
+        */}
         <ToggleRow
           label={t('mobile.reminders.breakLabel')}
           hint={t('mobile.reminders.breakHint')}
           value={s.breakEnabled}
           onValueChange={(v) => update.mutate({ breakEnabled: v })}
-        />
-        <ToggleRow
-          label={t('mobile.reminders.stretchLabel')}
-          hint={t('mobile.reminders.stretchHint')}
-          value={s.stretchEnabled}
-          onValueChange={(v) => update.mutate({ stretchEnabled: v })}
         />
         <ToggleRow
           label={t('mobile.reminders.morningLabel')}

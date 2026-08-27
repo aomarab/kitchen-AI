@@ -14,7 +14,17 @@ import { LoadingState, ErrorState } from '../ui/states';
 
 const CADENCES: BreakCadenceMinutes[] = [30, 60, 90, 120];
 
-type ToggleKey = 'breakEnabled' | 'stretchEnabled' | 'morningEnabled' | 'hydrationEnabled';
+/**
+ * `stretchEnabled` is deliberately not offered.
+ *
+ * The firing engine has no cadence for stretch — none is specified in the
+ * spec or the prototype — so `SCHEDULED_REMINDER_TYPES` excludes it and no
+ * stretch nudge is ever produced. A switch that changes nothing is worse than
+ * no switch: it defaults to on, so it told every household that stretch
+ * reminders were running. The column is kept in the contract and the database
+ * so the preference survives for whenever a cadence is decided.
+ */
+type ToggleKey = 'breakEnabled' | 'morningEnabled' | 'hydrationEnabled';
 
 export function ReminderSettingsView() {
   const { t, locale } = useLocale();
@@ -30,7 +40,6 @@ export function ReminderSettingsView() {
 
   const toggles: { key: ToggleKey; label: string; hint: string }[] = [
     { key: 'breakEnabled', label: t('web.reminders.breakLabel'), hint: t('web.reminders.breakHint') },
-    { key: 'stretchEnabled', label: t('web.reminders.stretchLabel'), hint: t('web.reminders.stretchHint') },
     { key: 'morningEnabled', label: t('web.reminders.morningLabel'), hint: t('web.reminders.morningHint') },
     { key: 'hydrationEnabled', label: t('web.reminders.hydrationLabel'), hint: t('web.reminders.hydrationHint') },
   ];

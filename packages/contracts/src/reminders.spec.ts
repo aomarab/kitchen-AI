@@ -13,6 +13,9 @@ import {
   updateReminderSettingsRequestSchema,
   wakingWindowMinutes,
   REMINDER_MESSAGE_KEYS,
+  SCHEDULED_REMINDER_TYPES,
+  isScheduledReminderType,
+  scheduledReminderTypes,
   type FiredState,
   type ReminderOccurrence,
   type ReminderSettings,
@@ -287,5 +290,91 @@ describe('pendingNudge / pendingNudges', () => {
   it('agrees with pendingNudge on which nudge is first', () => {
     const input = [occurrence('a', 9, null), occurrence('b', 11, null)];
     expect(pendingNudges(input)[0]?.id).toBe(pendingNudge(input)?.id);
+  });
+});
+
+
+describe('SCHEDULED_REMINDER_TYPES', () => {
+  const settings = (over: Partial<ReminderSettings> = {}): ReminderSettings =>
+    reminderSettingsSchema.parse({ householdId: HOUSEHOLD_ID, ...over });
+
+  /**
+   * Every type the engine can produce, discovered by asking it rather than by
+   * repeating the list. A sweep of waking hours and fired states, with all
+   * toggles on and every counter clear, so any branch that can fire does.
+   */
+  const typesTheEngineCanProduce = (): Set<string> => {
+    const produced = new Set<string>();
+    const base = settings({ quietHoursStart: 22, quietHoursEnd: 7, timeZone: 'UTC' });
+
+    // Read off the schema rather than re-typed, so a new cadence option is
+    // swept automatically instead of quietly going unchecked.
+    const cadences = breakCadenceMinutesSchema.options.map((option) => option.value);
+
+    for (const cadence of cadences) {
+      for (const goal of [1, 4, 8, 20]) {
+        const s = settings({
+          breakCadenceMinutes: cadence,
+          hydrationGoalCups: goal,
+          quietHoursStart: 22,
+          quietHoursEnd: 7,
+        });
+        // Every whole hour of a day, so no waking window is missed.
+        for (let hour = 0; hour < 24; hour += 1) {
+          const now = new Date(Date.UTC(2026, 7, 12, hour, 30));
+          const empty: FiredState = { lastFiredAt: {}, countToday: {} };
+          for (const type of dueReminderTypes(s, empty, now)) produced.add(type);
+
+          // Also with something already fired, which is a different branch.
+          const fired: FiredState = {
+            lastFiredAt: { break: new Date(now.getTime() - 6 * 60 * 60_000) },
+            countToday: { morning: 1, hydration: 0 },
+          };
+          for (const type of dueReminderTypes(s, fired, now)) produced.add(type);
+        }
+      }
+    }
+
+    expect(base.stretchEnabled).toBe(true);
+    return produced;
+  };
+
+  it('names exactly the types the firing engine can produce', () => {
+    // The point of the list: a client reading it must reach the same answer
+    // the engine would. Implementing a stretch cadence without adding it here
+    // fails, and so does deleting a branch without removing it here.
+    expect([...typesTheEngineCanProduce()].sort()).toEqual([...SCHEDULED_REMINDER_TYPES].sort());
+  });
+
+  it('leaves stretch out, because no cadence is specified anywhere', () => {
+    expect(isScheduledReminderType('stretch')).toBe(false);
+    expect(reminderTypeSchema.options).toContain('stretch');
+  });
+
+  it('omits stretch from a household plan even when its toggle is on', () => {
+    expect(scheduledReminderTypes(settings({ stretchEnabled: true }))).not.toContain('stretch');
+  });
+
+  it('reports an empty plan for a household that has only stretch on', () => {
+    // The case the kiosk got wrong: it showed a wellness plan that could
+    // never produce a single nudge.
+    expect(
+      scheduledReminderTypes(
+        settings({
+          stretchEnabled: true,
+          breakEnabled: false,
+          morningEnabled: false,
+          hydrationEnabled: false,
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('honours the other toggles', () => {
+    expect(scheduledReminderTypes(settings({ breakEnabled: false }))).toEqual([
+      'morning',
+      'hydration',
+    ]);
+    expect(scheduledReminderTypes(settings())).toEqual(['morning', 'break', 'hydration']);
   });
 });
