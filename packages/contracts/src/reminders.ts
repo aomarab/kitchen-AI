@@ -226,3 +226,32 @@ export function dueReminderTypes(
 export function hydrationCupsDrunk(occurrences: ReminderOccurrence[]): number {
   return occurrences.filter((o) => o.type === 'hydration' && o.acknowledgedAt !== null).length;
 }
+
+/**
+ * The one nudge a surface should be asking about: the most recently fired
+ * occurrence nobody has acknowledged. `null` when everything has been dealt
+ * with, so a client shows its idle state rather than inventing an alert.
+ *
+ * This lives in the contract, not in a client, because the kiosk and the phone
+ * must agree on *which* nudge is outstanding — acknowledging on one surface has
+ * to clear the same row on the other.
+ */
+export function pendingNudge(occurrences: ReminderOccurrence[]): ReminderOccurrence | null {
+  let latest: ReminderOccurrence | null = null;
+  for (const occurrence of occurrences) {
+    if (occurrence.acknowledgedAt !== null) continue;
+    if (latest === null || occurrence.firedAt > latest.firedAt) latest = occurrence;
+  }
+  return latest;
+}
+
+/**
+ * Every unacknowledged nudge, newest first. The phone lists them instead of
+ * showing only one, because a nudge that fired while the app was closed is
+ * still owed an answer.
+ */
+export function pendingNudges(occurrences: ReminderOccurrence[]): ReminderOccurrence[] {
+  return occurrences
+    .filter((o) => o.acknowledgedAt === null)
+    .sort((a, b) => (a.firedAt < b.firedAt ? 1 : a.firedAt > b.firedAt ? -1 : 0));
+}

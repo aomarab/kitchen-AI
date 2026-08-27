@@ -52,6 +52,10 @@ export const IONICONS = {
   chevronDown: 'chevron-down',
   back: 'chevron-back',
   arrowForward: 'arrow-forward',
+  water: 'water-outline',
+  stretch: 'body-outline',
+  sunrise: 'sunny-outline',
+  pause: 'cafe-outline',
 } satisfies Record<string, IoniconName>;
 
 export type IconName = keyof typeof IONICONS;
