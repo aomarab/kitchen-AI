@@ -1,12 +1,17 @@
 import { http, HttpResponse, type HttpResponseResolver } from 'msw';
 import {
+  applyTimerAction,
+  projectTimer,
   routes,
+  type CookingTimer,
+  type CreateTimerRequest,
   type Ingredient,
   type InventoryItem,
   type Locale,
   type MealPlan,
   type RouteName,
   type ShoppingListItem,
+  type UpdateTimerRequest,
 } from '@kitchen/contracts';
 import { CREDIT_PACKS } from '@kitchen/contracts';
 import {
@@ -49,6 +54,7 @@ const db = {
   household: { ...mockHousehold },
   profile: { ...mockProfile },
   reminderSettings: { ...mockReminderSettings },
+  timers: [] as CookingTimer[],
   locations: [...seedLocations],
   inventory: buildInventory(),
   shopping: buildShoppingList(),
@@ -197,6 +203,45 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     db.profile = { ...db.profile, ...(body as object) };
     return HttpResponse.json(db.profile);
   },
+  /* ---- Cooking timers ---- */
+  listTimers: () => {
+    const now = new Date();
+    return HttpResponse.json({ items: db.timers.map((timer) => projectTimer(timer, now)) });
+  },
+  createTimer: async ({ request }) => {
+    const body = (await request.json()) as CreateTimerRequest;
+    const now = new Date();
+    const timer: CookingTimer = {
+      id: nextId(),
+      householdId: db.household.id,
+      label: body.label.trim(),
+      durationSec: body.durationSec,
+      status: 'running',
+      endsAt: new Date(now.getTime() + body.durationSec * 1000).toISOString(),
+      remainingSec: body.durationSec,
+      createdAt: now.toISOString(),
+    };
+    db.timers = [...db.timers, timer];
+    return HttpResponse.json(timer, { status: 201 });
+  },
+  updateTimer: async ({ request, params }) => {
+    const body = (await request.json()) as UpdateTimerRequest;
+    const now = new Date();
+    const current = db.timers.find((t) => t.id === params.id);
+    if (!current) return notFound();
+
+    // The one state machine the server also runs — see `applyTimerAction`.
+    const result = applyTimerAction(projectTimer(current, now), body, now);
+    if (!result.ok) return conflict();
+    db.timers = db.timers.map((t) => (t.id === result.timer.id ? result.timer : t));
+    return HttpResponse.json(result.timer);
+  },
+  deleteTimer: ({ params }) => {
+    const before = db.timers.length;
+    db.timers = db.timers.filter((t) => t.id !== params.id);
+    return db.timers.length === before ? notFound() : HttpResponse.json({ ok: true });
+  },
+
   getReminderSettings: () => HttpResponse.json(db.reminderSettings),
   updateReminderSettings: async ({ request }) => {
     const body = await readBody(request);
@@ -786,6 +831,10 @@ function jobView(job: JobRecord) {
 
 function notFound() {
   return HttpResponse.json({ code: 'NOT_FOUND', messageKey: 'errors.NOT_FOUND' }, { status: 404 });
+}
+
+function conflict() {
+  return HttpResponse.json({ code: 'CONFLICT', messageKey: 'errors.CONFLICT' }, { status: 409 });
 }
 
 function randomCode(): string {

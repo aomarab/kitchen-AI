@@ -136,3 +136,64 @@ export function formatRemaining(totalSec: number): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
 }
+
+/**
+ * The timer state machine, applied to a **projected** timer.
+ *
+ * This is the one implementation. It previously existed twice — in the API's
+ * `TimersService` and again in the web MSW handlers — and a third copy for the
+ * mobile mocks is how three surfaces quietly stop agreeing about what "+1 min
+ * on a finished timer" does. Callers keep their own error vocabulary: the API
+ * maps a refusal to `AppError`, the mock layers to an HTTP status.
+ */
+export type TimerTransition =
+  | { ok: true; timer: CookingTimer }
+  | { ok: false; reason: 'not_running' | 'not_paused' | 'too_long' };
+
+export function applyTimerAction(
+  timer: CookingTimer,
+  body: UpdateTimerRequest,
+  now: Date,
+): TimerTransition {
+  const at = (seconds: number) => new Date(now.getTime() + seconds * 1000).toISOString();
+
+  switch (body.action) {
+    case 'pause':
+      if (timer.status !== 'running') return { ok: false, reason: 'not_running' };
+      return { ok: true, timer: { ...timer, status: 'paused', endsAt: null } };
+
+    case 'resume':
+      if (timer.status !== 'paused') return { ok: false, reason: 'not_paused' };
+      return {
+        ok: true,
+        timer: { ...timer, status: 'running', endsAt: at(timer.remainingSec) },
+      };
+
+    case 'stop':
+      // Stopping an already-finished timer is a no-op rather than a conflict:
+      // it is the same button on the same card the user is looking at.
+      return { ok: true, timer: { ...timer, status: 'done', endsAt: null, remainingSec: 0 } };
+
+    case 'extend': {
+      const durationSec = timer.durationSec + body.seconds;
+      if (durationSec > MAX_TIMER_DURATION_SEC) return { ok: false, reason: 'too_long' };
+      // "+1 min" on a card that is already ringing means give it another
+      // minute, so extending a finished timer restarts it rather than failing.
+      const remainingSec =
+        timer.status === 'done' ? body.seconds : timer.remainingSec + body.seconds;
+      if (timer.status === 'paused') {
+        return { ok: true, timer: { ...timer, durationSec, remainingSec } };
+      }
+      return {
+        ok: true,
+        timer: {
+          ...timer,
+          status: 'running',
+          durationSec,
+          remainingSec,
+          endsAt: at(remainingSec),
+        },
+      };
+    }
+  }
+}

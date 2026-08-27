@@ -34,7 +34,7 @@ import type {
 import {
   CREDIT_PACKS,
   DEFAULT_SLOTS_BY_SCOPE,
-  MAX_TIMER_DURATION_SEC,
+  applyTimerAction,
   projectTimer,
   wakingStart,
 } from '@kitchen/contracts';
@@ -280,46 +280,12 @@ export const handlers = [
     const now = new Date();
     const index = db.timers.findIndex((t) => t.id === params.id);
     if (index === -1) return err('NOT_FOUND', 404);
-    const current = projectTimer(db.timers[index]!, now);
 
-    let next: CookingTimer;
-    switch (body.action) {
-      case 'pause':
-        if (current.status !== 'running') return err('CONFLICT', 409);
-        next = { ...current, status: 'paused', endsAt: null };
-        break;
-      case 'resume':
-        if (current.status !== 'paused') return err('CONFLICT', 409);
-        next = {
-          ...current,
-          status: 'running',
-          endsAt: new Date(now.getTime() + current.remainingSec * 1000).toISOString(),
-        };
-        break;
-      case 'stop':
-        next = { ...current, status: 'done', endsAt: null, remainingSec: 0 };
-        break;
-      case 'extend': {
-        const seconds = body.seconds ?? 60;
-        const durationSec = current.durationSec + seconds;
-        if (durationSec > MAX_TIMER_DURATION_SEC) return err('CONFLICT', 409);
-        const remainingSec =
-          current.status === 'done' ? seconds : current.remainingSec + seconds;
-        next =
-          current.status === 'paused'
-            ? { ...current, durationSec, remainingSec }
-            : {
-                ...current,
-                status: 'running',
-                durationSec,
-                remainingSec,
-                endsAt: new Date(now.getTime() + remainingSec * 1000).toISOString(),
-              };
-        break;
-      }
-    }
-    db.timers = db.timers.map((t) => (t.id === next.id ? next : t));
-    return HttpResponse.json(next);
+    // Same state machine the server runs — see `applyTimerAction`.
+    const result = applyTimerAction(projectTimer(db.timers[index]!, now), body, now);
+    if (!result.ok) return err('CONFLICT', 409);
+    db.timers = db.timers.map((t) => (t.id === result.timer.id ? result.timer : t));
+    return HttpResponse.json(result.timer);
   }),
   http.delete(u('/timers/:id'), async ({ params }) => {
     const before = db.timers.length;

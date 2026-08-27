@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyTimerAction,
   cookingTimerSchema,
   createTimerRequestSchema,
   formatRemaining,
@@ -159,5 +160,78 @@ describe('formatRemaining', () => {
 
   it('clamps a negative value rather than rendering a minus sign', () => {
     expect(formatRemaining(-30)).toBe('0:00');
+  });
+});
+
+describe('applyTimerAction', () => {
+  const NOW = new Date('2026-08-27T10:00:00.000Z');
+  const running: CookingTimer = {
+    id: 't1',
+    householdId: 'h1',
+    label: 'Rice',
+    durationSec: 600,
+    status: 'running',
+    endsAt: new Date(NOW.getTime() + 300_000).toISOString(),
+    remainingSec: 300,
+    createdAt: NOW.toISOString(),
+  };
+  const paused: CookingTimer = { ...running, status: 'paused', endsAt: null };
+  const done: CookingTimer = { ...running, status: 'done', endsAt: null, remainingSec: 0 };
+  const ok = (result: ReturnType<typeof applyTimerAction>): CookingTimer => {
+    if (!result.ok) throw new Error(`expected a transition, got ${result.reason}`);
+    return result.timer;
+  };
+
+  it('pausing drops the deadline and keeps what was left', () => {
+    const next = ok(applyTimerAction(running, { action: 'pause' }, NOW));
+    expect(next.status).toBe('paused');
+    expect(next.endsAt).toBeNull();
+    expect(next.remainingSec).toBe(300);
+  });
+
+  it('resuming rebuilds the deadline from now, not from the original start', () => {
+    const later = new Date(NOW.getTime() + 60 * 60_000);
+    const next = ok(applyTimerAction(paused, { action: 'resume' }, later));
+    expect(next.status).toBe('running');
+    expect(next.endsAt).toBe(new Date(later.getTime() + 300_000).toISOString());
+  });
+
+  it('refuses to pause what is not running and to resume what is not paused', () => {
+    expect(applyTimerAction(paused, { action: 'pause' }, NOW)).toEqual({
+      ok: false,
+      reason: 'not_running',
+    });
+    expect(applyTimerAction(running, { action: 'resume' }, NOW)).toEqual({
+      ok: false,
+      reason: 'not_paused',
+    });
+  });
+
+  it('stopping an already finished timer is a no-op, not a conflict', () => {
+    const next = ok(applyTimerAction(done, { action: 'stop' }, NOW));
+    expect(next.status).toBe('done');
+    expect(next.remainingSec).toBe(0);
+  });
+
+  it('extending a finished timer restarts it with just the added time', () => {
+    const next = ok(applyTimerAction(done, { action: 'extend', seconds: 60 }, NOW));
+    expect(next.status).toBe('running');
+    expect(next.remainingSec).toBe(60);
+    expect(next.durationSec).toBe(660);
+  });
+
+  it('extending a paused timer leaves it paused', () => {
+    const next = ok(applyTimerAction(paused, { action: 'extend', seconds: 60 }, NOW));
+    expect(next.status).toBe('paused');
+    expect(next.endsAt).toBeNull();
+    expect(next.remainingSec).toBe(360);
+  });
+
+  it('refuses an extension past the maximum duration', () => {
+    const long: CookingTimer = { ...running, durationSec: MAX_TIMER_DURATION_SEC };
+    expect(applyTimerAction(long, { action: 'extend', seconds: 60 }, NOW)).toEqual({
+      ok: false,
+      reason: 'too_long',
+    });
   });
 });
