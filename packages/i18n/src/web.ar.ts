@@ -229,7 +229,7 @@ export const webAr: WebMessages = {
       entry: 'إرسال ملاحظات',
       entryHint: 'أخبرنا بما ينفع وما لا ينفع.',
       ratingLabel: 'كيف يعمل معك تطبيق مطبخ ماما؟',
-      star: 'قيّم {value} من ٥',
+      star: 'قيّم {value} من 5',
       messageLabel: 'هل تود إضافة شيء؟ (اختياري)',
       messagePlaceholder: 'ما الذي سار جيدًا، أو ما الذي أعاقك؟',
       remaining: plural('count', {
@@ -280,7 +280,7 @@ export const webAr: WebMessages = {
       quietHoursHint: 'لا تنبيهات خلال هذه الفترة.',
       quietFrom: 'من',
       quietTo: 'إلى',
-      hourValue: '{hour}:٠٠',
+      hourValue: '{hour}:00',
       saved: 'تم الحفظ',
       saveFailed: 'تعذّر الحفظ. حاول مرة أخرى.',
       decrease: 'إنقاص',

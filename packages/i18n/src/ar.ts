@@ -77,15 +77,15 @@ export const ar: Messages = {
     feedbackRateLimited: 'لقد أرسلت لنا ملاحظات كثيرة اليوم. يرجى المحاولة غدًا.',
     timerNotRunning: 'هذا المؤقّت غير قيد التشغيل.',
     timerNotPaused: 'هذا المؤقّت غير متوقّف مؤقتًا.',
-    timerTooLong: 'لا يمكن أن يتجاوز المؤقّت ١٢ ساعة.',
+    timerTooLong: 'لا يمكن أن يتجاوز المؤقّت اثنتي عشرة ساعة.',
     reminderNotFound: 'هذا التذكير لم يعد موجودًا.',
   },
 
   // Copy taken from the approved prototype `03-wellness-settings.html`, which
   // speaks Levantine dialect in the household voice rather than MSA.
   reminders: {
-    break: { body: 'صارْلك فترة، خذي ٥ دقائق راحة' },
-    stretch: { body: 'شو رأيك بدقيقتين Stretching؟' },
+    break: { body: 'صارْلك فترة، خذي خمس دقائق راحة' },
+    stretch: { body: 'شو رأيك بدقيقتين تمدّد؟' },
     morning: { body: 'صباح الخير، جاهزة نبلّش يومنا؟' },
     hydration: { body: 'شو رأيك بكاسة مي هلق؟' },
   },
@@ -103,7 +103,7 @@ export const ar: Messages = {
     passwordRequired: 'أدخل كلمة المرور للمتابعة.',
     emailTaken: 'هذا البريد الإلكتروني مسجّل بالفعل.',
     passwordRules: {
-      tooShort: 'استخدم ١٠ أحرف على الأقل.',
+      tooShort: 'استخدم عشرة أحرف على الأقل.',
       needsLowercase: 'أضف حرفاً لاتينياً صغيراً.',
       needsUppercase: 'أضف حرفاً لاتينياً كبيراً.',
       needsDigit: 'أضف رقماً.',
