@@ -30,6 +30,14 @@ export const reminderSettingsSchema = z.object({
   /** Quiet-hours window as whole hours 0–23; nudges are suppressed inside it. */
   quietHoursStart: z.number().int().min(0).max(23).default(22),
   quietHoursEnd: z.number().int().min(0).max(23).default(7),
+  /**
+   * IANA zone the quiet hours are expressed in. Quiet hours are wall-clock
+   * hours, so they are meaningless without one — a household in Amman that
+   * sleeps at 22:00 must not be woken because the server counts in UTC.
+   * `'UTC'` is the honest "not told yet" value, not a guess at the user's zone;
+   * clients send `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+   */
+  timeZone: z.string().min(1).max(64).default('UTC'),
 });
 export type ReminderSettings = z.infer<typeof reminderSettingsSchema>;
 
@@ -37,3 +45,184 @@ export const updateReminderSettingsRequestSchema = reminderSettingsSchema
   .omit({ householdId: true })
   .partial();
 export type UpdateReminderSettingsRequest = z.infer<typeof updateReminderSettingsRequestSchema>;
+
+/* ------------------------------------------------------------------ */
+/* Wellness reminders — the fired-occurrence ledger (spec §92–98)      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * How a fired nudge reached the household. Only `screen` exists today: the
+ * engine writes the occurrence and clients poll for it. `push` and spoken
+ * delivery are Feature 4 and are deliberately absent from this enum rather
+ * than declared and unimplemented.
+ */
+export const reminderChannelSchema = z.enum(['screen']);
+export type ReminderChannel = z.infer<typeof reminderChannelSchema>;
+
+/**
+ * One fired nudge. `messageKey` is an i18n key, never prose: the server does
+ * not send user-facing text (same rule as `AppError`), so the client and any
+ * future TTS render it in the household's language.
+ */
+export const reminderOccurrenceSchema = z.object({
+  id: uuidSchema,
+  householdId: uuidSchema,
+  type: reminderTypeSchema,
+  channel: reminderChannelSchema,
+  messageKey: z.string().min(1),
+  firedAt: z.string(),
+  /** Set when the household confirms it acted on the nudge (drank the cup). */
+  acknowledgedAt: z.string().nullable(),
+});
+export type ReminderOccurrence = z.infer<typeof reminderOccurrenceSchema>;
+
+export const reminderOccurrenceListSchema = z.array(reminderOccurrenceSchema);
+
+/**
+ * Occurrences are read per waking day, which is what the kiosk needs to say
+ * "3 of 8 cups". `since` defaults to the start of the current waking window on
+ * the server.
+ */
+export const listReminderOccurrencesQuerySchema = z.object({
+  since: z.string().datetime().optional(),
+});
+export type ListReminderOccurrencesQuery = z.infer<typeof listReminderOccurrencesQuerySchema>;
+
+/** The i18n key each nudge type renders through. Spec: `reminders.break.body`. */
+export const REMINDER_MESSAGE_KEYS = {
+  break: 'reminders.break.body',
+  stretch: 'reminders.stretch.body',
+  morning: 'reminders.morning.body',
+  hydration: 'reminders.hydration.body',
+} as const satisfies Record<ReminderType, string>;
+
+/* ------------------------------------------------------------------ */
+/* Wellness reminders — the pure scheduling core                       */
+/* ------------------------------------------------------------------ */
+
+const MINUTES_PER_DAY = 1440;
+
+/**
+ * The household's wall-clock minute-of-day. Uses `Intl` (present in Node and
+ * every browser) rather than a date library, and `hourCycle: 'h23'` so
+ * midnight is hour 0 and not 24.
+ */
+export function localMinuteOfDay(now: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(now);
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+  return hour * 60 + minute;
+}
+
+/**
+ * Is `hour` inside the quiet window? The window wraps midnight (22 → 7). A
+ * window where start equals end is **empty**, not all-day: a user who has not
+ * chosen quiet hours should still get nudges.
+ */
+export function isQuietHour(hour: number, start: number, end: number): boolean {
+  if (start === end) return false;
+  if (start < end) return hour >= start && hour < end;
+  return hour >= start || hour < end;
+}
+
+/** Length of the waking window in minutes, i.e. quiet-hours end → start. */
+export function wakingWindowMinutes(settings: ReminderSettings): number {
+  const start = settings.quietHoursEnd * 60;
+  const end = settings.quietHoursStart * 60;
+  if (start === end) return MINUTES_PER_DAY;
+  return (end - start + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+}
+
+/**
+ * Minutes elapsed since the household woke, i.e. since the local clock last
+ * passed `quietHoursEnd`. Everything else is derived from this so no
+ * local-date → UTC conversion is ever needed: the waking instant is simply
+ * `now` minus this many minutes.
+ */
+export function minutesSinceWaking(settings: ReminderSettings, now: Date): number {
+  const local = localMinuteOfDay(now, settings.timeZone);
+  return (local - settings.quietHoursEnd * 60 + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+}
+
+/** The instant the current waking window began. */
+export function wakingStart(settings: ReminderSettings, now: Date): Date {
+  return new Date(now.getTime() - minutesSinceWaking(settings, now) * 60_000);
+}
+
+/**
+ * How far apart hydration nudges must be so `hydrationGoalCups` cups fit in the
+ * waking window — the prototype's "8 cups spread over the day". Derived from
+ * the two real settings; no interval is invented.
+ *
+ * The window is divided into `goal + 1` gaps, not `goal`. Dividing by the goal
+ * puts the last cup exactly at the start of quiet hours, where it is suppressed
+ * — so the goal would be unreachable by construction. With `goal + 1` the cups
+ * sit strictly inside the waking window and the last one still lands a full
+ * interval before bedtime.
+ */
+export function hydrationIntervalMinutes(settings: ReminderSettings): number {
+  return Math.max(1, Math.floor(wakingWindowMinutes(settings) / (settings.hydrationGoalCups + 1)));
+}
+
+/** What the firing sweep needs to know about what has already fired today. */
+export interface FiredState {
+  /** Last fire instant per type within the current waking window, if any. */
+  lastFiredAt: Partial<Record<ReminderType, Date>>;
+  /** Count per type within the current waking window. */
+  countToday: Partial<Record<ReminderType, number>>;
+}
+
+/**
+ * Which nudges are due right now.
+ *
+ * `stretch` is deliberately never returned: no setting in the spec or the
+ * prototype determines its cadence, and inventing one would be fabrication.
+ * The toggle is honoured for the other types only until a cadence is specified.
+ */
+export function dueReminderTypes(
+  settings: ReminderSettings,
+  state: FiredState,
+  now: Date,
+): ReminderType[] {
+  const local = localMinuteOfDay(now, settings.timeZone);
+  if (isQuietHour(Math.floor(local / 60), settings.quietHoursStart, settings.quietHoursEnd)) {
+    return [];
+  }
+
+  const sinceWaking = minutesSinceWaking(settings, now);
+  const elapsed = (type: ReminderType): number | null => {
+    const last = state.lastFiredAt[type];
+    return last ? (now.getTime() - last.getTime()) / 60_000 : null;
+  };
+  const due: ReminderType[] = [];
+
+  // Morning: once per waking day, as soon as quiet hours end.
+  if (settings.morningEnabled && (state.countToday.morning ?? 0) === 0) {
+    due.push('morning');
+  }
+
+  // Break: every `breakCadenceMinutes`, counted from waking when none has
+  // fired yet in this window.
+  if (settings.breakEnabled) {
+    const since = elapsed('break') ?? sinceWaking;
+    if (since >= settings.breakCadenceMinutes) due.push('break');
+  }
+
+  // Hydration: `hydrationGoalCups` evenly spaced, and never more than the goal.
+  if (settings.hydrationEnabled && (state.countToday.hydration ?? 0) < settings.hydrationGoalCups) {
+    const since = elapsed('hydration') ?? sinceWaking;
+    if (since >= hydrationIntervalMinutes(settings)) due.push('hydration');
+  }
+
+  return due;
+}
+
+/** Cups actually drunk today — acknowledged hydration nudges, not fired ones. */
+export function hydrationCupsDrunk(occurrences: ReminderOccurrence[]): number {
+  return occurrences.filter((o) => o.type === 'hydration' && o.acknowledgedAt !== null).length;
+}

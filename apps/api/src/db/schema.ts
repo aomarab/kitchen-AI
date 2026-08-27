@@ -27,6 +27,17 @@ export const localeEnum = pgEnum('locale', ['en', 'ar']);
 export const householdRoleEnum = pgEnum('household_role', ['owner', 'member']);
 export const userRoleEnum = pgEnum('user_role', ['user', 'staff']);
 export const timerStatusEnum = pgEnum('timer_status', ['running', 'paused', 'done']);
+export const reminderTypeEnum = pgEnum('reminder_type', [
+  'break',
+  'stretch',
+  'morning',
+  'hydration',
+]);
+/**
+ * Only `screen` exists: the engine writes the occurrence and clients poll.
+ * Spoken and push delivery are Feature 4; the enum stays honest until they do.
+ */
+export const reminderChannelEnum = pgEnum('reminder_channel', ['screen']);
 export const feedbackStatusEnum = pgEnum('feedback_status', [
   'new',
   'triaged',
@@ -246,8 +257,47 @@ export const reminderSettings = pgTable('reminder_settings', {
   hydrationGoalCups: integer('hydration_goal_cups').notNull().default(8),
   quietHoursStart: integer('quiet_hours_start').notNull().default(22),
   quietHoursEnd: integer('quiet_hours_end').notNull().default(7),
+  /**
+   * IANA zone the quiet hours are read in. Quiet hours are wall-clock hours, so
+   * without a zone the engine can only count in UTC and would nudge an Amman
+   * household at 01:00. 'UTC' means "the client has not told us yet".
+   */
+  timeZone: text('time_zone').notNull().default('UTC'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * The fired-nudge ledger (kitchen companion spec — Feature 2). Two jobs: it
+ * stops the sweep double-firing, and it is the only truthful source for the
+ * kiosk's "3 of 8 cups" — a cup counts when it is **acknowledged**, not when
+ * the nudge was sent.
+ *
+ * `message_key` is an i18n key, never prose: the server does not send
+ * user-facing text, so the client (and any future TTS) renders the household's
+ * language. The check constraint refuses an acknowledgement that predates the
+ * nudge it acknowledges.
+ */
+export const reminderOccurrences = pgTable(
+  'reminder_occurrences',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    type: reminderTypeEnum('type').notNull(),
+    channel: reminderChannelEnum('channel').notNull().default('screen'),
+    messageKey: text('message_key').notNull(),
+    firedAt: timestamp('fired_at', { withTimezone: true }).notNull().defaultNow(),
+    acknowledgedAt: timestamp('acknowledged_at', { withTimezone: true }),
+  },
+  (table) => [
+    check(
+      'reminder_ack_not_before_fire',
+      sql`${table.acknowledgedAt} is null or ${table.acknowledgedAt} >= ${table.firedAt}`,
+    ),
+    index('reminder_occurrences_household_fired_idx').on(table.householdId, table.firedAt),
+  ],
+);
 
 /**
  * Cooking timers (kitchen companion spec — Feature 3). Persisted server-side so

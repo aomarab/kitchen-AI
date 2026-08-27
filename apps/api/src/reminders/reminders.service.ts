@@ -19,6 +19,7 @@ interface ReminderSettingsRow {
   hydrationGoalCups: number;
   quietHoursStart: number;
   quietHoursEnd: number;
+  timeZone: string;
 }
 
 function toReminderSettings(row: ReminderSettingsRow): ReminderSettings {
@@ -32,6 +33,7 @@ function toReminderSettings(row: ReminderSettingsRow): ReminderSettings {
     hydrationGoalCups: row.hydrationGoalCups,
     quietHoursStart: row.quietHoursStart,
     quietHoursEnd: row.quietHoursEnd,
+    timeZone: row.timeZone,
   };
 }
 
@@ -49,10 +51,7 @@ export class RemindersService {
     return toReminderSettings(row);
   }
 
-  async update(
-    householdId: string,
-    dto: UpdateReminderSettingsRequest,
-  ): Promise<ReminderSettings> {
+  async update(householdId: string, dto: UpdateReminderSettingsRequest): Promise<ReminderSettings> {
     const [row] = await this.db
       .insert(reminderSettings)
       .values({ householdId, ...dto, updatedAt: new Date() })

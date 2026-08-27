@@ -44,6 +44,7 @@ describe('RemindersService (live DB)', () => {
       hydrationGoalCups: 8,
       quietHoursStart: 22,
       quietHoursEnd: 7,
+      timeZone: 'UTC',
     });
   });
 

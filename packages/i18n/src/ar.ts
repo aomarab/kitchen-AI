@@ -78,6 +78,16 @@ export const ar: Messages = {
     timerNotRunning: 'هذا المؤقّت غير قيد التشغيل.',
     timerNotPaused: 'هذا المؤقّت غير متوقّف مؤقتًا.',
     timerTooLong: 'لا يمكن أن يتجاوز المؤقّت ١٢ ساعة.',
+    reminderNotFound: 'هذا التذكير لم يعد موجودًا.',
+  },
+
+  // Copy taken from the approved prototype `03-wellness-settings.html`, which
+  // speaks Levantine dialect in the household voice rather than MSA.
+  reminders: {
+    break: { body: 'صارْلك فترة، خذي ٥ دقائق راحة' },
+    stretch: { body: 'شو رأيك بدقيقتين Stretching؟' },
+    morning: { body: 'صباح الخير، جاهزة نبلّش يومنا؟' },
+    hydration: { body: 'شو رأيك بكاسة مي هلق؟' },
   },
 
   auth: {

@@ -14,6 +14,7 @@ import type {
   RecipeIngredient,
   RecipeSummary,
   RecipeVideo,
+  ReminderOccurrence,
   ReminderSettings,
   ShoppingListItem,
   StorageLocation,
@@ -107,6 +108,7 @@ interface DbShape {
   /** Purchase intents awaiting confirmation, keyed by intent id. */
   purchaseIntents: Map<string, { productId: string; credits: number }>;
   reminderSettings: ReminderSettings;
+  reminderOccurrences: ReminderOccurrence[];
   timers: CookingTimer[];
 }
 
@@ -495,7 +497,9 @@ export function seed(): void {
     hydrationGoalCups: 8,
     quietHoursStart: 22,
     quietHoursEnd: 7,
+    timeZone: 'UTC',
   };
+  db.reminderOccurrences = [];
   db.timers = [];
 }
 

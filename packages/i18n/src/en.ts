@@ -82,6 +82,19 @@ export const en = {
     timerNotRunning: 'That timer is not running.',
     timerNotPaused: 'That timer is not paused.',
     timerTooLong: 'A timer cannot run longer than 12 hours.',
+    reminderNotFound: 'That reminder is no longer there.',
+  },
+
+  /**
+   * Wellness nudge copy (kitchen companion spec — Feature 2). The server stores
+   * only the key and never the prose, so the same nudge can be shown on the
+   * kiosk and, once Feature 4 lands, spoken aloud in the household's language.
+   */
+  reminders: {
+    break: { body: "You've been at it a while — take five minutes." },
+    stretch: { body: 'How about two minutes of stretching?' },
+    morning: { body: 'Good morning — ready to start the day?' },
+    hydration: { body: 'Time for a glass of water.' },
   },
 
   auth: {

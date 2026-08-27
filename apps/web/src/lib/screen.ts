@@ -1,4 +1,8 @@
-import type { ReminderSettings } from '@kitchen/contracts';
+import {
+  hydrationCupsDrunk,
+  type ReminderOccurrence,
+  type ReminderSettings,
+} from '@kitchen/contracts';
 import type { Translator } from '@kitchen/i18n';
 
 /** True when at least one wellness nudge is switched on. */
@@ -32,7 +36,29 @@ export function wellnessPlanLines(settings: ReminderSettings, t: Translator): st
   return lines;
 }
 
-/** The configured daily water goal, e.g. "8 cups" — a real setting, not a count. */
-export function hydrationGoalText(settings: ReminderSettings, t: Translator): string {
-  return t('web.reminders.hydrationGoalValue', { count: settings.hydrationGoalCups });
+/**
+ * The real hydration line: cups **acknowledged** today against the goal. A
+ * nudge nobody acted on is not a drink, so the count comes from
+ * `hydrationCupsDrunk`, never from how many nudges were sent.
+ */
+export function hydrationProgressText(
+  occurrences: ReminderOccurrence[],
+  settings: ReminderSettings,
+  t: Translator,
+): string {
+  return t('web.screen.hydrationProgress', {
+    count: hydrationCupsDrunk(occurrences),
+    goal: settings.hydrationGoalCups,
+  });
+}
+
+/**
+ * The nudge the screen should be showing: the most recent one the household
+ * has not acknowledged yet. Returns null when everything has been dealt with,
+ * so the kiosk shows the plan rather than inventing an alert.
+ */
+export function activeNudge(occurrences: ReminderOccurrence[]): ReminderOccurrence | null {
+  const pending = occurrences.filter((o) => o.acknowledgedAt === null);
+  if (pending.length === 0) return null;
+  return pending.reduce((latest, o) => (o.firedAt > latest.firedAt ? o : latest));
 }

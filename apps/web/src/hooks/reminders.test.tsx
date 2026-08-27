@@ -41,12 +41,17 @@ describe('reminder settings hooks', () => {
     expect(result.current.data?.breakCadenceMinutes).toBe(60);
   });
 
-  it('sends only the changed field to updateReminderSettings', async () => {
+  it('sends the changed field plus the household time zone, which quiet hours need', async () => {
     call.mockResolvedValue({ ...settings, hydrationEnabled: false });
     const { result } = renderHook(() => useUpdateReminderSettings(), { wrapper: wrapper() });
     await act(async () => {
       await result.current.mutateAsync({ hydrationEnabled: false });
     });
-    expect(call).toHaveBeenCalledWith('updateReminderSettings', { body: { hydrationEnabled: false } });
+    expect(call).toHaveBeenCalledWith('updateReminderSettings', {
+      body: {
+        hydrationEnabled: false,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+    });
   });
 });

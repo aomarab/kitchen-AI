@@ -36,6 +36,7 @@ import {
   DEFAULT_SLOTS_BY_SCOPE,
   MAX_TIMER_DURATION_SEC,
   projectTimer,
+  wakingStart,
 } from '@kitchen/contracts';
 import { API_URL } from '../lib/config';
 import {
@@ -238,6 +239,19 @@ export const handlers = [
     const body = (await request.json()) as UpdateReminderSettingsRequest;
     db.reminderSettings = { ...db.reminderSettings, ...body };
     return HttpResponse.json(db.reminderSettings);
+  }),
+  // Mirrors the server: the ledger is read per waking day, and acknowledging
+  // twice keeps the first timestamp.
+  http.get(u('/reminders/occurrences'), async ({ request }) => {
+    const since = new URL(request.url).searchParams.get('since');
+    const from = since ? new Date(since) : wakingStart(db.reminderSettings, new Date());
+    return HttpResponse.json(db.reminderOccurrences.filter((o) => new Date(o.firedAt) >= from));
+  }),
+  http.post(u('/reminders/occurrences/:id/acknowledge'), async ({ params }) => {
+    const found = db.reminderOccurrences.find((o) => o.id === params.id);
+    if (!found) return err('NOT_FOUND', 404);
+    if (!found.acknowledgedAt) found.acknowledgedAt = new Date().toISOString();
+    return HttpResponse.json(found);
   }),
 
   /* ---------- Cooking timers ---------- */

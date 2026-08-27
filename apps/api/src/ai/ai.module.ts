@@ -55,19 +55,7 @@ import { PlanController } from './plan/plan.controller.js';
 import { ShoppingService } from './shopping/shopping.service.js';
 import { ShoppingController } from './shopping/shopping.controller.js';
 import { UsageController } from './usage/usage.controller.js';
-
-/** Parses a redis:// URL into ioredis/BullMQ connection options. */
-function redisConnection(url: string) {
-  const u = new URL(url);
-  return {
-    host: u.hostname,
-    port: Number(u.port || 6379),
-    ...(u.password ? { password: u.password } : {}),
-    ...(u.username ? { username: u.username } : {}),
-    ...(u.pathname && u.pathname.length > 1 ? { db: Number(u.pathname.slice(1)) } : {}),
-    maxRetriesPerRequest: null as null,
-  };
-}
+import { redisConnection } from '../common/redis.js';
 
 /**
  * Constructs the `AI_PROVIDER` value from the environment. Extracted so the
