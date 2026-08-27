@@ -242,6 +242,8 @@ export const mobileEn = {
       notifyShoppingHint: 'A reminder of what you still have left to buy.',
       notifyPlanning: 'Plan tomorrow',
       notifyPlanningHint: 'Only when tomorrow has no meals planned yet.',
+      notifyTimers: 'Cooking timers',
+      notifyTimersHint: 'Alerts you the moment a timer ends, even if the app is closed.',
       leadTime: 'Warn me',
       leadDays: plural('count', {
         one: '1 day ahead',
@@ -287,6 +289,8 @@ export const mobileEn = {
       }),
       planningTitle: 'Nothing planned for tomorrow',
       planningBody: 'Pick tomorrow’s meals while you still have the ingredients.',
+      timerTitle: 'Timer finished',
+      timerBody: '{label} is done.',
     },
     places: {
       title: 'Kitchen places',

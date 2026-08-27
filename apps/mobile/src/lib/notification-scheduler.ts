@@ -68,12 +68,19 @@ export function configureNotificationHandler(): void {
   const notifications = api();
   if (!notifications) return;
   notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
+    handleNotification: async (notification) => {
+      // Only timers make a noise. The others are ambient — food expiring in
+      // two days does not warrant interrupting a room — but a timer that
+      // finishes silently while the phone is face-down on the counter is the
+      // same as no timer at all.
+      const kind = notification.request.content.data?.kind;
+      return {
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: kind === 'timer',
+        shouldSetBadge: false,
+      };
+    },
   });
 }
 
@@ -138,6 +145,13 @@ function textFor(
     };
   }
 
+  if (notification.kind === 'timer') {
+    return {
+      title: t('mobile.notifications.timerTitle'),
+      body: t('mobile.notifications.timerBody', { label: notification.title ?? '' }),
+    };
+  }
+
   const { count, daysUntil } = notification;
   const title = t('mobile.notifications.expiryTitle');
   if (daysUntil <= 0) return { title, body: t('mobile.notifications.expiryToday', { count }) };
@@ -168,7 +182,14 @@ export async function applyNotificationPlan(
   for (const notification of plan) {
     const { title, body } = textFor(notification, t);
     await notifications.scheduleNotificationAsync({
-      content: { title, body, data: { kind: notification.kind } },
+      content: {
+        title,
+        body,
+        // Locked out of the OS's quiet handling for timers: this is the one
+        // alert the user is actively waiting for.
+        sound: notification.kind === 'timer' ? 'default' : undefined,
+        data: { kind: notification.kind },
+      },
       trigger: {
         type: notifications.SchedulableTriggerInputTypes.DATE,
         date: notification.fireAt,

@@ -13,6 +13,8 @@ import {
   DEFAULT_LEAD_DAYS,
   DEFAULT_REMINDER_HOUR,
   MAX_SCHEDULED,
+  planTimerNotifications,
+  type RunningTimer,
 } from './notifications';
 
 const HOUR = DEFAULT_REMINDER_HOUR;
@@ -23,6 +25,7 @@ const ALL_ON: NotificationToggles = {
   expired: true,
   shopping: true,
   planning: true,
+  timers: true,
 };
 
 /** Local time, because every calculation here is calendar-local by design. */
@@ -361,6 +364,7 @@ describe('planNotifications toggles', () => {
     // planning nudge, which is its own test below.
     meals: [{ date: '2026-08-20', title: 'Maqluba' }],
     shopping: [{ purchased: false }],
+    timers: [{ id: 't1', label: 'Rice', endsAt: '2026-08-12T10:20:00', status: 'running' }],
     leadDays: 2,
     hour: HOUR,
     now,
@@ -371,28 +375,36 @@ describe('planNotifications toggles', () => {
 
   it('carries every kind when everything is on', () => {
     expect(
-      kinds({ expiry: true, meals: true, expired: true, shopping: true, planning: true }),
-    ).toEqual(['expired', 'expiry', 'meal', 'planning', 'shopping']);
+      kinds({
+        expiry: true,
+        meals: true,
+        expired: true,
+        shopping: true,
+        planning: true,
+        timers: true,
+      }),
+    ).toEqual(['expired', 'expiry', 'meal', 'planning', 'shopping', 'timer']);
   });
 
   it('drops exactly the kind that is switched off', () => {
     // Each toggle is checked on its own: sharing the inventory list between
     // the expiry and expired reminders makes it easy to silence both at once.
     expect(
-      kinds({ expiry: false, meals: true, expired: true, shopping: true, planning: true }),
+      kinds({ ...ALL_ON, expiry: false }),
     ).not.toContain('expiry');
     expect(
-      kinds({ expiry: true, meals: false, expired: true, shopping: true, planning: true }),
+      kinds({ ...ALL_ON, meals: false }),
     ).not.toContain('meal');
     expect(
-      kinds({ expiry: true, meals: true, expired: false, shopping: true, planning: true }),
+      kinds({ ...ALL_ON, expired: false }),
     ).not.toContain('expired');
     expect(
-      kinds({ expiry: true, meals: true, expired: true, shopping: false, planning: true }),
+      kinds({ ...ALL_ON, shopping: false }),
     ).not.toContain('shopping');
     expect(
-      kinds({ expiry: true, meals: true, expired: true, shopping: true, planning: false }),
+      kinds({ ...ALL_ON, planning: false }),
     ).not.toContain('planning');
+    expect(kinds({ ...ALL_ON, timers: false })).not.toContain('timer');
   });
 
   it('schedules nothing at all when everything is off', () => {
@@ -405,6 +417,7 @@ describe('planNotifications toggles', () => {
           expired: false,
           shopping: false,
           planning: false,
+          timers: false,
         },
       }),
     ).toEqual([]);
@@ -414,7 +427,14 @@ describe('planNotifications toggles', () => {
 describe('schedulerSignature', () => {
   const base: SchedulerSignatureInput = {
     locale: 'en',
-    toggles: { expiry: true, meals: true, expired: true, shopping: false, planning: false },
+    toggles: {
+      expiry: true,
+      meals: true,
+      expired: true,
+      shopping: false,
+      planning: false,
+      timers: true,
+    },
     leadDays: 2,
     hour: 19,
     permission: 'denied',
@@ -422,6 +442,7 @@ describe('schedulerSignature', () => {
     items: [{ expiresAt: '2026-08-20' }],
     meals: [{ date: '2026-08-13', title: 'Shakshuka' }],
     unpurchasedCount: 3,
+    timers: [{ id: 't1', label: 'Rice', endsAt: '2026-08-12T10:20:00.000Z', status: 'running' }],
   };
 
   it('is stable when nothing has moved', () => {
@@ -471,5 +492,172 @@ describe('schedulerSignature', () => {
     expect(schedulerSignature({ ...base, unpurchasedCount: 2 })).not.toBe(
       schedulerSignature(base),
     );
+  });
+});
+
+describe('planTimerNotifications', () => {
+  const now = at('2026-08-12T10:00:00');
+  const timer = (over: Partial<RunningTimer> = {}): RunningTimer => ({
+    id: 't1',
+    label: 'Rice',
+    endsAt: '2026-08-12T10:20:00',
+    status: 'running',
+    ...over,
+  });
+
+  it('fires at the instant the timer ends, not at the reminder hour', () => {
+    const [row] = planTimerNotifications([timer()], { now });
+    expect(row?.kind).toBe('timer');
+    expect(row?.fireAt).toEqual(at('2026-08-12T10:20:00'));
+    expect(row?.title).toBe('Rice');
+  });
+
+  it('ignores a paused timer', () => {
+    // A paused timer carries a remaining duration and no end instant, so
+    // there is nothing to schedule until it resumes.
+    expect(planTimerNotifications([timer({ status: 'paused', endsAt: null })], { now })).toEqual([]);
+  });
+
+  it('ignores a paused timer even if it is still carrying an end instant', () => {
+    // Belt and braces: the status is checked before the null is, so a server
+    // that keeps `endsAt` across a pause cannot ring over a cold pot.
+    expect(planTimerNotifications([timer({ status: 'paused' })], { now })).toEqual([]);
+  });
+
+  it('ignores a finished timer', () => {
+    expect(planTimerNotifications([timer({ status: 'done' })], { now })).toEqual([]);
+  });
+
+  it('ignores a running timer with no end instant', () => {
+    expect(planTimerNotifications([timer({ endsAt: null })], { now })).toEqual([]);
+  });
+
+  it('skips a running timer whose end has already passed', () => {
+    // Neither OS delivers a trigger dated in the past, so this would not ring
+    // — it would only consume one of the 64 slots iOS is willing to hold.
+    expect(planTimerNotifications([timer({ endsAt: '2026-08-12T09:59:00' })], { now })).toEqual([]);
+  });
+
+  it('survives an unparseable end instant instead of scheduling an Invalid Date', () => {
+    expect(planTimerNotifications([timer({ endsAt: 'not-a-date' })], { now })).toEqual([]);
+  });
+
+  it('keys by timer id so a rebuild replaces rather than duplicates', () => {
+    const keys = planTimerNotifications([timer(), timer({ id: 't2', endsAt: '2026-08-12T10:30:00' })], {
+      now,
+    }).map((row) => row.key);
+    expect(keys).toEqual(['timer:t1', 'timer:t2']);
+  });
+});
+
+describe('planNotifications with timers', () => {
+  const now = at('2026-08-12T10:00:00');
+
+  /**
+   * Enough expiry buckets to overflow the plan on their own.
+   *
+   * The dates must be *distinct*: expiry notifications are bucketed by date,
+   * so ninety items sharing twenty-eight days produce twenty-eight rows and
+   * the cap never bites — which would make the assertion below pass for the
+   * wrong reason.
+   */
+  const crowd = Array.from({ length: 90 }, (_, index) => {
+    const day = new Date(2027, 0, 1 + index);
+    const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(
+      day.getDate(),
+    ).padStart(2, '0')}`;
+    return item(iso);
+  });
+
+  it('the crowded fixture really does overflow the cap on its own', () => {
+    // Guards the test below from passing because nothing was ever dropped.
+    expect(
+      planNotifications({
+        items: crowd,
+        meals: [],
+        leadDays: 2,
+        hour: HOUR,
+        now,
+        toggles: { ...ALL_ON, timers: false },
+      }),
+    ).toHaveLength(MAX_SCHEDULED);
+  });
+
+  it('keeps a timer in a plan that is already at the platform cap', () => {
+    // Not a reservation: `MAX_TIMER_DURATION_SEC` caps a timer at twelve
+    // hours and the rest of the plan is anchored to a daily evening slot, so
+    // a timer is always among the soonest. This pins that reasoning down.
+    const planned = planNotifications({
+      items: crowd,
+      meals: [],
+      timers: [{ id: 'rice', label: 'Rice', endsAt: '2026-08-12T22:00:00', status: 'running' }],
+      leadDays: 2,
+      hour: HOUR,
+      now,
+      toggles: ALL_ON,
+    });
+
+    expect(planned).toHaveLength(MAX_SCHEDULED);
+    expect(planned.some((row) => row.key === 'timer:rice')).toBe(true);
+  });
+
+  it('hands the scheduler a chronological list', () => {
+    const planned = planNotifications({
+      items: crowd,
+      meals: [],
+      timers: [{ id: 'rice', label: 'Rice', endsAt: '2026-08-12T22:00:00', status: 'running' }],
+      leadDays: 2,
+      hour: HOUR,
+      now,
+      toggles: ALL_ON,
+    });
+    const times = planned.map((row) => row.fireAt.getTime());
+    expect([...times].sort((a, b) => a - b)).toEqual(times);
+  });
+});
+
+describe('schedulerSignature timers', () => {
+  const base: SchedulerSignatureInput = {
+    locale: 'en',
+    toggles: ALL_ON,
+    leadDays: 2,
+    hour: 19,
+    permission: 'granted',
+    revision: 0,
+    items: [],
+    meals: [],
+    unpurchasedCount: 0,
+    timers: [],
+  };
+
+  const running: RunningTimer = {
+    id: 't1',
+    label: 'Rice',
+    endsAt: '2026-08-12T10:20:00',
+    status: 'running',
+  };
+
+  it('changes when a timer is started', () => {
+    // Without this the effect never re-runs, and the alert is never armed at
+    // all — starting a timer moves nothing else the scheduler watches.
+    expect(schedulerSignature({ ...base, timers: [running] })).not.toBe(schedulerSignature(base));
+  });
+
+  it('changes when a timer is paused, even though its end instant does not move', () => {
+    expect(schedulerSignature({ ...base, timers: [{ ...running, status: 'paused' }] })).not.toBe(
+      schedulerSignature({ ...base, timers: [running] }),
+    );
+  });
+
+  it('changes when a timer is extended', () => {
+    expect(
+      schedulerSignature({ ...base, timers: [{ ...running, endsAt: '2026-08-12T10:25:00' }] }),
+    ).not.toBe(schedulerSignature({ ...base, timers: [running] }));
+  });
+
+  it('changes when the timers toggle is switched off', () => {
+    expect(
+      schedulerSignature({ ...base, toggles: { ...ALL_ON, timers: false } }),
+    ).not.toBe(schedulerSignature(base));
   });
 });

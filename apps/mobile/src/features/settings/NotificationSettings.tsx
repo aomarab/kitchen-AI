@@ -37,6 +37,8 @@ export function NotificationSettings() {
   const setNotifyShopping = useSettingsStore((state) => state.setNotifyShopping);
   const notifyPlanning = useSettingsStore((state) => state.notifyPlanning);
   const setNotifyPlanning = useSettingsStore((state) => state.setNotifyPlanning);
+  const notifyTimers = useSettingsStore((state) => state.notifyTimers);
+  const setNotifyTimers = useSettingsStore((state) => state.setNotifyTimers);
   const leadDays = useSettingsStore((state) => state.expiryLeadDays);
   const setLeadDays = useSettingsStore((state) => state.setExpiryLeadDays);
   const reminderHour = useSettingsStore((state) => state.reminderHour);
@@ -77,6 +79,11 @@ export function NotificationSettings() {
 
   // Every control below the toggles is shared, so it appears as soon as any
   // one reminder is on rather than only the two the screen started with.
+  //
+  // Timers are deliberately not counted. What this gates is the daily
+  // reminder hour, and a timer alert fires when the timer ends — offering an
+  // hour picker to someone who has only timers on would be a control that
+  // does nothing.
   const anyEnabled = notifyExpiry || notifyMeals || notifyExpired || notifyShopping || notifyPlanning;
 
   const hourLabel = (hour: number) =>
@@ -146,6 +153,13 @@ export function NotificationSettings() {
         hint={t('mobile.settings.notifyPlanningHint')}
         value={notifyPlanning}
         onValueChange={(value) => void enable(value, setNotifyPlanning)}
+      />
+
+      <ToggleRow
+        label={t('mobile.settings.notifyTimers')}
+        hint={t('mobile.settings.notifyTimersHint')}
+        value={notifyTimers}
+        onValueChange={(value) => void enable(value, setNotifyTimers)}
       />
 
       {anyEnabled ? (
