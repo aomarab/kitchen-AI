@@ -3,6 +3,8 @@ import {
   breakCadenceMinutesSchema,
   dueReminderTypes,
   hydrationCupsDrunk,
+  pendingNudge,
+  pendingNudges,
   hydrationIntervalMinutes,
   isQuietHour,
   minutesSinceWaking,
@@ -229,5 +231,61 @@ describe('hydrationCupsDrunk', () => {
 
   it('ignores other reminder types', () => {
     expect(hydrationCupsDrunk([{ ...cup('x'), type: 'break' }])).toBe(0);
+  });
+});
+
+describe('pendingNudge / pendingNudges', () => {
+  const occurrence = (
+    id: string,
+    hour: number,
+    acknowledgedAt: string | null,
+    type: ReminderOccurrence['type'] = 'break',
+  ): ReminderOccurrence => ({
+    id,
+    householdId: HOUSEHOLD_ID,
+    type,
+    channel: 'screen',
+    messageKey: REMINDER_MESSAGE_KEYS[type],
+    firedAt: at(hour, 0).toISOString(),
+    acknowledgedAt,
+  });
+
+  it('returns the most recently fired unacknowledged nudge', () => {
+    const nudge = pendingNudge([
+      occurrence('a', 9, null),
+      occurrence('b', 11, null),
+      occurrence('c', 10, null),
+    ]);
+    expect(nudge?.id).toBe('b');
+  });
+
+  it('skips acknowledged nudges even when they fired last', () => {
+    const nudge = pendingNudge([occurrence('a', 9, null), occurrence('b', 11, 'done')]);
+    expect(nudge?.id).toBe('a');
+  });
+
+  it('returns null when everything has been dealt with, rather than inventing an alert', () => {
+    expect(pendingNudge([occurrence('a', 9, 'done')])).toBeNull();
+    expect(pendingNudge([])).toBeNull();
+  });
+
+  it('lists every outstanding nudge newest first, so one fired while the app was closed still shows', () => {
+    const list = pendingNudges([
+      occurrence('a', 9, null, 'hydration'),
+      occurrence('b', 11, 'done'),
+      occurrence('c', 10, null, 'stretch'),
+    ]);
+    expect(list.map((o) => o.id)).toEqual(['c', 'a']);
+  });
+
+  it('does not mutate the array it is given', () => {
+    const input = [occurrence('a', 9, null), occurrence('b', 11, null)];
+    pendingNudges(input);
+    expect(input.map((o) => o.id)).toEqual(['a', 'b']);
+  });
+
+  it('agrees with pendingNudge on which nudge is first', () => {
+    const input = [occurrence('a', 9, null), occurrence('b', 11, null)];
+    expect(pendingNudges(input)[0]?.id).toBe(pendingNudge(input)?.id);
   });
 });

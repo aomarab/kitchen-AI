@@ -1,5 +1,6 @@
 import {
   hydrationCupsDrunk,
+  pendingNudge,
   type ReminderOccurrence,
   type ReminderSettings,
 } from '@kitchen/contracts';
@@ -53,12 +54,10 @@ export function hydrationProgressText(
 }
 
 /**
- * The nudge the screen should be showing: the most recent one the household
- * has not acknowledged yet. Returns null when everything has been dealt with,
- * so the kiosk shows the plan rather than inventing an alert.
+ * The nudge the screen should be showing. Delegates to the contract's
+ * `pendingNudge` so the kiosk and the phone can never disagree about which
+ * occurrence is outstanding.
  */
 export function activeNudge(occurrences: ReminderOccurrence[]): ReminderOccurrence | null {
-  const pending = occurrences.filter((o) => o.acknowledgedAt === null);
-  if (pending.length === 0) return null;
-  return pending.reduce((latest, o) => (o.firedAt > latest.firedAt ? o : latest));
+  return pendingNudge(occurrences);
 }

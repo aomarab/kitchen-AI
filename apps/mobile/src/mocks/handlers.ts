@@ -3,12 +3,16 @@ import {
   applyTimerAction,
   projectTimer,
   routes,
+  wakingStart,
+  REMINDER_MESSAGE_KEYS,
   type CookingTimer,
   type CreateTimerRequest,
   type Ingredient,
   type InventoryItem,
   type Locale,
   type MealPlan,
+  type ReminderOccurrence,
+  type ReminderType,
   type RouteName,
   type ShoppingListItem,
   type UpdateTimerRequest,
@@ -49,11 +53,53 @@ interface JobRecord {
   resultId: string;
 }
 
+/**
+ * A small ledger of already-fired nudges so the wellness screen has something
+ * to render offline. These are fixtures in the mock layer — the same status as
+ * the seeded pantry — not data any real engine claims to have produced.
+ *
+ * The times are spread across the *elapsed part of today's waking window*
+ * rather than a fixed number of minutes ago. A fixed offset silently falls off
+ * the list: the ledger is read from `wakingStart`, so "four hours ago" is
+ * before waking whenever the app is opened in the morning, and the seeded
+ * history disappears exactly when someone first looks at the screen.
+ */
+function seedOccurrences(): ReminderOccurrence[] {
+  const now = Date.now();
+  const from = wakingStart(mockReminderSettings, new Date(now)).getTime();
+  const elapsed = Math.max(0, now - from);
+  /** `fraction` of the way from waking to now. */
+  const at = (fraction: number): string => new Date(from + elapsed * fraction).toISOString();
+
+  const fired = (
+    id: string,
+    type: ReminderType,
+    firedFraction: number,
+    acknowledgedFraction: number | null,
+  ): ReminderOccurrence => ({
+    id,
+    householdId: mockHousehold.id,
+    type,
+    channel: 'screen',
+    messageKey: REMINDER_MESSAGE_KEYS[type],
+    firedAt: at(firedFraction),
+    acknowledgedAt: acknowledgedFraction === null ? null : at(acknowledgedFraction),
+  });
+
+  return [
+    fired(mockId('cc0'), 'morning', 0.05, 0.08),
+    fired(mockId('cc1'), 'hydration', 0.35, 0.4),
+    fired(mockId('cc2'), 'hydration', 0.75, null),
+    fired(mockId('cc3'), 'stretch', 0.95, null),
+  ];
+}
+
 const db = {
   user: { ...mockUser },
   household: { ...mockHousehold },
   profile: { ...mockProfile },
   reminderSettings: { ...mockReminderSettings },
+  reminderOccurrences: seedOccurrences(),
   timers: [] as CookingTimer[],
   locations: [...seedLocations],
   inventory: buildInventory(),
@@ -247,6 +293,21 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     const body = await readBody(request);
     db.reminderSettings = { ...db.reminderSettings, ...(body as object) };
     return HttpResponse.json(db.reminderSettings);
+  },
+  // Mirrors the server: the ledger is read per waking day, and acknowledging
+  // twice keeps the first timestamp.
+  listReminderOccurrences: ({ request }) => {
+    const since = query(request).get('since');
+    const from = since ? new Date(since) : wakingStart(db.reminderSettings, new Date());
+    return HttpResponse.json(
+      db.reminderOccurrences.filter((o) => new Date(o.firedAt) >= from),
+    );
+  },
+  acknowledgeReminder: ({ params }) => {
+    const found = db.reminderOccurrences.find((o) => o.id === params.id);
+    if (!found) return notFound();
+    if (!found.acknowledgedAt) found.acknowledgedAt = new Date().toISOString();
+    return HttpResponse.json(found);
   },
 
   /* ---- Catalog ---- */
