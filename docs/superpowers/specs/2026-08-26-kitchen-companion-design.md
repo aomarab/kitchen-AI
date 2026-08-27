@@ -261,11 +261,24 @@ were decided differently from the sketch above, and the reasons matter more than
   matters least, and carries two disclaimers that are load-bearing rather than decorative: it lists
   only what is **tracked**, not everything the user owns; and when it was truncated it says so, and
   by how much. A partial list presented as complete makes the model tell the user they are out of
-  something they can see on the counter.
+  something they can see on the counter. Every part of a line is localised — name, unit and expiry
+  label — via an exhaustive `Record<Locale, Record<Unit, string>>`, so adding a unit to the contract
+  fails the build rather than leaking `piece` into an Arabic prompt. That leak was live once: the
+  brief localised the name and nothing else, and the test that should have caught it only asserted
+  on the name, which was the one part that was already correct. Arabic spells units out in full
+  rather than reusing the `@kitchen/i18n` display abbreviations, which are sized for tight layouts
+  and which a speech model would read aloud as letters.
 
-Fault injection for all of the above lives in `scripts/fault-inject-assistant.mjs` (21 defects, each
-caught by the check that names it). Still unverified: none of this has been run against a real
-OpenAI account.
+Fault injection for all of the above lives in `scripts/fault-inject-assistant.mjs` (24 defects, each
+caught by the check that names it). Run it **after** Prettier: anchors are string-exact, and one of
+them silently went stale when Prettier rewrapped a ternary, leaving that rule unproven until the
+harness was re-run and reported `anchor not found`.
+
+Verified against a real OpenAI account on 2026-08-27: `gpt-realtime` is a valid model id, and
+`POST /v1/realtime/client_secrets` returns a secret our provider parses — an `ek_`-prefixed value,
+`expires_at` honouring the pinned 10-second floor, and the model echoed back. Still unverified: the
+browser SDP exchange against `/v1/realtime/calls`, which needs a real `RTCPeerConnection` that jsdom
+does not provide, and the credit cost of a real session.
 
 ---
 

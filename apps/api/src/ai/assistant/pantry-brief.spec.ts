@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { unitSchema } from '@kitchen/contracts';
 import { MAX_PANTRY_LINES, pantryBrief } from './pantry-brief.js';
 import { buildSnapshot, type InventoryRow } from '../planner/pantry-snapshot.js';
 
@@ -104,5 +105,39 @@ describe('pantryBrief', () => {
   it('marks expiry dates on the lines that have them', () => {
     const brief = pantryBrief(buildSnapshot([row({ expiresOn: '2026-08-30' })]), 'en');
     expect(brief).toContain('(expires 2026-08-30)');
+  });
+
+  it('leaves no Latin text in an Arabic brief, for every unit in the contract', () => {
+    // The defect this guards was live: the line builder localised the item name
+    // but not the unit or the expiry label, so an Arabic session was grounded in
+    // "طماطم: 4 piece (expires 2026-08-29)". Asserting on the item name alone
+    // could never see it, because the name was the one part that was correct.
+    const rows = unitSchema.options.map((unit, i) =>
+      row({ ingredientId: `u${i}`, unit, defaultUnit: unit, expiresOn: '2026-08-30' }),
+    );
+    const brief = pantryBrief(buildSnapshot(rows), 'ar');
+
+    const listed = brief.split('\n').filter((line) => line.startsWith('- '));
+    expect(listed).toHaveLength(unitSchema.options.length);
+    for (const line of listed) {
+      expect(line).not.toMatch(/[A-Za-z]/);
+    }
+  });
+
+  it('localises the expiry label rather than emitting English in Arabic', () => {
+    const brief = pantryBrief(buildSnapshot([row({ expiresOn: '2026-08-30' })]), 'ar');
+    expect(brief).toContain('(ينتهي في 2026-08-30)');
+    expect(brief).not.toContain('expires');
+  });
+
+  it('spells Arabic units out instead of reusing the display abbreviations', () => {
+    // `@kitchen/i18n` renders tbsp as "م.ك" for tight layouts. A speech model
+    // reads that aloud as letters, so the brief needs the full word.
+    const brief = pantryBrief(
+      buildSnapshot([row({ unit: 'tbsp', defaultUnit: 'tbsp', quantity: 2 })]),
+      'ar',
+    );
+    expect(brief).toContain('ملعقة كبيرة');
+    expect(brief).not.toContain('م.ك');
   });
 });

@@ -1,4 +1,4 @@
-import type { Locale } from '@kitchen/contracts';
+import type { Locale, Unit } from '@kitchen/contracts';
 import { fromBase } from '../planner/units.js';
 import { pantryLinesByExpiry } from '../planner/pantry-snapshot.js';
 import type { PantrySnapshot } from '../planner/types.js';
@@ -26,6 +26,59 @@ import type { PantrySnapshot } from '../planner/types.js';
 export const MAX_PANTRY_LINES = 60;
 
 /**
+ * Unit words for the brief, per locale.
+ *
+ * These are deliberately *not* the `units` namespace in `@kitchen/i18n`. That
+ * catalog is display chrome sized for tight layouts — it renders tbsp as `م.ك`
+ * and piece as `pc`. This text is prompt context for a speech model, which
+ * would either read a bespoke abbreviation aloud or guess at it, so Arabic
+ * spells every unit out. English keeps its standard short forms, which are
+ * ordinary English orthography rather than invented contractions.
+ *
+ * Typed `Record<Unit, string>`, so adding a unit to the contract fails the
+ * build here instead of silently leaking the raw English enum into an Arabic
+ * prompt — which is exactly the defect this table was introduced to fix.
+ */
+const UNIT_WORDS: Record<Locale, Record<Unit, string>> = {
+  en: {
+    g: 'g',
+    kg: 'kg',
+    ml: 'ml',
+    l: 'l',
+    piece: 'piece',
+    bunch: 'bunch',
+    clove: 'clove',
+    slice: 'slice',
+    can: 'can',
+    jar: 'jar',
+    packet: 'packet',
+    bottle: 'bottle',
+    cup: 'cup',
+    tbsp: 'tbsp',
+    tsp: 'tsp',
+    pinch: 'pinch',
+  },
+  ar: {
+    g: 'جرام',
+    kg: 'كيلوجرام',
+    ml: 'مليلتر',
+    l: 'لتر',
+    piece: 'قطعة',
+    bunch: 'حزمة',
+    clove: 'فص',
+    slice: 'شريحة',
+    can: 'علبة',
+    jar: 'برطمان',
+    packet: 'كيس',
+    bottle: 'زجاجة',
+    cup: 'كوب',
+    tbsp: 'ملعقة كبيرة',
+    tsp: 'ملعقة صغيرة',
+    pinch: 'رشة',
+  },
+};
+
+/**
  * Builds the pantry section of the session instructions.
  *
  * The wording carries two disclaimers that are load-bearing rather than
@@ -48,8 +101,15 @@ export function pantryBrief(snapshot: PantrySnapshot, locale: Locale): string {
     // Base units are grams and millilitres; a brief that says "2000 g of milk"
     // instead of "2 l" reads as a different quantity to a language model.
     const quantity = Math.round(fromBase(entry.baseQuantity, entry.displayUnit) * 100) / 100;
-    const expiry = entry.expiresOn ? ` (expires ${entry.expiresOn})` : '';
-    return `- ${name}: ${quantity} ${entry.displayUnit}${expiry}`;
+    const unit = UNIT_WORDS[locale][entry.displayUnit];
+    // The expiry label is localised too: an Arabic line reading "(expires …)"
+    // is the same language leak as an untranslated unit.
+    const expiry = entry.expiresOn
+      ? locale === 'ar'
+        ? ` (ينتهي في ${entry.expiresOn})`
+        : ` (expires ${entry.expiresOn})`
+      : '';
+    return `- ${name}: ${quantity} ${unit}${expiry}`;
   });
 
   if (locale === 'ar') {

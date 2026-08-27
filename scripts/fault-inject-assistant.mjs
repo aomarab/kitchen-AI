@@ -152,7 +152,7 @@ const CASES = [
     file: BRIEF,
     spec: BRIEF_SPEC,
     check: 'caps the list and says how many items it left out',
-    from: "    omitted > 0 ? `There are ${omitted} more tracked items not listed here; your list is partial.` : '',",
+    from: "    omitted > 0\n      ? `There are ${omitted} more tracked items not listed here; your list is partial.`\n      : '',",
     to: "    '',",
   },
   {
@@ -170,6 +170,32 @@ const CASES = [
     check: 'uses Arabic names in an Arabic session',
     from: "    const name = locale === 'ar' ? entry.nameAr : entry.nameEn;",
     to: '    const name = entry.nameEn;',
+  },
+  {
+    // The regression that was actually live: the name was localised and the
+    // unit was not, so an Arabic session read "طماطم: 4 piece".
+    name: 'an Arabic brief emits the raw English unit enum',
+    file: BRIEF,
+    spec: BRIEF_SPEC,
+    check: 'leaves no Latin text in an Arabic brief, for every unit in the contract',
+    from: '    const unit = UNIT_WORDS[locale][entry.displayUnit];',
+    to: '    const unit = entry.displayUnit;',
+  },
+  {
+    name: 'the expiry label stays English in an Arabic brief',
+    file: BRIEF,
+    spec: BRIEF_SPEC,
+    check: 'localises the expiry label rather than emitting English in Arabic',
+    from: '        ? ` (ينتهي في ${entry.expiresOn})`',
+    to: '        ? ` (expires ${entry.expiresOn})`',
+  },
+  {
+    name: 'an Arabic unit falls back to the display abbreviation a speech model cannot read',
+    file: BRIEF,
+    spec: BRIEF_SPEC,
+    check: 'spells Arabic units out instead of reusing the display abbreviations',
+    from: "    tbsp: 'ملعقة كبيرة',",
+    to: "    tbsp: 'م.ك',",
   },
   {
     name: 'the assistant is allowed to read an absent item as an absent item',
