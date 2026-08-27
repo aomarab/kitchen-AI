@@ -274,7 +274,10 @@ export const webEn = {
       timerLabel: 'Cooking timer',
       timerEmpty: 'No active timer',
       hydrationLabel: 'Water goal today',
-      hydrationProgress: '{count} of {goal} cups',
+      hydrationProgress: plural('goal', {
+        one: '{count} of {goal} cup',
+        other: '{count} of {goal} cups',
+      }),
       nudgeAcknowledge: 'Done',
       nudgeDismissed: 'Nice one.',
       navTimers: 'Timers',
