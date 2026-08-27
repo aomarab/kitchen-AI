@@ -222,6 +222,44 @@ export function dueReminderTypes(
   return due;
 }
 
+/**
+ * The reminder types the firing engine is actually able to schedule.
+ *
+ * `stretch` is absent for the reason given on `dueReminderTypes`: nothing in
+ * the spec or the prototype determines its cadence, so the engine never fires
+ * it. That refusal used to live only in the engine, which meant every client
+ * was free to disagree with it — and the kitchen kiosk did, listing stretch in
+ * "today's wellness plan" for a nudge that could never arrive. Naming the set
+ * here makes the engine's silence something a UI can read.
+ *
+ * `reminders.spec.ts` cross-checks this list against `dueReminderTypes` under
+ * a sweep of settings, so the two cannot drift apart: implementing a stretch
+ * cadence without adding it here fails, and so does removing a branch without
+ * removing it here.
+ */
+export const SCHEDULED_REMINDER_TYPES = ['morning', 'break', 'hydration'] as const;
+
+/** Whether the firing engine can ever produce this type. */
+export function isScheduledReminderType(type: ReminderType): boolean {
+  return (SCHEDULED_REMINDER_TYPES as readonly ReminderType[]).includes(type);
+}
+
+/**
+ * The types a household has switched on *and* the engine can act on.
+ *
+ * This is what a UI should describe as the wellness plan. An enabled toggle
+ * the engine ignores is not a plan; it is a promise nothing will keep.
+ */
+export function scheduledReminderTypes(settings: ReminderSettings): ReminderType[] {
+  const enabled: Record<ReminderType, boolean> = {
+    morning: settings.morningEnabled,
+    break: settings.breakEnabled,
+    hydration: settings.hydrationEnabled,
+    stretch: settings.stretchEnabled,
+  };
+  return SCHEDULED_REMINDER_TYPES.filter((type) => enabled[type]);
+}
+
 /** Cups actually drunk today — acknowledged hydration nudges, not fired ones. */
 export function hydrationCupsDrunk(occurrences: ReminderOccurrence[]): number {
   return occurrences.filter((o) => o.type === 'hydration' && o.acknowledgedAt !== null).length;

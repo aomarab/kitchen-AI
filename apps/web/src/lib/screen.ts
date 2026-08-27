@@ -1,40 +1,41 @@
 import {
   hydrationCupsDrunk,
   pendingNudge,
+  scheduledReminderTypes,
   type ReminderOccurrence,
   type ReminderSettings,
 } from '@kitchen/contracts';
 import type { Translator } from '@kitchen/i18n';
 
-/** True when at least one wellness nudge is switched on. */
+/**
+ * True when at least one wellness nudge is switched on *and* the engine can
+ * fire it.
+ *
+ * Switched-on is not enough. A household with only stretch enabled used to
+ * see a wellness plan on the kitchen screen, and would then wait all day for
+ * a nudge the firing engine is documented never to produce.
+ */
 export function hasAnyNudge(settings: ReminderSettings): boolean {
-  return (
-    settings.breakEnabled ||
-    settings.stretchEnabled ||
-    settings.morningEnabled ||
-    settings.hydrationEnabled
-  );
+  return scheduledReminderTypes(settings).length > 0;
 }
 
 /**
- * The hero summary shown on the kitchen screen: one line per enabled nudge,
- * derived only from the household's real reminder settings. There is no live
- * firing engine yet, so this is an honest "here is what is on" plan — never a
- * fabricated in-progress alert.
+ * The hero summary shown on the kitchen screen: one line per nudge that is
+ * both switched on and schedulable, in the order the contract lists them.
+ *
+ * Driven by `scheduledReminderTypes` rather than by reading the toggles
+ * directly, so this screen cannot promise a nudge the engine will not send.
  */
 export function wellnessPlanLines(settings: ReminderSettings, t: Translator): string[] {
-  const lines: string[] = [];
-  if (settings.breakEnabled) {
-    lines.push(
-      `${t('web.reminders.breakLabel')} · ${t('web.reminders.cadenceEvery', {
+  return scheduledReminderTypes(settings).map((type) => {
+    if (type === 'break') {
+      return `${t('web.reminders.breakLabel')} · ${t('web.reminders.cadenceEvery', {
         minutes: settings.breakCadenceMinutes,
-      })}`,
-    );
-  }
-  if (settings.stretchEnabled) lines.push(t('web.reminders.stretchLabel'));
-  if (settings.morningEnabled) lines.push(t('web.reminders.morningLabel'));
-  if (settings.hydrationEnabled) lines.push(t('web.reminders.hydrationLabel'));
-  return lines;
+      })}`;
+    }
+    if (type === 'morning') return t('web.reminders.morningLabel');
+    return t('web.reminders.hydrationLabel');
+  });
 }
 
 /**

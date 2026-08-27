@@ -59,6 +59,26 @@ describe('ReminderSettingsView', () => {
     );
   });
 
+  it('offers no stretch toggle, because no stretch nudge is ever fired', async () => {
+    // It defaulted to on, so every household was told stretch reminders were
+    // running. `SCHEDULED_REMINDER_TYPES` in the contract is the source of
+    // truth for which toggles the engine can act on.
+    call.mockResolvedValue(settings);
+    renderView();
+    await screen.findByRole('switch', { name: /hydration reminders/i });
+    expect(screen.queryByRole('switch', { name: /stretch/i })).toBeNull();
+  });
+
+  it('still offers the three nudges the engine does fire', async () => {
+    // Guards the test above from passing because the toggles stopped
+    // rendering altogether.
+    call.mockResolvedValue(settings);
+    renderView();
+    expect(await screen.findByRole('switch', { name: /movement breaks/i })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: /morning/i })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: /hydration reminders/i })).toBeTruthy();
+  });
+
   it('choosing a cadence patches breakCadenceMinutes with a number', async () => {
     call.mockResolvedValue(settings);
     renderView();

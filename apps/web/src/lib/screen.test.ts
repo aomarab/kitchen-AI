@@ -43,7 +43,7 @@ describe('screen helpers', () => {
     expect(lines).toEqual(['Movement breaks · Every 60 min', 'Hydration reminders']);
   });
 
-  it('keeps the plan order break → stretch → morning → hydration', () => {
+  it('keeps the plan in firing order: morning → break → hydration', () => {
     const settings = {
       ...base,
       breakEnabled: true,
@@ -51,12 +51,20 @@ describe('screen helpers', () => {
       morningEnabled: true,
       hydrationEnabled: true,
     };
+    // Stretch is absent even with its toggle on. The firing engine has no
+    // cadence for it and never produces one, so listing it here promised the
+    // household a nudge that could not arrive.
     expect(wellnessPlanLines(settings, t)).toEqual([
-      'Movement breaks · Every 90 min',
-      'Stretch reminders',
       'Morning kickstart',
+      'Movement breaks · Every 90 min',
       'Hydration reminders',
     ]);
+  });
+
+  it('shows no plan at all for a household that has only stretch on', () => {
+    const settings = { ...base, stretchEnabled: true };
+    expect(hasAnyNudge(settings)).toBe(false);
+    expect(wellnessPlanLines(settings, t)).toEqual([]);
   });
 
   it('renders the configured water goal, not a consumed count', () => {
