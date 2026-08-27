@@ -27,6 +27,7 @@ beforeEach(() => {
     notifyExpired: true,
     notifyShopping: false,
     notifyPlanning: false,
+    notifyTimers: true,
     expiryLeadDays: DEFAULT_LEAD_DAYS,
     reminderHour: DEFAULT_REMINDER_HOUR,
   });
@@ -45,6 +46,31 @@ describe('notification settings', () => {
     expect(useSettingsStore.getState().notifyExpired).toBe(true);
     expect(useSettingsStore.getState().notifyShopping).toBe(false);
     expect(useSettingsStore.getState().notifyPlanning).toBe(false);
+  });
+
+  it('alerts on cooking timers by default', async () => {
+    // The odd one out among the opt-ins: a timer alert is not the app
+    // volunteering an opinion about the fridge, it is the answer to something
+    // the user explicitly started seconds earlier.
+    expect(useSettingsStore.getState().notifyTimers).toBe(true);
+  });
+
+  it('keeps timer alerts on when reading a file written before they existed', async () => {
+    fileSystem.readAsStringAsync.mockResolvedValue(
+      JSON.stringify({ notifyExpiry: true, notifyMeals: true }),
+    );
+
+    await useSettingsStore.getState().hydrate();
+
+    expect(useSettingsStore.getState().notifyTimers).toBe(true);
+  });
+
+  it('restores timer alerts once they are switched off', async () => {
+    fileSystem.readAsStringAsync.mockResolvedValue(JSON.stringify({ notifyTimers: false }));
+
+    await useSettingsStore.getState().hydrate();
+
+    expect(useSettingsStore.getState().notifyTimers).toBe(false);
   });
 
   it('does not switch the opt-in reminders on when reading an older file', async () => {

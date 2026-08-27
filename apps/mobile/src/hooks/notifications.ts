@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import { useInventory } from './inventory';
 import { usePlans } from './plans';
 import { useShoppingList } from './shopping';
+import { useTimers } from './timers';
 import { useLocale } from '../lib/locale';
 import { useAuthStore } from '../stores/auth';
 import { useSettingsStore } from '../stores/settings';
@@ -12,6 +13,7 @@ import {
   schedulerSignature,
   type NotificationToggles,
   type PlannedMeal,
+  type RunningTimer,
 } from '../lib/notifications';
 import {
   applyNotificationPlan,
@@ -42,16 +44,23 @@ export function useNotificationScheduler(): void {
   const notifyExpired = useSettingsStore((state) => state.notifyExpired);
   const notifyShopping = useSettingsStore((state) => state.notifyShopping);
   const notifyPlanning = useSettingsStore((state) => state.notifyPlanning);
+  const notifyTimers = useSettingsStore((state) => state.notifyTimers);
   const leadDays = useSettingsStore((state) => state.expiryLeadDays);
   const reminderHour = useSettingsStore((state) => state.reminderHour);
 
   const inventory = useInventory({ limit: 200 });
   const plans = usePlans();
   const shopping = useShoppingList();
+  // Mounted here rather than only on the timers screen: an alert is worth
+  // having precisely when the cook has navigated away from the countdown.
+  // TanStack dedupes by key, so this shares the screen's poll rather than
+  // adding a second one.
+  const timerQuery = useTimers();
 
   const items = inventory.data?.items;
   const planList = plans.data;
   const shoppingItems = shopping.data;
+  const timers: RunningTimer[] = timerQuery.data?.items ?? [];
 
   const permission = useNotificationStatus((state) => state.permission);
   const revision = useNotificationStatus((state) => state.revision);
@@ -62,6 +71,7 @@ export function useNotificationScheduler(): void {
     expired: notifyExpired,
     shopping: notifyShopping,
     planning: notifyPlanning,
+    timers: notifyTimers,
   };
   const anyEnabled = Object.values(toggles).some(Boolean);
 
@@ -88,6 +98,7 @@ export function useNotificationScheduler(): void {
     items: items ?? [],
     meals,
     unpurchasedCount: unpurchased.length,
+    timers,
   });
 
   const lastApplied = useRef<string | null>(null);
@@ -127,6 +138,7 @@ export function useNotificationScheduler(): void {
         items: items ?? [],
         meals,
         shopping: shoppingItems ?? [],
+        timers,
         toggles,
         leadDays,
         hour: reminderHour,
@@ -147,7 +159,7 @@ export function useNotificationScheduler(): void {
     // which is the only thing that changes its output, is inside `signature`.
     // So are the toggles, the meals and the permission — everything read
     // inside `run` other than the raw query results, which are listed here.
-  }, [signedIn, signature, items, planList, shoppingItems]);
+  }, [signedIn, signature, items, planList, shoppingItems, timerQuery.data]);
 
   /*
    * Reminders are scheduled relative to "now", so an app left open across

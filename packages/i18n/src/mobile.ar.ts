@@ -259,6 +259,8 @@ export const mobileAr: MobileMessages = {
       notifyShoppingHint: 'تذكير بما تبقى عليك شراؤه.',
       notifyPlanning: 'خطط للغد',
       notifyPlanningHint: 'فقط حين لا تكون هناك وجبات مخططة للغد.',
+      notifyTimers: 'مؤقتات الطبخ',
+      notifyTimersHint: 'ينبّهك لحظة انتهاء المؤقت، حتى لو كان التطبيق مغلقًا.',
       leadTime: 'نبّهني قبل',
       leadDays: plural('count', {
         zero: 'بـ {count} يوم',
@@ -331,6 +333,8 @@ export const mobileAr: MobileMessages = {
       }),
       planningTitle: 'لا توجد خطة للغد',
       planningBody: 'اختر وجبات الغد ما دامت المكونات متوفرة.',
+      timerTitle: 'انتهى المؤقت',
+      timerBody: 'انتهى {label}.',
     },
     places: {
       title: 'أماكن المطبخ',

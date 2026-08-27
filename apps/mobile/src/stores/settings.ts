@@ -23,6 +23,7 @@ interface PersistedSettings {
   notifyExpired: boolean;
   notifyShopping: boolean;
   notifyPlanning: boolean;
+  notifyTimers: boolean;
   expiryLeadDays: number;
   reminderHour: number;
   themeFamily: ThemeFamily;
@@ -37,6 +38,7 @@ interface SettingsState extends PersistedSettings {
   setNotifyExpired: (value: boolean) => void;
   setNotifyShopping: (value: boolean) => void;
   setNotifyPlanning: (value: boolean) => void;
+  setNotifyTimers: (value: boolean) => void;
   setExpiryLeadDays: (value: number) => void;
   setReminderHour: (value: number) => void;
   setThemeFamily: (value: ThemeFamily) => void;
@@ -62,6 +64,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   // someone who plans on Sundays. Opt in, rather than opt out after annoyance.
   notifyShopping: false,
   notifyPlanning: false,
+  // On by default, with the other two opt-outs rather than the opt-ins: a
+  // timer alert is not the app volunteering an opinion, it is the answer to
+  // something the user just asked for.
+  notifyTimers: true,
   expiryLeadDays: DEFAULT_LEAD_DAYS,
   reminderHour: DEFAULT_REMINDER_HOUR,
   themeFamily: DEFAULT_THEME_FAMILY,
@@ -104,6 +110,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     void writeJson(PERSIST_KEY, current(get()));
   },
 
+  setNotifyTimers: (value) => {
+    set({ notifyTimers: value });
+    void writeJson(PERSIST_KEY, current(get()));
+  },
+
   setExpiryLeadDays: (value) => {
     set({ expiryLeadDays: value });
     void writeJson(PERSIST_KEY, current(get()));
@@ -139,6 +150,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       // does not silently switch them on the first time it is read back.
       notifyShopping: saved.notifyShopping === true,
       notifyPlanning: saved.notifyPlanning === true,
+      notifyTimers: saved.notifyTimers !== false,
       expiryLeadDays: saved.expiryLeadDays ?? DEFAULT_LEAD_DAYS,
       reminderHour: saved.reminderHour ?? DEFAULT_REMINDER_HOUR,
       // Validated against the known sets rather than cast: a settings file
@@ -163,6 +175,7 @@ function current(state: PersistedSettings): PersistedSettings {
     notifyExpired: state.notifyExpired,
     notifyShopping: state.notifyShopping,
     notifyPlanning: state.notifyPlanning,
+    notifyTimers: state.notifyTimers,
     expiryLeadDays: state.expiryLeadDays,
     reminderHour: state.reminderHour,
     themeFamily: state.themeFamily,

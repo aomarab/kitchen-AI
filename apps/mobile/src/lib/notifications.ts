@@ -32,7 +32,7 @@ export const DEFAULT_REMINDER_HOUR = 19;
  */
 export const MAX_SCHEDULED = 48;
 
-export type NotificationKind = 'expiry' | 'meal' | 'expired' | 'shopping' | 'planning';
+export type NotificationKind = 'expiry' | 'meal' | 'expired' | 'shopping' | 'planning' | 'timer';
 
 /**
  * Which reminders the user actually wants.
@@ -48,6 +48,14 @@ export interface NotificationToggles {
   readonly expired: boolean;
   readonly shopping: boolean;
   readonly planning: boolean;
+  /**
+   * Unlike the rest, this defaults to on: every other notification here is
+   * volunteered by the app about food the user never mentioned, but a timer
+   * alert was asked for explicitly, by someone who started a timer seconds
+   * ago and then put the phone down. Silencing that by default would make the
+   * feature look broken.
+   */
+  readonly timers: boolean;
 }
 
 export interface PendingNotification {
@@ -61,6 +69,21 @@ export interface PendingNotification {
   readonly daysUntil: number;
   /** The recipe name — meal only. */
   readonly title?: string;
+}
+
+/**
+ * A timer as the planner needs to see it.
+ *
+ * `endsAt` is an ISO instant rather than a remaining duration because the plan
+ * is rebuilt from scratch whenever anything moves; a duration captured at one
+ * render would be stale by the time it was scheduled.
+ */
+export interface RunningTimer {
+  readonly id: string;
+  readonly label: string;
+  /** Null while paused: a paused timer holds a remaining duration, not an end. */
+  readonly endsAt: string | null;
+  readonly status: string;
 }
 
 export interface ExpiringItem {
@@ -245,17 +268,64 @@ export function planPlanningNotifications(
   return [{ key: `planning:${fireAt.getTime()}`, kind: 'planning', fireAt, count: 0, daysUntil: 1 }];
 }
 
+/**
+ * One alert per running timer, at the instant it ends.
+ *
+ * Three kinds of timer are deliberately absent. A paused timer has no end
+ * instant at all — it holds a remaining duration, and `endsAt` is null —
+ * so there is nothing to schedule until it resumes. A finished timer has
+ * already been dealt with. And a running timer whose end has already passed
+ * is skipped because neither iOS nor Android delivers a trigger dated in the
+ * past: it would not ring, it would just consume one of the 64 slots the OS
+ * is willing to hold.
+ */
+export function planTimerNotifications(
+  timers: readonly RunningTimer[],
+  options: { now: Date },
+): PendingNotification[] {
+  const { now } = options;
+
+  return timers
+    .filter((timer) => timer.status === 'running')
+    // Narrowing, not a behavioural guard: `new Date(null)` is the epoch and
+    // the past-instant filter below already drops it. Removing this line does
+    // not change a single outcome, only the types.
+    .filter((timer) => timer.endsAt !== null)
+    .map((timer) => ({ timer, endsAt: new Date(timer.endsAt as string) }))
+    .filter(({ endsAt }) => !Number.isNaN(endsAt.getTime()) && endsAt.getTime() > now.getTime())
+    .sort((a, b) => a.endsAt.getTime() - b.endsAt.getTime())
+    .map(({ timer, endsAt }) => ({
+      key: `timer:${timer.id}`,
+      kind: 'timer' as const,
+      fireAt: endsAt,
+      count: 1,
+      daysUntil: 0,
+      title: timer.label,
+    }));
+}
+
 export function planNotifications(options: {
   items: readonly ExpiringItem[];
   meals: readonly PlannedMeal[];
   shopping?: readonly ShoppingLine[];
+  timers?: readonly RunningTimer[];
   toggles: NotificationToggles;
   leadDays: number;
   hour: number;
   now: Date;
   max?: number;
 }): PendingNotification[] {
-  const { items, meals, shopping = [], toggles, leadDays, hour, now, max = MAX_SCHEDULED } = options;
+  const {
+    items,
+    meals,
+    shopping = [],
+    timers = [],
+    toggles,
+    leadDays,
+    hour,
+    now,
+    max = MAX_SCHEDULED,
+  } = options;
 
   return [
     ...(toggles.expiry ? planExpiryNotifications(items, { leadDays, hour, now }) : []),
@@ -263,9 +333,18 @@ export function planNotifications(options: {
     ...(toggles.expired ? planExpiredNotifications(items, { hour, now }) : []),
     ...(toggles.shopping ? planShoppingNotifications(shopping, { hour, now }) : []),
     ...(toggles.planning ? planPlanningNotifications(meals, { hour, now }) : []),
+    ...(toggles.timers ? planTimerNotifications(timers, { now }) : []),
   ]
     .sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime())
     // Soonest-first before the cut, so what gets dropped is the distant future.
+    //
+    // Timers need no reservation ahead of that cut, and an earlier draft of
+    // this function was wrong to give them one. `MAX_TIMER_DURATION_SEC` caps
+    // a timer at twelve hours, while every other notification here is
+    // anchored to a daily evening slot — so filling forty-eight slots ahead
+    // of a timer would take forty-eight reminders inside those twelve hours,
+    // which the per-date bucketing makes impossible. The reservation was
+    // untestable complexity: no input could distinguish it from this.
     .slice(0, max);
 }
 
@@ -292,6 +371,14 @@ export interface SchedulerSignatureInput {
   readonly items: readonly { readonly expiresAt?: string | null }[];
   readonly meals: readonly PlannedMeal[];
   readonly unpurchasedCount: number;
+  /**
+   * Timers are the only input here that a user changes and then immediately
+   * expects a notification from, so leaving them out does not degrade the
+   * feature — it removes it. Starting a timer would change nothing else in
+   * this list, the effect would not re-run, and the alert would never be
+   * armed at all.
+   */
+  readonly timers: readonly RunningTimer[];
 }
 
 /**
@@ -311,6 +398,7 @@ export function schedulerSignature(input: SchedulerSignatureInput): string {
     toggles.expired,
     toggles.shopping,
     toggles.planning,
+    toggles.timers,
     input.leadDays,
     input.hour,
     input.permission,
@@ -318,5 +406,9 @@ export function schedulerSignature(input: SchedulerSignatureInput): string {
     input.items.map((item) => item.expiresAt ?? '-').join(','),
     input.meals.map((meal) => `${meal.date}:${meal.title}`).join(','),
     input.unpurchasedCount,
+    // `status` as well as `endsAt`: pausing a timer leaves its end instant
+    // untouched, and without it the alert would survive the pause and ring
+    // over a pot nobody is cooking.
+    input.timers.map((timer) => `${timer.id}:${timer.status}:${timer.endsAt}`).join(','),
   ].join('|');
 }
