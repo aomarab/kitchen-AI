@@ -134,4 +134,45 @@ describe('plural messages', () => {
       '20 صورةً لم نتعرّف على أي شيء فيها.',
     );
   });
+
+  /*
+   * Caught on a real simulator, not in review: the cook-mode button first
+   * shipped as a flat string and rendered `ابدأ مؤقتًا 5 دقيقة` directly beneath a
+   * badge reading `الطهي 5 دقائق`. Arabic takes the plural for 3-10 and the
+   * singular accusative for 11-99, so the two controls disagreed about the same
+   * number on the same screen.
+   */
+  it('agrees with recipe.cookTime about the same number of minutes', () => {
+    for (const minutes of [1, 2, 5, 30]) {
+      const badge = translate('ar', 'recipe.cookTime', { minutes });
+      const button = translate('ar', 'mobile.recipe.startStepTimer', { minutes });
+      /*
+       * Case may differ and still be correct -- `الطهي دقيقتان` is nominative
+       * while `ابدأ مؤقتًا دقيقتين` is accusative -- so this compares the
+       * grammatical NUMBER the two controls chose, not the surface form.
+       */
+      const numberOf = (text: string) => {
+        if (text.includes('دقيقة واحدة')) return 'one';
+        if (text.includes('دقيقت')) return 'two';
+        if (text.includes('دقائق')) return 'few';
+        if (text.includes('دقيقةً')) return 'many';
+        if (text.includes('دقيقة')) return 'other';
+        return undefined;
+      };
+      expect(numberOf(button), `minutes=${minutes}`).toBeDefined();
+      expect(numberOf(button), `minutes=${minutes}`).toBe(numberOf(badge));
+    }
+  });
+
+  it('uses the Arabic plural for 3-10 and the singular accusative for 11-99', () => {
+    expect(translate('ar', 'mobile.recipe.startStepTimer', { minutes: 5 })).toBe(
+      'ابدأ مؤقتًا 5 دقائق',
+    );
+    expect(translate('ar', 'mobile.recipe.startStepTimer', { minutes: 30 })).toBe(
+      'ابدأ مؤقتًا 30 دقيقةً',
+    );
+    expect(translate('ar', 'mobile.recipe.startStepTimer', { minutes: 2 })).toBe(
+      'ابدأ مؤقتًا دقيقتين',
+    );
+  });
 });

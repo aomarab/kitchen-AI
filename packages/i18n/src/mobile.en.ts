@@ -185,6 +185,13 @@ export const mobileEn = {
       startCooking: 'Start cooking',
       cookModeHint: 'Your screen stays awake while you cook.',
       stepProgress: 'Step {current} of {total}',
+      stepWord: 'Step',
+      startStepTimer: plural('minutes', {
+        one: 'Start 1 min timer',
+        other: 'Start {minutes} min timer',
+      }),
+      stepTimerRunning: 'Timer running · {remaining}',
+      stepTimerDone: 'Timer finished',
       prev: 'Back',
       next: 'Next',
       finish: 'Finish',
