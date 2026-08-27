@@ -5,6 +5,7 @@ import { routes } from '@kitchen/contracts';
 
 const SRC = join(__dirname, '..');
 const APP_JSON = join(SRC, '..', 'app.json');
+const ROOT_LAYOUT = join(SRC, 'app', '_layout.tsx');
 const REPO_ROOT = join(SRC, '..', '..', '..');
 const WEB_DELETE_ACCOUNT_ROUTE = join(
   REPO_ROOT,
@@ -198,9 +199,25 @@ describe('device compatibility policy', () => {
     expect(config.expo.ios?.supportsTablet).toBe(true);
   });
 
-  it('keeps phones portrait', () => {
-    // Phones stay portrait deliberately: there are no landscape phone layouts.
-    expect(config.expo.orientation).toBe('portrait');
+  it('keeps phones portrait, now by a runtime lock rather than the manifest', () => {
+    /*
+     * This used to read `orientation === 'portrait'`, on the grounds that there
+     * were no landscape phone layouts. The kitchen kiosk (`app/screen.tsx`) is
+     * one, so that premise is gone — but the guarantee it protected is not:
+     * every *other* screen is still portrait-only and would break if it turned.
+     *
+     * The manifest can no longer deliver that guarantee. On iOS
+     * `UISupportedInterfaceOrientations` is a ceiling, not a default, so
+     * pinning portrait there makes the kiosk's `unlockAsync` a no-op. The
+     * manifest therefore permits landscape and `useOrientationLock` in the root
+     * layout takes it back at runtime, leaving the kiosk the only screen that
+     * opts out. Losing that hook is the regression this now catches.
+     */
+    expect(config.expo.orientation).not.toBe('portrait');
+    const layout = readFileSync(ROOT_LAYOUT, 'utf8');
+    const rootBody = layout.slice(layout.indexOf('export default function RootLayout'));
+    expect(rootBody).toContain('useOrientationLock();');
+    expect(layout).toContain('OrientationLock.PORTRAIT_UP');
   });
 
   it('lets the iPad rotate, because it claims iPad support', () => {

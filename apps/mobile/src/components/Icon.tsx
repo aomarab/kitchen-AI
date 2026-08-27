@@ -56,6 +56,7 @@ export const IONICONS = {
   stretch: 'body-outline',
   sunrise: 'sunny-outline',
   pause: 'cafe-outline',
+  screen: 'tablet-landscape-outline',
 } satisfies Record<string, IoniconName>;
 
 export type IconName = keyof typeof IONICONS;

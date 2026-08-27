@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { useEffect } from 'react';
 import { ActivityIndicator, I18nManager, View } from 'react-native';
 import { queryClient } from '../lib/queryClient';
@@ -35,6 +36,22 @@ import { useTheme } from '../theme/useTheme';
  * The persisted native flag is still cleared once at startup, or an install
  * upgraded from a build that called `forceRTL(true)` would mirror twice.
  */
+
+/**
+ * Portrait is locked here, at runtime, rather than in `app.json`.
+ *
+ * It used to be `"orientation": "portrait"`, which on iOS writes
+ * `UISupportedInterfaceOrientations` — and that list is a *ceiling*, not a
+ * default: no runtime call can exceed it. The kitchen kiosk (`app/screen.tsx`)
+ * is meant to be turned sideways on the counter, so the manifest now permits
+ * landscape and this lock takes it away again everywhere else. The kiosk is
+ * the only screen that unlocks, and it restores this lock on the way out.
+ */
+function useOrientationLock(): void {
+  useEffect(() => {
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  }, []);
+}
 
 /**
  * Sends the user to sign-in the moment the session ends, from wherever they
@@ -74,6 +91,7 @@ export default function RootLayout() {
   const ready = useBootstrap();
   useAppFonts();
   useOfflineSync();
+  useOrientationLock();
   useSignedOutRedirect(ready);
 
   useEffect(() => {
