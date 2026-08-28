@@ -128,3 +128,38 @@ git pull && docker compose -f docker-compose.prod.yml -f deploy/docker-compose.c
 Postgres and Redis data persist in the `postgres-data` / `redis-data` named
 volumes. Back up Postgres with `pg_dump` on a schedule (the free VM has a block
 volume; snapshots are outside the Always Free storage cap if large).
+
+## Backups
+
+`deploy/backup.sh` dumps Postgres from the running stack to a timestamped,
+compressed file in `./backups/`, prunes dumps older than `RETENTION_DAYS`
+(default 7), and — if `BACKUP_S3_BUCKET` is set — also uploads an **off-box copy
+to R2** so a lost VM does not lose data (still $0 on R2's free tier). `pg_dump`
+snapshots consistently, so it is safe to run while the API serves.
+
+```bash
+./deploy/backup.sh                                   # dump now (+R2 if configured)
+./deploy/restore.sh backups/kitchen-YYYYMMDD-HHMMSS.sql.gz   # restore (prompts)
+```
+
+Schedule it daily with the bundled systemd timer:
+
+```bash
+sudo cp deploy/systemd/kitchen-backup.* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now kitchen-backup.timer
+systemctl list-timers kitchen-backup.timer          # confirm next run
+```
+
+For the off-box copy, add to `.env`:
+
+```
+BACKUP_S3_BUCKET=kitchen-backups      # an R2 bucket (can be the photos bucket)
+# S3_ENDPOINT / S3_ACCESS_KEY / S3_SECRET_KEY are reused from the R2 config
+```
+
+A cron alternative (equivalent to the timer):
+
+```bash
+0 3 * * *  cd /opt/kitchen-ai && ./deploy/backup.sh >> /var/log/kitchen-backup.log 2>&1
+```

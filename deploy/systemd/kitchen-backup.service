@@ -1,0 +1,18 @@
+# Daily PostgreSQL backup for Kitchen AI. Install:
+#
+#   sudo cp deploy/systemd/kitchen-backup.* /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now kitchen-backup.timer
+#
+# Adjust User= and the two paths below if you cloned somewhere other than
+# /opt/kitchen-ai or run docker as a different user.
+[Unit]
+Description=Kitchen AI PostgreSQL backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/opt/kitchen-ai
+ExecStart=/opt/kitchen-ai/deploy/backup.sh

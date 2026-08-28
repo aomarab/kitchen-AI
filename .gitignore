@@ -39,3 +39,7 @@ apps/mobile/android/local.properties
 
 # Playwright MCP scratch output
 .playwright-mcp/
+
+# Local DB backups (deploy/backup.sh)
+/backups/
+deploy/backups/
