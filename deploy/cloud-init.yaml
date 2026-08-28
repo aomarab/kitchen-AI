@@ -1,0 +1,17 @@
+#cloud-config
+# Oracle Cloud (or any cloud-init provider) instance user-data. Paste this into
+# the "user data" / "cloud-init script" field when creating the VM to prepare it
+# hands-off on first boot: it installs Docker, opens the firewall for 80/443,
+# and clones the repo into /opt/kitchen-ai.
+#
+# It intentionally does NOT start the stack — you still SSH in, create .env from
+# deploy/.env.prod.example, then run the compose up command printed by bootstrap.
+#
+# You must still add an ingress rule for TCP 80 and 443 to the subnet's Security
+# List / NSG in the Oracle console; cloud-init cannot touch the virtual network.
+runcmd:
+  - [
+      bash,
+      -c,
+      'curl -fsSL https://raw.githubusercontent.com/aomarab/kitchen-AI/main/deploy/bootstrap.sh | bash',
+    ]

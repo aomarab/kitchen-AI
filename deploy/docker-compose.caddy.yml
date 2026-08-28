@@ -1,0 +1,38 @@
+# Adds automatic HTTPS in front of the API. Layer it on top of the base stack:
+#
+#   docker compose -f docker-compose.prod.yml -f deploy/docker-compose.caddy.yml up -d
+#
+# Requires two values in .env:
+#   API_DOMAIN=api.example.com   # a hostname whose DNS A/AAAA record points at
+#                                # this VM's public IP; Caddy fetches a free
+#                                # Let's Encrypt cert for it on first request.
+#   API_BIND_HOST=127.0.0.1      # keep the API off the public interface; Caddy
+#                                # reaches it privately as api:3333.
+#
+# Open ONLY 80 and 443 to the internet (see deploy/README.md — Oracle's default
+# image also drops them in iptables, which bootstrap.sh fixes).
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: kitchen-caddy
+    restart: unless-stopped
+    # ACME HTTP-01/TLS-ALPN challenges need 80 and 443 publicly reachable.
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      # Consumed by ./Caddyfile. Fail loudly if unset rather than serving on an
+      # empty site address.
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN to your public hostname}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  caddy-data:
+  caddy-config:
