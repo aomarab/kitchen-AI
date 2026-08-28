@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "assistant_persona" text DEFAULT 'layla' NOT NULL;

@@ -22,12 +22,20 @@ const PROVIDER = 'apps/api/src/ai/assistant/openai-realtime.provider.ts';
 const CONTRACT = 'packages/contracts/src/assistant.ts';
 const VIEW = 'apps/web/src/components/assistant/LiveAssistantView.tsx';
 const BRIEF = 'apps/api/src/ai/assistant/pantry-brief.ts';
+const VOICE = 'packages/contracts/src/voice.ts';
+const PROFILES = 'apps/api/src/profiles/profiles.service.ts';
+const PERSONA_VIEW = 'apps/web/src/components/settings/AssistantPersonaView.tsx';
+const AR_CATALOG = 'packages/i18n/src/ar.ts';
 
 const WEB_SPEC = ['@kitchen/web', 'src/lib/assistant/openai-realtime.test.ts'];
 const API_SPEC = ['@kitchen/api', 'src/ai/assistant/assistant.service.spec.ts'];
 const CONTRACT_SPEC = ['@kitchen/contracts', 'src/assistant.spec.ts'];
 const VIEW_SPEC = ['@kitchen/web', 'src/components/assistant/LiveAssistantView.test.tsx'];
 const BRIEF_SPEC = ['@kitchen/api', 'src/ai/assistant/pantry-brief.spec.ts'];
+const VOICE_SPEC = ['@kitchen/contracts', 'src/voice.spec.ts'];
+const PROFILES_SPEC = ['@kitchen/api', 'src/profiles/profiles.service.spec.ts'];
+const PERSONA_VIEW_SPEC = ['@kitchen/web', 'src/components/settings/AssistantPersonaView.test.tsx'];
+const I18N_SPEC = ['@kitchen/i18n', 'src/catalog.spec.ts'];
 
 const CASES = [
   {
@@ -106,8 +114,8 @@ const CASES = [
     file: SERVICE,
     spec: API_SPEC,
     check: 'charges before minting, so an unaffordable session never reaches the provider',
-    from: "    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');\n\n    try {\n      return await this.provider.mint(locale, brief);",
-    to: "    const session = await this.provider.mint(locale, brief);\n    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');\n\n    try {\n      return session;",
+    from: "    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');\n\n    try {\n      return await this.provider.mint(locale, brief, assistantPersona);",
+    to: "    const session = await this.provider.mint(locale, brief, assistantPersona);\n    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');\n\n    try {\n      return session;",
   },
   {
     name: 'a failed mint keeps the money',
@@ -222,16 +230,16 @@ const CASES = [
     file: SERVICE,
     spec: API_SPEC,
     check: 'does not charge when the pantry read fails',
-    from: '    const snapshot = await this.pantry.snapshot(householdId);\n    const brief = pantryBrief(snapshot, locale);\n\n    const spendGroupId',
-    to: "    const spendGroupId0 = await this.credits.spend(householdId, 'assistant.session');\n    void spendGroupId0;\n    const snapshot = await this.pantry.snapshot(householdId);\n    const brief = pantryBrief(snapshot, locale);\n\n    const spendGroupId",
+    from: '    const snapshot = await this.pantry.snapshot(householdId);\n    const brief = pantryBrief(snapshot, locale);\n',
+    to: "    const spendGroupId0 = await this.credits.spend(householdId, 'assistant.session');\n    void spendGroupId0;\n    const snapshot = await this.pantry.snapshot(householdId);\n    const brief = pantryBrief(snapshot, locale);\n",
   },
   {
     name: 'the pantry brief is built and then dropped instead of being sent',
     file: PROVIDER,
     spec: API_SPEC,
     check: 'never sends the provider key to the client, and asks for the pinned TTL',
-    from: 'instructions: instructions(locale, pantryBrief),',
-    to: "instructions: instructions(locale, ''),",
+    from: 'instructions: instructions(locale, pantryBrief, persona),',
+    to: "instructions: instructions(locale, '', persona),",
   },
   {
     name: 'the secret TTL is raised to the provider default',
@@ -240,6 +248,113 @@ const CASES = [
     check: 'pins the secret TTL to the provider floor, which is what bounds a mint',
     from: 'export const REALTIME_SECRET_TTL_SEC = 10;',
     to: 'export const REALTIME_SECRET_TTL_SEC = 600;',
+  },
+  {
+    // The persona read is a query that can fail. After the debit, a failure
+    // means refunding a spend that should never have been made.
+    name: 'the persona is read after the household is charged',
+    file: SERVICE,
+    spec: API_SPEC,
+    check: 'reads the persona before charging',
+    from:
+      '    const { assistantPersona } = await this.profiles.get(userId);\n\n' +
+      "    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');",
+    to:
+      "    const spendGroupId = await this.credits.spend(householdId, 'assistant.session');\n\n" +
+      '    const { assistantPersona } = await this.profiles.get(userId);',
+  },
+  {
+    name: 'the chosen voice never reaches the provider',
+    file: PROVIDER,
+    spec: API_SPEC,
+    check: 'sends the persona voice',
+    from: 'audio: { output: { voice: ASSISTANT_PERSONAS[persona].voice } },',
+    to: '',
+  },
+  {
+    // Instructing an English session to speak Levantine produces
+    // code-switching or an invented accent.
+    name: 'an English session is told to speak an Arabic dialect',
+    file: PROVIDER,
+    spec: API_SPEC,
+    check: 'steers dialect only in Arabic',
+    from: "  if (locale === 'ar') lines.push(DIALECT_INSTRUCTIONS[profile.dialect]);",
+    to: '  lines.push(DIALECT_INSTRUCTIONS[profile.dialect]);',
+  },
+  {
+    name: 'the persona is buried behind the pantry brief',
+    file: PROVIDER,
+    spec: API_SPEC,
+    check: 'puts the persona ahead of the pantry brief',
+    from: 'return `${personaInstructions(locale, persona)}\\n\\n${role}\\n\\n${pantryBrief}`;',
+    to: 'return `${role}\\n\\n${pantryBrief}\\n\\n${personaInstructions(locale, persona)}`;',
+  },
+  {
+    // The only place a stale id can come from is the column, so this is the
+    // only place the fallback can be enforced.
+    name: 'a retired persona id is cast straight out of the database',
+    file: PROFILES,
+    spec: PROFILES_SPEC,
+    check: 'falls back to the default when the stored persona has left the catalog',
+    from: 'assistantPersona: resolveAssistantPersona(row.assistantPersona),',
+    to: "assistantPersona: row.assistantPersona as Profile['assistantPersona'],",
+  },
+  {
+    /*
+     * Replaces an earlier case, "a persona is given a voice the provider does
+     * not accept". That defect never reached its assertion — the `Record`
+     * type stopped the package compiling — so the check it named was redundant
+     * and was deleted rather than kept. What is *not* type-enforced is the
+     * voice list itself: adding an unverified id compiles fine, and only the
+     * pinned literal notices. An unrecognised voice is a hard 400 at mint,
+     * after the household has been charged.
+     */
+    name: 'an unverified voice id is added to the provider list',
+    file: VOICE,
+    spec: VOICE_SPEC,
+    check: 'lists exactly the ten voices the provider accepts',
+    from: "  'alloy',\n  'ash',",
+    to: "  'alloy',\n  'ash',\n  'nova',",
+  },
+  {
+    name: 'two personas collapse onto the same voice',
+    file: VOICE,
+    spec: VOICE_SPEC,
+    check: 'gives every persona a distinct voice',
+    from: "  omar: { voice: 'ash', dialect: 'msa', tone: 'neutral' },",
+    to: "  omar: { voice: 'coral', dialect: 'msa', tone: 'neutral' },",
+  },
+  {
+    name: 'an unknown stored persona throws instead of falling back',
+    file: VOICE,
+    spec: VOICE_SPEC,
+    check: 'falls back rather than throwing on an unknown stored persona',
+    from: '  return parsed.success ? parsed.data : DEFAULT_ASSISTANT_PERSONA;',
+    to: '  return assistantPersonaSchema.parse(value);',
+  },
+  {
+    name: 'a persona ships without an Arabic name',
+    file: AR_CATALOG,
+    spec: I18N_SPEC,
+    check: 'persona is fully translated into Arabic',
+    from: "    salma: 'سلمى',",
+    to: "    salma: 'Salma',",
+  },
+  {
+    name: 'the persona picker hard-codes its list instead of reading the catalog',
+    file: PERSONA_VIEW,
+    spec: PERSONA_VIEW_SPEC,
+    check: 'offers every persona in the catalog',
+    from: '        {assistantPersonaSchema.options.map((persona) => {',
+    to: '        {assistantPersonaSchema.options.slice(0, 2).map((persona) => {',
+  },
+  {
+    name: 'the picker saves a persona other than the one pressed',
+    file: PERSONA_VIEW,
+    spec: PERSONA_VIEW_SPEC,
+    check: 'saves the persona the user picks',
+    from: '              onClick={() => update.mutate({ assistantPersona: persona })}',
+    to: "              onClick={() => update.mutate({ assistantPersona: 'noor' })}",
   },
 ];
 
@@ -255,11 +370,36 @@ function run([pkg, file]) {
   }
 }
 
-// The contract is consumed as a built package, so a change to it only reaches
-// any suite after a rebuild.
-function rebuildIfContract(file) {
-  if (file !== CONTRACT) return;
-  execSync('pnpm --filter @kitchen/contracts build', { stdio: 'ignore' });
+/**
+ * `packages/*` are consumed as built artifacts, so a defect injected into one
+ * only reaches any suite after a rebuild. Keyed by directory rather than by
+ * filename: the previous version named a single file, so adding a second
+ * contract file would have injected a defect nothing could ever see and
+ * reported it as an uncatchable rule.
+ */
+const PACKAGE_BUILDS = [
+  ['packages/contracts/', '@kitchen/contracts'],
+  ['packages/i18n/', '@kitchen/i18n'],
+];
+
+/**
+ * Returns `false` when the injected defect stopped the package compiling.
+ *
+ * That is not a crash and it is not a pass. It means the *type system* rejected
+ * the defect before the named check could run — so the check cannot be shown to
+ * fail, and by this harness's own rule the rule it encodes is redundant and
+ * should be deleted rather than kept as decoration.
+ */
+function rebuildIfPackage(file) {
+  for (const [prefix, pkg] of PACKAGE_BUILDS) {
+    if (!file.startsWith(prefix)) continue;
+    try {
+      execSync(`pnpm --filter ${pkg} build`, { stdio: 'ignore' });
+    } catch {
+      return false;
+    }
+  }
+  return true;
 }
 
 let pass = 0;
@@ -275,12 +415,22 @@ for (const testCase of CASES) {
 
   writeFileSync(testCase.file, original.replace(testCase.from, testCase.to));
   let result;
+  let built;
   try {
-    rebuildIfContract(testCase.file);
-    result = run(testCase.spec);
+    built = rebuildIfPackage(testCase.file);
+    result = built ? run(testCase.spec) : { failed: false, out: '' };
   } finally {
     writeFileSync(testCase.file, original);
-    rebuildIfContract(testCase.file);
+    rebuildIfPackage(testCase.file);
+  }
+
+  if (!built) {
+    fail += 1;
+    console.log(
+      `✗ ${testCase.name}\n    rejected by the compiler before "${testCase.check}" could run` +
+        ' — the check is redundant with the type and should be deleted',
+    );
+    continue;
   }
 
   if (result.failed && result.out.includes(testCase.check)) {

@@ -332,6 +332,16 @@ export const webEn = {
       liveBadge: 'Live',
       demoBadge: 'Demo',
       demoNote: 'Sample assistant — not live AI yet',
+      personaEntry: 'Assistant voice',
+      personaEntryHint: 'Choose who the live assistant sounds like.',
+      personaTitle: 'Assistant voice',
+      personaSubtitle:
+        'The live assistant speaks with the persona you pick here. It only affects the live assistant — reminders and timers stay silent.',
+      personaHonesty:
+        'These are synthetic voices, and the dialect is guided by instruction rather than spoken natively. Dialect applies to Arabic sessions only.',
+      personaSelected: 'Selected',
+      personaSaved: 'Saved',
+      personaChoose: 'Use this voice',
       connecting: 'Connecting…',
       youLabel: 'You',
       assistantLabel: 'Assistant',

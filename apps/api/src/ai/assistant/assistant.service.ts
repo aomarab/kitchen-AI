@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Locale, RealtimeSession } from '@kitchen/contracts';
 import { CreditsService } from '../../credits/credits.service.js';
+import { ProfilesService } from '../../profiles/profiles.service.js';
 import { PANTRY_PORT, REALTIME_SESSION_PROVIDER } from '../ai.constants.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { pantryBrief } from './pantry-brief.js';
@@ -27,6 +28,8 @@ export class AssistantService {
     private readonly provider: RealtimeSessionProvider,
     @Inject(PANTRY_PORT)
     private readonly pantry: PantryPort,
+    @Inject(ProfilesService)
+    private readonly profiles: ProfilesService,
   ) {}
 
   /**
@@ -48,15 +51,26 @@ export class AssistantService {
    * The snapshot is the planner's Stage-A output, not a second inventory reader
    * — an assistant that disagreed with the meal plan about what is in the
    * fridge would be worse than one that knew nothing.
+   *
+   * The persona read joins the same phase, and for the same reason. It is also
+   * per-*user* while everything else here is per-household: two people sharing
+   * a kitchen each get their own voice.
    */
-  async createSession(householdId: string, locale: Locale): Promise<RealtimeSession> {
+  async createSession(
+    householdId: string,
+    userId: string,
+    locale: Locale,
+  ): Promise<RealtimeSession> {
     const snapshot = await this.pantry.snapshot(householdId);
     const brief = pantryBrief(snapshot, locale);
+    // `get` returns schema defaults when the user has no profile row, so a user
+    // who never opened settings gets the default persona rather than an error.
+    const { assistantPersona } = await this.profiles.get(userId);
 
     const spendGroupId = await this.credits.spend(householdId, 'assistant.session');
 
     try {
-      return await this.provider.mint(locale, brief);
+      return await this.provider.mint(locale, brief, assistantPersona);
     } catch (error) {
       await this.credits.refundSpendGroup(householdId, spendGroupId);
       // Logged rather than swallowed: a mint failure is an outage signal, and

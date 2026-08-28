@@ -1,4 +1,4 @@
-import type { Locale, RealtimeSession } from '@kitchen/contracts';
+import type { AssistantPersona, Locale, RealtimeSession } from '@kitchen/contracts';
 import { REALTIME_SECRET_TTL_SEC } from '@kitchen/contracts';
 import type { RealtimeSessionProvider } from './realtime-provider.interface.js';
 
@@ -18,7 +18,11 @@ import type { RealtimeSessionProvider } from './realtime-provider.interface.js';
 export class MockRealtimeSessionProvider implements RealtimeSessionProvider {
   readonly isMock = true;
 
-  async mint(_locale: Locale, _pantryBrief: string): Promise<RealtimeSession> {
+  async mint(
+    _locale: Locale,
+    _pantryBrief: string,
+    _persona: AssistantPersona,
+  ): Promise<RealtimeSession> {
     return {
       // Deliberately not a plausible `ek_…` token. If this ever reaches a real
       // provider the request should fail loudly rather than half-work.

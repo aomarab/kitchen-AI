@@ -1,4 +1,4 @@
-import type { Locale, RealtimeSession } from '@kitchen/contracts';
+import type { AssistantPersona, Locale, RealtimeSession } from '@kitchen/contracts';
 
 /**
  * Mints the short-lived credential the browser uses to open a realtime peer
@@ -25,6 +25,10 @@ export interface RealtimeSessionProvider {
    * `pantryBrief` is the household's Stage-A snapshot rendered as text. It is
    * passed in rather than fetched here so this port stays a pure vendor
    * adapter with no database of its own.
+   *
+   * `persona` arrives already resolved for the same reason: the caller owns the
+   * fallback for a stored id that has left the catalog, so an adapter is handed
+   * a value it can always honour.
    */
-  mint(locale: Locale, pantryBrief: string): Promise<RealtimeSession>;
+  mint(locale: Locale, pantryBrief: string, persona: AssistantPersona): Promise<RealtimeSession>;
 }

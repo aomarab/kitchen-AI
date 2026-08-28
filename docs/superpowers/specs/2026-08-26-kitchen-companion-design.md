@@ -155,6 +155,13 @@ pause/stop), `deleteTimer`. Prototype: `04-cooking-timers.html`.
 
 ## Feature 4 — Voice & personalization
 
+> **Superseded by `2026-08-28-voice-personalization-design.md`.** The sketch below was written
+> before Feature 5 was built. Three of its pieces turned out to be waste once the code existed: the
+> alert opt-ins already ship in `reminder_settings`, `recipeLanguage` is already the locale, and
+> `TTS_PORT` would be an engine with no consumer — nothing in Kitchen AI speaks except the realtime
+> assistant, which synthesises its own audio. The preview route dies with `TTS_PORT`. What survives
+> is the persona itself. Read the newer spec, not this paragraph.
+
 **Data model:** extend the user/household profile with `assistantVoice` (voice id), `voiceDialect`,
 `tone` (warm/neutral/energetic), `recipeLanguage` (en/ar — already partly present), and per-type
 alert opt-ins. Voice/tone are **per-user**; alert opt-ins are household-scoped.

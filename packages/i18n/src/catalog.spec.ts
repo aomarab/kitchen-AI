@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  assistantDialectSchema,
+  assistantPersonaSchema,
   cuisineSchema,
   dietaryPreferenceSchema,
   healthGoalSchema,
@@ -22,6 +24,9 @@ const enumNamespaces = [
   ['diet', dietaryPreferenceSchema.options],
   ['cuisine', cuisineSchema.options],
   ['healthGoal', healthGoalSchema.options],
+  ['persona', assistantPersonaSchema.options],
+  ['personaDescription', assistantPersonaSchema.options],
+  ['dialect', assistantDialectSchema.options],
 ] as const;
 
 describe('enum-keyed namespaces', () => {
