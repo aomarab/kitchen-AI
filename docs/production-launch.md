@@ -15,6 +15,10 @@ in `docs/store-listing/` and the `2026-08-10-publishing-compliance-design.md` sp
 
 > Detailed, ordered provisioning checklist with per-resource env mapping and a
 > post-provision smoke sequence: **`docs/infra-provisioning.md`**. Summary below.
+>
+> For the **cheapest path ($0/month, mobile launch)**, follow **`deploy/README.md`**
+> — a copy-paste single-VM setup on Oracle Cloud Always Free + Cloudflare R2 with
+> automatic HTTPS (Caddy), no managed-service bills.
 
 `docker-compose.yml` only stands up **local** Postgres/Redis/MinIO. The API ships a production
 image at `apps/api/Dockerfile` (built as `node dist/main.js`, `apps/api/src/main.ts`, listening on
@@ -170,7 +174,7 @@ minutes are metered). Actions is otherwise enabled
       green — the same gate passes locally today.
 - [ ] Until then, the **local gate is the source of truth**: `pnpm build`,
       `pnpm typecheck`, `pnpm lint`, `pnpm test` (with `pnpm infra:up && pnpm
-    db:migrate && pnpm db:seed` first, since API specs are integration tests).
+  db:migrate && pnpm db:seed` first, since API specs are integration tests).
       PRs currently merge without a green check **by design**, not by accident.
 
 ## J. Pre-launch verification (P2 — L2-e2e)

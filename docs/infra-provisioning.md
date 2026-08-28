@@ -18,6 +18,12 @@ Either way **object storage (S3) is external** — the API mints presigned URLs
 that the browser/mobile client uploads to directly, so the storage endpoint must
 be publicly reachable by clients, never an internal `minio:9000`.
 
+> **Want the cheapest possible path?** `deploy/README.md` is a complete,
+> copy-paste **$0/month** walkthrough of the Single-VM topology on an Oracle
+> Cloud Always Free instance + Cloudflare R2 (free S3) + automatic HTTPS via
+> Caddy. It uses the resource→env mapping below; start there if you just want it
+> online for a mobile launch.
+
 ## Provision in dependency order
 
 Provision top-to-bottom; each row yields the env value(s) in the last column.

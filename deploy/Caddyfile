@@ -1,0 +1,18 @@
+# Caddy reverse proxy for the Kitchen AI API.
+#
+# API_DOMAIN selects the mode:
+#   - A bare hostname (api.example.com) -> Caddy provisions a free Let's Encrypt
+#     certificate automatically and serves HTTPS. This is the production value.
+#   - http://localhost or :80 -> plain HTTP, no certificate. Used only for local
+#     verification of the proxy wiring (deploy/docker-compose.caddy.yml notes).
+#
+# The API is reached over the private compose network, so it never needs a
+# published host port when Caddy is in front (set API_BIND_HOST=127.0.0.1).
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# Single upstream on the private compose network. No active health-checking:
+	# with one backend it would only pre-emptively 503 traffic during a cold
+	# start or blip (until the next probe) instead of just trying the request.
+	reverse_proxy api:3333
+}

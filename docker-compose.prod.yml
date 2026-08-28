@@ -77,8 +77,12 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-kitchen}:${POSTGRES_PASSWORD:-kitchen}@postgres:5432/${POSTGRES_DB:-kitchen}
       REDIS_URL: redis://redis:6379
+    # Bind host defaults to 0.0.0.0 so the API is reachable directly when run
+    # standalone. When Caddy fronts it (deploy/docker-compose.caddy.yml) set
+    # API_BIND_HOST=127.0.0.1 in .env so only Caddy is public and the API is
+    # reached over the private compose network (api:3333).
     ports:
-      - '${API_PUBLIC_PORT:-3333}:3333'
+      - '${API_BIND_HOST:-0.0.0.0}:${API_PUBLIC_PORT:-3333}:3333'
     depends_on:
       postgres:
         condition: service_healthy
