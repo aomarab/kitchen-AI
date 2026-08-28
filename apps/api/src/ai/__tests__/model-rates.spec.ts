@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { estimateCostUsd, MODEL_RATES_USD_PER_MTOK } from '../ai.constants.js';
+import { loadEnv } from '../../config/env.js';
 
 describe('estimateCostUsd', () => {
   it('prices a known model from its own rate, not its tier', () => {
@@ -98,3 +99,42 @@ describe('estimateCostUsd — dated snapshot ids resolve to their alias rate', (
   });
 });
 
+describe('every configured default model is priced by an exact rate', () => {
+  // The runtime fallback above keeps an unknown model from being billed at zero,
+  // but it only warns — it does not fail the build. So a future default-model
+  // swap in env.ts could ship a model that has no exact rate and silently
+  // misprices the ai_usage ledger that credit pricing is derived from. These
+  // pin each token-billed default id to an EXACT entry in the rate table, so
+  // adding a model without adding its rate fails here instead of at runtime.
+  const env = loadEnv({
+    DATABASE_URL: 'postgres://u:p@localhost:5432/kitchen',
+    REDIS_URL: 'redis://localhost:6379',
+    S3_ENDPOINT: 'http://localhost:9100',
+    S3_BUCKET: 'kitchen',
+    S3_ACCESS_KEY: 'key',
+    S3_SECRET_KEY: 'secret',
+    JWT_SECRET: 'x'.repeat(32),
+  } as unknown as NodeJS.ProcessEnv);
+  const keys = Object.keys(MODEL_RATES_USD_PER_MTOK);
+
+  it.each([
+    ['OPENAI_MODEL_PLANNING', () => env.OPENAI_MODEL_PLANNING],
+    ['OPENAI_MODEL_VISION', () => env.OPENAI_MODEL_VISION],
+    ['OPENAI_MODEL_CHEAP', () => env.OPENAI_MODEL_CHEAP],
+    ['GEMINI_MODEL_VISION', () => env.GEMINI_MODEL_VISION],
+  ])('%s has an exact rate-table entry', (_name, get) => {
+    expect(keys).toContain(get());
+  });
+
+  it('the hardcoded embeddings model has an exact rate', () => {
+    // Mirrors the default in ai/catalog/openai-embeddings.ts (`text-embedding-3-small`).
+    expect(keys).toContain('text-embedding-3-small');
+  });
+
+  it('the realtime model is deliberately NOT in the token table', () => {
+    // gpt-realtime is client<->provider audio, never token-counted through
+    // AiGateway; it is priced in realtime-cost.ts, not this table. Asserting its
+    // absence documents the split and catches an accidental token-pricing entry.
+    expect(keys).not.toContain(env.OPENAI_MODEL_REALTIME);
+  });
+});
