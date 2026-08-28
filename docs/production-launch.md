@@ -115,6 +115,10 @@ production `DATABASE_URL`:
 
 ## G. Payments / RevenueCat (P1 — L1-iap)
 
+> Full step-by-step operator guide: **`docs/store-listing/iap-setup.md`** (product
+> ids, RevenueCat config, env, sandbox testing, and the two integration points the
+> code leaves to "once the account exists"). Checklist summary:
+
 - [ ] Create the IAP products (credit packs) in App Store Connect / Play Console.
 - [ ] Map them to RevenueCat entitlements; set `REVENUECAT_API_KEY`.
 - [ ] Configure the RevenueCat webhook to POST to the API with the `REVENUECAT_WEBHOOK_SECRET` in the
