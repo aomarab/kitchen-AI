@@ -34,6 +34,7 @@ const BARCODE_SERVICE = 'apps/api/src/ai/barcode/barcode.service.ts';
 const MOBILE_CAPTURE = 'apps/mobile/src/lib/capture.ts';
 const MOBILE_MOCK = 'apps/mobile/src/lib/assistant/mock-realtime.ts';
 const MOBILE_DETECT = 'apps/mobile/src/lib/assistant/detections.ts';
+const MOBILE_PERSONA = 'apps/mobile/src/lib/assistant/persona.ts';
 const MOCK = 'apps/web/src/lib/assistant/mock-realtime.ts';
 const CONNECTIVITY = 'apps/web/src/stores/connectivity.ts';
 const SCREEN_VIEW = 'apps/web/src/components/screen/SmartScreenView.tsx';
@@ -66,6 +67,7 @@ const BARCODE_SERVICE_SPEC = ['@kitchen/api', 'src/ai/barcode/barcode.service.sp
 const MOBILE_CAPTURE_SPEC = ['@kitchen/mobile', 'src/lib/capture.spec.ts'];
 const MOBILE_MOCK_SPEC = ['@kitchen/mobile', 'src/lib/assistant/mock-realtime.spec.ts'];
 const MOBILE_DETECT_SPEC = ['@kitchen/mobile', 'src/lib/assistant/detections.spec.ts'];
+const MOBILE_PERSONA_SPEC = ['@kitchen/mobile', 'src/lib/assistant/persona.spec.ts'];
 const MOCK_SPEC = ['@kitchen/web', 'src/lib/assistant/mock-realtime.test.ts'];
 const CONNECTIVITY_SPEC = ['@kitchen/web', 'src/stores/connectivity.test.ts'];
 const SCREEN_VIEW_SPEC = ['@kitchen/web', 'src/components/screen/SmartScreenView.test.tsx'];
@@ -1208,6 +1210,18 @@ const CASES = [
     check: 'carries both names and the category of every detection',
     from: '    category: item.category,',
     to: "    category: 'other',",
+  },
+  {
+    // The stored persona id crosses the network: one retired server-side leaves
+    // a stale string in the profile. The client must degrade it to the default,
+    // not surface a persona that no longer exists. Returning a different persona
+    // on the fallback branch is exactly that failure.
+    name: 'the mobile persona picker keeps a persona that has left the catalog',
+    file: MOBILE_PERSONA,
+    spec: MOBILE_PERSONA_SPEC,
+    check: 'falls back to the default when the stored persona has left the catalog',
+    from: 'return parsed.success ? parsed.data : DEFAULT_ASSISTANT_PERSONA;',
+    to: "return parsed.success ? parsed.data : 'salma';",
   },
 ];
 

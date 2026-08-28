@@ -79,6 +79,13 @@ export default function Settings() {
       />
 
       <ListRow
+        title={t('mobile.assistant.personaEntry')}
+        subtitle={t('mobile.assistant.personaEntryHint')}
+        showChevron
+        onPress={() => router.push('/settings/assistant')}
+      />
+
+      <ListRow
         title={t('mobile.feedback.entry')}
         subtitle={t('mobile.feedback.entryHint')}
         showChevron

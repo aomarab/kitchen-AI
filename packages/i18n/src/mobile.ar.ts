@@ -657,6 +657,15 @@ export const mobileAr: MobileMessages = {
       liveBadge: 'مباشر',
       demoBadge: 'تجريبي',
       demoNote: 'مساعد تجريبي — ليس ذكاءً اصطناعياً مباشراً بعد',
+      personaEntry: 'صوت المساعِدة',
+      personaEntryHint: 'اختاري شخصية المساعِدة التي تتحدث معكِ.',
+      personaTitle: 'صوت المساعِدة',
+      personaSubtitle:
+        'تتحدث المساعِدة المباشرة بالشخصية التي تختارينها هنا. لا يؤثر ذلك إلا على المساعِدة المباشرة — أما التذكيرات والمؤقتات فتبقى صامتة.',
+      personaHonesty:
+        'هذه أصوات مولّدة، واللهجة موجَّهة بالتعليمات لا منطوقة بالفطرة. تُطبَّق اللهجة على الجلسات العربية فقط.',
+      personaSelected: 'مختارة',
+      personaSaved: 'تم الحفظ',
       connecting: 'جارٍ الاتصال…',
       speaking: 'يتحدّث الآن',
       assistantLabel: 'المساعد',
