@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { formatRemaining, projectTimer, type CookingTimer } from '@kitchen/contracts';
-import { AppText, Button, Badge, LoadingState } from '../../../components';
+import { AppText, Button, Badge, LoadingState, Screen } from '../../../components';
 import { LiveAssistantScreen } from '../../../features/assistant/LiveAssistantScreen';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe } from '../../../hooks/recipe';
@@ -63,9 +63,7 @@ export default function CookMode() {
     stepWord: t('mobile.recipe.stepWord'),
     durationMinutes: current.durationMinutes,
   });
-  const existing = plan.ok
-    ? existingStepTimer(timers.data?.items ?? [], plan.body.label)
-    : null;
+  const existing = plan.ok ? existingStepTimer(timers.data?.items ?? [], plan.body.label) : null;
   // Projected, not the status the server last wrote: a timer that ran out
   // while this screen was open is finished, whatever the cached row says.
   const projected = existing ? projectTimer(existing, now) : null;
@@ -157,11 +155,13 @@ export default function CookMode() {
 
       {assistantOpen ? (
         <View style={{ position: 'absolute', top: 0, bottom: 0, start: 0, end: 0 }}>
-          <LiveAssistantScreen
-            initialMode="voice"
-            lockMode
-            onExit={() => setAssistantOpen(false)}
-          />
+          <Screen padded={false} edges={[]}>
+            <LiveAssistantScreen
+              initialMode="voice"
+              lockMode
+              onExit={() => setAssistantOpen(false)}
+            />
+          </Screen>
         </View>
       ) : null}
     </SafeAreaView>
