@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { RecognizedItem } from '@kitchen/contracts';
-import { PhotoUploadError, uploadPhotos } from '@kitchen/api-client';
+import { uploadPhotos } from '@kitchen/api-client';
 import { useLocale } from '../../lib/locale';
 import { useCamera } from '../../hooks/camera';
 import { usePresignUpload, useRecognize } from '../../hooks/capture';
@@ -93,16 +93,25 @@ export function PhotoCapture({
     setEmpty(false);
     setUploading(true);
     try {
-      const keys = await uploadPhotos(
-        shots.map((s) => s.blob),
-        (contentLength) =>
-          presign.mutateAsync({
-            contentType: 'image/jpeg',
-            contentLength,
-            purpose: 'inventory_photo',
-          }),
-        webPhotoUploader,
-      );
+      let keys: string[];
+      try {
+        keys = await uploadPhotos(
+          shots.map((s) => s.blob),
+          (contentLength) =>
+            presign.mutateAsync({
+              contentType: 'image/jpeg',
+              contentLength,
+              purpose: 'inventory_photo',
+            }),
+          webPhotoUploader,
+        );
+      } catch {
+        // Any upload-phase failure shows the upload error: an unreadable blob or
+        // a non-2xx PUT arrives as PhotoUploadError, but a rejected presign is a
+        // raw API/network error, so catch everything here rather than narrowing.
+        setFailed(true);
+        return;
+      }
       const session = await recognize.mutateAsync({
         photoKeys: keys,
         locationHint: location ?? undefined,
@@ -112,9 +121,10 @@ export function PhotoCapture({
         return;
       }
       onItems(session.items);
-    } catch (error) {
-      setFailed(error instanceof PhotoUploadError);
-      if (!(error instanceof PhotoUploadError)) throw error;
+    } catch {
+      // A recognition failure is surfaced by `recognize.isError` in the render.
+      // Swallow it here so a floating `void submit()` never becomes an unhandled
+      // rejection.
     } finally {
       submittingRef.current = false;
       setUploading(false);

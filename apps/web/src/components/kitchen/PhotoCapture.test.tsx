@@ -149,4 +149,49 @@ describe('PhotoCapture', () => {
     expect(await screen.findByText(/couldn't identify/i)).toBeInTheDocument();
     expect(onItems).not.toHaveBeenCalled();
   });
+
+  it('shows the upload error and adds nothing when presigning fails', async () => {
+    const base = call.getMockImplementation()!;
+    call.mockImplementation((route: string, opts?: { body?: unknown }) => {
+      // A rejected presign is a raw API/network error, not a PhotoUploadError;
+      // the user must still see the upload failure, not a silently reset button.
+      if (route === 'presignUpload') return Promise.reject(new Error('network down'));
+      return base(route, opts);
+    });
+    const { onItems } = renderCapture();
+    fireEvent.click(screen.getByText('Pantry'));
+    pickFiles(1);
+    fireEvent.click(await screen.findByRole('button', { name: /analyse/i }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't be uploaded/i);
+    expect(onItems).not.toHaveBeenCalled();
+  });
+
+  it('binds the camera stream to the video element once it is ready', async () => {
+    // The <video> is gated on state === 'ready', so it does not exist when the
+    // stream first arrives; binding must happen after the element mounts.
+    Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
+      configurable: true,
+      writable: true,
+      value: null,
+    });
+    const track = { stop: vi.fn() };
+    const stream = { getTracks: () => [track] } as unknown as MediaStream;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn(() => Promise.resolve(stream)) },
+    });
+    try {
+      renderCapture();
+      fireEvent.click(screen.getByText('Pantry'));
+      const video = (await waitFor(() => {
+        const el = document.querySelector('video');
+        if (!el) throw new Error('video not mounted yet');
+        return el;
+      })) as HTMLVideoElement;
+      await waitFor(() => expect(video.srcObject).toBe(stream));
+    } finally {
+      // @ts-expect-error - remove the stub between tests
+      delete navigator.mediaDevices;
+    }
+  });
 });

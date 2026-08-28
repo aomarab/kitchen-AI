@@ -35,7 +35,6 @@ export function useCamera(): {
         video: { facingMode: 'environment', width: { ideal: 1920 } },
       });
       streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
       setState('ready');
     } catch (error) {
       // Refusal is distinct from absence: one offers a retry, the other only a
@@ -45,6 +44,17 @@ export function useCamera(): {
       setState(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'unavailable');
     }
   }, []);
+
+  // Bind the stream once the <video> is actually mounted. `start()` cannot do
+  // this itself: the element is gated on `state === 'ready'`, so at the instant
+  // the stream arrives `videoRef.current` is still null. This effect runs after
+  // the 'ready' commit — when the element exists — and rebinds on every fresh
+  // acquisition, since each one passes through `requesting` back to `ready`.
+  useEffect(() => {
+    if (state === 'ready' && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [state]);
 
   // A leaked stream is nearly invisible — the webcam light stays on after the
   // user has moved to another tab or the review screen. Stop on unmount.
