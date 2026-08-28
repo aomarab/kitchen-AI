@@ -7,12 +7,7 @@ import { useLocale } from '../../lib/locale';
 import { uuid } from '../../lib/uuid';
 import { unitKey } from '../../lib/labels';
 import { useLocations } from '../../hooks/inventory';
-import {
-  useLookupBarcode,
-  useParseReceipt,
-  useRecognitionSession,
-  useRecognize,
-} from '../../hooks/capture';
+import { useLookupBarcode, useParseReceipt, useRecognitionSession } from '../../hooks/capture';
 import { useJob } from '../../hooks/jobs';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -21,6 +16,7 @@ import { Badge } from '../ui/Badge';
 import { LoadingState, ErrorState } from '../ui/states';
 import { CameraIcon, BarcodeIcon, ReceiptIcon, PlusIcon } from '../ui/icons';
 import { ReviewList } from './ReviewList';
+import { PhotoCapture } from './PhotoCapture';
 
 type Method = 'photo' | 'barcode' | 'receipt' | 'manual';
 const METHODS: Method[] = ['photo', 'barcode', 'receipt', 'manual'];
@@ -83,7 +79,15 @@ export function CaptureFlow() {
       <ReviewList
         items={items}
         locations={locationsQuery.data}
-        source={method === 'manual' ? 'manual' : method === 'barcode' ? 'barcode' : method === 'receipt' ? 'receipt' : 'photo'}
+        source={
+          method === 'manual'
+            ? 'manual'
+            : method === 'barcode'
+              ? 'barcode'
+              : method === 'receipt'
+                ? 'receipt'
+                : 'photo'
+        }
         onDone={setAdded}
       />
     );
@@ -91,14 +95,42 @@ export function CaptureFlow() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label={t('web.capture.chooseMethod')}>
-        <MethodTab method="photo" current={method} onSelect={setMethod} icon={<CameraIcon className="h-4 w-4" />} label={t('capture.photo')} />
-        <MethodTab method="barcode" current={method} onSelect={setMethod} icon={<BarcodeIcon className="h-4 w-4" />} label={t('capture.barcode')} />
-        <MethodTab method="receipt" current={method} onSelect={setMethod} icon={<ReceiptIcon className="h-4 w-4" />} label={t('capture.receipt')} />
-        <MethodTab method="manual" current={method} onSelect={setMethod} icon={<PlusIcon className="h-4 w-4" />} label={t('capture.manual')} />
+      <div
+        className="flex flex-wrap gap-2"
+        role="tablist"
+        aria-label={t('web.capture.chooseMethod')}
+      >
+        <MethodTab
+          method="photo"
+          current={method}
+          onSelect={setMethod}
+          icon={<CameraIcon className="h-4 w-4" />}
+          label={t('capture.photo')}
+        />
+        <MethodTab
+          method="barcode"
+          current={method}
+          onSelect={setMethod}
+          icon={<BarcodeIcon className="h-4 w-4" />}
+          label={t('capture.barcode')}
+        />
+        <MethodTab
+          method="receipt"
+          current={method}
+          onSelect={setMethod}
+          icon={<ReceiptIcon className="h-4 w-4" />}
+          label={t('capture.receipt')}
+        />
+        <MethodTab
+          method="manual"
+          current={method}
+          onSelect={setMethod}
+          icon={<PlusIcon className="h-4 w-4" />}
+          label={t('capture.manual')}
+        />
       </div>
 
-      {method === 'photo' ? <PhotoStep onItems={setItems} /> : null}
+      {method === 'photo' ? <PhotoCapture onItems={setItems} /> : null}
       {method === 'barcode' ? <BarcodeStep onItems={setItems} /> : null}
       {method === 'receipt' ? (
         <ReceiptStep
@@ -141,32 +173,6 @@ function MethodTab({
       {icon}
       {label}
     </button>
-  );
-}
-
-function PhotoStep({ onItems }: { onItems: (items: RecognizedItem[]) => void }) {
-  const { t } = useLocale();
-  const recognize = useRecognize();
-  return (
-    <Card className="flex flex-col items-center gap-4 border-dashed py-10 text-center">
-      <CameraIcon className="h-10 w-10 text-muted-foreground" />
-      <div>
-        <p className="font-medium">{t('web.capture.dropHint')}</p>
-        <p className="text-sm text-muted-foreground">{t('web.capture.simulateHint')}</p>
-      </div>
-      {recognize.isError ? <ErrorState error={recognize.error} /> : null}
-      <Button
-        onClick={() =>
-          recognize.mutate(
-            { photoKeys: ['mock/fridge-1.jpg', 'mock/fridge-2.jpg'], locationHint: 'fridge' },
-            { onSuccess: (session) => onItems(session.items) },
-          )
-        }
-        disabled={recognize.isPending}
-      >
-        {recognize.isPending ? t('capture.scanning') : t('web.capture.analyze')}
-      </Button>
-    </Card>
   );
 }
 
@@ -243,7 +249,9 @@ function ReceiptStep({
           {t('web.capture.receiptCta')}
         </Button>
       )}
-      {job?.status === 'failed' ? <ErrorState error={{ code: 'JOB_FAILED', messageKey: 'errors.JOB_FAILED' }} /> : null}
+      {job?.status === 'failed' ? (
+        <ErrorState error={{ code: 'JOB_FAILED', messageKey: 'errors.JOB_FAILED' }} />
+      ) : null}
     </Card>
   );
 }

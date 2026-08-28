@@ -11,7 +11,7 @@ import { PhotoCapture } from './PhotoCapture';
 // interceptor rejects it. Mock the api module so the component is tested through
 // real React/hook state, while the network layer is a fast stub.
 const { call } = vi.hoisted(() => ({
-  call: vi.fn<[string, { body?: unknown }?], Promise<unknown>>(),
+  call: vi.fn<(route: string, opts?: { body?: unknown }) => Promise<unknown>>(),
 }));
 vi.mock('../../lib/api', () => ({ api: { call } }));
 
@@ -27,7 +27,7 @@ beforeEach(() => {
 
   // Default implementation: presign returns sequential mock keys, recognize
   // returns the default seeded pantry session.
-  call.mockImplementation((route: string, opts?: { body?: unknown }) => {
+  call.mockImplementation((route: string) => {
     if (route === 'presignUpload') {
       const i = keyCounter++;
       // webPhotoUploader.put fetches this URL; use the MSW mock-upload handler.
