@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   BulkCreateInventoryRequest,
+  PresignUploadRequest,
   RecognizeRequest,
 } from '@kitchen/contracts';
 import { api } from '../lib/api';
@@ -35,11 +36,16 @@ export function useParseReceipt() {
   });
 }
 
+export function usePresignUpload() {
+  return useMutation({
+    mutationFn: (body: PresignUploadRequest) => api.call('presignUpload', { body }),
+  });
+}
+
 export function useBulkCreateInventory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: BulkCreateInventoryRequest) =>
-      api.call('bulkCreateInventory', { body }),
+    mutationFn: (body: BulkCreateInventoryRequest) => api.call('bulkCreateInventory', { body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory'] }),
   });
 }
