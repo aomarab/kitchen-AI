@@ -8,7 +8,7 @@ import type { PhotoUploader } from './upload';
  * The native half of `lib/upload.ts`; kept apart so the orchestration there is
  * unit-testable in a node environment.
  */
-export const expoPhotoUploader: PhotoUploader = {
+export const expoPhotoUploader: PhotoUploader<string> = {
   async size(uri) {
     const file = new File(uri);
     if (!file.exists) return null;
