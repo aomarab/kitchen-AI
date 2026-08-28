@@ -13,9 +13,9 @@ in `docs/store-listing/` and the `2026-08-10-publishing-compliance-design.md` sp
 
 ## A. Provision infrastructure (P0 — L0-infra)
 
-`docker-compose.yml` only stands up **local** Postgres/Redis/MinIO. There is no production
-Dockerfile yet, and the API runs in production as plain `node dist/main.js` (`apps/api/src/main.ts`,
-listening on `0.0.0.0:$API_PORT`). Provision managed equivalents:
+`docker-compose.yml` only stands up **local** Postgres/Redis/MinIO. The API ships a production
+image at `apps/api/Dockerfile` (built as `node dist/main.js`, `apps/api/src/main.ts`, listening on
+`0.0.0.0:$API_PORT`). Provision managed equivalents of the stateful services:
 
 - [ ] **PostgreSQL 17 with the `vector` (pgvector) extension** — embeddings depend on it. A managed
       Postgres (RDS/Cloud SQL/Neon/Supabase) with pgvector enabled. Capture the connection string as
@@ -25,9 +25,10 @@ listening on `0.0.0.0:$API_PORT`). Provision managed equivalents:
       (presigned direct upload), so the bucket must allow presigned PUT/GET from clients and CORS for
       the web origin. Capture `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`,
       `S3_SECRET_KEY`. Set `S3_FORCE_PATH_STYLE=false` for real AWS S3 (it is `true` for MinIO).
-- [ ] **A host/orchestrator for the API** — since there is no Dockerfile, either add one, or deploy
-      the built `apps/api/dist` on a Node ≥ 20 runtime (Fly/Render/ECS/a VM). It needs the repo-root
-      `.env` values in its environment. Follow-on: containerize for reproducible deploys.
+- [ ] **A host/orchestrator for the API** — build the image from `apps/api/Dockerfile`
+      (context = repo root, since the API imports the `@kitchen/*` workspace packages):
+      `docker build -f apps/api/Dockerfile -t <registry>/kitchen-api:<tag> .`, push it, and run it on
+      any container host (Fly/Render/ECS/a VM) with the production `.env` injected. Node ≥ 20.
 - [ ] **A host for the web app** — Next.js production (`apps/web`); Vercel or a Node host.
 
 ## B. Production secrets & environment (P0 — L0-env)
@@ -67,13 +68,18 @@ The whole system defaults to offline/free mocks. For a paid launch, turn on the 
 
 ## D. Migrate, seed, build, run the API (P0)
 
-From the repo root, against the production `DATABASE_URL`:
+Build the image once (`docker build -f apps/api/Dockerfile -t kitchen-api .`), then, against the
+production `DATABASE_URL`:
 
-- [ ] `pnpm db:migrate` — apply Drizzle migrations (`apps/api/drizzle/`).
-- [ ] `pnpm db:seed` — load the bilingual ingredient catalog (validate first with
-      `pnpm db:seed -- --dry-run`).
-- [ ] `pnpm build` — turbo builds every package's `dist` (API is `nest build`).
-- [ ] Start the API: `node apps/api/dist/main.js` under a process manager with the production env.
+- [ ] Apply migrations from the image (compiles to plain JS, no tsx needed):
+      `docker run --rm --env-file .env kitchen-api node dist/db/migrate.js` — creates the pgvector
+      extension and applies `apps/api/drizzle/`.
+- [ ] Seed the bilingual ingredient catalog:
+      `docker run --rm --env-file .env kitchen-api node dist/db/seed.js` (validate first by running
+      `pnpm db:seed -- --dry-run` locally).
+- [ ] Run the API: `docker run -d --env-file .env -p 3333:3333 kitchen-api` (default `CMD` is
+      `node dist/main.js`). A non-container host instead needs `pnpm build` then
+      `node apps/api/dist/main.js`.
 - [ ] Confirm the BullMQ worker path is live (receipt parse / plan generation are jobs, not
       requests — clients poll).
 
@@ -138,7 +144,6 @@ From the repo root, against the production `DATABASE_URL`:
 ## Accepted-for-launch (documented, not blockers)
 
 - **Mobile live assistant = free demo.** Spec-sanctioned (section F). Real RN transport is deferred.
-- **No production Dockerfile.** The API runs from built `dist`; containerize when convenient.
 
 ## Recommended follow-up hardening (nice-to-have, not blockers)
 

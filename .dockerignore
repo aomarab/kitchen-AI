@@ -1,0 +1,28 @@
+# Keep the build context small and free of stale artifacts and secrets.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/.expo
+**/coverage
+**/.vitest
+**/build
+
+# Secrets must never be baked into an image — inject env at run time instead.
+.env
+.env.*
+
+# Version control and tooling noise.
+.git
+.gitignore
+**/*.log
+**/.DS_Store
+
+# Large mobile native folders, irrelevant to the API image.
+apps/mobile/ios
+apps/mobile/android
+
+# Editor / CI / docs that the build does not need.
+.github
+.vscode
+.idea
