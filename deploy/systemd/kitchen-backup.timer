@@ -1,0 +1,12 @@
+# Runs kitchen-backup.service daily. Persistent=true catches up on a missed run
+# (e.g. the VM was off) at the next boot instead of skipping it.
+[Unit]
+Description=Run Kitchen AI PostgreSQL backup daily
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target
