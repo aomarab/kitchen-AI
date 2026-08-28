@@ -711,9 +711,24 @@ export const aiUsage = pgTable(
     inputTokens: integer('input_tokens').notNull().default(0),
     outputTokens: integer('output_tokens').notNull().default(0),
     costUsd: numeric('cost_usd', { precision: 10, scale: 6 }).notNull().default('0'),
+    /**
+     * The credit spend this call was part of, or null when nobody was charged
+     * a credit for it (media warming, background translation).
+     *
+     * Many usage rows share one spend group: a receipt scan is an extract plus
+     * a map, a plan is a generation plus the translations it triggers. That is
+     * why the correlation lives here rather than as a single `ai_usage_id` on
+     * the spend — one action is several calls, and one FK cannot hold them.
+     * Joined against `credit_ledger.spend_group_id`, it turns "is this action
+     * priced correctly?" into a query.
+     */
+    spendGroupId: uuid('spend_group_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('ai_usage_household_day_idx').on(table.householdId, table.createdAt)],
+  (table) => [
+    index('ai_usage_household_day_idx').on(table.householdId, table.createdAt),
+    index('ai_usage_spend_group_idx').on(table.spendGroupId),
+  ],
 );
 
 /* ------------------------------------------------------------------ */
@@ -724,8 +739,9 @@ export const aiUsage = pgTable(
  * Append-only record of every credit movement, mirroring `inventory_events`:
  * `household_credits` is materialised state, this is the truth that explains it.
  *
- * `aiUsageId` ties a spend to the vendor cost it caused, which is what lets
- * "are we covering costs?" be a query rather than a guess.
+ * `spendGroupId` ties a spend to the vendor cost it caused — the `ai_usage`
+ * rows carrying the same group — which is what lets "are we covering costs?"
+ * be a query rather than a guess.
  */
 export const creditLedger = pgTable(
   'credit_ledger',
@@ -744,11 +760,12 @@ export const creditLedger = pgTable(
     bucket: text('bucket').notNull(),
     /** The `CreditAction` for spends and reversals; null otherwise. */
     action: text('action'),
-    aiUsageId: uuid('ai_usage_id').references(() => aiUsage.id, {
-      onDelete: 'set null',
-    }),
     purchaseId: uuid('purchase_id'),
-    /** Groups the 1–2 ledger rows that belong to a single spend. Used by refund to reverse the exact rows from the right buckets. */
+    /**
+     * Groups the 1–2 ledger rows that belong to a single spend. Used by refund
+     * to reverse the exact rows from the right buckets, and by cost
+     * attribution to find the `ai_usage` rows this spend paid for.
+     */
     spendGroupId: uuid('spend_group_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

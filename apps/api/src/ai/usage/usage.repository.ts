@@ -11,6 +11,8 @@ export interface AiUsageRow {
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
+  /** The credit spend this call belongs to; absent when nobody was charged. */
+  spendGroupId?: string;
 }
 
 /**
@@ -57,6 +59,7 @@ export class DrizzleUsageRepository implements UsageRepository {
       inputTokens: row.inputTokens,
       outputTokens: row.outputTokens,
       costUsd: row.costUsd.toFixed(6),
+      ...(row.spendGroupId ? { spendGroupId: row.spendGroupId } : {}),
     });
   }
 }

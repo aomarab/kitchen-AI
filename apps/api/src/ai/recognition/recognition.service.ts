@@ -19,6 +19,7 @@ import { AiGateway } from '../ai-gateway.service.js';
 import { CATALOG_PORT } from '../ai.constants.js';
 import type { IngredientResolverPort } from '../catalog/ingredient-resolver.port.js';
 import { buildVisionPrompt } from '../prompts/vision.prompt.js';
+import { runInBillingContext } from '../usage/billing-context.js';
 import { suggestedExpiry, suggestedLocation } from './suggestions.js';
 
 export interface RecognizeInput {
@@ -46,6 +47,19 @@ export class RecognitionService {
   ) {}
 
   async recognize(input: RecognizeInput): Promise<RecognitionSession> {
+    // Minted before the work rather than by `spend` after it, so the vision
+    // calls below — and the catalog resolution they trigger — are recorded
+    // against the spend that is about to pay for them.
+    const spendGroupId = randomUUID();
+    return runInBillingContext({ spendGroupId, action: 'pantry.scan' }, () =>
+      this.recognizeInContext(input, spendGroupId),
+    );
+  }
+
+  private async recognizeInContext(
+    input: RecognizeInput,
+    spendGroupId: string,
+  ): Promise<RecognitionSession> {
     const { householdId, request } = input;
     await this.credits.assertCanAfford(householdId, 'pantry.scan');
     const locale = await this.localeFor(input.userId);
@@ -137,7 +151,7 @@ export class RecognitionService {
       })
       .returning({ id: recognitionSessions.id, createdAt: recognitionSessions.createdAt });
 
-    await this.credits.spend(householdId, 'pantry.scan');
+    await this.credits.spend(householdId, 'pantry.scan', { spendGroupId });
 
     return {
       id: row!.id,

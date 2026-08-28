@@ -5,6 +5,7 @@ import { AppError } from '../../common/errors.js';
 import { estimateCostUsd, type AiOperation, type ModelTier } from '../ai.constants.js';
 import type { TokenUsage } from '../providers/ai-provider.interface.js';
 import { USAGE_REPOSITORY } from '../ai.constants.js';
+import { currentBillingContext } from './billing-context.js';
 import type { UsageRepository } from './usage.repository.js';
 
 export interface RecordUsageInput {
@@ -44,6 +45,10 @@ export class BudgetService {
       input.usage.inputTokens,
       input.usage.outputTokens,
     );
+    // Read here rather than taken as a parameter: this is the one place every
+    // usage row is built, and the calls being attributed are made several
+    // layers below whoever paid. See `billing-context.ts`.
+    const billing = currentBillingContext();
     await this.repo.record({
       householdId: input.householdId,
       model: input.model,
@@ -51,6 +56,7 @@ export class BudgetService {
       inputTokens: input.usage.inputTokens,
       outputTokens: input.usage.outputTokens,
       costUsd: cost,
+      ...(billing ? { spendGroupId: billing.spendGroupId } : {}),
     });
     return cost;
   }
