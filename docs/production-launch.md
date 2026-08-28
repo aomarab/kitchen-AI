@@ -13,6 +13,9 @@ in `docs/store-listing/` and the `2026-08-10-publishing-compliance-design.md` sp
 
 ## A. Provision infrastructure (P0 — L0-infra)
 
+> Detailed, ordered provisioning checklist with per-resource env mapping and a
+> post-provision smoke sequence: **`docs/infra-provisioning.md`**. Summary below.
+
 `docker-compose.yml` only stands up **local** Postgres/Redis/MinIO. The API ships a production
 image at `apps/api/Dockerfile` (built as `node dist/main.js`, `apps/api/src/main.ts`, listening on
 `0.0.0.0:$API_PORT`). Provision managed equivalents of the stateful services:
@@ -142,10 +145,33 @@ production `DATABASE_URL`:
 
 ## I. Unblock CI (P0 — L0-ci)
 
-- [ ] GitHub Actions currently dies in ~3s with zero steps = a **billing block**, not a code fault.
-      Fix in the repo/org **Settings → Billing** (enable Actions / add a payment method). This is the
-      only P0 that is neither code nor infra — only an account owner can clear it. Once cleared,
-      `build → typecheck → lint → test` should run green (they pass locally).
+The workflow itself is complete and correct (`.github/workflows/ci.yml`): it
+provisions Postgres 17 + pgvector and Redis as services, sets a fully-mocked env
+(`AI_MOCK`/`PAYMENTS_MOCK`/`APPLE_REVOKE_MOCK` all true), then runs
+`install → build → typecheck → lint → migrate → seed → test` on Node 22. The
+failures are **not** a code fault — every run dies in 3–5s **before any step
+runs**, with this annotation:
+
+> _The job was not started because recent account payments have failed or your
+> spending limit needs to be increased. Please check the 'Billing & plans'
+> section in your settings._
+
+This is a **billing block on GitHub Actions minutes** (the repo is private, so
+minutes are metered). Actions is otherwise enabled
+(`repos/aomarab/kitchen-AI/actions/permissions` → `enabled: true`).
+
+- [ ] Clear it in **GitHub → Settings → Billing and plans** (personal or org that
+      owns the repo): add/repair a payment method and/or raise the Actions
+      spending limit. Only an account owner can do this.
+- [ ] **Alternative (free):** make the repo **public** — Actions minutes are free
+      for public repos — if that is acceptable for launch.
+- [ ] After clearing, re-run the latest: `gh run list` then
+      `gh run rerun <id>` (or push any commit). Expect the job to start and go
+      green — the same gate passes locally today.
+- [ ] Until then, the **local gate is the source of truth**: `pnpm build`,
+      `pnpm typecheck`, `pnpm lint`, `pnpm test` (with `pnpm infra:up && pnpm
+    db:migrate && pnpm db:seed` first, since API specs are integration tests).
+      PRs currently merge without a green check **by design**, not by accident.
 
 ## J. Pre-launch verification (P2 — L2-e2e)
 
