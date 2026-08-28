@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import type { RealtimeSession } from '@kitchen/contracts';
 import { OpenAiRealtimeAssistantClient } from './openai-realtime';
 import type { AssistantEvent } from './realtime-port';
@@ -23,11 +23,16 @@ const REAL_SESSION: RealtimeSession = {
 class FakeDataChannel {
   listeners: Record<string, ((event: unknown) => void)[]> = {};
   closed = false;
+  readyState = 'open';
+  sent: string[] = [];
   addEventListener(type: string, fn: (event: unknown) => void) {
     (this.listeners[type] ??= []).push(fn);
   }
   close() {
     this.closed = true;
+  }
+  send(data: string) {
+    this.sent.push(data);
   }
   emit(type: string, event: unknown) {
     for (const fn of this.listeners[type] ?? []) fn(event);
@@ -79,14 +84,16 @@ function makeTrack(): MediaStreamTrack {
   return track;
 }
 
-function makeStream(track: MediaStreamTrack): MediaStream {
+function makeStream(track: MediaStreamTrack, video?: MediaStreamTrack): MediaStream {
   // A camera track is present on purpose: without it, publishing `getTracks()`
   // instead of `getAudioTracks()` would be indistinguishable, and the check
-  // below could never fail.
-  const video = { kind: 'video', stop() {} } as unknown as MediaStreamTrack;
+  // below could never fail. `getVideoTracks` is what the frame sampler consults
+  // to decide there is a camera worth sampling.
+  const cam = video ?? ({ kind: 'video', stop() {} } as unknown as MediaStreamTrack);
   return {
     getAudioTracks: () => [track],
-    getTracks: () => [track, video],
+    getVideoTracks: () => [cam],
+    getTracks: () => [track, cam],
   } as unknown as MediaStream;
 }
 
@@ -94,6 +101,7 @@ function setup(
   options: {
     session?: RealtimeSession | (() => Promise<RealtimeSession>);
     sdpStatus?: number;
+    captureFrame?: (stream: MediaStream) => Promise<string | null>;
   } = {},
 ) {
   const pc = new FakePeerConnection();
@@ -109,9 +117,13 @@ function setup(
   const createSession: (locale: string) => Promise<RealtimeSession> =
     typeof sessionOption === 'function' ? sessionOption : async () => sessionOption ?? REAL_SESSION;
 
+  const frameUrl = 'data:image/jpeg;base64,FRAME';
+  const captureFrame = vi.fn(options.captureFrame ?? (async () => frameUrl));
+
   const client = new OpenAiRealtimeAssistantClient({
     createSession,
     createPeerConnection: () => pc as unknown as RTCPeerConnection,
+    captureFrame,
   });
 
   return {
@@ -120,6 +132,8 @@ function setup(
     events,
     track,
     fetchMock,
+    captureFrame,
+    frameUrl,
     start: () =>
       client.start({
         locale: 'en',
@@ -184,12 +198,16 @@ describe('OpenAiRealtimeAssistantClient', () => {
   });
 
   it('goes live only when the channel opens, not when start() returns', async () => {
-    const { pc, events, start } = setup();
+    const { pc, events, client, start } = setup();
     await start();
     expect(events.some((event) => event.type === 'status' && event.status === 'live')).toBe(false);
 
     pc.channel.emit('open', {});
     expect(events.some((event) => event.type === 'status' && event.status === 'live')).toBe(true);
+
+    // Opening the channel also starts the frame sampler; stop so its interval
+    // is cleared rather than left ticking past the test.
+    await client.stop();
   });
 
   it('surfaces a failed mint as an error and ends, rather than hanging', async () => {
@@ -444,5 +462,136 @@ describe('OpenAiRealtimeAssistantClient', () => {
     await start();
     await client.stop();
     await expect(client.stop()).resolves.toBeUndefined();
+  });
+
+  describe('frame sampling — giving the assistant sight', () => {
+    const FRAME_INTERVAL_MS = 2500;
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    function imageItems(channel: FakeDataChannel) {
+      return channel.sent
+        .map((raw) => JSON.parse(raw) as { type?: string; item?: unknown })
+        .filter((message) => message.type === 'conversation.item.create');
+    }
+
+    it('feeds the camera to the model as a realtime input_image once the channel opens', async () => {
+      const { pc, start, captureFrame, frameUrl } = setup();
+      await start();
+      pc.channel.emit('open', {});
+      // The interval is armed but has not ticked, so no frame yet.
+      expect(captureFrame).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS);
+
+      expect(captureFrame).toHaveBeenCalledTimes(1);
+      const items = imageItems(pc.channel);
+      expect(items).toHaveLength(1);
+      // Assert the payload the model actually receives, not just its shape: a
+      // user message carrying exactly the sampled frame, and — critically — no
+      // response.create, so a frame is silent context, not a narration prompt.
+      expect(items[0]!.item).toEqual({
+        type: 'message',
+        role: 'user',
+        content: [{ type: 'input_image', image_url: frameUrl }],
+      });
+      expect(pc.channel.sent.some((raw) => raw.includes('response.create'))).toBe(false);
+    });
+
+    it('samples nothing before the channel opens', async () => {
+      const { pc, start, captureFrame } = setup();
+      await start();
+
+      // No 'open' event: the handshake is not done, so the sampler must be idle.
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS * 3);
+
+      expect(captureFrame).not.toHaveBeenCalled();
+      expect(pc.channel.sent).toHaveLength(0);
+    });
+
+    it('stops sampling the camera after the session ends', async () => {
+      const { pc, client, start, captureFrame } = setup();
+      await start();
+      pc.channel.emit('open', {});
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS);
+      expect(captureFrame).toHaveBeenCalledTimes(1);
+
+      await client.stop();
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS * 4);
+
+      // Clearing the interval is the one thing that ends sampling; without it
+      // the camera would keep being drawn every 2.5s long after hang-up.
+      expect(captureFrame).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends no frame to the provider after the session ends', async () => {
+      const { pc, client, start } = setup();
+      await start();
+      pc.channel.emit('open', {});
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS);
+      const sentWhileLive = pc.channel.sent.length;
+
+      await client.stop();
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS * 4);
+
+      // The kitchen must not reach the provider once the user hung up.
+      expect(pc.channel.sent).toHaveLength(sentWhileLive);
+    });
+
+    it('sends nothing when a capture yields no frame', async () => {
+      const { pc, start, captureFrame } = setup({ captureFrame: async () => null });
+      await start();
+      pc.channel.emit('open', {});
+
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS);
+
+      expect(captureFrame).toHaveBeenCalledTimes(1);
+      // A failed capture is nothing at all, not an empty image item.
+      expect(pc.channel.sent).toHaveLength(0);
+    });
+
+    it('never runs two captures at once when one is slow', async () => {
+      let release!: (value: string | null) => void;
+      const slow = vi.fn(
+        () =>
+          new Promise<string | null>((resolve) => {
+            release = resolve;
+          }),
+      );
+      const { pc, start } = setup({ captureFrame: slow });
+      await start();
+      pc.channel.emit('open', {});
+
+      // Three intervals elapse while the first capture is still pending; the
+      // guard must hold the next tick back rather than interleave frames.
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS * 3);
+      expect(slow).toHaveBeenCalledTimes(1);
+
+      // Once the slow capture settles, the following tick is free to sample.
+      release('data:image/jpeg;base64,LATE');
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS);
+      expect(slow).toHaveBeenCalledTimes(2);
+      expect(imageItems(pc.channel)).toHaveLength(1);
+    });
+
+    it('wires no sight on the mocked-deployment path', async () => {
+      const { pc, client, start, captureFrame } = setup({
+        session: async () => ({ ...REAL_SESSION, isMock: true }),
+      });
+      await start();
+
+      await vi.advanceTimersByTimeAsync(FRAME_INTERVAL_MS * 3);
+
+      // The scripted adapter never opens the real channel, so the camera is
+      // never sampled — the demo badge is not paired with real vision.
+      expect(captureFrame).not.toHaveBeenCalled();
+      expect(pc.channel.sent).toHaveLength(0);
+      await client.stop();
+    });
   });
 });

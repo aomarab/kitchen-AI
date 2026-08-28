@@ -73,11 +73,78 @@ interface ServerEvent {
   error?: { message?: string };
 }
 
+/**
+ * How the assistant is given sight.
+ *
+ * The camera track is deliberately *not* published over RTP (see {@link
+ * OpenAiRealtimeAssistantClient.start}); instead a still is sampled every
+ * {@link FRAME_INTERVAL_MS} and sent over the data channel as a realtime image
+ * item. Stills over a video stream is a cost decision: a continuous feed bills
+ * every frame, while a bounded cadence of downscaled snapshots is tunable and
+ * keeps the user's kitchen from being streamed live.
+ */
+const FRAME_INTERVAL_MS = 2500;
+/** The longer edge each sampled frame is downscaled to before encoding. */
+const FRAME_MAX_EDGE_PX = 512;
+/** JPEG quality for a sampled frame — low, because it is context, not a photo. */
+const FRAME_JPEG_QUALITY = 0.5;
+
+/**
+ * Draw the live stream to a downscaled JPEG data URL, or `null` if it cannot.
+ *
+ * Stateful on purpose: one hidden `<video>` and `<canvas>` are reused across
+ * the whole session rather than recreated every {@link FRAME_INTERVAL_MS}. Like
+ * the capture pipeline's `encodeResized`, it touches `play()`, canvas and
+ * `toDataURL`, none of which jsdom implements — so it is covered by the manual
+ * hardware gate, and tests inject their own `captureFrame`.
+ */
+function createFrameCapturer(): (stream: MediaStream) => Promise<string | null> {
+  let video: HTMLVideoElement | null = null;
+  let canvas: HTMLCanvasElement | null = null;
+
+  return async (stream) => {
+    try {
+      if (!video) {
+        video = document.createElement('video');
+        video.muted = true;
+        video.playsInline = true;
+      }
+      if (video.srcObject !== stream) {
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+      }
+      // No dimensions yet means the first frame has not decoded; a draw now
+      // would encode a blank canvas, which is worse than skipping this tick.
+      if (!video.videoWidth || !video.videoHeight) return null;
+
+      const scale = Math.min(1, FRAME_MAX_EDGE_PX / Math.max(video.videoWidth, video.videoHeight));
+      const width = Math.round(video.videoWidth * scale);
+      const height = Math.round(video.videoHeight * scale);
+
+      canvas ??= document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.drawImage(video, 0, 0, width, height);
+      return canvas.toDataURL('image/jpeg', FRAME_JPEG_QUALITY);
+    } catch {
+      return null;
+    }
+  };
+}
+
 export interface OpenAiRealtimeOptions {
   /** Mints the ephemeral credential. Injected so tests need no network. */
   createSession: (locale: string) => Promise<RealtimeSession>;
   /** Overridable for tests; defaults to the browser's RTCPeerConnection. */
   createPeerConnection?: () => RTCPeerConnection;
+  /**
+   * Produces one downscaled JPEG data URL from the live stream, or `null` when
+   * a frame cannot be made. Injected so jsdom tests need no canvas; defaults to
+   * {@link createFrameCapturer}.
+   */
+  captureFrame?: (stream: MediaStream) => Promise<string | null>;
 }
 
 export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
@@ -111,14 +178,24 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
    */
   private emit: ((event: AssistantEvent) => void) | null = null;
   private speaking = false;
+  /** The live stream, kept so the frame sampler can draw from it. */
+  private stream: MediaStream | null = null;
+  /** Sends one downscaled still to the model on each tick while live. */
+  private frameTimer: ReturnType<typeof setInterval> | null = null;
+  /** True while a capture is awaiting, so a slow encode cannot overlap itself. */
+  private capturing = false;
+  private readonly captureFrame: (stream: MediaStream) => Promise<string | null>;
 
-  constructor(private readonly options: OpenAiRealtimeOptions) {}
+  constructor(private readonly options: OpenAiRealtimeOptions) {
+    this.captureFrame = options.captureFrame ?? createFrameCapturer();
+  }
 
   async start({ locale, stream, onEvent }: StartAssistantOptions): Promise<void> {
     if (this.pc || this.mock) return;
     this.stopped = false;
     this.emit = onEvent;
     this.speaking = false;
+    this.stream = stream;
     onEvent({ type: 'status', status: 'connecting' });
 
     let session: RealtimeSession;
@@ -153,9 +230,10 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
       this.audio.srcObject = event.streams[0] ?? null;
     };
 
-    // Send only audio. The camera track is deliberately not published: this
-    // model is speech-to-speech, and adding a video track would ship the user's
-    // kitchen to the provider for no benefit they were told about.
+    // Publish only audio over RTP. The camera track is deliberately not added:
+    // sight is given as periodic downscaled stills over the data channel
+    // instead (see the `open` handler below), which is cheaper than a live
+    // video feed and keeps the kitchen from being streamed continuously.
     for (const track of stream?.getAudioTracks() ?? []) {
       pc.addTrack(track, stream!);
     }
@@ -166,7 +244,13 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
       this.handleServerEvent(event.data, onEvent);
     });
     channel.addEventListener('open', () => {
-      if (!this.stopped) onEvent({ type: 'status', status: 'live' });
+      if (this.stopped) return;
+      onEvent({ type: 'status', status: 'live' });
+      // Sight begins when the channel can carry a message, and only if there is
+      // a camera to sample. A stop() before this clears the timer again.
+      if ((stream?.getVideoTracks().length ?? 0) > 0) {
+        this.frameTimer = setInterval(() => void this.sendFrame(), FRAME_INTERVAL_MS);
+      }
     });
 
     try {
@@ -190,6 +274,50 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
       onEvent({ type: 'error', code: 'assistant.connectFailed' });
       await this.stop();
       onEvent({ type: 'status', status: 'ended' });
+    }
+  }
+
+  /**
+   * Sample one frame and hand it to the model as conversation context.
+   *
+   * It is added as a user message with `input_image` content and **no**
+   * `response.create` follows: the frame is context the model draws on when the
+   * user next speaks (server VAD drives responses), not a prompt to narrate
+   * every 2.5 seconds. The write to inventory still goes through `report_items`
+   * → confirm, so nothing here touches the ledger.
+   *
+   * The guards are deliberately minimal and single-purpose, so each is
+   * falsifiable rather than masked by another:
+   *
+   * - `capturing` is the only thing serialising captures — a slow encode must
+   *   not let the next tick start a second one and interleave frames.
+   * - the send is `channel?.send`, so a stop() that closed the channel
+   *   mid-capture drops the in-flight frame with no throw and no leak. This is
+   *   what keeps the kitchen from being sent after the user hung up, so it is
+   *   *not* duplicated with a `stopped` check that would make either redundant.
+   *
+   * Sampling itself is stopped by clearing the interval in {@link stop}, which
+   * is why `stop()` leaves `this.stream` in place: the cleared timer is the one
+   * thing that ends the capture work, and nothing else should also end it.
+   */
+  private async sendFrame(): Promise<void> {
+    if (this.capturing || !this.stream) return;
+    this.capturing = true;
+    try {
+      const imageUrl = await this.captureFrame(this.stream);
+      if (!imageUrl) return;
+      this.channel?.send(
+        JSON.stringify({
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'user',
+            content: [{ type: 'input_image', image_url: imageUrl }],
+          },
+        }),
+      );
+    } finally {
+      this.capturing = false;
     }
   }
 
@@ -276,6 +404,16 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
   async stop(): Promise<void> {
     if (this.stopped) return;
     this.stopped = true;
+
+    // Stop sampling before the channel closes. Clearing the interval is the one
+    // thing that ends the capture work; `this.stream` is deliberately left in
+    // place (it is replaced on the next start) so nothing else silently ends
+    // sampling too. A frame that was mid-capture is dropped by the closed
+    // channel below, so no frame is sent after the user hung up.
+    if (this.frameTimer) {
+      clearInterval(this.frameTimer);
+      this.frameTimer = null;
+    }
 
     // Before anything is torn down: the voice has stopped, by definition.
     if (this.speaking) {

@@ -608,6 +608,48 @@ const CASES = [
     to: '',
   },
   {
+    // Sight is wired on the channel opening, not on start(): before the
+    // handshake there is nothing to carry a frame. Drop the interval and the
+    // model is told it can see and then shown nothing.
+    name: 'the frame sampler is never started when the channel opens',
+    file: WEB,
+    spec: WEB_SPEC,
+    check: 'feeds the camera to the model as a realtime input_image once the channel opens',
+    from: 'this.frameTimer = setInterval(() => void this.sendFrame(), FRAME_INTERVAL_MS);',
+    to: '',
+  },
+  {
+    // Nulling the handle does not stop the timer — only clearInterval does.
+    // Without it the camera keeps being drawn every 2.5s long after hang-up,
+    // which the call-count assertion, not the send guard, is what catches.
+    name: 'stop() drops the timer handle but never clears the interval',
+    file: WEB,
+    spec: WEB_SPEC,
+    check: 'stops sampling the camera after the session ends',
+    from: '      clearInterval(this.frameTimer);\n      this.frameTimer = null;',
+    to: '      this.frameTimer = null;',
+  },
+  {
+    // The capture is async; without the in-flight guard a slow encode lets the
+    // next tick start a second one and the model receives interleaved frames.
+    name: 'a slow capture is allowed to overlap the next tick',
+    file: WEB,
+    spec: WEB_SPEC,
+    check: 'never runs two captures at once when one is slow',
+    from: 'if (this.capturing || !this.stream) return;',
+    to: 'if (!this.stream) return;',
+  },
+  {
+    // A capture that yields nothing is nothing at all: send `null` as the image
+    // and the model gets an empty input_image item instead of being skipped.
+    name: 'a failed capture is sent as an empty image item',
+    file: WEB,
+    spec: WEB_SPEC,
+    check: 'sends nothing when a capture yields no frame',
+    from: 'if (!imageUrl) return;',
+    to: '',
+  },
+  {
     // The mock is what everyone develops against. If its beats coincide with
     // the caption rather than bracketing it, the demo teaches the wrong shape
     // and the difference only shows up against the real provider.
