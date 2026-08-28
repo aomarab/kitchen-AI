@@ -36,9 +36,23 @@ describe('uploadPhotos', () => {
   });
 
   it('throws unreadable when a photo has no size', async () => {
+    const presign = presigner();
     await expect(
-      uploadPhotos(['a.jpg'], presigner(), uploader({ size: async () => null })),
+      uploadPhotos(['a.jpg'], presign, uploader({ size: async () => null })),
     ).rejects.toMatchObject({ reason: 'unreadable' });
+    expect(presign).not.toHaveBeenCalled();
+  });
+
+  it('forwards the presigned headers with the PUT', async () => {
+    const put = vi.fn<PhotoUploader<string>['put']>(async () => 200);
+    await uploadPhotos(['a.jpg'], presigner(), uploader({ put }));
+    expect(put.mock.calls[0]?.[2]).toMatchObject({ 'Content-Type': 'image/jpeg' });
+  });
+
+  it('never invents a placeholder key for an empty selection', async () => {
+    const presign = presigner();
+    await expect(uploadPhotos([], presign, uploader())).resolves.toEqual([]);
+    expect(presign).not.toHaveBeenCalled();
   });
 
   it('stops and throws rejected when a PUT fails', async () => {

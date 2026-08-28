@@ -42,7 +42,11 @@ export async function uploadPhotos<T>(
 
   for (const photo of photos) {
     const size = await uploader.size(photo);
-    if (size == null || size <= 0) throw new PhotoUploadError('unreadable', String(photo));
+    if (size == null || size <= 0)
+      throw new PhotoUploadError(
+        'unreadable',
+        typeof photo === 'string' ? photo : JSON.stringify(photo),
+      );
 
     const target = await presign(size);
     const status = await uploader.put(photo, target.uploadUrl, target.headers);
