@@ -1,0 +1,25 @@
+# Copy this file to terraform.tfvars and fill it in. terraform.tfvars is
+# gitignored because it holds your account-specific OCIDs.
+
+# Your home region (console Profile menu shows it), e.g. me-jeddah-1, us-ashburn-1.
+region = "us-ashburn-1"
+
+# Both OCIDs come from the console. For a personal account the compartment is the
+# root compartment, whose OCID is the same as the tenancy OCID.
+tenancy_ocid     = "ocid1.tenancy.oc1..aaaaaaaaEXAMPLE"
+compartment_ocid = "ocid1.tenancy.oc1..aaaaaaaaEXAMPLE"
+
+# Authenticate first with:  oci session authenticate --region <region>
+# It opens a browser, you log in, and writes this profile into ~/.oci/config.
+config_file_profile = "DEFAULT"
+
+# The public key generated for this VM.
+ssh_public_key_path = "~/.ssh/kitchen-ai-oracle.pub"
+
+# --- Optional overrides (defaults are Always-Free-safe) ---
+# instance_shape      = "VM.Standard.A1.Flex"   # or "VM.Standard.E2.1.Micro" (AMD)
+# instance_ocpus      = 2                         # A1.Flex only
+# instance_memory_gbs = 12                        # A1.Flex only
+# boot_volume_gbs     = 50
+# availability_domain_index = 0                   # bump to 1/2 on A1 capacity errors
+# ssh_ingress_cidr    = "0.0.0.0/0"               # tighten to <your-ip>/32
