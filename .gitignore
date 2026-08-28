@@ -43,3 +43,12 @@ apps/mobile/android/local.properties
 # Local DB backups (deploy/backup.sh)
 /backups/
 deploy/backups/
+
+# Terraform (deploy/oci) — local state and account-specific vars
+deploy/oci/.terraform/
+deploy/oci/.terraform.lock.hcl
+deploy/oci/*.tfstate
+deploy/oci/*.tfstate.*
+deploy/oci/*.tfvars
+!deploy/oci/*.tfvars.example
+deploy/oci/crash.log
