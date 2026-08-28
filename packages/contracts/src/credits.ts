@@ -37,12 +37,20 @@ export const CREDIT_COSTS: Record<CreditAction, number> = {
   // Charged when a realtime client secret is minted, because that is the only
   // moment the server sees. Realtime audio is billed by the provider per minute
   // of conversation, which we never observe, so unlike every other action here
-  // this price is an *estimate of a typical session* rather than a measured
-  // cost: ~2 minutes of speech-to-speech at gpt-realtime rates. Two consequences
-  // are deliberate and must not be quietly "fixed":
+  // this price cannot be read back from the `ai_usage` ledger — it is derived
+  // from a modelled session instead. That model is arithmetic, not prose: see
+  // `apps/api/src/ai/realtime-cost.ts` and the tests beside it, which fail if
+  // the rates move far enough to invalidate any conclusion below.
+  //
+  // As modelled: a 2-minute exchange with the assistant speaking half of it
+  // costs ~$0.0996, which is 22.1 credits at the table's $0.0045 basis, rounded
+  // up to 25. Two consequences are deliberate and must not be quietly "fixed":
   //   - a long session is under-charged, which is why the client secret's TTL is
   //     at the provider floor (see REALTIME_SECRET_TTL_SEC) — one mint buys one
-  //     connection, and staying longer is the only thing we cannot meter;
+  //     connection, and staying longer is the only thing we cannot meter. The
+  //     charge stops covering its own cost basis at ~2.3 minutes and only loses
+  //     money outright past ~8.4, so the exposure is bounded by how rare a
+  //     nine-minute conversation with a fridge is, not by an enforcement we have;
   //   - a session abandoned after five seconds is over-charged, so the mint is
   //     refunded when the connection never opens.
   'assistant.session': 25,
