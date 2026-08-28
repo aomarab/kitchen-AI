@@ -27,11 +27,45 @@ sizes, with vision on Gemini per the model-routing design:
 | Daily plan (3 recipes)           | $0.018    | 4×       |
 | Weekly plan (21 recipes)         | $0.085    | 19×      |
 | Monthly plan (60 recipes)        | $0.231    | **51×**  |
+| Live assistant session (2 min)   | $0.0996   | 22×      |
 
 The **51× spread between the cheapest and most expensive action is the single fact that shapes this
 design.** Any scheme that charges one unit per action is priced by its most expensive action or it
 loses money, and the absolute values are estimates until the live cost gate in the model-routing
 spec is run — but the _ratio_ is structural and does not depend on those estimates being right.
+
+### 1.2 The live assistant is the one cost we cannot measure
+
+Every row above except the last is a batch call through `AiGateway`, so its real cost lands in the
+`ai_usage` ledger and the estimate can be checked against reality. The live assistant cannot be:
+audio flows over a WebRTC connection between the browser and the provider, and the server's only
+involvement is minting the ephemeral client secret. We are billed for conversation we never see.
+
+So its price is **derived from a modelled session** rather than measured, and the model is committed
+as arithmetic in `apps/api/src/ai/realtime-cost.ts` — not as a comment — so that a rate change fails
+a named test instead of silently moving the margin.
+
+The model's load-bearing asymmetry: output audio is tokenized at twice the rate of input (one token
+per 50ms against one per 100ms) **and** priced at twice as much per token, so a minute of the
+assistant talking costs almost exactly **4×** a minute of the user talking. A duration-only estimate
+would be wrong by up to 2× in either direction depending on who did the talking. Replayed context
+(instructions plus the pantry brief, re-read each turn) is charged at the cached rate and is under
+5% of the total — modelled anyway, so that it is visibly negligible rather than quietly omitted.
+
+| Quantity                              | Value        | Meaning                                           |
+| ------------------------------------- | ------------ | ------------------------------------------------- |
+| Modelled session (2 min, 50/50 split) | **$0.0996**  | What the priced-for conversation costs            |
+| Derived price                         | 22.1 credits | At the $0.0045 basis; rounded up to the listed 25 |
+| Covers its cost basis until           | **2.3 min**  | The duration 25 credits was priced for            |
+| Loses money outright past             | **8.4 min**  | Where cost exceeds what those credits sold for    |
+| Margin on the modelled session        | 76%          | Against pack revenue, before the store's cut      |
+
+Session _duration_ is unbounded and cannot be bounded by us (see §5 of the kitchen companion design:
+the client secret's TTL bounds how many connections one mint authorises, not how long one lives).
+The honest statement of the exposure is therefore not "25 is correct" but **"25 is correct for 2.3
+minutes and safe to 8.4"** — the gap between those two numbers is the entire tolerance for being
+wrong about typical session length, and it is asserted in `realtime-cost.spec.ts` so it cannot
+quietly shrink.
 
 ## 2. Decisions
 

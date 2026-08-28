@@ -35,6 +35,8 @@ const MOBILE_CAPTURE = 'apps/mobile/src/lib/capture.ts';
 const MOCK = 'apps/web/src/lib/assistant/mock-realtime.ts';
 const CONNECTIVITY = 'apps/web/src/stores/connectivity.ts';
 const SCREEN_VIEW = 'apps/web/src/components/screen/SmartScreenView.tsx';
+const REALTIME_COST = 'apps/api/src/ai/realtime-cost.ts';
+const CREDITS = 'packages/contracts/src/credits.ts';
 
 const WEB_SPEC = ['@kitchen/web', 'src/lib/assistant/openai-realtime.test.ts'];
 const API_SPEC = ['@kitchen/api', 'src/ai/assistant/assistant.service.spec.ts'];
@@ -57,6 +59,7 @@ const MOBILE_CAPTURE_SPEC = ['@kitchen/mobile', 'src/lib/capture.spec.ts'];
 const MOCK_SPEC = ['@kitchen/web', 'src/lib/assistant/mock-realtime.test.ts'];
 const CONNECTIVITY_SPEC = ['@kitchen/web', 'src/stores/connectivity.test.ts'];
 const SCREEN_VIEW_SPEC = ['@kitchen/web', 'src/components/screen/SmartScreenView.test.tsx'];
+const REALTIME_COST_SPEC = ['@kitchen/api', 'src/ai/realtime-cost.spec.ts'];
 
 const CASES = [
   {
@@ -633,6 +636,70 @@ const CASES = [
     check: 'says nothing about a connection it only believes in',
     from: '        <WifiIcon />\n      </span>',
     to: "        <WifiIcon />\n        {t('web.screen.connectionOnline')}\n      </span>",
+  },
+  {
+    // The asymmetry is the whole model: output audio is twice the tokens at
+    // twice the price. Treating the two directions alike halves the estimate of
+    // a session the assistant does most of the talking in.
+    name: 'output audio is priced as if it were input audio',
+    file: REALTIME_COST,
+    spec: REALTIME_COST_SPEC,
+    check: 'charges four times as much for the assistant talking as for the user',
+    from: '  output: 64,',
+    to: '  output: 32,',
+  },
+  {
+    // The same asymmetry from the tokenization side rather than the rate side.
+    // A model with the rates right and the cadence wrong still under-estimates
+    // by 2x, so both halves need their own defect.
+    name: 'output audio is tokenized at the input cadence',
+    file: REALTIME_COST,
+    spec: REALTIME_COST_SPEC,
+    check: 'charges four times as much for the assistant talking as for the user',
+    from: '  output: 1200,',
+    to: '  output: 600,',
+  },
+  {
+    // The break-even numbers read the slope from a single evaluation, which is
+    // only valid while the estimate is linear. A fixed per-session term would
+    // make every duration conclusion in the spec quietly wrong.
+    name: 'the estimate gains a fixed cost the break-even maths cannot see',
+    file: REALTIME_COST,
+    spec: REALTIME_COST_SPEC,
+    check: 'scales linearly, so a session has a well-defined per-minute cost',
+    from: '  return (\n    (outputTokens * REALTIME_AUDIO_USD_PER_MTOK.output +',
+    to: '  return (\n    0.01 +\n    (outputTokens * REALTIME_AUDIO_USD_PER_MTOK.output +',
+  },
+  {
+    // Cached context is ~80x cheaper than fresh input. Billing the replayed
+    // pantry brief at the fresh rate turns a rounding error into the dominant
+    // term and inflates every price derived from it.
+    name: 'replayed context is billed as fresh input rather than cached',
+    file: REALTIME_COST,
+    spec: REALTIME_COST_SPEC,
+    check: 'replayed context is a rounding error next to the audio',
+    from: 'cachedTokens * REALTIME_AUDIO_USD_PER_MTOK.cachedInput',
+    to: 'cachedTokens * REALTIME_AUDIO_USD_PER_MTOK.input',
+  },
+  {
+    // The price and the model must move together. A price edited on its own is
+    // exactly the failure this file exists to make loud.
+    name: 'the session price drifts away from the cost model it was derived from',
+    file: CREDITS,
+    spec: REALTIME_COST_SPEC,
+    check: 'the price follows the cost model, with a stated margin rather than an arbitrary one',
+    from: "  'assistant.session': 25,",
+    to: "  'assistant.session': 8,",
+  },
+  {
+    // Credits sold below their own cost basis would make every price in the
+    // table a loss and the break-even duration meaningless.
+    name: 'a credit sells for less than the basis the table is denominated in',
+    file: CREDITS,
+    spec: REALTIME_COST_SPEC,
+    check: 'sells credits for more than they cost',
+    from: "{ productId: 'credits_300', credits: 300, priceUsd: 4.99 },",
+    to: "{ productId: 'credits_300', credits: 300, priceUsd: 0.99 },",
   },
 ];
 
