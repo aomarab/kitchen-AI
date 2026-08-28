@@ -116,6 +116,26 @@ const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
       message: 'must list allowed origins explicitly in production',
     });
   }
+  // The JWT secret signs every access token, so in production a guessable or
+  // low-entropy value is a full authentication bypass — anyone who knows it can
+  // forge a token for any user. Development keeps the 16-char floor for a
+  // frictionless local boot, but production refuses the shipped placeholder and
+  // demands at least 32 characters.
+  if (env.NODE_ENV === 'production') {
+    if (env.JWT_SECRET === 'change-me-in-production') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_SECRET'],
+        message: 'must not be the example placeholder in production',
+      });
+    } else if (env.JWT_SECRET.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_SECRET'],
+        message: 'must be at least 32 characters in production',
+      });
+    }
+  }
   if (env.NODE_ENV === 'production' && !env.AI_MOCK && env.OPENAI_API_KEY.trim() === '') {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

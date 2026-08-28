@@ -43,6 +43,22 @@ describe('environment contract', () => {
     expect(corsOrigins(env)).toEqual(['https://kitchen.app', 'https://www.kitchen.app']);
   });
 
+  it('refuses to boot in production with the example placeholder JWT secret', () => {
+    // The example ships `change-me-in-production`; booting with it in production
+    // would let anyone forge an access token for any user.
+    expect(() => loadEnv({ ...prodBase, JWT_SECRET: 'change-me-in-production' })).toThrow(
+      /JWT_SECRET/,
+    );
+  });
+
+  it('refuses to boot in production with a JWT secret under 32 characters', () => {
+    expect(() => loadEnv({ ...prodBase, JWT_SECRET: 'x'.repeat(16) })).toThrow(/JWT_SECRET/);
+  });
+
+  it('still accepts a short JWT secret in development so local boots need no ceremony', () => {
+    expect(loadEnv({ ...base, JWT_SECRET: 'x'.repeat(16) }).JWT_SECRET).toHaveLength(16);
+  });
+
   it('refuses to boot in production with live AI but no OpenAI key', () => {
     expect(() => loadEnv({ ...prodBase, AI_MOCK: 'false' })).toThrow(/OPENAI_API_KEY/);
   });
