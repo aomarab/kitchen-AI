@@ -278,6 +278,45 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
   }
 
   /**
+   * Send a typed message over the same session that carries live voice — the
+   * text half of the ChatGPT-voice model.
+   *
+   * When the deployment is mocked the scripted adapter owns the conversation,
+   * so the call is forwarded to it. On a live session the message is added as a
+   * user turn and a response is explicitly requested: unlike a sampled frame (a
+   * passive piece of context), a typed message *is* a prompt, so `response.create`
+   * follows it. The user's own words are echoed into the transcript locally,
+   * because a typed item — unlike spoken audio — produces no input-transcription
+   * event to bounce them back. Blank text is dropped, and a send after stop()
+   * closed the channel is a no-op rather than a throw, mirroring the sampler.
+   */
+  sendText(text: string): void {
+    if (this.mock) {
+      this.mock.sendText(text);
+      return;
+    }
+    if (this.stopped) return;
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    this.emit?.({
+      type: 'transcript',
+      turn: { id: `u-typed-${this.detectionSeq++}`, role: 'user', text: trimmed },
+    });
+    this.channel?.send(
+      JSON.stringify({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{ type: 'input_text', text: trimmed }],
+        },
+      }),
+    );
+    this.channel?.send(JSON.stringify({ type: 'response.create' }));
+  }
+
+  /**
    * Sample one frame and hand it to the model as conversation context.
    *
    * It is added as a user message with `input_image` content and **no**

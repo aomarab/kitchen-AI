@@ -5,6 +5,7 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { formatRemaining, projectTimer, type CookingTimer } from '@kitchen/contracts';
 import { AppText, Button, Badge, LoadingState } from '../../../components';
+import { LiveAssistantScreen } from '../../../features/assistant/LiveAssistantScreen';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe } from '../../../hooks/recipe';
 import { useCreateTimer, useTimers } from '../../../hooks/timers';
@@ -39,6 +40,10 @@ export default function CookMode() {
   const { colors } = useTheme();
   const recipe = useRecipe(id ?? null, locale);
   const [step, setStep] = useState(0);
+  // A hands-free voice assistant, opened over the step so a cook with messy
+  // hands can ask a question without leaving the recipe. Locked to voice: there
+  // is no camera or typing to reach for mid-cook.
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   if (recipe.isLoading || !recipe.data) {
     return (
@@ -82,6 +87,16 @@ export default function CookMode() {
             variant="ghostInverse"
             fullWidth={false}
             onPress={() => router.back()}
+          />
+        </View>
+
+        <View style={{ alignItems: 'flex-start' }}>
+          <Button
+            title={t('mobile.assistant.cookAsk')}
+            icon="sparkles"
+            variant="secondaryInverse"
+            fullWidth={false}
+            onPress={() => setAssistantOpen(true)}
           />
         </View>
 
@@ -139,6 +154,16 @@ export default function CookMode() {
           )}
         </View>
       </View>
+
+      {assistantOpen ? (
+        <View style={{ position: 'absolute', top: 0, bottom: 0, start: 0, end: 0 }}>
+          <LiveAssistantScreen
+            initialMode="voice"
+            lockMode
+            onExit={() => setAssistantOpen(false)}
+          />
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }

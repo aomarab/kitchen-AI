@@ -464,6 +464,87 @@ describe('OpenAiRealtimeAssistantClient', () => {
     await expect(client.stop()).resolves.toBeUndefined();
   });
 
+  describe('sendText — the typed half of the conversation', () => {
+    function sentTypes(sent: string[]): string[] {
+      return sent.map((raw) => (JSON.parse(raw) as { type: string }).type);
+    }
+
+    it('echoes the user turn, adds a text item, then asks for a response', async () => {
+      const { client, pc, events, start } = setup();
+      await start();
+      pc.channel.emit('open', {});
+      const sentBefore = pc.channel.sent.length;
+
+      client.sendText('  what should I cook?  ');
+
+      // The user's own words appear immediately — a typed item produces no
+      // input-transcription event, so the client must echo it itself.
+      const echoed = events.find(
+        (e) => e.type === 'transcript' && e.turn.role === 'user',
+      );
+      expect(echoed?.type === 'transcript' && echoed.turn.text).toBe('what should I cook?');
+
+      // A typed message is a prompt: the item is created, then a response is
+      // explicitly requested (unlike a passively-sampled frame).
+      const sent = pc.channel.sent.slice(sentBefore);
+      expect(sentTypes(sent)).toEqual(['conversation.item.create', 'response.create']);
+      const item = JSON.parse(sent[0]!) as {
+        item: { role: string; content: { type: string; text: string }[] };
+      };
+      expect(item.item.role).toBe('user');
+      expect(item.item.content[0]).toEqual({ type: 'input_text', text: 'what should I cook?' });
+
+      await client.stop();
+    });
+
+    it('drops blank text without touching the channel', async () => {
+      const { client, pc, start } = setup();
+      await start();
+      pc.channel.emit('open', {});
+      const sentBefore = pc.channel.sent.length;
+
+      client.sendText('   ');
+
+      expect(pc.channel.sent).toHaveLength(sentBefore);
+      await client.stop();
+    });
+
+    it('sends nothing after the session has ended', async () => {
+      const { client, pc, start } = setup();
+      await start();
+      pc.channel.emit('open', {});
+      await client.stop();
+      const sentBefore = pc.channel.sent.length;
+
+      client.sendText('are you there?');
+
+      expect(pc.channel.sent).toHaveLength(sentBefore);
+    });
+
+    it('forwards to the scripted adapter when the deployment is mocked', async () => {
+      vi.useFakeTimers();
+      try {
+        const { client, events, start } = setup({
+          session: async () => ({ ...REAL_SESSION, isMock: true }),
+        });
+        await start();
+        vi.advanceTimersByTime(2000);
+        const before = events.length;
+
+        client.sendText('hello there');
+        // The mock echoes the user turn synchronously, proving the call reached it.
+        const echoed = events
+          .slice(before)
+          .find((e) => e.type === 'transcript' && e.turn.role === 'user');
+        expect(echoed?.type === 'transcript' && echoed.turn.text).toBe('hello there');
+
+        await client.stop();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   describe('frame sampling — giving the assistant sight', () => {
     const FRAME_INTERVAL_MS = 2500;
 

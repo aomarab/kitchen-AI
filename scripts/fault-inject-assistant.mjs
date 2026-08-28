@@ -665,6 +665,18 @@ const CASES = [
     to: "      { at: connectMs + stepMs * 3.5, event: { type: 'speaking', speaking: true } },",
   },
   {
+    // The typed lane exists so the assistant answers what was actually said. An
+    // answer chosen without reading the message still echoes and brackets
+    // correctly, so only the intent assertion catches it — the recipe keyword
+    // the named test expects when the user asks what to cook.
+    name: 'the typed reply ignores what the user actually said',
+    file: MOCK,
+    spec: MOCK_SPEC,
+    check: 'echoes the user message, then answers, bracketed by speaking',
+    from: '    const reply = replyFor(this.locale, trimmed);',
+    to: "    const reply = replyFor(this.locale, '');",
+  },
+  {
     // The view's own guard, independent of the adapters': a transport that
     // drops without a closing event must not leave the badge claiming speech.
     name: 'the view keeps claiming speech after the session ends',
@@ -1173,6 +1185,18 @@ const CASES = [
     check: 'fires no scripted beat after stop',
     from: '    for (const timer of this.timers) clearTimeout(timer);',
     to: '',
+  },
+  {
+    // The mobile text/voice lane, twin of the web one: the reply must be chosen
+    // from what the user actually typed. An answer picked without reading the
+    // message still echoes and brackets correctly, so only the intent assertion
+    // — the recipe keyword the named test expects — catches it.
+    name: 'the mobile typed reply ignores what the user actually said',
+    file: MOBILE_MOCK,
+    spec: MOBILE_MOCK_SPEC,
+    check: 'echoes the user message, then answers, bracketed by speaking',
+    from: '    const reply = replyFor(this.locale, trimmed);',
+    to: "    const reply = replyFor(this.locale, '');",
   },
   {
     // `ingredients` is a global table defaulting to 'other'. If the mobile

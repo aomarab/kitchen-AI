@@ -68,6 +68,14 @@ export type AssistantEvent =
 export interface StartAssistantOptions {
   locale: Locale;
   onEvent: (event: AssistantEvent) => void;
+  /**
+   * Whether a camera preview is active for this session. The web port reads
+   * this from the presence of a `MediaStream`; mobile has no DOM stream, so it
+   * is stated explicitly. It gates the vision beats: only a camera session
+   * reports detections. `undefined` is treated as a camera session for
+   * backwards compatibility with the original camera-only screen.
+   */
+  camera?: boolean;
 }
 
 export interface RealtimeAssistantClient {
@@ -75,6 +83,12 @@ export interface RealtimeAssistantClient {
   readonly isMock: boolean;
   /** Begin a session. Emits `status: 'connecting'` then `'live'`, then events. */
   start(options: StartAssistantOptions): Promise<void>;
+  /**
+   * Send a typed message. Mirrors the web port so the text lane has a real
+   * transport rather than a screen-local shim. A no-op before {@link start},
+   * after {@link stop}, or on whitespace-only input.
+   */
+  sendText(text: string): void;
   /** End the session and release every timer/handle it holds. Idempotent. */
   stop(): Promise<void>;
 }

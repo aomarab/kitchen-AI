@@ -9,6 +9,7 @@ import {
   RecipesIcon,
   SettingsIcon,
   ShoppingIcon,
+  SparklesIcon,
 } from '../ui/icons';
 
 export interface NavItem {
@@ -20,6 +21,7 @@ export interface NavItem {
 export const PRIMARY_NAV: NavItem[] = [
   { href: '/', labelKey: 'web.nav.dashboard', icon: DashboardIcon },
   { href: '/kitchen', labelKey: 'web.nav.kitchen', icon: KitchenIcon },
+  { href: '/assistant', labelKey: 'web.nav.assistant', icon: SparklesIcon },
   { href: '/plans', labelKey: 'web.nav.plans', icon: PlansIcon },
   { href: '/recipes', labelKey: 'web.nav.recipes', icon: RecipesIcon },
   { href: '/shopping', labelKey: 'web.nav.shopping', icon: ShoppingIcon },

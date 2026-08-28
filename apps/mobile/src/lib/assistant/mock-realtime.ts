@@ -64,6 +64,45 @@ const SCRIPT: Record<Locale, { user: string; assistant: string }> = {
   },
 };
 
+/**
+ * The reply the scripted assistant gives to a typed or spoken message — the
+ * text/voice half of the demo. A behaviour-for-behaviour twin of the web mock's
+ * `REPLIES`: intentionally shallow canned answers keyed off obvious intent,
+ * because the demo badge is lit and nothing here is real reasoning. Bilingual,
+ * so an Arabic session is answered natively rather than translated.
+ */
+const REPLIES: Record<
+  Locale,
+  { recipe: string; shopping: string; expiry: string; greet: string; generic: string }
+> = {
+  en: {
+    recipe: 'A quick tomato omelette would work well with what you have — want the steps?',
+    shopping: "I can add what's missing to your shopping list. Want me to?",
+    expiry: 'Keep an eye on the milk — it is closest to its date, so use it first.',
+    greet:
+      'Hi! I can suggest a recipe, build a shopping list, or tell you what is expiring. What would help?',
+    generic:
+      'Got it. I can suggest a recipe, build a shopping list, or check what is expiring — what would help?',
+  },
+  ar: {
+    recipe: 'أقدر أعمل لك عجّة بالطماطم بسرعة من اللي عندك — تحب أعطيك الخطوات؟',
+    shopping: 'أقدر أضيف الناقص إلى قائمة التسوق. تحب أسوّي هيك؟',
+    expiry: 'انتبه للحليب — هو الأقرب لتاريخ انتهائه، فاستخدمه أولًا.',
+    greet: 'مرحبًا! أقدر أقترح وصفة، أو أجهّز قائمة تسوّق، أو أخبرك بما قرب ينتهي. شو يساعدك؟',
+    generic: 'تمام. أقدر أقترح وصفة، أو أجهّز قائمة تسوّق، أو أتحقق مما قرب ينتهي — شو يساعدك؟',
+  },
+};
+
+/** Maps a message to one of the canned replies by obvious keyword intent. */
+function replyFor(locale: Locale, text: string): string {
+  const table = REPLIES[locale];
+  if (/recipe|cook|make|dinner|lunch|breakfast|طبخ|وصفة|أطبخ|عشاء|غداء|فطور/i.test(text))
+    return table.recipe;
+  if (/buy|shop|store|need|missing|تسوق|اشتري|أشتري|ناقص|أحتاج/i.test(text)) return table.shopping;
+  if (/expire|expiry|expiring|old|going bad|تنتهي|انتهاء|خرب|قديم/i.test(text)) return table.expiry;
+  return table.generic;
+}
+
 /** Milliseconds between scripted beats. Small so tests advance quickly. */
 export interface MockRealtimeOptions {
   connectMs?: number;
@@ -79,21 +118,34 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
   /** See {@link stop}: a demo must not be left frozen mid-sentence either. */
   private emit: ((event: AssistantEvent) => void) | null = null;
   private speaking = false;
+  /** Locale of the running session, so typed replies match the spoken ones. */
+  private locale: Locale = 'en';
+  /** Monotonic turn id source, so every reply gets a unique key. */
+  private idSeq = 0;
 
   constructor(private readonly options: MockRealtimeOptions = {}) {}
 
-  async start({ locale, onEvent }: StartAssistantOptions): Promise<void> {
+  async start({ locale, camera, onEvent }: StartAssistantOptions): Promise<void> {
     if (this.started) return;
     this.started = true;
     this.ended = false;
     this.emit = onEvent;
     this.speaking = false;
+    this.locale = locale;
 
     const connectMs = this.options.connectMs ?? 400;
     const stepMs = this.options.stepMs ?? 1400;
     const script = SCRIPT[locale];
 
     onEvent({ type: 'status', status: 'connecting' });
+
+    // The opening beats depend on whether a camera is being shared. With one,
+    // the demo replays the approved vision session (a spoken question, the
+    // items it "sees", a spoken answer). Without one — a voice- or text-only
+    // conversation — there is nothing to see, so it connects and greets instead
+    // of inventing a question the user never asked or items it cannot see.
+    // `undefined` keeps the original camera-only screen's behaviour.
+    const hasCamera = camera !== false;
 
     // A script of beats at increasing offsets. Each is a tracked timer so
     // stop() can cancel any that have not fired yet.
@@ -103,26 +155,39 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
     // transcript is final and is still playing after it. Getting this ordering
     // wrong in the demo would make the indicator look correct here and wrong
     // against the live provider.
-    const beats: { at: number; event: AssistantEvent }[] = [
-      { at: connectMs, event: { type: 'status', status: 'live' } },
-      {
-        at: connectMs + stepMs,
-        event: { type: 'transcript', turn: { id: 'u1', role: 'user', text: script.user } },
-      },
-      {
-        at: connectMs + stepMs * 2,
-        event: { type: 'detections', items: SAMPLE_DETECTIONS },
-      },
-      { at: connectMs + stepMs * 2.5, event: { type: 'speaking', speaking: true } },
-      {
-        at: connectMs + stepMs * 3,
-        event: {
-          type: 'transcript',
-          turn: { id: 'a1', role: 'assistant', text: script.assistant },
-        },
-      },
-      { at: connectMs + stepMs * 4, event: { type: 'speaking', speaking: false } },
-    ];
+    const beats: { at: number; event: AssistantEvent }[] = hasCamera
+      ? [
+          { at: connectMs, event: { type: 'status', status: 'live' } },
+          {
+            at: connectMs + stepMs,
+            event: { type: 'transcript', turn: { id: 'u1', role: 'user', text: script.user } },
+          },
+          {
+            at: connectMs + stepMs * 2,
+            event: { type: 'detections', items: SAMPLE_DETECTIONS },
+          },
+          { at: connectMs + stepMs * 2.5, event: { type: 'speaking', speaking: true } },
+          {
+            at: connectMs + stepMs * 3,
+            event: {
+              type: 'transcript',
+              turn: { id: 'a1', role: 'assistant', text: script.assistant },
+            },
+          },
+          { at: connectMs + stepMs * 4, event: { type: 'speaking', speaking: false } },
+        ]
+      : [
+          { at: connectMs, event: { type: 'status', status: 'live' } },
+          { at: connectMs + stepMs, event: { type: 'speaking', speaking: true } },
+          {
+            at: connectMs + stepMs * 1.5,
+            event: {
+              type: 'transcript',
+              turn: { id: 'a1', role: 'assistant', text: REPLIES[locale].greet },
+            },
+          },
+          { at: connectMs + stepMs * 2.5, event: { type: 'speaking', speaking: false } },
+        ];
 
     // Cancelling these timers is the *only* thing that stops a scripted beat
     // firing after the user hangs up. There is deliberately no second guard
@@ -136,6 +201,47 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
         }, beat.at),
       );
     }
+  }
+
+  /**
+   * Answer a typed (or transcribed) message. The user's turn is echoed back
+   * immediately so the chat reads naturally, and the canned reply follows,
+   * bracketed by the speaking indicator exactly as the spoken script is — the
+   * demo must behave the same whether the user talked or typed. A no-op before
+   * start or after stop, and blank input is dropped rather than posted.
+   */
+  sendText(text: string): void {
+    const emit = this.emit;
+    if (!this.started || this.ended || !emit) return;
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    const stepMs = this.options.stepMs ?? 1400;
+    emit({
+      type: 'transcript',
+      turn: { id: `u${++this.idSeq}`, role: 'user', text: trimmed },
+    });
+    const reply = replyFor(this.locale, trimmed);
+    this.timers.push(
+      setTimeout(() => {
+        this.speaking = true;
+        emit({ type: 'speaking', speaking: true });
+      }, stepMs * 0.3),
+    );
+    this.timers.push(
+      setTimeout(() => {
+        emit({
+          type: 'transcript',
+          turn: { id: `a${++this.idSeq}`, role: 'assistant', text: reply },
+        });
+      }, stepMs * 0.6),
+    );
+    this.timers.push(
+      setTimeout(() => {
+        this.speaking = false;
+        emit({ type: 'speaking', speaking: false });
+      }, stepMs * 1.2),
+    );
   }
 
   async stop(): Promise<void> {
