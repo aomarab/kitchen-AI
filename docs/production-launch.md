@@ -131,7 +131,10 @@ production `DATABASE_URL`:
 - [ ] Data safety / privacy nutrition labels — `docs/store-listing/data-safety.md`.
 - [ ] Account deletion is implemented (publishing-compliance spec §6); confirm the store listing
       links to it and the in-app deletion flow works end to end against the real Apple revoker.
-- [ ] Legal docs: Terms of Service + Privacy Policy hosted and linked (L2-legal).
+- [ ] Legal docs: Terms of Service + Privacy Policy hosted and linked (L2-legal). **Drafts exist**
+      at `docs/legal/privacy-policy.md` and `docs/legal/terms-of-service.md`, grounded in the app's
+      actual data practices — they must be reviewed by counsel and have every `[BRACKETED]`
+      placeholder filled before they are published and their URLs entered in the consoles.
 
 ## I. Unblock CI (P0 — L0-ci)
 
