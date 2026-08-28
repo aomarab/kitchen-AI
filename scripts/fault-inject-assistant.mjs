@@ -32,6 +32,8 @@ const LABELS = 'apps/web/src/lib/labels.ts';
 const OFF_CLIENT = 'apps/api/src/ai/clients/http-open-food-facts.client.ts';
 const BARCODE_SERVICE = 'apps/api/src/ai/barcode/barcode.service.ts';
 const MOBILE_CAPTURE = 'apps/mobile/src/lib/capture.ts';
+const MOBILE_MOCK = 'apps/mobile/src/lib/assistant/mock-realtime.ts';
+const MOBILE_DETECT = 'apps/mobile/src/lib/assistant/detections.ts';
 const MOCK = 'apps/web/src/lib/assistant/mock-realtime.ts';
 const CONNECTIVITY = 'apps/web/src/stores/connectivity.ts';
 const SCREEN_VIEW = 'apps/web/src/components/screen/SmartScreenView.tsx';
@@ -62,6 +64,8 @@ const OFF_CLIENT_SPEC = [
 ];
 const BARCODE_SERVICE_SPEC = ['@kitchen/api', 'src/ai/barcode/barcode.service.spec.ts'];
 const MOBILE_CAPTURE_SPEC = ['@kitchen/mobile', 'src/lib/capture.spec.ts'];
+const MOBILE_MOCK_SPEC = ['@kitchen/mobile', 'src/lib/assistant/mock-realtime.spec.ts'];
+const MOBILE_DETECT_SPEC = ['@kitchen/mobile', 'src/lib/assistant/detections.spec.ts'];
 const MOCK_SPEC = ['@kitchen/web', 'src/lib/assistant/mock-realtime.test.ts'];
 const CONNECTIVITY_SPEC = ['@kitchen/web', 'src/stores/connectivity.test.ts'];
 const SCREEN_VIEW_SPEC = ['@kitchen/web', 'src/components/screen/SmartScreenView.test.tsx'];
@@ -1157,6 +1161,29 @@ const CASES = [
     check: 'stops scanning after a result instead of auto-submitting the next code',
     from: 'if (pendingRef.current || haltRef.current) return;',
     to: 'if (pendingRef.current) return;',
+  },
+  {
+    // The mobile mock has a single stop point by design: cancelling the timers
+    // is the only thing that prevents a scripted beat firing after hang-up,
+    // with no second guard inside the callback. Remove the clear and a caption
+    // arrives after the user has left.
+    name: 'the mobile mock keeps firing scripted beats after stop()',
+    file: MOBILE_MOCK,
+    spec: MOBILE_MOCK_SPEC,
+    check: 'fires no scripted beat after stop',
+    from: '    for (const timer of this.timers) clearTimeout(timer);',
+    to: '',
+  },
+  {
+    // `ingredients` is a global table defaulting to 'other'. If the mobile
+    // detections adapter drops the recognized category, every unresolved item
+    // the assistant confirms is filed under "other" for every household.
+    name: 'the mobile detections adapter drops the recognized category',
+    file: MOBILE_DETECT,
+    spec: MOBILE_DETECT_SPEC,
+    check: 'carries both names and the category of every detection',
+    from: '    category: item.category,',
+    to: "    category: 'other',",
   },
 ];
 

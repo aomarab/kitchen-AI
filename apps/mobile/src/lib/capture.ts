@@ -1,13 +1,13 @@
 import type {
   BarcodeLookupResponse,
   InventoryItemInput,
+  InventorySource,
   RecognitionSession,
   StorageLocation,
   StorageLocationType,
   Unit,
   IngredientCategory,
 } from '@kitchen/contracts';
-import type { CaptureSource } from '../stores/capture';
 
 /**
  * Capture-review logic, kept pure so the "never auto-commit" guarantee is unit
@@ -73,7 +73,7 @@ export function initialReviewRows(
 /** Included rows only — the sole path from a review into inventory. */
 export function buildInventoryInputs(
   rows: readonly ReviewRow[],
-  source: CaptureSource,
+  source: InventorySource,
 ): InventoryItemInput[] {
   return rows
     .filter((row) => row.include && row.locationId !== '')
