@@ -142,6 +142,8 @@ export const webAr: WebMessages = {
       nothingRecognised: 'لم نتمكن من التعرف على أي شيء. أعد التقاط الصورة أو أضف العناصر يدويًا.',
       addManually: 'الإضافة يدويًا',
       barcodePlaceholder: 'أدخل أرقام الباركود',
+      scanCta: 'المسح بالكاميرا',
+      scanHint: 'وجّه الكاميرا نحو الباركود.',
       lookup: 'ابحث',
       manualName: 'اسم المكوّن',
       manualNamePlaceholder: 'مثال: طماطم',

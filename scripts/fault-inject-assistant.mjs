@@ -86,6 +86,7 @@ const WEB_PHOTO_UPLOADER = 'apps/web/src/lib/photo-uploader.ts';
 const WEB_CAMERA = 'apps/web/src/hooks/camera.ts';
 const PHOTO_CAPTURE = 'apps/web/src/components/kitchen/PhotoCapture.tsx';
 const RECEIPT_CAPTURE = 'apps/web/src/components/kitchen/ReceiptCapture.tsx';
+const BARCODE_CAPTURE = 'apps/web/src/components/kitchen/BarcodeCapture.tsx';
 
 const UPLOAD_SPEC = ['@kitchen/api-client', 'src/upload.spec.ts'];
 const WEB_IMAGE_SPEC = ['@kitchen/web', 'src/lib/image.spec.ts'];
@@ -93,6 +94,7 @@ const WEB_PHOTO_UPLOADER_SPEC = ['@kitchen/web', 'src/lib/photo-uploader.spec.ts
 const WEB_CAMERA_SPEC = ['@kitchen/web', 'src/hooks/camera.spec.ts'];
 const PHOTO_CAPTURE_SPEC = ['@kitchen/web', 'src/components/kitchen/PhotoCapture.test.tsx'];
 const RECEIPT_CAPTURE_SPEC = ['@kitchen/web', 'src/components/kitchen/ReceiptCapture.test.tsx'];
+const BARCODE_CAPTURE_SPEC = ['@kitchen/web', 'src/components/kitchen/BarcodeCapture.test.tsx'];
 
 const CASES = [
   {
@@ -1058,6 +1060,61 @@ const CASES = [
     check: 'surfaces the parse error when the receipt job cannot be enqueued',
     from: '{parse.isError ? <ErrorState error={parse.error} /> : null}',
     to: '{false ? <ErrorState error={parse.error} /> : null}',
+  },
+  {
+    // The scanner must only look up a fully numeric EAN/UPC. Widening the frame
+    // filter to any non-empty decode sends an alphanumeric Code 128 / QR payload
+    // to a route whose contract is `/^\d+$/`; the guard is the single point that
+    // keeps garbage off the wire.
+    name: 'a non-numeric camera scan is looked up',
+    file: BARCODE_CAPTURE,
+    spec: BARCODE_CAPTURE_SPEC,
+    check: 'ignores a non-numeric scan and never looks it up',
+    from: 'const hit = results.map((r) => r.rawValue).find((v) => BARCODE_RE.test(v));',
+    to: 'const hit = results.map((r) => r.rawValue).find((v) => v.length > 0);',
+  },
+  {
+    // `found: false` means no product, even when the source still carried a
+    // fuzzy match object. Dropping the `found` half of the guard would add an
+    // unconfirmed row for a barcode the database does not know.
+    name: 'an unknown barcode still adds an item',
+    file: BARCODE_CAPTURE,
+    spec: BARCODE_CAPTURE_SPEC,
+    check: 'shows the not-found badge and adds nothing for an unknown barcode',
+    from: 'if (!res.found || !res.match) return;',
+    to: 'if (!res.match) return;',
+  },
+  {
+    // The Arabic product name must be filed under nameAr; ReviewList maps it to
+    // rawNameAr for unresolved rows and shows it in the ar locale. Falling back
+    // to the English name files Arabic products under English for every house.
+    name: 'the barcode Arabic name falls back to English',
+    file: BARCODE_CAPTURE,
+    spec: BARCODE_CAPTURE_SPEC,
+    check: 'carries the Arabic name and real category onto the row',
+    from: 'nameAr: res.productNameAr ?? res.productName ?? res.match.rawName,',
+    to: 'nameAr: res.productName ?? res.match.rawName,',
+  },
+  {
+    // The looked-up category must ride along (mapped to rawCategory on unresolved
+    // rows); a hardcoded category miscategorises every scanned product.
+    name: 'the barcode category is hardcoded',
+    file: BARCODE_CAPTURE,
+    spec: BARCODE_CAPTURE_SPEC,
+    check: 'carries the Arabic name and real category onto the row',
+    from: "category: res.category ?? 'other',",
+    to: "category: 'canned',",
+  },
+  {
+    // A settled lookup must end auto-scanning (mobile parity). Dropping the halt
+    // guard lets the continuously-decoding camera submit the next barcode after
+    // a not-found, hijacking the flow the user meant to retry by hand.
+    name: 'the scanner keeps submitting after a result',
+    file: BARCODE_CAPTURE,
+    spec: BARCODE_CAPTURE_SPEC,
+    check: 'stops scanning after a result instead of auto-submitting the next code',
+    from: 'if (pendingRef.current || haltRef.current) return;',
+    to: 'if (pendingRef.current) return;',
   },
 ];
 
