@@ -287,6 +287,11 @@ export const webEn = {
       navAlerts: 'Alerts',
       orientationLandscape: 'Landscape',
       orientationPortrait: 'Portrait',
+      connectionOnline: 'Connected',
+      connectionOffline: 'Offline',
+      // Says what is actually true when the connection drops: nothing is lost,
+      // but what is on screen stopped being current.
+      connectionOfflineHint: 'Showing the last data we loaded',
     },
     timers: {
       title: 'Cooking timers',
@@ -344,6 +349,9 @@ export const webEn = {
       personaSaved: 'Saved',
       personaChoose: 'Use this voice',
       connecting: 'Connecting…',
+      // Not "Speaking" alone: on a wall screen glanced at from across the room
+      // the point is that it is happening right now.
+      speaking: 'Speaking now',
       youLabel: 'You',
       assistantLabel: 'Assistant',
       spottedLabel: 'Spotted (sample)',

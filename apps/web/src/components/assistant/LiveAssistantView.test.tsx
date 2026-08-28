@@ -1,11 +1,11 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StorageLocation } from '@kitchen/contracts';
 import { LocaleProvider } from '../../lib/locale';
 import { SAMPLE_DETECTIONS } from '../../lib/assistant/mock-realtime';
 import { MockRealtimeAssistantClient } from '../../lib/assistant/mock-realtime';
-import type { RealtimeAssistantClient } from '../../lib/assistant/realtime-port';
+import type { RealtimeAssistantClient, AssistantEvent } from '../../lib/assistant/realtime-port';
 import { LiveAssistantView } from './LiveAssistantView';
 
 const { call } = vi.hoisted(() => ({ call: vi.fn() }));
@@ -48,6 +48,28 @@ function fakeClient(): RealtimeAssistantClient {
       });
     }),
     stop: vi.fn(async () => {}),
+  };
+}
+
+/**
+ * A client the test drives beat by beat, for the states that only exist
+ * mid-session (the assistant speaking, then stopping).
+ */
+function controllableClient() {
+  let emit: ((event: AssistantEvent) => void) | null = null;
+  const client: RealtimeAssistantClient = {
+    isMock: true,
+    start: vi.fn(async ({ onEvent }) => {
+      emit = onEvent;
+      onEvent({ type: 'status', status: 'live' });
+    }),
+    stop: vi.fn(async () => {}),
+  };
+  return {
+    client,
+    emit(event: AssistantEvent) {
+      act(() => emit?.(event));
+    },
   };
 }
 
@@ -172,6 +194,71 @@ describe('LiveAssistantView', () => {
     stubGetUserMedia();
     renderView('ar');
     expect(screen.getByText('اطبخ مع مساعد مباشر')).toBeInTheDocument();
+  });
+
+  it('shows the speaking state only while the transport says the voice is playing', async () => {
+    stubGetUserMedia();
+    const { client, emit } = controllableClient();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <LocaleProvider locale="en">
+          <LiveAssistantView createClient={() => client} />
+        </LocaleProvider>
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Allow camera & microphone' }));
+    await screen.findByTestId('assistant-live');
+
+    // A live session is not a speaking one.
+    expect(screen.queryByTestId('assistant-speaking')).toBeNull();
+
+    emit({ type: 'speaking', speaking: true });
+    expect(screen.getByTestId('assistant-speaking')).toHaveTextContent('Speaking now');
+
+    emit({ type: 'speaking', speaking: false });
+    expect(screen.queryByTestId('assistant-speaking')).toBeNull();
+  });
+
+  it('does not leave the speaking state lit when the session ends mid-sentence', async () => {
+    stubGetUserMedia();
+    const { client, emit } = controllableClient();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <LocaleProvider locale="en">
+          <LiveAssistantView createClient={() => client} />
+        </LocaleProvider>
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Allow camera & microphone' }));
+    await screen.findByTestId('assistant-live');
+
+    emit({ type: 'speaking', speaking: true });
+    expect(screen.getByTestId('assistant-speaking')).toBeInTheDocument();
+
+    // A dropped connection is not obliged to send a closing `speaking: false`,
+    // so the view refuses to keep claiming speech after the session is over.
+    emit({ type: 'status', status: 'ended' });
+    expect(screen.queryByTestId('assistant-speaking')).toBeNull();
+  });
+
+  it('names the speaking state in Arabic', async () => {
+    stubGetUserMedia();
+    const { client, emit } = controllableClient();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <LocaleProvider locale="ar">
+          <LiveAssistantView createClient={() => client} />
+        </LocaleProvider>
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'اسمح بالكاميرا والميكروفون' }));
+    await screen.findByTestId('assistant-live');
+
+    emit({ type: 'speaking', speaking: true });
+    expect(screen.getByTestId('assistant-speaking')).toHaveTextContent('يتحدث الآن');
   });
 
   it('does not loop, and falls back to the scripted client, on the default factory', async () => {

@@ -14,6 +14,7 @@ import {
   useReminderSettings,
 } from '../../hooks/reminders';
 import { useTimers } from '../../hooks/timers';
+import { useConnectivity } from '../../stores/connectivity';
 import { featuredTimer, hasRunningTimer, useTimerTick } from '../../lib/timers';
 import {
   activeNudge,
@@ -42,6 +43,7 @@ export function SmartScreenView() {
   const occurrencesQuery = useReminderOccurrences();
   const acknowledge = useAcknowledgeReminder();
   const now = useClock();
+  const online = useConnectivity((state) => state.online);
   const timers = timersQuery.data?.items ?? [];
   const tick = useTimerTick(hasRunningTimer(timers, new Date()));
   const timer = featuredTimer(timers, tick);
@@ -78,6 +80,7 @@ export function SmartScreenView() {
           <span className="text-sm font-semibold text-muted-foreground">{householdName}</span>
         </div>
         <div className="flex items-center gap-3">
+          <ConnectionIndicator online={online} />
           <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-text">
             {t('web.screen.wordmark')}
           </span>
@@ -165,6 +168,46 @@ export function SmartScreenView() {
   );
 }
 
+/**
+ * The kiosk's connection state.
+ *
+ * Asymmetric on purpose. Offline is a claim worth making loudly — the kiosk is
+ * glanced at from across the room, and every number on it (the timer, the
+ * hydration count, the nudge) is served by a query that has stopped refreshing,
+ * so the screen is quietly showing the past. Online is *not* a claim: the icon
+ * carries only an accessible label, because a connection we merely believe in
+ * does not deserve a word on a wall.
+ */
+function ConnectionIndicator({ online }: { online: boolean }) {
+  const { t } = useLocale();
+  if (online) {
+    return (
+      <span
+        data-testid="screen-connection"
+        data-online="true"
+        title={t('web.screen.connectionOnline')}
+        aria-label={t('web.screen.connectionOnline')}
+        role="img"
+        className="text-muted-foreground"
+      >
+        <WifiIcon />
+      </span>
+    );
+  }
+  return (
+    <span
+      data-testid="screen-connection"
+      data-online="false"
+      role="status"
+      title={t('web.screen.connectionOfflineHint')}
+      className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1 text-xs font-bold text-warning"
+    >
+      <WifiOffIcon />
+      {t('web.screen.connectionOffline')}
+    </span>
+  );
+}
+
 function MiniCard({
   tone,
   icon,
@@ -186,7 +229,9 @@ function MiniCard({
       <span
         className={cn(
           'grid h-12 w-12 flex-none place-items-center rounded-xl',
-          tone === 'primary' ? 'bg-primary-soft text-primary-text' : 'bg-accent-soft text-accent-text',
+          tone === 'primary'
+            ? 'bg-primary-soft text-primary-text'
+            : 'bg-accent-soft text-accent-text',
         )}
       >
         {icon}
@@ -233,7 +278,16 @@ function NavItem({
 
 function SpeakerIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
       <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
       <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
@@ -241,9 +295,59 @@ function SpeakerIcon() {
   );
 }
 
+function WifiIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M2.5 8.5a16 16 0 0 1 19 0" />
+      <path d="M5.5 12a11 11 0 0 1 13 0" />
+      <path d="M8.5 15.5a6 6 0 0 1 7 0" />
+      <circle cx="12" cy="19" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function WifiOffIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="3" y1="3" x2="21" y2="21" />
+      <path d="M8.5 15.5a6 6 0 0 1 7 0" />
+      <path d="M5.5 12a11 11 0 0 1 5-2.9" />
+      <path d="M2.5 8.5a16 16 0 0 1 6.2-3.7" />
+      <path d="M13.5 5a16 16 0 0 1 8 3.5" />
+      <circle cx="12" cy="19" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 function TimerIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
       <circle cx="12" cy="13" r="8" />
       <path d="M12 9v4l2 2" />
       <path d="M9 2h6" />
@@ -253,7 +357,16 @@ function TimerIcon() {
 
 function WaterIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
     </svg>
   );
@@ -261,7 +374,16 @@ function WaterIcon() {
 
 function BookIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
       <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
     </svg>
@@ -270,7 +392,16 @@ function BookIcon() {
 
 function NoteIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
       <line x1="8" y1="13" x2="16" y2="13" />
@@ -281,7 +412,16 @@ function NoteIcon() {
 
 function BellIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
