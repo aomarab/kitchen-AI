@@ -21,7 +21,15 @@ describe('MockRealtimeAssistantClient', () => {
     await vi.advanceTimersByTimeAsync(500);
 
     const types = events.map((e) => e.type);
-    expect(types).toEqual(['status', 'status', 'transcript', 'detections', 'transcript']);
+    expect(types).toEqual([
+      'status',
+      'status',
+      'transcript',
+      'detections',
+      'speaking',
+      'transcript',
+      'speaking',
+    ]);
     expect(events[1]).toEqual({ type: 'status', status: 'live' });
     const detections = events.find((e) => e.type === 'detections');
     expect(detections?.type === 'detections' && detections.items.map((i) => i.nameEn)).toEqual([
@@ -29,7 +37,7 @@ describe('MockRealtimeAssistantClient', () => {
       'Milk',
       'Eggs',
     ]);
-    const caption = events.at(-1);
+    const caption = events.at(-2);
     expect(caption?.type === 'transcript' && caption.turn.role).toBe('assistant');
   });
 
@@ -40,6 +48,51 @@ describe('MockRealtimeAssistantClient', () => {
     await vi.advanceTimersByTimeAsync(100);
     const assistant = events.find((e) => e.type === 'transcript' && e.turn.role === 'assistant');
     expect(assistant?.type === 'transcript' && assistant.turn.text).toContain('طماطم');
+  });
+
+  it('brackets the assistant line with speaking on and off', async () => {
+    const client = new MockRealtimeAssistantClient({ connectMs: 100, stepMs: 100 });
+    const { events, onEvent } = collect();
+
+    await client.start({ locale: 'en', stream: null, onEvent });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    const order = events
+      .filter(
+        (e) => e.type === 'speaking' || (e.type === 'transcript' && e.turn.role === 'assistant'),
+      )
+      .map((e) => (e.type === 'speaking' ? `speaking:${e.speaking}` : 'assistant-line'));
+
+    // Real speech starts before the transcript is final and is still playing
+    // after it. A demo that flipped the indicator on *with* the caption would
+    // look right here and be wrong against the live provider.
+    expect(order).toEqual(['speaking:true', 'assistant-line', 'speaking:false']);
+  });
+
+  it('puts the speaking indicator out when the user hangs up mid-sentence', async () => {
+    const client = new MockRealtimeAssistantClient({ connectMs: 100, stepMs: 100 });
+    const { events, onEvent } = collect();
+
+    await client.start({ locale: 'en', stream: null, onEvent });
+    // Past 'speaking: true' (350ms) but before the beat that turns it off (500ms).
+    await vi.advanceTimersByTimeAsync(380);
+    expect(events.at(-1)).toEqual({ type: 'speaking', speaking: true });
+
+    await client.stop();
+    // stop() cancels the beat that would have cleared it, so stop() must clear
+    // it itself — otherwise the badge is frozen mid-word on the way out.
+    expect(events.at(-1)).toEqual({ type: 'speaking', speaking: false });
+  });
+
+  it('does not announce a stop to speaking that never started', async () => {
+    const client = new MockRealtimeAssistantClient({ connectMs: 100, stepMs: 100 });
+    const { events, onEvent } = collect();
+
+    await client.start({ locale: 'en', stream: null, onEvent });
+    await vi.advanceTimersByTimeAsync(150);
+    await client.stop();
+
+    expect(events.some((e) => e.type === 'speaking')).toBe(false);
   });
 
   it('fires no scripted beat after stop() — the hang-up cancels pending timers', async () => {

@@ -44,6 +44,18 @@ export type AssistantStatus = 'connecting' | 'live' | 'ended';
 /** Everything the transport pushes back to the UI. */
 export type AssistantEvent =
   | { type: 'status'; status: AssistantStatus }
+  /**
+   * The assistant's voice started or stopped coming out of the speaker.
+   *
+   * This is a transport fact, not a UI guess. It cannot be inferred from the
+   * transcript: a transcript turn arrives when the *text* is done, which is
+   * after the audio began and often before it has finished playing, so a
+   * "speaking" light driven by transcripts would light up late and go out at
+   * the wrong moment. Adapters emit it from whatever their provider says about
+   * the output audio itself, and must emit `false` when a session ends so the
+   * indicator cannot be left lit by a hang-up mid-sentence.
+   */
+  | { type: 'speaking'; speaking: boolean }
   | { type: 'transcript'; turn: TranscriptTurn }
   | { type: 'detections'; items: DetectedItem[] }
   | { type: 'error'; code: string };

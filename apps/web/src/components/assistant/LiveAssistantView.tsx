@@ -65,6 +65,7 @@ export function LiveAssistantView({
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
   const [detections, setDetections] = useState<DetectedItem[]>([]);
   const [status, setStatus] = useState<AssistantStatus>('connecting');
+  const [speaking, setSpeaking] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [addedCount, setAddedCount] = useState<number | null>(null);
@@ -97,13 +98,19 @@ export function LiveAssistantView({
     const client = createClientRef.current();
     clientRef.current = client;
     setStatus('connecting');
+    setSpeaking(false);
     setTurns([]);
     setDetections([]);
     void client.start({
       locale,
       stream: media.stream,
       onEvent: (event) => {
-        if (event.type === 'status') setStatus(event.status);
+        if (event.type === 'status') {
+          setStatus(event.status);
+          // A session that has ended is not speaking, whatever the last audio
+          // event claimed.
+          if (event.status === 'ended') setSpeaking(false);
+        } else if (event.type === 'speaking') setSpeaking(event.speaking);
         else if (event.type === 'transcript') setTurns((prev) => [...prev, event.turn]);
         else if (event.type === 'detections') setDetections(event.items);
       },
@@ -200,6 +207,16 @@ export function LiveAssistantView({
               <span className="font-semibold text-inverse/70">· {t('web.assistant.demoNote')}</span>
             </span>
           ) : null}
+          {speaking ? (
+            <span
+              data-testid="assistant-speaking"
+              role="status"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-xs font-extrabold text-primary-foreground"
+            >
+              <SpeakingBars />
+              {t('web.assistant.speaking')}
+            </span>
+          ) : null}
         </div>
         <button
           type="button"
@@ -246,7 +263,9 @@ export function LiveAssistantView({
             <div className="text-[10px] font-bold uppercase tracking-heading-sm text-inverse-muted">
               {status === 'connecting'
                 ? t('web.assistant.connecting')
-                : t('web.assistant.assistantLabel')}
+                : speaking
+                  ? t('web.assistant.speaking')
+                  : t('web.assistant.assistantLabel')}
             </div>
             <p className="mt-1 text-sm font-semibold leading-snug">
               {lastAssistant ? lastAssistant.text : t('web.assistant.connecting')}
@@ -429,6 +448,29 @@ function ControlButton({
 }
 
 /* --------------------------- icons --------------------------- */
+/**
+ * Three bars that rise and fall while the assistant talks.
+ *
+ * Deliberately not an audio-reactive visualiser: the bars are decorative and
+ * say only "the voice is playing", which is the one thing the transport
+ * actually tells us. Reading the output level to make them dance would imply a
+ * precision the indicator does not have. `motion-reduce` drops the animation
+ * and leaves the badge and its text, so nothing is lost by turning motion off.
+ */
+function SpeakingBars() {
+  return (
+    <span aria-hidden="true" className="flex h-3 items-end gap-0.5">
+      {[0, 150, 300].map((delay) => (
+        <span
+          key={delay}
+          style={{ animationDelay: `${delay}ms` }}
+          className="h-3 w-0.5 animate-pulse rounded-full bg-primary-foreground motion-reduce:animate-none"
+        />
+      ))}
+    </span>
+  );
+}
+
 function MicIcon() {
   return (
     <svg

@@ -110,8 +110,29 @@ that was proven to fail (`apps/mobile/src/lib/screen-surfaces.spec.ts`):
   in the root layout takes it back at runtime, so the kiosk is the one screen that opts out and
   restores the lock on the way out. `store-policy.spec.ts` pins both halves together.
 
-Still unbuilt from the sketch above: the wifi indicator, the "يتحدث الآن" speaking state (Feature 5),
-and the persisted screen config — the mobile kiosk is a route you open, not a device you provision.
+Still unbuilt from the sketch above: the persisted screen config — the mobile kiosk is a route you
+open, not a device you provision.
+
+**The connection indicator (built later).** `apps/web/src/stores/connectivity.ts` is the engine: a
+store fed by two sources of unequal weight. The browser's `online`/`offline` events say a network
+interface exists; a request that actually failed (`trackedFetch` in `apps/web/src/lib/api.ts`) says
+the API was unreachable. Only the second is evidence about *us*, so it may flip the app offline over
+the browser's objection, and `navigator.onLine` is read only for its negative case. This mirrors
+`apps/mobile/src/stores/connectivity.ts`, which had the same shape against NetInfo since Feature 6.
+
+The indicator itself is deliberately asymmetric, and this is the part worth defending. **Offline is
+stated in words; online is not.** When the connection drops, every number on the kiosk — the
+countdown, the cup count, the outstanding nudge — is served by a query that has stopped refreshing,
+so the screen is quietly showing the past and deserves to say so. When it is up, all we have is a
+belief, and a kiosk that prints "Connected" on a wall is stating a belief as a fact; the online
+state is an icon with an accessible label and no text. Two fault-injection cases pin this
+(`the kiosk states a connection it only believes in`, `the browser's optimism overrides a request
+that actually failed`).
+
+**The mobile kiosk deliberately has no indicator of its own.** `apps/mobile/src/app/_layout.tsx`
+renders `OfflineBanner` as a root absolute overlay across every route, `/screen` included, and it
+already names the state *and* the count of writes queued for replay. A kiosk-only wifi glyph would
+be a second, weaker answer to a question already answered.
 
 ## Feature 2 — Wellness reminders engine
 
@@ -269,6 +290,17 @@ were decided differently from the sketch above, and the reasons matter more than
 - **The demo badge fails safe.** `isMock` starts `true` and drops only once the API returns a
   session it states is real; a deployment with `AI_MOCK=true` mints an unusable secret and the
   client hands over to the scripted adapter with the badge still lit.
+- **The "يتحدث الآن" speaking state is a transport fact, not a UI guess.** The port carries a
+  `{ type: 'speaking' }` event, and the real adapter maps it from the WebRTC
+  `output_audio_buffer.started` / `.stopped` / `.cleared` events — the ones that describe playback —
+  rather than from `response.output_audio.*`, which describes when the server finished *sending*.
+  The transcript is the tempting source and the wrong one: it is final after the voice has begun and
+  usually before it has finished, so a transcript-driven indicator lights up late and goes out
+  mid-word. `cleared` is handled because that is what fires when the user talks over the assistant,
+  and both adapters emit `speaking: false` from `stop()`, because hanging up mid-sentence produces no
+  further event and would otherwise leave the badge frozen. The view clears it on `status: 'ended'`
+  as its own independent guard. It lives on the assistant surface rather than the kiosk status bar
+  the Feature 1 sketch drew it in: `/screen` does not hold a session and cannot know.
 
 - **Grounding reuses the planner's Stage-A snapshot**, rendered to text by
   `apps/api/src/ai/assistant/pantry-brief.ts` and sent as session context — not a second inventory
@@ -287,10 +319,16 @@ were decided differently from the sketch above, and the reasons matter more than
   rather than reusing the `@kitchen/i18n` display abbreviations, which are sized for tight layouts
   and which a speech model would read aloud as letters.
 
-Fault injection for all of the above lives in `scripts/fault-inject-assistant.mjs` (25 defects, each
+Fault injection for all of the above lives in `scripts/fault-inject-assistant.mjs` (50 defects, each
 caught by the check that names it). Run it **after** Prettier: anchors are string-exact, and one of
 them silently went stale when Prettier rewrapped a ternary, leaving that rule unproven until the
 harness was re-run and reported `anchor not found`.
+
+The harness earns its keep by catching *weak checks*, not only weak code. The speaking-state defect
+"driven by the transcript instead of the audio buffer" was initially **not** caught by the check that
+named it: the test asserted the two `speaking` events in isolation, and a transcript-driven
+implementation emits exactly the same pair. The test was strengthened to assert the caption
+*interleaved between* them — which the defect deletes — rather than the defect being softened.
 
 Verified against a real OpenAI account on 2026-08-27: `gpt-realtime` is a valid model id, and
 `POST /v1/realtime/client_secrets` returns a secret our provider parses — an `ek_`-prefixed value,

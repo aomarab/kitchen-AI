@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LocaleProvider } from '../../lib/locale';
+import { useConnectivity } from '../../stores/connectivity';
 import { SmartScreenView } from './SmartScreenView';
 
 const { call } = vi.hoisted(() => ({ call: vi.fn() }));
@@ -117,6 +118,55 @@ describe('SmartScreenView', () => {
     mockData(allOn);
     renderView('ar');
     expect(await screen.findAllByText('رفيق المطبخ')).not.toHaveLength(0);
+  });
+});
+
+describe('SmartScreenView connection indicator', () => {
+  beforeEach(() => {
+    call.mockReset();
+    useConnectivity.setState({ online: true });
+  });
+
+  it('says nothing about a connection it only believes in', async () => {
+    mockData(allOn);
+    renderView();
+    const badge = await screen.findByTestId('screen-connection');
+    expect(badge).toHaveAttribute('data-online', 'true');
+    // navigator.onLine is not evidence the API is reachable, so the online
+    // state is an icon with an accessible name — never a word on the wall.
+    expect(badge).not.toHaveTextContent('Connected');
+    expect(badge).toHaveAccessibleName('Connected');
+  });
+
+  it('names the offline state in words and says what is on screen is stale', async () => {
+    mockData(allOn);
+    useConnectivity.setState({ online: false });
+    renderView();
+    const badge = await screen.findByTestId('screen-connection');
+    expect(badge).toHaveAttribute('data-online', 'false');
+    expect(badge).toHaveTextContent('Offline');
+    expect(badge).toHaveAttribute('title', 'Showing the last data we loaded');
+  });
+
+  it('reacts to the connection dropping while the kiosk is left open', async () => {
+    mockData(allOn);
+    renderView();
+    expect(await screen.findByTestId('screen-connection')).toHaveAttribute('data-online', 'true');
+
+    // A kiosk is left running for hours; it has to notice, not just be right
+    // at mount.
+    act(() => useConnectivity.setState({ online: false }));
+    await waitFor(() =>
+      expect(screen.getByTestId('screen-connection')).toHaveAttribute('data-online', 'false'),
+    );
+    expect(screen.getByTestId('screen-connection')).toHaveTextContent('Offline');
+  });
+
+  it('names the offline state in Arabic', async () => {
+    mockData(allOn);
+    useConnectivity.setState({ online: false });
+    renderView('ar');
+    expect(await screen.findByTestId('screen-connection')).toHaveTextContent('غير متّصل');
   });
 });
 

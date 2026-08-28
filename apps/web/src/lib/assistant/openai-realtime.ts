@@ -47,6 +47,22 @@ const TRANSCRIPT_DONE = 'response.output_audio_transcript.done';
 const USER_TRANSCRIPT_DONE = 'conversation.item.input_audio_transcription.completed';
 const FUNCTION_ARGS_DONE = 'response.function_call_arguments.done';
 
+/**
+ * When the model's voice is actually audible.
+ *
+ * These are the WebRTC output-audio-buffer events, not `response.output_audio.done`.
+ * The `response.*` events describe when the server finished *sending* audio,
+ * which is earlier than when the speaker finishes playing it; the buffer events
+ * describe the playback itself, which is what a "speaking now" light is claiming.
+ *
+ * `cleared` matters as much as `stopped`: it is what fires when the user talks
+ * over the assistant and the queued audio is discarded. Without it, barging in
+ * would leave the indicator lit over silence.
+ */
+const AUDIO_STARTED = 'output_audio_buffer.started';
+const AUDIO_STOPPED = 'output_audio_buffer.stopped';
+const AUDIO_CLEARED = 'output_audio_buffer.cleared';
+
 interface ServerEvent {
   type?: string;
   transcript?: string;
@@ -87,12 +103,22 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
   private audio: HTMLAudioElement | null = null;
   private stopped = false;
   private detectionSeq = 0;
+  /**
+   * Kept so {@link stop} can put the speaking indicator out. Hanging up
+   * mid-sentence produces no further server event — the data channel simply
+   * closes — so without this the last thing the user sees is an assistant
+   * frozen mid-speech.
+   */
+  private emit: ((event: AssistantEvent) => void) | null = null;
+  private speaking = false;
 
   constructor(private readonly options: OpenAiRealtimeOptions) {}
 
   async start({ locale, stream, onEvent }: StartAssistantOptions): Promise<void> {
     if (this.pc || this.mock) return;
     this.stopped = false;
+    this.emit = onEvent;
+    this.speaking = false;
     onEvent({ type: 'status', status: 'connecting' });
 
     let session: RealtimeSession;
@@ -182,6 +208,18 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
       return;
     }
 
+    if (event.type === AUDIO_STARTED) {
+      this.speaking = true;
+      onEvent({ type: 'speaking', speaking: true });
+      return;
+    }
+
+    if (event.type === AUDIO_STOPPED || event.type === AUDIO_CLEARED) {
+      this.speaking = false;
+      onEvent({ type: 'speaking', speaking: false });
+      return;
+    }
+
     if (event.type === TRANSCRIPT_DONE && event.transcript) {
       onEvent({
         type: 'transcript',
@@ -238,6 +276,13 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
   async stop(): Promise<void> {
     if (this.stopped) return;
     this.stopped = true;
+
+    // Before anything is torn down: the voice has stopped, by definition.
+    if (this.speaking) {
+      this.speaking = false;
+      this.emit?.({ type: 'speaking', speaking: false });
+    }
+    this.emit = null;
 
     if (this.mock) {
       await this.mock.stop();
