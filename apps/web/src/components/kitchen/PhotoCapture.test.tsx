@@ -116,6 +116,8 @@ describe('PhotoCapture', () => {
     fireEvent.click(submit);
     await waitFor(() => expect(onItems).toHaveBeenCalledTimes(1));
     expect(bodies).toHaveLength(1);
+    const presignCalls = call.mock.calls.filter(([route]) => route === 'presignUpload');
+    expect(presignCalls).toHaveLength(1);
   });
 
   it('recognises the real presigned keys, not the deleted sample photos', async () => {

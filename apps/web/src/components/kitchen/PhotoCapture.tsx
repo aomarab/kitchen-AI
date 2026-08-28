@@ -43,15 +43,22 @@ export function PhotoCapture({
   const [failed, setFailed] = useState(false);
   const [empty, setEmpty] = useState(false);
   const idRef = useRef(0);
+  const submittingRef = useRef(false);
 
   const busy = presign.isPending || uploading || recognize.isPending;
 
-  // Revoke every object URL on unmount so retakes don't leak blobs.
+  // Revoke object URLs only on unmount. `removeShot` already revokes a URL the
+  // instant its thumbnail leaves the strip, so this must NOT depend on `shots`:
+  // a `[shots]` dependency runs the *previous* render's cleanup on every add and
+  // would revoke URLs still shown by the surviving thumbnails. A ref holds the
+  // live list so the unmount cleanup sees the final set without re-subscribing.
+  const shotsRef = useRef<Shot[]>([]);
+  shotsRef.current = shots;
   useEffect(
     () => () => {
-      shots.forEach((shot) => URL.revokeObjectURL(shot.url));
+      shotsRef.current.forEach((shot) => URL.revokeObjectURL(shot.url));
     },
-    [shots],
+    [],
   );
 
   const addBlob = (blob: Blob) =>
@@ -77,7 +84,11 @@ export function PhotoCapture({
     });
 
   const submit = async () => {
-    if (busy || shots.length === 0) return;
+    // `busy` is derived from render state, which a second synchronous click sees
+    // stale (React has not committed `setUploading(true)` yet). A ref guards the
+    // pipeline synchronously so a double-click presigns and uploads exactly once.
+    if (submittingRef.current || shots.length === 0) return;
+    submittingRef.current = true;
     setFailed(false);
     setEmpty(false);
     setUploading(true);
@@ -105,6 +116,7 @@ export function PhotoCapture({
       setFailed(error instanceof PhotoUploadError);
       if (!(error instanceof PhotoUploadError)) throw error;
     } finally {
+      submittingRef.current = false;
       setUploading(false);
     }
   };
