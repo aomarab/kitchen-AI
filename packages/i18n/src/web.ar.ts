@@ -96,6 +96,7 @@ export const webAr: WebMessages = {
       source: 'أُضيف عبر',
       sources: {
         photo: 'صورة',
+        assistant: 'المساعِدة المباشرة',
         manual: 'يدوي',
         barcode: 'باركود',
         receipt: 'إيصال',

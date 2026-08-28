@@ -36,6 +36,7 @@ export function locationKey(type: StorageLocationType): MessageKey {
 
 const SOURCE_KEYS: Record<InventorySource, MessageKey> = {
   photo: 'web.kitchen.sources.photo',
+  assistant: 'web.kitchen.sources.assistant',
   manual: 'web.kitchen.sources.manual',
   barcode: 'web.kitchen.sources.barcode',
   receipt: 'web.kitchen.sources.receipt',

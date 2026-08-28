@@ -132,11 +132,39 @@ describe('LiveAssistantView', () => {
     await waitFor(() =>
       expect(call).toHaveBeenCalledWith('bulkCreateInventory', expect.anything()),
     );
-    // Exactly the three spotted items, into the confirm ledger call.
+    // Assert the payload, not just its length. The ledger is append-only, so
+    // whatever lands here is permanent: a dropped name, a wrong quantity or a
+    // fictional provenance can never be corrected, only annotated. A
+    // `toHaveLength` check passes on three rows of garbage — and did, while
+    // this path wrote every assistant item as `source: 'photo'`.
     const body = call.mock.calls.find((c) => c[0] === 'bulkCreateInventory')?.[1] as {
-      body: { items: unknown[] };
+      body: { items: Array<Record<string, unknown>> };
     };
     expect(body.body.items).toHaveLength(SAMPLE_DETECTIONS.length);
+    expect(
+      body.body.items.map((item) => ({
+        rawName: item.rawName,
+        rawNameAr: item.rawNameAr,
+        rawCategory: item.rawCategory,
+        quantity: item.quantity,
+        unit: item.unit,
+        source: item.source,
+      })),
+    ).toEqual(
+      SAMPLE_DETECTIONS.map((detection) => ({
+        rawName: detection.nameEn,
+        // Both names and the category travel: `ingredients` is a global table,
+        // so dropping them files every assistant item under one language and
+        // "other" for every household, not just this one.
+        rawNameAr: detection.nameAr,
+        rawCategory: detection.category,
+        quantity: detection.quantity,
+        unit: detection.unit,
+        // Nobody photographed anything. `photo` here would be a lie the ledger
+        // keeps forever.
+        source: 'assistant',
+      })),
+    );
     expect(await screen.findByRole('status')).toHaveTextContent('Added to your inventory');
   });
 

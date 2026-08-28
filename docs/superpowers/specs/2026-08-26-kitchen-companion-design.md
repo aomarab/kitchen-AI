@@ -209,6 +209,17 @@ recipe steps as context. No new write path.
 - **Frame sampling**, not full-motion video, to bound cost and bandwidth; enforce a per-session and
   per-household budget cap through the existing spend guard before/again during a session.
 - Nothing is written to inventory without an explicit user confirmation step.
+- **The ledger records assistant provenance honestly.** A confirmed detection is written with
+  `source: 'assistant'` — a value added to `inventorySourceSchema` and the `inventory_source`
+  Postgres enum for exactly this purpose. The first implementation reused `'photo'`, which recorded
+  a photograph nobody took; the ledger is append-only, so such a value is permanent and can only be
+  annotated by a later event, never corrected. Because the enum is enforced in three places (zod
+  contract, Postgres type, migration), `apps/api/src/db/schema.spec.ts` asserts every Postgres enum
+  equals its contract counterpart, and one live-DB test writes an assistant-sourced item so a
+  migration that never reached the database fails loudly rather than at runtime.
+- **Catalog hints travel with the confirm payload.** `ingredients` is a global table whose `category`
+  defaults to `'other'`, so both names and the recognized category must reach the API on unresolved
+  rows. Dropping them mis-files the ingredient for _every_ household, not just the one confirming.
 - Video/audio are streamed for inference, not persisted, unless the user saves a still.
 
 Prototype: `06-live-assistant.html`.

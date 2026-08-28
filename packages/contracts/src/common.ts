@@ -112,7 +112,15 @@ export const storageLocationTypeSchema = z.enum([
 ]);
 export type StorageLocationType = z.infer<typeof storageLocationTypeSchema>;
 
-export const inventorySourceSchema = z.enum(['photo', 'manual', 'barcode', 'receipt']);
+/**
+ * How an inventory event entered the ledger.
+ *
+ * The ledger is append-only, so this value is permanent: an item written with
+ * the wrong provenance stays wrong, and can only be annotated by a further
+ * event, never corrected. `assistant` exists because the live assistant was
+ * previously writing as `photo` — a session where nobody took a photo.
+ */
+export const inventorySourceSchema = z.enum(['photo', 'manual', 'barcode', 'receipt', 'assistant']);
 export type InventorySource = z.infer<typeof inventorySourceSchema>;
 
 export const mealSlotSchema = z.enum(['breakfast', 'lunch', 'dinner', 'snack']);

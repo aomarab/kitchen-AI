@@ -78,6 +78,32 @@ describe('ReviewList (AI review)', () => {
     expect(mutate).toHaveBeenCalledTimes(1);
   });
 
+  it('sends every catalog hint — both names and the category — on unresolved rows', () => {
+    renderReview();
+    fireEvent.click(screen.getByRole('button', { name: 'Add all to kitchen' }));
+
+    const body = mutate.mock.calls[0]?.[0] as {
+      items: Array<Record<string, unknown>>;
+    };
+    // Resolved row: the catalog row already exists, so no raw hints are sent.
+    expect(body.items[0]).toMatchObject({
+      ingredientId: 'b1111111-1111-4111-8111-111111111111',
+      rawName: undefined,
+      rawNameAr: undefined,
+      rawCategory: undefined,
+    });
+    // Unresolved row: the API will *create* the catalog row from these hints,
+    // and `ingredients` is global with a `category` default of 'other'. Drop
+    // the category here and every household reads this ingredient as "other"
+    // forever — mobile has always sent it, the web client had not.
+    expect(body.items[1]).toMatchObject({
+      ingredientId: null,
+      rawName: 'Mystery leaf',
+      rawNameAr: 'ورقة غامضة',
+      rawCategory: 'vegetable',
+    });
+  });
+
   it('tells the user when a commit failed instead of looking like nothing happened', () => {
     mutationState = { isError: true, error: new Error('boom') };
     renderReview();

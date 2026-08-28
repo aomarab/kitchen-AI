@@ -100,6 +100,7 @@ export const inventorySourceEnum = pgEnum('inventory_source', [
   'manual',
   'barcode',
   'receipt',
+  'assistant',
 ]);
 export const inventoryEventReasonEnum = pgEnum('inventory_event_reason', [
   'added',
