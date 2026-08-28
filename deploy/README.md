@@ -99,7 +99,11 @@ docker compose -f docker-compose.prod.yml --profile seed run --rm seed
 
 ```bash
 curl -fsS https://$API_DOMAIN/health      # {"status":"ok","database":true,...}
+./deploy/smoke.sh https://$API_DOMAIN     # end-to-end: health + validation path
 ```
+
+`deploy/smoke.sh` is non-invasive (creates no data) and exits non-zero on
+failure, so it doubles as a deploy gate.
 
 Point the mobile app at it by building with
 `EXPO_PUBLIC_API_URL=https://$API_DOMAIN` and `EXPO_PUBLIC_USE_MOCKS=false`.
