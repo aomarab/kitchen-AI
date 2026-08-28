@@ -9,6 +9,7 @@ import { useFormat } from '../../hooks/useFormat';
 import { useBarcodeLookup } from '../../hooks/capture';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
 import { locationLabel, unitLabel } from '../../lib/format';
+import { buildBarcodeInput } from '../../lib/capture';
 import { radius, spacing } from '../../theme';
 
 type Lookup = RouteResponse<'lookupBarcode'>;
@@ -42,23 +43,10 @@ export function BarcodeCapture() {
   };
 
   const confirm = async () => {
-    if (!result?.found || !locationId) return;
-    await create.mutateAsync({
-      items: [
-        {
-          ingredientId: result.match?.ingredientId ?? null,
-          rawName: result.match?.ingredientId ? undefined : result.productName ?? undefined,
-          locationId,
-          quantity,
-          unit,
-          brand: result.brand,
-          expiresAt: null,
-          source: 'barcode',
-          confidence: result.match?.confidence ?? null,
-          photoKey: null,
-        },
-      ],
-    });
+    if (!result) return;
+    const input = buildBarcodeInput(result, { quantity, unit, locationId });
+    if (!input) return;
+    await create.mutateAsync({ items: [input] });
     router.replace('/kitchen');
   };
 

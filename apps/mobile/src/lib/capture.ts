@@ -1,4 +1,5 @@
 import type {
+  BarcodeLookupResponse,
   InventoryItemInput,
   RecognitionSession,
   StorageLocation,
@@ -100,4 +101,36 @@ export function buildInventoryInputs(
 
 export function includedCount(rows: readonly ReviewRow[]): number {
   return rows.filter((row) => row.include && row.locationId !== '').length;
+}
+
+/**
+ * The confirmed add from a barcode scan (spec §5.2).
+ *
+ * Kept here, beside {@link buildInventoryInputs}, because it has the same job
+ * and the same trap: when the lookup did not resolve to a catalog ingredient,
+ * confirming this creates a row in the global `ingredients` table that every
+ * household then reads. Anything the lookup knew and this function drops is
+ * lost permanently — so the Arabic name and the category are carried through
+ * exactly as the photo path carries them.
+ */
+export function buildBarcodeInput(
+  lookup: BarcodeLookupResponse,
+  options: { quantity: number; unit: Unit; locationId: string },
+): InventoryItemInput | null {
+  if (!lookup.found || !lookup.productName || options.locationId === '') return null;
+  const ingredientId = lookup.match?.ingredientId ?? null;
+  return {
+    ingredientId,
+    rawName: ingredientId ? undefined : lookup.productName,
+    rawNameAr: ingredientId ? undefined : (lookup.productNameAr ?? undefined),
+    rawCategory: ingredientId ? undefined : (lookup.category ?? undefined),
+    locationId: options.locationId,
+    quantity: options.quantity,
+    unit: options.unit,
+    brand: lookup.brand,
+    expiresAt: null,
+    source: 'barcode',
+    confidence: lookup.match?.confidence ?? null,
+    photoKey: null,
+  };
 }
