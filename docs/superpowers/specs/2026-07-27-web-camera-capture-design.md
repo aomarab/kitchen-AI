@@ -1,8 +1,16 @@
 # Web camera capture
 
 **Date:** 2026-07-27
-**Status:** Approved, ready for implementation planning
+**Status:** Approved; reconciled 2026-08-28 against the model-routing spec, ready for implementation
+planning
 **Scope:** `apps/web`, `packages/api-client`, `packages/i18n`
+
+> **Reconciliation note (2026-08-28).** This spec was written before
+> `2026-08-11-model-routing-design.md`, which is now authoritative on capture dimensions and added a
+> server-side size backstop. The section **"Reconciliation (2026-08-28)"** below supersedes the
+> specific resize and `contentType` details in the body — chiefly the `toBlob('image/jpeg', 0.6)` at
+> 1920 px in "Camera states" and the "`contentType` comes from the blob" paragraph in "User flow".
+> Both are annotated inline. Everything else in the body stands.
 
 ## Summary
 
@@ -21,6 +29,54 @@ fridge.
 
 This spec makes that path real: open the camera, take a photo, upload it, and
 recognise ingredients from it.
+
+## Reconciliation (2026-08-28)
+
+Three points below are superseded by `2026-08-11-model-routing-design.md`, which was written after
+this spec and is authoritative on capture dimensions. They are consolidated here so the body can be
+read with the corrections in hand.
+
+### 1. Resize is mandatory, not a 1920 px / quality-0.6 nicety
+
+Every photo — live-camera **and** file-picked — is re-encoded to a **1024 px longest edge at JPEG
+quality 0.7** (`MAX_IMAGE_EDGE_PX = 1024`, `IMAGE_JPEG_QUALITY = 0.7`, the model-routing constants),
+not the 1920 px / `toBlob(…, 0.6)` this spec's "Camera states" section describes.
+
+This is now a correctness requirement, not a bandwidth optimisation. `presignUpload` enforces
+`MAX_CAPTURE_UPLOAD_BYTES = 2 MB` for the `inventory_photo` purpose
+(`apps/api/src/storage/storage.service.ts`) and rejects an oversized request with
+`VALIDATION_FAILED`; vision is billed on **dimensions**, not bytes. An un-resized frame is therefore
+both a hard upload failure and, if it slipped through, wasted spend. A 1024 px JPEG at 0.7 lands
+well under 2 MB.
+
+The fit maths lives in a new pure module `apps/web/src/lib/image.ts`, mirroring mobile's
+`fitWithin` and the two constants. It is **duplicated, not imported from mobile** — mobile's
+`lib/image.ts` states that capture is a per-app concern and "neither app should reach into the
+other," and the resize itself is platform-native anyway (`expo-image-manipulator` on mobile, canvas
+on web). A guard test asserts the web constants equal the mandated `1024` / `0.7`, so a future edit
+that drifts from the authority reddens.
+
+### 2. Orientation is baked into the pixels on the file path
+
+A live-camera frame drawn from `<video>` to `<canvas>` is already upright. A photo **picked from
+disk** — a phone JPEG or HEIC — carries its rotation in EXIF, and a naive canvas draw discards that
+metadata and emits sideways pixels. A sideways shelf recognises worse than an upright one, so
+orientation must be baked in: the encode reads the source with
+`createImageBitmap(blob, { imageOrientation: 'from-image' })` before drawing to the 1024 px canvas.
+
+### 3. One `image/jpeg` output; no `contentType`-from-blob branch
+
+Because every photo is re-encoded through the canvas, the uploaded blob is **always `image/jpeg`**,
+whatever the input was. This supersedes the "`contentType` comes from the blob, not a constant"
+paragraph in "User flow": presign is always signed for `image/jpeg`, and the HEIC/PNG/WebP handling
+that paragraph anticipates is dissolved rather than solved — a HEIC file becomes a JPEG the moment
+it is drawn to the canvas.
+
+Both paths converge on a single injectable `encodeResized(source) => Promise<Blob>` (the seam this
+spec's "Testing" section already introduces for jsdom). jsdom cannot run canvas or
+`createImageBitmap`, so component tests stub it and the pure `fitWithin` maths carries the unit
+coverage; the real encode — and the "is a sideways file-pick upright?" question — is a required
+**manual hardware gate** alongside the webcam gate this spec already names.
 
 ## What already exists
 
@@ -64,6 +120,11 @@ Both apps already depend on `@kitchen/api-client`, so no new package wiring.
 ## Architecture
 
 Five units, each with one responsibility.
+
+> **Reconciliation (2026-08-28) adds a sixth:** the pure resize module
+> `apps/web/src/lib/image.ts` (`fitWithin` + the `1024` / `0.7` constants). See "Reconciliation
+> (2026-08-28)" §1. It has one responsibility — the fit maths — and no browser dependency, so it is
+> unit-tested directly; the canvas encode that consumes it stays behind the injectable seam.
 
 ### `packages/api-client/src/upload.ts` — moved
 
@@ -161,6 +222,10 @@ four are valid per `presignUploadRequestSchema`, and signing the wrong type
 breaks the upload. The value is read from `blob.type` and validated against the
 enum before presigning.
 
+> **Superseded — see "Reconciliation (2026-08-28)" §3.** Because every photo is re-encoded through
+> the canvas, the uploaded blob is **always `image/jpeg`**; presign is always signed for
+> `image/jpeg` and there is no PNG/WebP/HEIC branch to sign.
+
 **The file fallback needs no separate path.** `File extends Blob`, so a
 `PhotoUploader<Blob>` serves both the canvas capture and the file input with
 one implementation.
@@ -187,6 +252,10 @@ required or iOS Safari refuses to play inline. The stream is requested as
 rather than throwing. The shutter draws the current frame to a `<canvas>` and
 encodes `toBlob('image/jpeg', 0.6)`, matching mobile's quality and keeping a
 1920-wide frame near 200–400 KB against a 15 MB cap.
+
+> **Superseded — see "Reconciliation (2026-08-28)" §1.** The canvas is sized to a **1024 px**
+> longest edge and encoded at **quality 0.7**, not 1920 px / 0.6: the API now rejects an
+> `inventory_photo` presign above 2 MB, and vision is billed on dimensions.
 
 **The preview is not mirrored.** Selfie mirroring suits faces; here people hold
 up packaging, and mirrored text is unreadable.
@@ -274,11 +343,16 @@ real one runs in the browser.
 | `upload.spec.ts` in its new home, unchanged | The move was faithful, not merely compiling |
 | One non-string photo type | The generic actually generalises |
 | Web `PhotoUploader` | PUT method, headers, body and status passthrough |
+| `fitWithin` maths (`image.ts`) | 1024 px cap, aspect ratio preserved, never upscales |
+| Constants-drift guard | Web `MAX_IMAGE_EDGE_PX` / `IMAGE_JPEG_QUALITY` equal the mandated `1024` / `0.7` |
 | `PhotoCapture`: denied | File input appears |
 | `PhotoCapture`: cap | The 10-photo limit holds |
 | `PhotoCapture`: double submit | Exactly one presign |
 | `PhotoCapture`: empty result | "Nothing recognised", not an empty review list |
 | Web `coverage.spec.ts` (ported) | Every called route has an MSW handler |
+
+Each named check gets a falsifiable case in `scripts/fault-inject-assistant.mjs`, per the standing
+discipline — a claim is only as strong as the injection that reddens the check naming it.
 
 The cleanup test is the highest-value one: a leaked stream is nearly invisible
 manually — the webcam light stays on and nothing else looks wrong.
