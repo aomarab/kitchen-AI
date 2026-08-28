@@ -7,6 +7,7 @@ import { useLocale } from '../../lib/locale';
 const TABS = [
   { href: '/admin', key: 'web.admin.navFeedback' },
   { href: '/admin/products', key: 'web.admin.navProducts' },
+  { href: '/admin/credits', key: 'web.admin.navCredits' },
 ] as const;
 
 /**

@@ -201,6 +201,17 @@ than folded into an action, which would overstate what that action costs.
 measures zero cost is either an action that failed before calling a vendor, or `assistant.session`,
 whose cost is unobservable by construction (§1.2).
 
+**Reading it back — the staff calibration surface.** `GET /admin/credits/calibration` (`staff: true`,
+`CreditCalibrationService` + `AdminCreditsController` in the AI module) turns that query into a
+report: each action's listed price against the vendor cost measured over a trailing window, with the
+measured cost expressed back in credits at the cost basis so the two are directly comparable. Every
+action is classified `covered`, `underpriced`, `unmeasured` (charged but no cost recorded — a failed
+call, or `assistant.session` which is `measurable: false` by construction and so is never reported
+`covered`), or `unused`. The classification boundary is decided before display rounding. This is the
+mechanism that keeps `CREDIT_COSTS` from going quietly stale: a rate that drifts past the price it was
+set from now surfaces on a screen a human reads, instead of failing nowhere. The report reads across
+all households, so it is a global cost view, not a per-household bill.
+
 **`paid_balance` may go negative.** When a refund arrives for credits already consumed, the honest
 record is a negative balance the user must buy out of. Clamping to zero silently writes off exactly
 the abuse the stores warn about.

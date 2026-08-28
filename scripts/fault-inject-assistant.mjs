@@ -69,6 +69,16 @@ const REALTIME_COST_SPEC = ['@kitchen/api', 'src/ai/realtime-cost.spec.ts'];
 const ATTRIBUTION_SPEC = ['@kitchen/api', 'src/credits/cost-attribution.spec.ts'];
 const BILLING_CONTEXT_SPEC = ['@kitchen/api', 'src/ai/__tests__/billing-context.spec.ts'];
 
+const CALIBRATION = 'apps/api/src/ai/usage/calibration.service.ts';
+const ADMIN_CREDITS = 'apps/api/src/ai/usage/admin-credits.controller.ts';
+const CALIBRATION_VIEW = 'apps/web/src/components/admin/CreditCalibrationView.tsx';
+const CALIBRATION_SPEC = ['@kitchen/api', 'src/ai/usage/calibration.service.spec.ts'];
+const CALIBRATION_ROUTE_SPEC = ['@kitchen/api', 'src/ai/usage/admin-credits.controller.spec.ts'];
+const CALIBRATION_VIEW_SPEC = [
+  '@kitchen/web',
+  'src/components/admin/CreditCalibrationView.test.tsx',
+];
+
 const CASES = [
   {
     // The ledger is append-only: provenance written here is permanent. This is
@@ -784,6 +794,113 @@ const CASES = [
     check: 'does not attribute one household usage to another',
     from: '          scope(creditLedger.householdId),\n        ),\n      )\n      .groupBy(creditLedger.action);',
     to: '        ),\n      )\n      .groupBy(creditLedger.action);',
+  },
+  {
+    // The whole question the surface answers: does a measured cost above the
+    // listed price get called out? Blunt the comparison and an underpriced
+    // action reads as covered — the exact failure that lets the margin bleed.
+    name: 'an action that costs more than it sells for is not flagged',
+    file: CALIBRATION,
+    spec: CALIBRATION_SPEC,
+    check: 'classifies each action by measured cost against its listed price',
+    from: 'perCharge! > CREDIT_COSTS[action]',
+    to: 'perCharge! > CREDIT_COSTS[action] * 1000',
+  },
+  {
+    // `assistant.session` is billed by the provider and can never be measured.
+    // Marking it measurable is how a feature we cannot see would eventually be
+    // reported as covered — the one thing this surface must never claim.
+    name: 'the unmeasurable assistant session is marked measurable',
+    file: CALIBRATION,
+    spec: CALIBRATION_SPEC,
+    check: 'never reports assistant.session as covered, even when charged',
+    from: 'const measurable = !UNMEASURABLE_ACTIONS.has(action);',
+    to: 'const measurable = true;',
+  },
+  {
+    // The report exists to put the money-losing rows at the top. Flatten the
+    // ordering and an underpriced action can hide below a dozen covered ones.
+    name: 'the worst-margin action no longer sorts to the top',
+    file: CALIBRATION,
+    spec: CALIBRATION_SPEC,
+    check: 'orders underpriced first, then covered by cost, then unmeasured, then unused',
+    from: 'const rank = STATUS_RANK[a.status] - STATUS_RANK[b.status];',
+    to: 'const rank = 0;',
+  },
+  {
+    // Every price in the table is a cost divided by this basis; the surface
+    // reports it so a reader can redo the arithmetic. A wrong basis makes every
+    // credit figure it shows unfalsifiable.
+    name: 'the reported credit sale value is wrong',
+    file: CALIBRATION,
+    spec: CALIBRATION_SPEC,
+    check: 'reports the cost basis and credit sale value the whole table is priced from',
+    from: 'const creditValueUsd = creditRevenueUsd();',
+    to: 'const creditValueUsd = creditRevenueUsd() + 1;',
+  },
+  {
+    // Dropping an action from the sweep is how a price silently escapes review:
+    // the row a reader would have judged simply is not there.
+    name: 'one credit action is dropped from the report',
+    file: CALIBRATION,
+    spec: CALIBRATION_SPEC,
+    check: 'lists every credit action exactly once',
+    from: 'creditActionSchema.options.map((action) => {',
+    to: 'creditActionSchema.options.slice(1).map((action) => {',
+  },
+  {
+    // The web AdminGate only hides the console; this guard is the boundary.
+    // Remove it and any signed-in household could read the whole estate's
+    // margins.
+    name: 'a non-staff caller can read the calibration report',
+    file: ADMIN_CREDITS,
+    spec: CALIBRATION_ROUTE_SPEC,
+    check: 'rejects a non-staff caller',
+    from: '@UseGuards(AuthGuard, StaffGuard)',
+    to: '@UseGuards(AuthGuard)',
+  },
+  {
+    // Invert the window and the report measures a future that has no rows,
+    // reporting every action as never used while real charges sit just outside
+    // the range.
+    name: 'the measurement window points at the future',
+    file: CALIBRATION,
+    spec: CALIBRATION_ROUTE_SPEC,
+    check: 'reads the seeded charge and its vendor cost through the full stack',
+    from: 'const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);',
+    to: 'const since = new Date(Date.now() + days * 24 * 60 * 60 * 1000);',
+  },
+  {
+    // Render only the first row and the table looks populated while hiding
+    // every action a reader came to check.
+    name: 'the calibration table renders only the first action',
+    file: CALIBRATION_VIEW,
+    spec: CALIBRATION_VIEW_SPEC,
+    check: 'shows every action with its measured status',
+    from: 'query.data.rows.map((row) => {',
+    to: 'query.data.rows.slice(0, 1).map((row) => {',
+  },
+  {
+    // An unmeasurable action must read as such, not as a measured value. Force
+    // the value branch and `assistant.session` shows a fabricated number where
+    // "Not measured" belongs.
+    name: 'an unmeasurable action shows a fabricated cost instead of "Not measured"',
+    file: CALIBRATION_VIEW,
+    spec: CALIBRATION_VIEW_SPEC,
+    check: 'flags an unmeasurable action rather than showing it as free',
+    from: 'row.measuredCreditsPerCharge === null ? (',
+    to: 'false ? (',
+  },
+  {
+    // The default window is part of the contract the test pins: land on the
+    // wrong one and the first thing staff see is a different period than the
+    // page claims.
+    name: 'the report opens on the wrong default window',
+    file: CALIBRATION_VIEW,
+    spec: CALIBRATION_VIEW_SPEC,
+    check: 'defaults to a 30-day window and re-queries when the window changes',
+    from: 'useState<CalibrationWindow>(30)',
+    to: 'useState<CalibrationWindow>(7)',
   },
 ];
 

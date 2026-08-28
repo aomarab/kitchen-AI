@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  CreditCalibrationQuery,
   ListFeedbackQuery,
   ListProductFeedbackQuery,
   RouteBody,
@@ -148,4 +149,24 @@ export async function fetchAllProductComments(filters: ProductFilters, maxRows =
     cursor = page.nextCursor ?? undefined;
   } while (cursor && rows.length < maxRows);
   return rows;
+}
+
+/* ------------------------------------------------------------------ */
+/* Credit calibration ("are we covering costs?")                       */
+/* ------------------------------------------------------------------ */
+
+export type CalibrationWindow = NonNullable<CreditCalibrationQuery['days']>;
+
+export const calibrationKeys = {
+  window: (days: CalibrationWindow) => ['admin', 'credits', 'calibration', days] as const,
+};
+
+export function useCreditCalibration(days: CalibrationWindow) {
+  const ready = useMocksReady();
+  return useQuery({
+    queryKey: calibrationKeys.window(days),
+    queryFn: () => api.call('adminCreditsCalibration', { query: { days } }),
+    enabled: ready,
+    retry: false,
+  });
 }
