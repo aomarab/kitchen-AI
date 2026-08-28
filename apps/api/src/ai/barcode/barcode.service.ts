@@ -24,9 +24,11 @@ export class BarcodeService {
       return {
         found: false,
         productName: null,
+        productNameAr: null,
         brand: null,
         imageUrl: null,
         match: null,
+        category: null,
         suggestedQuantity: null,
         suggestedUnit: null,
       };
@@ -44,6 +46,10 @@ export class BarcodeService {
     return {
       found: true,
       productName: product.productName,
+      // Both of these matter only when `match.ingredientId` is null, which is
+      // exactly when confirming the scan creates a global catalog row. Passing
+      // them through is what stops that row being English-only and `other`.
+      productNameAr: product.productNameAr,
       brand: product.brand,
       imageUrl: product.imageUrl,
       match: {
@@ -52,6 +58,7 @@ export class BarcodeService {
         confidence: resolved?.confidence ?? 0,
         rawName: product.productName,
       },
+      category: product.category,
       suggestedQuantity: product.quantity,
       suggestedUnit: product.unit,
     };

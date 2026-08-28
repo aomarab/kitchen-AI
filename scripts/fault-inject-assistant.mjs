@@ -29,6 +29,9 @@ const AR_CATALOG = 'packages/i18n/src/ar.ts';
 const REVIEW_LIST = 'apps/web/src/components/kitchen/ReviewList.tsx';
 const DB_SCHEMA = 'apps/api/src/db/schema.ts';
 const LABELS = 'apps/web/src/lib/labels.ts';
+const OFF_CLIENT = 'apps/api/src/ai/clients/http-open-food-facts.client.ts';
+const BARCODE_SERVICE = 'apps/api/src/ai/barcode/barcode.service.ts';
+const MOBILE_CAPTURE = 'apps/mobile/src/lib/capture.ts';
 const MOCK = 'apps/web/src/lib/assistant/mock-realtime.ts';
 const CONNECTIVITY = 'apps/web/src/stores/connectivity.ts';
 const SCREEN_VIEW = 'apps/web/src/components/screen/SmartScreenView.tsx';
@@ -45,6 +48,12 @@ const I18N_SPEC = ['@kitchen/i18n', 'src/catalog.spec.ts'];
 const REVIEW_LIST_SPEC = ['@kitchen/web', 'src/components/kitchen/ReviewList.test.tsx'];
 const DB_SCHEMA_SPEC = ['@kitchen/api', 'src/db/schema.spec.ts'];
 const ITEM_SHEET_SPEC = ['@kitchen/web', 'src/components/kitchen/ItemSheet.test.tsx'];
+const OFF_CLIENT_SPEC = [
+  '@kitchen/api',
+  'src/ai/clients/__tests__/http-open-food-facts.client.spec.ts',
+];
+const BARCODE_SERVICE_SPEC = ['@kitchen/api', 'src/ai/barcode/barcode.service.spec.ts'];
+const MOBILE_CAPTURE_SPEC = ['@kitchen/mobile', 'src/lib/capture.spec.ts'];
 const MOCK_SPEC = ['@kitchen/web', 'src/lib/assistant/mock-realtime.test.ts'];
 const CONNECTIVITY_SPEC = ['@kitchen/web', 'src/stores/connectivity.test.ts'];
 const SCREEN_VIEW_SPEC = ['@kitchen/web', 'src/components/screen/SmartScreenView.test.tsx'];
@@ -419,6 +428,108 @@ const CASES = [
     check: 'saves the persona the user picks',
     from: '              onClick={() => update.mutate({ assistantPersona: persona })}',
     to: "              onClick={() => update.mutate({ assistantPersona: 'noor' })}",
+  },
+
+  /* ---- The barcode path's catalog hints (Feature spec §5.2) ---- */
+
+  {
+    // The same defect class as the assistant's `source="photo"`: a scan that
+    // resolves to nothing creates a row in the global `ingredients` table, so
+    // a hint dropped anywhere on this path is dropped for every household.
+    name: 'the barcode lookup throws away the product category it was given',
+    file: BARCODE_SERVICE,
+    spec: BARCODE_SERVICE_SPEC,
+    check: 'carries the Arabic name and the category of an unmatched product',
+    from: '      category: product.category,',
+    to: '      category: null,',
+  },
+  {
+    name: 'the barcode lookup throws away the product\u2019s Arabic name',
+    file: BARCODE_SERVICE,
+    spec: BARCODE_SERVICE_SPEC,
+    check: 'carries the Arabic name and the category of an unmatched product',
+    from: '      productNameAr: product.productNameAr,',
+    to: '      productNameAr: null,',
+  },
+  {
+    // Scanning is not confirming. Creating here would put a row in the global
+    // catalog for a product the user is still looking at.
+    name: 'a bare lookup creates the catalog row before the user confirms',
+    file: BARCODE_SERVICE,
+    spec: BARCODE_SERVICE_SPEC,
+    check: 'never creates a catalog row from a lookup alone',
+    from: '      createIfMissing: false,',
+    to: '      createIfMissing: true,',
+  },
+  {
+    name: 'the client stops reading the Arabic name Open Food Facts returned',
+    file: OFF_CLIENT,
+    spec: OFF_CLIENT_SPEC,
+    check: 'keeps the Arabic name and the category the record carried',
+    from: '      productNameAr: body.product.product_name_ar ?? null,',
+    to: '      productNameAr: null,',
+  },
+  {
+    name: 'the client stops asking Open Food Facts for the category tags',
+    file: OFF_CLIENT,
+    spec: OFF_CLIENT_SPEC,
+    check: 'asks for the fields it reads, including the category tags',
+    from: "  'categories_tags',\n].join(',');",
+    to: "].join(',');",
+  },
+  {
+    // OFF slugs are head-final compounds. Matching anywhere in the slug reads
+    // "breaded-cheeses" as bread.
+    name: 'the category is matched anywhere in the slug instead of on its head noun',
+    file: OFF_CLIENT,
+    spec: OFF_CLIENT_SPEC,
+    check: 'reads the head noun, not any word in the slug',
+    from: '    const head = words[words.length - 1]!;',
+    to: '    const head = words[0]!;',
+  },
+  {
+    // The list runs general to specific, so reading it forwards answers
+    // "beverage" for a cola and "meat" for a chicken.
+    name: 'the tag list is read forwards, returning the vaguest category rather than the most specific',
+    file: OFF_CLIENT,
+    spec: OFF_CLIENT_SPEC,
+    check: 'resolves chicken to poultry rather than meat, which OFF files it under too',
+    from: '  for (let i = english.length - 1; i >= 0; i -= 1) {',
+    to: '  for (let i = 0; i < english.length; i += 1) {',
+  },
+  {
+    name: 'the confirmed barcode add drops the category the lookup resolved',
+    file: MOBILE_CAPTURE,
+    spec: MOBILE_CAPTURE_SPEC,
+    check: 'carries the name, the Arabic name and the category of an unmatched product',
+    from: '    rawCategory: ingredientId ? undefined : (lookup.category ?? undefined),',
+    to: '    rawCategory: undefined,',
+  },
+  {
+    name: 'the confirmed barcode add drops the Arabic name the lookup resolved',
+    file: MOBILE_CAPTURE,
+    spec: MOBILE_CAPTURE_SPEC,
+    check: 'carries the name, the Arabic name and the category of an unmatched product',
+    from: '    rawNameAr: ingredientId ? undefined : (lookup.productNameAr ?? undefined),',
+    to: '    rawNameAr: undefined,',
+  },
+  {
+    // Sending hints alongside a resolved id would re-describe an ingredient
+    // the catalog already has, from a single product's packaging.
+    name: 'the hints are sent even when the scan already matched the catalog',
+    file: MOBILE_CAPTURE,
+    spec: MOBILE_CAPTURE_SPEC,
+    check: 'omits the hints when the scan already matched the catalog',
+    from: '    rawName: ingredientId ? undefined : lookup.productName,',
+    to: '    rawName: lookup.productName,',
+  },
+  {
+    name: 'a barcode add is built with no storage location',
+    file: MOBILE_CAPTURE,
+    spec: MOBILE_CAPTURE_SPEC,
+    check: 'refuses to build an add with no product or no location',
+    from: "  if (!lookup.found || !lookup.productName || options.locationId === '') return null;",
+    to: '  if (!lookup.found || !lookup.productName) return null;',
   },
 
   /* ---- The speaking state (Feature 5) and the kiosk's connection (Feature 1) ---- */

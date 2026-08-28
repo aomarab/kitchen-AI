@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { RecognitionSession, RecognizedItem, StorageLocation } from '@kitchen/contracts';
+import type {
+  BarcodeLookupResponse,
+  RecognitionSession,
+  RecognizedItem,
+  StorageLocation,
+} from '@kitchen/contracts';
 import {
   LOW_CONFIDENCE,
+  buildBarcodeInput,
   buildInventoryInputs,
   includedCount,
   initialReviewRows,
@@ -73,7 +79,13 @@ describe('buildInventoryInputs — the only path into inventory (spec §5.1)', (
 
   it('commits only the kept rows, carrying the capture source through', () => {
     const rows = initialReviewRows(
-      session([recognized(), recognized({ tempId: 'tmp-2', match: { ingredientId: 'ing-2', strategy: 'exact', confidence: 0.8, rawName: 'Onion' } })]),
+      session([
+        recognized(),
+        recognized({
+          tempId: 'tmp-2',
+          match: { ingredientId: 'ing-2', strategy: 'exact', confidence: 0.8, rawName: 'Onion' },
+        }),
+      ]),
       LOCATIONS,
     );
     rows[1]!.include = false;
@@ -92,7 +104,12 @@ describe('buildInventoryInputs — the only path into inventory (spec §5.1)', (
 
   it('sends rawName instead of an id for unresolved matches', () => {
     const item = recognized({
-      match: { ingredientId: null, strategy: 'unresolved', confidence: 0.3, rawName: 'Mystery herb' },
+      match: {
+        ingredientId: null,
+        strategy: 'unresolved',
+        confidence: 0.3,
+        rawName: 'Mystery herb',
+      },
     });
     const rows = initialReviewRows(session([item]), LOCATIONS);
     const [input] = buildInventoryInputs(rows, 'photo');
@@ -117,5 +134,82 @@ describe('buildInventoryInputs carries what recognition identified', () => {
   it('omits it when the row already matched the catalog, which is already categorised', () => {
     const rows = initialReviewRows(session([recognized()]), LOCATIONS);
     expect(buildInventoryInputs(rows, 'photo')[0]!.rawCategory).toBeUndefined();
+  });
+});
+
+describe('buildBarcodeInput', () => {
+  const found: BarcodeLookupResponse = {
+    found: true,
+    productName: 'Pomegranate Molasses',
+    productNameAr: 'دبس الرمان',
+    brand: 'Cortas',
+    imageUrl: 'https://img.test/molasses.jpg',
+    match: {
+      ingredientId: null,
+      strategy: 'unresolved',
+      confidence: 0,
+      rawName: 'Pomegranate Molasses',
+    },
+    category: 'condiment',
+    suggestedQuantity: 600,
+    suggestedUnit: 'ml',
+  };
+  const options = { quantity: 600, unit: 'ml' as const, locationId: 'loc-pantry' };
+
+  it('carries the name, the Arabic name and the category of an unmatched product', () => {
+    // Confirming an unmatched scan creates a row in the global ingredient
+    // catalog. A payload missing these files it English-only under "other",
+    // for every household, permanently.
+    const input = buildBarcodeInput(found, options)!;
+
+    expect(input.ingredientId).toBeNull();
+    expect(input.rawName).toBe('Pomegranate Molasses');
+    expect(input.rawNameAr).toBe('دبس الرمان');
+    expect(input.rawCategory).toBe('condiment');
+  });
+
+  it('sends the whole add, not just the parts under test', () => {
+    expect(buildBarcodeInput(found, options)).toEqual({
+      ingredientId: null,
+      rawName: 'Pomegranate Molasses',
+      rawNameAr: 'دبس الرمان',
+      rawCategory: 'condiment',
+      locationId: 'loc-pantry',
+      quantity: 600,
+      unit: 'ml',
+      brand: 'Cortas',
+      expiresAt: null,
+      source: 'barcode',
+      confidence: 0,
+      photoKey: null,
+    });
+  });
+
+  it('omits the hints when the scan already matched the catalog', () => {
+    const matched: BarcodeLookupResponse = {
+      ...found,
+      match: { ingredientId: 'ing-7', strategy: 'alias', confidence: 0.9, rawName: 'Molasses' },
+    };
+    const input = buildBarcodeInput(matched, options)!;
+
+    expect(input.ingredientId).toBe('ing-7');
+    expect(input.rawName).toBeUndefined();
+    expect(input.rawNameAr).toBeUndefined();
+    expect(input.rawCategory).toBeUndefined();
+  });
+
+  it('passes nothing on rather than guessing when the lookup had no hints', () => {
+    const bare: BarcodeLookupResponse = { ...found, productNameAr: null, category: null };
+    const input = buildBarcodeInput(bare, options)!;
+
+    expect(input.rawName).toBe('Pomegranate Molasses');
+    expect(input.rawNameAr).toBeUndefined();
+    expect(input.rawCategory).toBeUndefined();
+  });
+
+  it('refuses to build an add with no product or no location', () => {
+    expect(buildBarcodeInput({ ...found, found: false }, options)).toBeNull();
+    expect(buildBarcodeInput({ ...found, productName: null }, options)).toBeNull();
+    expect(buildBarcodeInput(found, { ...options, locationId: '' })).toBeNull();
   });
 });

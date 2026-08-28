@@ -155,9 +155,23 @@ export type BarcodeLookupQuery = z.infer<typeof barcodeLookupQuerySchema>;
 export const barcodeLookupResponseSchema = z.object({
   found: z.boolean(),
   productName: z.string().nullable(),
+  /**
+   * The product's Arabic name, when the source record carries one. Confirming
+   * an unmatched scan writes a row to the global `ingredients` table, so a
+   * response with only one name gets that name filed under both languages for
+   * every household — see `rawNameAr` on `inventoryItemInputSchema`.
+   */
+  productNameAr: z.string().nullable(),
   brand: z.string().nullable(),
   imageUrl: z.string().url().nullable(),
   match: ingredientMatchSchema.nullable(),
+  /**
+   * What kind of product this is. Only meaningful when `match` is null: a scan
+   * that resolved to a catalog ingredient is already categorised. Null means
+   * the source had no category we recognise, and the item falls back to
+   * `other` exactly as it did before.
+   */
+  category: ingredientCategorySchema.nullable(),
   suggestedQuantity: quantitySchema.nullable(),
   suggestedUnit: unitSchema.nullable(),
 });

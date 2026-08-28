@@ -577,6 +577,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
       return HttpResponse.json({
         found: true,
         productName: 'Greek Yogurt 500g',
+        productNameAr: 'زبادي يوناني ٥٠٠ جم',
         brand: 'Al Marai',
         imageUrl: 'https://images.kitchenai.dev/products/yogurt.jpg',
         match: {
@@ -585,16 +586,40 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
           confidence: 0.9,
           rawName: 'Greek Yogurt',
         },
+        category: 'dairy',
         suggestedQuantity: 500,
+        suggestedUnit: 'ml',
+      });
+    }
+    // A real product the catalog has never seen. Confirming this is the case
+    // that creates a global ingredient row, so it is the one worth having a
+    // fixture for.
+    if (barcode === '6281000099999') {
+      return HttpResponse.json({
+        found: true,
+        productName: 'Pomegranate Molasses',
+        productNameAr: 'دبس الرمان',
+        brand: 'Cortas',
+        imageUrl: 'https://images.kitchenai.dev/products/molasses.jpg',
+        match: {
+          ingredientId: null,
+          strategy: 'unresolved',
+          confidence: 0,
+          rawName: 'Pomegranate Molasses',
+        },
+        category: 'condiment',
+        suggestedQuantity: 600,
         suggestedUnit: 'ml',
       });
     }
     return HttpResponse.json({
       found: false,
       productName: null,
+      productNameAr: null,
       brand: null,
       imageUrl: null,
       match: null,
+      category: null,
       suggestedQuantity: null,
       suggestedUnit: null,
     });

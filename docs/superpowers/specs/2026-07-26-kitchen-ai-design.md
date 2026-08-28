@@ -221,6 +221,27 @@ Open Food Facts API first — free, no key, good international and Arabic produc
 return a manual-entry prefill. Successful lookups are cached by writing the product name into
 `ingredients.aliases`.
 
+The lookup carries three things beyond the display fields, and all three matter only when the scan
+resolved to *no* catalog ingredient — which is exactly when confirming the add creates a row in the
+global `ingredients` table that every household then reads:
+
+- `productNameAr`, from the record's `product_name_ar`. Without it the API files one name under both
+  languages, so an Arabic household sees an English product name forever.
+- `category`, mapped from the record's `categories_tags`. Without it every scanned product is filed
+  as `other`, permanently.
+- `brand`, which is stored on the inventory item rather than the catalog row.
+
+The category mapping (`categoryFromOffTags`) reads the **head noun** of a slug, because Open Food
+Facts slugs are head-final compounds: `sweet-spreads` is a spread and `breaded-cheeses` is a cheese,
+so substring matching files a cheese as bread. The tag list runs general to specific, so it is read
+backwards. The map is deliberately partial and an unrecognised head yields `null`, which falls
+through to the existing `other` — the mapping can only improve on the status quo, never move a
+product that is already filed correctly. Records whose tags contradict each other exist (the
+taxonomy is crowd-edited) and will follow whichever contradiction is listed last; that is acceptable
+because the category is a hint shown on a product the user confirms before anything is written.
+
+Lookup never creates a catalog row (`createIfMissing: false`). Scanning is not confirming.
+
 ### 5.3 Receipt → Items (async job `receipt.parse`)
 
 Vision extraction of line items from a receipt photo, then a second LLM pass mapping each raw line
