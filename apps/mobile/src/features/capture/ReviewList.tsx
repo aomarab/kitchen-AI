@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import type { InventoryItemInput, RecognitionSession, StorageLocation } from '@kitchen/contracts';
+import type {
+  InventoryItemInput,
+  InventorySource,
+  RecognitionSession,
+  StorageLocation,
+} from '@kitchen/contracts';
 import { AppText, Badge, Button, Card, Chip, Field, QuantityStepper } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
-import type { CaptureSource } from '../../stores/capture';
 import {
   buildInventoryInputs,
   includedCount,
@@ -17,7 +21,7 @@ import { useTheme } from '../../theme/useTheme';
 
 export interface ReviewListProps {
   session: RecognitionSession;
-  source: CaptureSource;
+  source: InventorySource;
   locations: StorageLocation[];
   submitting?: boolean;
   onConfirm: (items: InventoryItemInput[]) => void;

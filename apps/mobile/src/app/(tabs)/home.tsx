@@ -204,6 +204,16 @@ export default function Home() {
       )}
 
       <View style={{ gap: spacing.sm }}>
+        <AppText variant="heading">{t('mobile.assistant.entry')}</AppText>
+        <ListRow
+          title={t('mobile.assistant.title')}
+          subtitle={t('mobile.assistant.entryHint')}
+          leading={<Icon name="sparkles" size={22} color={colors.primary} />}
+          onPress={() => router.push('/assistant')}
+        />
+      </View>
+
+      <View style={{ gap: spacing.sm }}>
         <AppText variant="heading">{t('mobile.home.quickAdd')}</AppText>
         <ListRow
           title={t('capture.photo')}
