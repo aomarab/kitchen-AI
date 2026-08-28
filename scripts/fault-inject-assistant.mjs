@@ -79,6 +79,19 @@ const CALIBRATION_VIEW_SPEC = [
   'src/components/admin/CreditCalibrationView.test.tsx',
 ];
 
+// --- web photo upload (2026-08-28 plan) ---
+const UPLOAD = 'packages/api-client/src/upload.ts';
+const WEB_IMAGE = 'apps/web/src/lib/image.ts';
+const WEB_PHOTO_UPLOADER = 'apps/web/src/lib/photo-uploader.ts';
+const WEB_CAMERA = 'apps/web/src/hooks/camera.ts';
+const PHOTO_CAPTURE = 'apps/web/src/components/kitchen/PhotoCapture.tsx';
+
+const UPLOAD_SPEC = ['@kitchen/api-client', 'src/upload.spec.ts'];
+const WEB_IMAGE_SPEC = ['@kitchen/web', 'src/lib/image.spec.ts'];
+const WEB_PHOTO_UPLOADER_SPEC = ['@kitchen/web', 'src/lib/photo-uploader.spec.ts'];
+const WEB_CAMERA_SPEC = ['@kitchen/web', 'src/hooks/camera.spec.ts'];
+const PHOTO_CAPTURE_SPEC = ['@kitchen/web', 'src/components/kitchen/PhotoCapture.test.tsx'];
+
 const CASES = [
   {
     // The ledger is append-only: provenance written here is permanent. This is
@@ -901,6 +914,103 @@ const CASES = [
     check: 'defaults to a 30-day window and re-queries when the window changes',
     from: 'useState<CalibrationWindow>(30)',
     to: 'useState<CalibrationWindow>(7)',
+  },
+  {
+    // A presigned key names an object that does not exist until its bytes land.
+    // Turning the rejection guard into a contradiction (`&&` is never true for a
+    // status) lets a failed PUT return a key recognition then sees as empty.
+    name: 'a rejected storage PUT is treated as a successful upload',
+    file: UPLOAD,
+    spec: UPLOAD_SPEC,
+    check: 'stops and throws rejected when a PUT fails',
+    from: 'if (status < 200 || status >= 300) {',
+    to: 'if (status < 200 && status >= 300) {',
+  },
+  {
+    // The API signs ContentLength into the URL, so a guessed size makes the
+    // signature reject the upload. Presigning a constant instead of the real
+    // byte size is exactly that guess.
+    name: 'the presigner is given a constant size, not the real one',
+    file: UPLOAD,
+    spec: UPLOAD_SPEC,
+    check: 'sends the real byte size to the presigner',
+    from: 'const target = await presign(size);',
+    to: 'const target = await presign(1);',
+  },
+  {
+    // Vision billing is by dimension, so upscaling a small image would inflate
+    // cost for no quality gain. Flipping the short-circuit makes fitWithin
+    // enlarge anything already under the cap.
+    name: 'a small image is upscaled instead of left alone',
+    file: WEB_IMAGE,
+    spec: WEB_IMAGE_SPEC,
+    check: 'never upscales a small image',
+    from: 'if (longest <= maxEdge) return { width, height };',
+    to: 'if (longest >= maxEdge) return { width, height };',
+  },
+  {
+    // 1024 is the edge the model-routing spec prices against. Any other value
+    // silently misprices every vision call.
+    name: 'the resize target drifts off the priced 1024px edge',
+    file: WEB_IMAGE,
+    spec: WEB_IMAGE_SPEC,
+    check: 'uses the resize target the model-routing spec mandates',
+    from: 'export const MAX_IMAGE_EDGE_PX = 1024;',
+    to: 'export const MAX_IMAGE_EDGE_PX = 1600;',
+  },
+  {
+    // Under mocks a presigned URL points at nothing; the short-circuit is what
+    // keeps the flow the mock exists to exercise green. Inverting it makes mock
+    // mode do a real fetch and live mode skip it.
+    name: 'the mock upload short-circuit is inverted',
+    file: WEB_PHOTO_UPLOADER,
+    spec: WEB_PHOTO_UPLOADER_SPEC,
+    check: 'short-circuits to 200 under mocks without fetching',
+    from: 'if (MOCKING_ENABLED) return 200;',
+    to: 'if (!MOCKING_ENABLED) return 200;',
+  },
+  {
+    // A refused permission offers a retry; an absent camera offers only a file
+    // input. Collapsing the refusal branch mislabels every denial as
+    // unavailable and hides the retry.
+    name: 'a refused camera permission is mislabelled unavailable',
+    file: WEB_CAMERA,
+    spec: WEB_CAMERA_SPEC,
+    check: 'maps a refused permission to denied',
+    from: "name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'unavailable'",
+    to: "false ? 'denied' : 'unavailable'",
+  },
+  {
+    // A leaked MediaStream keeps the webcam light on after the user leaves.
+    // Dropping the track.stop() call is the leak.
+    name: 'camera tracks are never stopped on cleanup',
+    file: WEB_CAMERA,
+    spec: WEB_CAMERA_SPEC,
+    check: 'stops every track on stop',
+    from: 'streamRef.current?.getTracks().forEach((track) => track.stop());',
+    to: 'streamRef.current?.getTracks().forEach((track) => void track);',
+  },
+  {
+    // Vision cost is per image, so an uncapped strip lets one submit bill for an
+    // unbounded number of photos. The cap is enforced twice (the onFiles slice
+    // and the addBlob guard), so mutating either alone is masked by the other;
+    // the shared MAX_PHOTOS constant is the single point both derive from.
+    name: 'the ten-photo cap is raised',
+    file: PHOTO_CAPTURE,
+    spec: PHOTO_CAPTURE_SPEC,
+    check: 'caps the thumbnail strip at ten photos',
+    from: 'const MAX_PHOTOS = 10;',
+    to: 'const MAX_PHOTOS = 15;',
+  },
+  {
+    // An empty recognition must reach the retake state, not call onItems with an
+    // empty list. `< 0` can never fire, so the empty branch dies.
+    name: 'the empty-recognition branch can never fire',
+    file: PHOTO_CAPTURE,
+    spec: PHOTO_CAPTURE_SPEC,
+    check: "couldn't identify",
+    from: 'if (session.items.length === 0) {',
+    to: 'if (session.items.length < 0) {',
   },
 ];
 
