@@ -1,0 +1,130 @@
+# Production single-VM deployment for the Kitchen AI API.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# It bundles the stateful backends the API talks to privately (PostgreSQL 17 +
+# pgvector, Redis) and runs the API image from apps/api/Dockerfile, with a
+# one-shot migration that must succeed before the API starts.
+#
+# Object storage (S3) is EXTERNAL on purpose: presigned upload URLs are minted
+# by the API and handed to the browser/mobile client, so S3_ENDPOINT must be a
+# publicly reachable address — an internal `minio:9000` hostname the client
+# cannot resolve would break uploads. Point S3_* at managed S3 (or a separately
+# hosted MinIO with a public URL) in `.env`. An optional self-hosted MinIO block
+# is at the bottom of this file.
+#
+# Secrets and config come from `.env` (see .env.example and
+# docs/production-launch.md §B). NODE_ENV defaults to production in the image,
+# so every fail-closed guard in config/env.ts is active.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: kitchen-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kitchen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kitchen}
+      POSTGRES_DB: ${POSTGRES_DB:-kitchen}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-kitchen} -d ${POSTGRES_DB:-kitchen}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: kitchen-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # One-shot: applies pending migrations (and creates the pgvector extension),
+  # then exits 0. The API waits for this to complete successfully. Idempotent, so
+  # it is safe to run on every deploy.
+  migrate:
+    image: kitchen-api:latest
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ['node', 'dist/db/migrate.js']
+    restart: 'no'
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-kitchen}:${POSTGRES_PASSWORD:-kitchen}@postgres:5432/${POSTGRES_DB:-kitchen}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    image: kitchen-api:latest
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: kitchen-api
+    restart: unless-stopped
+    env_file: .env
+    # Service-to-service URLs are set here so they win over any stale values in
+    # .env; only S3_* and the secrets need to be supplied by the operator.
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-kitchen}:${POSTGRES_PASSWORD:-kitchen}@postgres:5432/${POSTGRES_DB:-kitchen}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '${API_PUBLIC_PORT:-3333}:3333'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # One-time catalog seed. Not part of `up`; run explicitly after the first
+  # deploy:  docker compose -f docker-compose.prod.yml --profile seed run --rm seed
+  seed:
+    image: kitchen-api:latest
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ['node', 'dist/db/seed.js']
+    restart: 'no'
+    profiles: ['seed']
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-kitchen}:${POSTGRES_PASSWORD:-kitchen}@postgres:5432/${POSTGRES_DB:-kitchen}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ---- Optional: self-hosted S3 (MinIO) ----
+  # Uncomment to run storage on the same VM. You must then set, in .env, a
+  # PUBLIC S3_ENDPOINT (e.g. https://storage.example.com) that clients can reach
+  # — NOT http://minio:9000 — and publish/route port 9000 with TLS. Managed S3
+  # is the simpler production choice.
+  #
+  # minio:
+  #   image: minio/minio:latest
+  #   container_name: kitchen-minio
+  #   restart: unless-stopped
+  #   command: server /data --console-address ":9001"
+  #   environment:
+  #     MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+  #     MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+  #   ports:
+  #     - '9000:9000'
+  #     - '9001:9001'
+  #   volumes:
+  #     - minio-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:
+  # minio-data:

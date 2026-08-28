@@ -31,6 +31,13 @@ image at `apps/api/Dockerfile` (built as `node dist/main.js`, `apps/api/src/main
       any container host (Fly/Render/ECS/a VM) with the production `.env` injected. Node ≥ 20.
 - [ ] **A host for the web app** — Next.js production (`apps/web`); Vercel or a Node host.
 
+> **Single-VM shortcut.** For a small deployment, `docker-compose.prod.yml` (repo root) bundles
+> Postgres 17 + pgvector and Redis alongside the API image and runs migrations as a one-shot before
+> the API starts: `docker compose -f docker-compose.prod.yml up -d --build`. **S3 stays external**
+> (presigned URLs must be client-reachable), so `S3_*` still points at managed S3 in `.env`. Seed
+> once with `docker compose -f docker-compose.prod.yml --profile seed run --rm seed`. This is an
+> alternative to steps D below, not an addition.
+
 ## B. Production secrets & environment (P0 — L0-env)
 
 Fill a production `.env` from `.env.example`. The contract **fails closed** in production — these
@@ -67,6 +74,9 @@ The whole system defaults to offline/free mocks. For a paid launch, turn on the 
 - [ ] Mobile: set `EXPO_PUBLIC_USE_MOCKS=false` and `EXPO_PUBLIC_API_URL` to the real API.
 
 ## D. Migrate, seed, build, run the API (P0)
+
+> The **single-VM shortcut** in §A (`docker-compose.prod.yml`) performs migrate → seed → run for
+> you; the steps below are the manual/managed-infra equivalent.
 
 Build the image once (`docker build -f apps/api/Dockerfile -t kitchen-api .`), then, against the
 production `DATABASE_URL`:
