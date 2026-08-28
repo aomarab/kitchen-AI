@@ -102,6 +102,8 @@ import { idParamSchema, paginatedSchema, uuidSchema } from './common.js';
 import {
   creditBalanceSchema,
   confirmPurchaseRequestSchema,
+  creditCalibrationQuerySchema,
+  creditCalibrationSchema,
   purchaseIntentRequestSchema,
   purchaseIntentSchema,
 } from './credits.js';
@@ -647,6 +649,17 @@ export const routes = {
   },
 
   /* ---------------- Credits ---------------- */
+  // Staff-only calibration; declared before the household `getCredits` route so
+  // the reader sees the report alongside the admin surface it belongs to.
+  adminCreditsCalibration: {
+    method: 'GET',
+    path: '/admin/credits/calibration',
+    auth: true,
+    household: false,
+    staff: true,
+    query: creditCalibrationQuerySchema,
+    response: creditCalibrationSchema,
+  },
   getCredits: {
     method: 'GET',
     path: '/credits',

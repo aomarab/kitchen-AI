@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { uuidSchema } from './common.js';
+import { isoDateTimeSchema, uuidSchema } from './common.js';
 
 /**
  * Billable user-facing actions. Credits are priced per *action*, not per AI
@@ -105,3 +105,78 @@ export const confirmPurchaseRequestSchema = z.object({
   store: z.enum(['apple', 'google']),
 });
 export type ConfirmPurchaseRequest = z.infer<typeof confirmPurchaseRequestSchema>;
+
+/* ---------------- Staff calibration ---------------- */
+
+/**
+ * "Are we covering costs?" — a staff-only report that reads the price we
+ * *charge* for each action back against what the vendor *charged us*, both
+ * pulled from ledgers we already keep (`credit_ledger` and `ai_usage`, joined
+ * on `spend_group_id`). It exists because `CREDIT_COSTS` was set from
+ * one-off cost estimates, and an estimate in a table cannot go stale loudly:
+ * vendor rates drift, and nothing fails until the margin is already gone.
+ */
+export const creditCalibrationQuerySchema = z.object({
+  /** Trailing window to measure over. */
+  days: z.coerce.number().int().min(1).max(365).default(30),
+});
+export type CreditCalibrationQuery = z.infer<typeof creditCalibrationQuerySchema>;
+
+/**
+ * - `covered` — the measured cost of a charge sits at or under its listed price.
+ * - `underpriced` — a charge costs more than we sell it for; the margin is gone.
+ * - `unmeasured` — charged but no vendor cost was recorded. Either the action is
+ *   unmeasurable by construction (`assistant.session`) or every call failed
+ *   before the vendor billed. Distinguished from `covered` so a feature we
+ *   cannot see never reads as free.
+ * - `unused` — nobody ran this action in the window; nothing to judge.
+ */
+export const creditCalibrationStatusSchema = z.enum([
+  'covered',
+  'underpriced',
+  'unmeasured',
+  'unused',
+]);
+export type CreditCalibrationStatus = z.infer<typeof creditCalibrationStatusSchema>;
+
+export const creditCalibrationRowSchema = z.object({
+  action: creditActionSchema,
+  /** The listed price from `CREDIT_COSTS`. */
+  listedCredits: z.number().int().nonnegative(),
+  /** Spend groups charged for this action in the window. */
+  chargedCount: z.number().int().nonnegative(),
+  /** Spend groups that produced at least one measured vendor call. */
+  measuredCount: z.number().int().nonnegative(),
+  /** Vendor calls attributed to the action. */
+  callCount: z.number().int().nonnegative(),
+  /** Net credits taken, refunds already subtracted. */
+  creditsCharged: z.number().int(),
+  /** USD the vendor charged us across the window. */
+  measuredCostUsd: z.number().nonnegative(),
+  /**
+   * The average measured cost of one charge, expressed in credits at
+   * `costBasisUsd`. This is the number to read against `listedCredits`: above
+   * it, the action loses money. `null` when nothing was measured.
+   */
+  measuredCreditsPerCharge: z.number().nullable(),
+  /**
+   * Whether this action's cost can be read from `ai_usage` at all.
+   * `assistant.session` is `false` by construction — realtime audio is billed
+   * by the provider over a connection the server never sees.
+   */
+  measurable: z.boolean(),
+  status: creditCalibrationStatusSchema,
+});
+export type CreditCalibrationRow = z.infer<typeof creditCalibrationRowSchema>;
+
+export const creditCalibrationSchema = z.object({
+  /** Start of the measured window (inclusive), ISO-8601. */
+  since: isoDateTimeSchema,
+  /** The internal cost basis the credit table was priced from, USD per credit. */
+  costBasisUsd: z.number().positive(),
+  /** What one credit actually sells for, USD per credit. */
+  creditValueUsd: z.number().positive(),
+  /** One row per credit action, worst margin first. */
+  rows: z.array(creditCalibrationRowSchema),
+});
+export type CreditCalibration = z.infer<typeof creditCalibrationSchema>;

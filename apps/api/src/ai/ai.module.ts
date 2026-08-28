@@ -61,6 +61,9 @@ import { PlanController } from './plan/plan.controller.js';
 import { ShoppingService } from './shopping/shopping.service.js';
 import { ShoppingController } from './shopping/shopping.controller.js';
 import { UsageController } from './usage/usage.controller.js';
+import { ActionCostQuery } from './usage/action-cost.query.js';
+import { CreditCalibrationService } from './usage/calibration.service.js';
+import { AdminCreditsController } from './usage/admin-credits.controller.js';
 import { redisConnection } from '../common/redis.js';
 
 /**
@@ -125,6 +128,7 @@ export function createAiProvider(env: Env): AiProvider {
     ShoppingController,
     UsageController,
     AssistantController,
+    AdminCreditsController,
   ],
   providers: [
     {
@@ -186,6 +190,8 @@ export function createAiProvider(env: Env): AiProvider {
     ShoppingService,
     PlanProcessor,
     ReceiptProcessor,
+    ActionCostQuery,
+    CreditCalibrationService,
   ],
 })
 export class AiModule {}

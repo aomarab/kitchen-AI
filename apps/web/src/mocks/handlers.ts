@@ -821,6 +821,109 @@ export const handlers = [
     return HttpResponse.json(item);
   }),
 
+  // Staff calibration: a fixed spread that exercises every status the real
+  // report can produce — one underpriced action, several covered, one
+  // unmeasurable-by-construction (`assistant.session`), and two never run in
+  // the window. Rows are pre-sorted worst-margin-and-most-material first, as the
+  // API sorts them, so a test can assert order too.
+  http.get(u('/admin/credits/calibration'), () => {
+    const basis = 0.0045; // CREDIT_COST_BASIS_USD, mirrored from the API.
+    const pack = CREDIT_PACKS[0]!;
+    const perCharge = (credits: number, count: number) =>
+      Math.round(credits * basis * count * 10000) / 10000;
+    return HttpResponse.json({
+      since: dateFromNow(-30) + 'T00:00:00.000Z',
+      costBasisUsd: basis,
+      creditValueUsd: pack.priceUsd / pack.credits,
+      rows: [
+        {
+          action: 'receipt.scan',
+          listedCredits: 2,
+          chargedCount: 12,
+          measuredCount: 12,
+          callCount: 24,
+          creditsCharged: 24,
+          measuredCostUsd: perCharge(2.6, 12),
+          measuredCreditsPerCharge: 2.6,
+          measurable: true,
+          status: 'underpriced',
+        },
+        {
+          action: 'plan.daily',
+          listedCredits: 4,
+          chargedCount: 20,
+          measuredCount: 20,
+          callCount: 40,
+          creditsCharged: 80,
+          measuredCostUsd: perCharge(3.2, 20),
+          measuredCreditsPerCharge: 3.2,
+          measurable: true,
+          status: 'covered',
+        },
+        {
+          action: 'pantry.scan',
+          listedCredits: 1,
+          chargedCount: 40,
+          measuredCount: 40,
+          callCount: 44,
+          creditsCharged: 40,
+          measuredCostUsd: perCharge(0.9, 40),
+          measuredCreditsPerCharge: 0.9,
+          measurable: true,
+          status: 'covered',
+        },
+        {
+          action: 'plan.regenerateEntry',
+          listedCredits: 2,
+          chargedCount: 6,
+          measuredCount: 6,
+          callCount: 6,
+          creditsCharged: 12,
+          measuredCostUsd: perCharge(1.1, 6),
+          measuredCreditsPerCharge: 1.1,
+          measurable: true,
+          status: 'covered',
+        },
+        {
+          action: 'assistant.session',
+          listedCredits: 25,
+          chargedCount: 8,
+          measuredCount: 0,
+          callCount: 0,
+          creditsCharged: 200,
+          measuredCostUsd: 0,
+          measuredCreditsPerCharge: null,
+          measurable: false,
+          status: 'unmeasured',
+        },
+        {
+          action: 'plan.weekly',
+          listedCredits: 20,
+          chargedCount: 0,
+          measuredCount: 0,
+          callCount: 0,
+          creditsCharged: 0,
+          measuredCostUsd: 0,
+          measuredCreditsPerCharge: null,
+          measurable: true,
+          status: 'unused',
+        },
+        {
+          action: 'plan.monthly',
+          listedCredits: 50,
+          chargedCount: 0,
+          measuredCount: 0,
+          callCount: 0,
+          creditsCharged: 0,
+          measuredCostUsd: 0,
+          measuredCreditsPerCharge: null,
+          measurable: true,
+          status: 'unused',
+        },
+      ],
+    });
+  }),
+
   /* ---------- Usage ---------- */
   http.get(u('/ai/usage'), async () =>
     HttpResponse.json({
