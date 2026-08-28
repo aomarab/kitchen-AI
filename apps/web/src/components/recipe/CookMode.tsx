@@ -8,12 +8,14 @@ import { Button } from '../ui/Button';
 import { IconButton } from '../ui/IconButton';
 import { DirectionalIcon } from '../ui/DirectionalIcon';
 import { ProgressBar } from '../ui/ProgressBar';
-import { ChevronIcon, CloseIcon, ClockIcon } from '../ui/icons';
+import { ChevronIcon, CloseIcon, ClockIcon, SparklesIcon } from '../ui/icons';
+import { LiveAssistantView } from '../assistant/LiveAssistantView';
 
 /** Full-screen, high-contrast step-by-step mode for cooking (spec §6.3). */
 export function CookMode({ recipe, onExit }: { recipe: Recipe; onExit: () => void }) {
   const { t, locale } = useLocale();
   const [step, setStep] = useState(0);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const current = recipe.steps[step]!;
   const total = recipe.steps.length;
 
@@ -21,9 +23,19 @@ export function CookMode({ recipe, onExit }: { recipe: Recipe; onExit: () => voi
     <div className="fixed inset-0 z-50 flex flex-col bg-background p-6">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold tracking-heading-sm">{recipe.title}</h2>
-        <IconButton label={t('web.recipe.exitCookMode')} onClick={onExit}>
-          <CloseIcon />
-        </IconButton>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setAssistantOpen(true)}
+            aria-label={t('web.assistant.cookAsk')}
+          >
+            <SparklesIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('web.assistant.cookAsk')}</span>
+          </Button>
+          <IconButton label={t('web.recipe.exitCookMode')} onClick={onExit}>
+            <CloseIcon />
+          </IconButton>
+        </div>
       </div>
 
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-6">
@@ -59,6 +71,16 @@ export function CookMode({ recipe, onExit }: { recipe: Recipe; onExit: () => voi
           )}
         </div>
       </div>
+
+      {assistantOpen ? (
+        <div className="fixed inset-0 z-[60]">
+          <LiveAssistantView
+            initialMode="voice"
+            lockMode
+            onExit={() => setAssistantOpen(false)}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

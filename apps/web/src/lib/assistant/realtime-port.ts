@@ -76,6 +76,17 @@ export interface RealtimeAssistantClient {
   readonly isMock: boolean;
   /** Begin a session. Emits `status: 'connecting'` then `'live'`, then events. */
   start(options: StartAssistantOptions): Promise<void>;
+  /**
+   * Send a typed message into the conversation. This is the text half of the
+   * ChatGPT-voice interaction model: the same session that carries live voice
+   * also accepts typed turns, so a user can switch between speaking and typing
+   * without tearing the session down. Emits the user turn back as a
+   * `transcript` event and then the assistant's spoken/typed reply.
+   *
+   * No-op before `start` or after `stop`. Whitespace-only text is ignored so an
+   * empty composer submit cannot post a blank turn.
+   */
+  sendText(text: string): void;
   /** End the session and release every timer/handle it holds. Idempotent. */
   stop(): Promise<void>;
 }

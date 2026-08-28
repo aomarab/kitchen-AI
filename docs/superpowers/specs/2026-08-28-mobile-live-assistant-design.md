@@ -3,7 +3,8 @@
 **Date:** 2026-08-28
 **Status:** design approved, implementation in this slice
 **Extends:** Feature 5 of `2026-08-26-kitchen-companion-design.md` (live camera + voice assistant),
-which shipped **web-only**. This spec adds the **mobile** surface for the same feature.
+which shipped **web-only**. This spec adds the **mobile** surface for the same feature, and — like
+web — offers it in **three modes**: text, voice, and live (camera).
 
 ## Why this exists, and why it is mock-first
 
@@ -35,9 +36,12 @@ camera must never read as real vision.
 
 - A mobile realtime **port** (`RealtimeAssistantClient`) and a **Mock** adapter that replays the
   approved prototype session on timers — the mobile twins of the web files, minus the browser
-  `MediaStream` the mock never used.
-- A `LiveAssistantScreen`: consent-gated camera preview, a caption card, a labelled "Spotted
-  (sample)" chip row, a speaking indicator, the demo badge, and mic / captions / add / end controls.
+  `MediaStream` the mock never used. The port also carries `sendText` (the typed/spoken lane) and a
+  `camera?` flag on `start` (gates the vision beats), mirroring web.
+- A `LiveAssistantScreen` with a **Text / Voice / Live** mode switch: text is a typed chat, voice is
+  hands-free (no camera), and live is the consent-gated camera preview with a caption card, a
+  labelled "Spotted (sample)" chip row, a speaking indicator, the demo badge, and mic / captions /
+  add / end controls. A locked-voice instance also opens as an overlay from cook mode.
 - A **confirm-before-write** step that reuses the existing capture ledger path — detections become a
   `RecognitionSession`, the proven `ReviewList` edits them, and `buildInventoryInputs(rows,
   'assistant')` → `bulkCreateInventory` writes them with permanent `assistant` provenance.
@@ -63,9 +67,12 @@ camera must never read as real vision.
 `DetectedItem`, `TranscriptTurn`, `AssistantStatus`, `AssistantEvent`,
 `RealtimeAssistantClient` — with one deliberate difference: `StartAssistantOptions` carries **no**
 `stream`. The web type is `MediaStream | null`, a DOM type React Native does not have, and the mock
-ignored it anyway. When the real RN adapter lands it will take whatever camera/track handle
-`react-native-webrtc` exposes; putting a browser type in the shared port now would be a lie about
-what mobile can produce.
+ignored it anyway. In its place `start` takes a boolean `camera?` flag (the web adapter reads the
+same fact off the stream's video tracks); `undefined` defaults to a camera session, preserving the
+original camera-only screen. The client also exposes `sendText(text)` — the typed and spoken lane —
+so a text or voice conversation drives the same transport as the live one. When the real RN adapter
+lands it will take whatever camera/track handle `react-native-webrtc` exposes; putting a browser type
+in the shared port now would be a lie about what mobile can produce.
 
 Everything else is identical, including the reason `isMock` and the `speaking` event exist: the
 speaking indicator is a transport fact, not a guess inferred from the transcript.
@@ -107,6 +114,26 @@ The demo badge is always shown (the mobile client is mock-only today). Detection
 vision. The consent copy states the camera and microphone stay on the device — true, because the
 mock sends nothing anywhere.
 
+### 5. Three ways to talk
+
+The screen opens in one of three modes, chosen by a segmented switch (`initialMode`, default
+`live`); a caller can pin one with `lockMode`:
+
+- **Text** — a typed chat log plus a composer. No camera, no microphone. `sendText` echoes the
+  user's turn and the mock answers, bracketed by the speaking indicator exactly as the spoken script
+  is, so the demo behaves the same whether the user typed or talked.
+- **Voice** — the same chat, hands-free. Still no camera. Because the mock reads no real audio, voice
+  is **ready immediately** — there is no microphone-permission gate, unlike web, which must acquire a
+  real `getUserMedia` mic stream. The mic control is a demo mute.
+- **Live** — the original camera surface. This is the **only** mode that gates on a device
+  permission (`useCameraPermissions`), and the gate wraps only the live sub-tree: the mode switch
+  stays reachable so a user who denied the camera can move back to text or voice. `start` is called
+  with `camera: mode === 'live'`, so the mock replays the vision beats only here.
+
+Switching mode (or locale) restarts the session behind the same port. Cook mode opens a
+**locked-voice** instance as an overlay (`initialMode='voice'`, `lockMode`, `onExit` closes it), so a
+cook with messy hands can ask a question without leaving the recipe.
+
 ## Testing
 
 The mobile harness is logic-only (no native render), so the screen is wired and covered by the
@@ -119,14 +146,18 @@ manual device gate, while the logic that decides what reaches the ledger is unit
 | Speaking brackets the assistant line                     | `mock-realtime.spec.ts` › "brackets the assistant line with speaking on and off"             |
 | A hang-up cancels pending scripted beats                 | `mock-realtime.spec.ts` › "fires no scripted beat after stop"                                 |
 | A hang-up mid-line clears the speaking indicator         | `mock-realtime.spec.ts` › "turns speaking off when stopped mid-line"                          |
+| Voice/text mode greets without inventing a question      | `mock-realtime.spec.ts` › "greets without inventing a question or detections when no camera is shared" |
+| A typed message is echoed, answered, bracketed by speech | `mock-realtime.spec.ts` › "echoes the user message, then answers, bracketed by speaking"      |
+| A typed reply matches the user's intent, not a canned one| `mock-realtime.spec.ts` › "echoes the user message, then answers, bracketed by speaking"      |
 | A detection becomes an assistant-sourced input           | `detections.spec.ts` › "labels every added item as assistant-sourced"                        |
 | An unresolved item keeps both names and its category     | `detections.spec.ts` › "carries both names and the category of every detection"              |
 | An uncountable item falls back to a quantity of 1        | `detections.spec.ts` › "falls back to a quantity of one when the assistant cannot count"     |
 | Nothing is written until the user confirms               | `detections.spec.ts` › "produces an empty session from no detections"                         |
 
 `scripts/fault-inject-assistant.mjs` gains mobile cases: the mock's `stop()` clear removed (a stray
-beat fires) and the detections adapter's `source` mislabelled — each must redden **the check that
-names the behaviour**.
+beat fires), the detections adapter's `source` mislabelled, and the typed reply chosen without
+reading the user's message (`replyFor(this.locale, '')`) — each must redden **the check that names
+the behaviour**.
 
 ## Known limitations
 

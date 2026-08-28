@@ -16,11 +16,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  */
 export type LiveMediaState = 'idle' | 'requesting' | 'ready' | 'denied' | 'unavailable';
 
+/**
+ * What the caller wants from the device. `camera` is camera + microphone (the
+ * live-vision session); `mic` is microphone only (a voice conversation with no
+ * video, e.g. the cook-along assistant), which never turns the webcam light on.
+ */
+export type LiveMediaKind = 'camera' | 'mic';
+
 export interface UseLiveMedia {
   state: LiveMediaState;
   stream: MediaStream | null;
+  /** Which kind the current stream was acquired as, or `null` when idle. */
+  kind: LiveMediaKind | null;
   micMuted: boolean;
-  start: () => Promise<void>;
+  start: (kind?: LiveMediaKind) => Promise<void>;
   stop: () => void;
   toggleMic: () => void;
 }
@@ -36,6 +45,7 @@ function stateForError(error: unknown): LiveMediaState {
 export function useLiveMedia(): UseLiveMedia {
   const [state, setState] = useState<LiveMediaState>('idle');
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [kind, setKind] = useState<LiveMediaKind | null>(null);
   const [micMuted, setMicMuted] = useState(false);
   // Mirrors `stream` so unmount cleanup sees the latest without re-subscribing.
   const streamRef = useRef<MediaStream | null>(null);
@@ -48,35 +58,45 @@ export function useLiveMedia(): UseLiveMedia {
     streamRef.current = null;
   }, []);
 
-  const start = useCallback(async () => {
-    // `navigator.mediaDevices` is undefined on an insecure origin (localhost is
-    // exempt), so its absence is "no camera here", not a thrown error.
-    const media =
-      typeof navigator !== 'undefined' ? navigator.mediaDevices : undefined;
-    if (!media || typeof media.getUserMedia !== 'function') {
-      setState('unavailable');
-      return;
-    }
+  const start = useCallback(
+    async (nextKind: LiveMediaKind = 'camera') => {
+      // `navigator.mediaDevices` is undefined on an insecure origin (localhost is
+      // exempt), so its absence is "no camera here", not a thrown error.
+      const media = typeof navigator !== 'undefined' ? navigator.mediaDevices : undefined;
+      if (!media || typeof media.getUserMedia !== 'function') {
+        setState('unavailable');
+        return;
+      }
 
-    setState('requesting');
-    try {
-      const next = await media.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: true,
-      });
-      streamRef.current = next;
-      setStream(next);
-      setMicMuted(false);
-      setState('ready');
-    } catch (error) {
-      setStream(null);
-      setState(stateForError(error));
-    }
-  }, []);
+      // Stop any stream already held before acquiring the new kind, so
+      // switching from camera to mic-only actually releases the webcam.
+      stopTracks();
+      setState('requesting');
+      try {
+        const next = await media.getUserMedia({
+          // Mic-only requests omit video entirely, so the camera light never
+          // comes on for a voice conversation.
+          video: nextKind === 'camera' ? { facingMode: 'environment' } : false,
+          audio: true,
+        });
+        streamRef.current = next;
+        setStream(next);
+        setKind(nextKind);
+        setMicMuted(false);
+        setState('ready');
+      } catch (error) {
+        setStream(null);
+        setKind(null);
+        setState(stateForError(error));
+      }
+    },
+    [stopTracks],
+  );
 
   const stop = useCallback(() => {
     stopTracks();
     setStream(null);
+    setKind(null);
     setMicMuted(false);
     setState('idle');
   }, [stopTracks]);
@@ -96,5 +116,5 @@ export function useLiveMedia(): UseLiveMedia {
   // Stop the webcam when the view unmounts (switching route, ending the call).
   useEffect(() => stopTracks, [stopTracks]);
 
-  return { state, stream, micMuted, start, stop, toggleMic };
+  return { state, stream, kind, micMuted, start, stop, toggleMic };
 }

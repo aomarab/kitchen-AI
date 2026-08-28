@@ -42,6 +42,7 @@ export const IONICONS = {
   play: 'play',
   mic: 'mic-outline',
   micOff: 'mic-off-outline',
+  send: 'arrow-up',
   captions: 'chatbox-ellipses-outline',
   apple: 'logo-apple',
   google: 'logo-google',

@@ -48,6 +48,7 @@ function fakeClient(): RealtimeAssistantClient {
       });
     }),
     stop: vi.fn(async () => {}),
+    sendText: vi.fn(),
   };
 }
 
@@ -57,6 +58,7 @@ function fakeClient(): RealtimeAssistantClient {
  */
 function controllableClient() {
   let emit: ((event: AssistantEvent) => void) | null = null;
+  const sendText = vi.fn();
   const client: RealtimeAssistantClient = {
     isMock: true,
     start: vi.fn(async ({ onEvent }) => {
@@ -64,9 +66,11 @@ function controllableClient() {
       onEvent({ type: 'status', status: 'live' });
     }),
     stop: vi.fn(async () => {}),
+    sendText,
   };
   return {
     client,
+    sendText,
     emit(event: AssistantEvent) {
       act(() => emit?.(event));
     },
@@ -131,7 +135,7 @@ describe('LiveAssistantView', () => {
 
     await screen.findByTestId('assistant-live');
     expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('Live')).toBeInTheDocument();
+    expect(screen.getByTestId('assistant-live-badge')).toHaveTextContent('Live');
     expect(screen.getByText('Demo')).toBeInTheDocument();
     // Detections are a labelled sample panel, not bounding boxes on the feed.
     expect(screen.getByText('Spotted (sample)')).toBeInTheDocument();
@@ -285,5 +289,109 @@ describe('LiveAssistantView', () => {
     // the scripted client. More than one is the re-render loop this guards.
     expect(startSpy).toHaveBeenCalledTimes(1);
     expect(call.mock.calls.filter((c) => c[0] === 'createRealtimeSession')).toHaveLength(1);
+  });
+
+  it('text mode sends the typed message through the port and never opens a device', async () => {
+    stubGetUserMedia();
+    const client = fakeClient();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <LocaleProvider locale="en">
+          <LiveAssistantView createClient={() => client} initialMode="text" />
+        </LocaleProvider>
+      </QueryClientProvider>,
+    );
+
+    // Text is never gated: the conversation is up with no consent card, and no
+    // camera or microphone is ever touched.
+    await screen.findByTestId('assistant-live');
+    expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled();
+    // A typed chat is not "Live" — the red badge stays off.
+    expect(screen.queryByTestId('assistant-live-badge')).toBeNull();
+
+    const input = screen.getByLabelText('Message the assistant…') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'what can I cook?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+    // The message goes out over the transport, and the composer clears.
+    expect(client.sendText).toHaveBeenCalledWith('what can I cook?');
+    expect(input.value).toBe('');
+  });
+
+  it('does not send blank messages', async () => {
+    stubGetUserMedia();
+    const client = fakeClient();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <LocaleProvider locale="en">
+          <LiveAssistantView createClient={() => client} initialMode="text" />
+        </LocaleProvider>
+      </QueryClientProvider>,
+    );
+    await screen.findByTestId('assistant-live');
+
+    // An empty composer disables the send control; whitespace never ships.
+    const send = screen.getByRole('button', { name: 'Send' });
+    expect(send).toBeDisabled();
+    const input = screen.getByLabelText('Message the assistant…');
+    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.click(send);
+    expect(client.sendText).not.toHaveBeenCalled();
+  });
+
+  it('switching to Voice asks only for the microphone, never the camera', async () => {
+    stubGetUserMedia();
+    const client = fakeClient();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <LocaleProvider locale="en">
+          <LiveAssistantView createClient={() => client} initialMode="text" />
+        </LocaleProvider>
+      </QueryClientProvider>,
+    );
+    await screen.findByTestId('assistant-live');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Voice' }));
+
+    // Voice needs a mic it does not yet hold, so it shows the mic gate — not the
+    // camera consent card — and touches no device until the user allows it.
+    expect(screen.getByText('Talk with the assistant')).toBeInTheDocument();
+    expect(screen.queryByText('Cook with a live assistant')).toBeNull();
+    expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start talking' }));
+    await screen.findByTestId('assistant-live');
+    expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledTimes(1);
+    // Mic-only: the request never asks for video.
+    const constraints = (navigator.mediaDevices.getUserMedia as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(constraints.video).toBe(false);
+  });
+
+  it('locks the mode when asked, hiding the switcher (cook-along voice)', async () => {
+    stubGetUserMedia();
+    const client = fakeClient();
+    const onExit = vi.fn();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <LocaleProvider locale="en">
+          <LiveAssistantView
+            createClient={() => client}
+            initialMode="voice"
+            lockMode
+            onExit={onExit}
+          />
+        </LocaleProvider>
+      </QueryClientProvider>,
+    );
+
+    // A locked voice session opens straight on the mic gate with no mode tabs.
+    expect(screen.queryByRole('tab', { name: 'Text' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Type instead' })).toBeNull();
+    expect(screen.getByText('Talk with the assistant')).toBeInTheDocument();
   });
 });
