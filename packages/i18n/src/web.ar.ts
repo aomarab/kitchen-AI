@@ -316,6 +316,9 @@ export const webAr: WebMessages = {
       navAlerts: 'التنبيهات',
       orientationLandscape: 'أفقية',
       orientationPortrait: 'عمودية',
+      connectionOnline: 'متّصل',
+      connectionOffline: 'غير متّصل',
+      connectionOfflineHint: 'نعرض آخر بيانات حمّلناها',
     },
     timers: {
       title: 'مؤقّتات الطبخ',
@@ -371,6 +374,7 @@ export const webAr: WebMessages = {
       personaSaved: 'تم الحفظ',
       personaChoose: 'استخدمي هذا الصوت',
       connecting: 'جارٍ الاتصال…',
+      speaking: 'يتحدث الآن',
       youLabel: 'أنت',
       assistantLabel: 'المساعد',
       spottedLabel: 'ما رُصد (عيّنة)',

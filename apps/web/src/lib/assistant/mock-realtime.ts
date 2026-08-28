@@ -73,6 +73,9 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
   private timers: ReturnType<typeof setTimeout>[] = [];
   private ended = false;
   private started = false;
+  /** See {@link stop}: a demo must not be left frozen mid-sentence either. */
+  private emit: ((event: AssistantEvent) => void) | null = null;
+  private speaking = false;
 
   constructor(private readonly options: MockRealtimeOptions = {}) {}
 
@@ -80,6 +83,8 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
     if (this.started) return;
     this.started = true;
     this.ended = false;
+    this.emit = onEvent;
+    this.speaking = false;
 
     const connectMs = this.options.connectMs ?? 400;
     const stepMs = this.options.stepMs ?? 1400;
@@ -89,6 +94,12 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
 
     // A script of beats at increasing offsets. Each is a tracked timer so
     // stop() can cancel any that have not fired yet.
+    //
+    // The speaking beats bracket the assistant's line rather than coinciding
+    // with it, which is the shape of real speech: the voice starts before the
+    // transcript is final and is still playing after it. Getting this ordering
+    // wrong in the demo would make the indicator look correct here and wrong
+    // against the live provider.
     const beats: { at: number; event: AssistantEvent }[] = [
       { at: connectMs, event: { type: 'status', status: 'live' } },
       {
@@ -99,6 +110,7 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
         at: connectMs + stepMs * 2,
         event: { type: 'detections', items: SAMPLE_DETECTIONS },
       },
+      { at: connectMs + stepMs * 2.5, event: { type: 'speaking', speaking: true } },
       {
         at: connectMs + stepMs * 3,
         event: {
@@ -106,6 +118,7 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
           turn: { id: 'a1', role: 'assistant', text: script.assistant },
         },
       },
+      { at: connectMs + stepMs * 4, event: { type: 'speaking', speaking: false } },
     ];
 
     // Cancelling these timers is the *only* thing that stops a scripted beat
@@ -113,7 +126,12 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
     // inside the callback: if the clear in stop() ever regresses, the test that
     // advances time past a cancelled beat must be able to see the stray event.
     for (const beat of beats) {
-      this.timers.push(setTimeout(() => onEvent(beat.event), beat.at));
+      this.timers.push(
+        setTimeout(() => {
+          if (beat.event.type === 'speaking') this.speaking = beat.event.speaking;
+          onEvent(beat.event);
+        }, beat.at),
+      );
     }
   }
 
@@ -123,6 +141,14 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
     for (const timer of this.timers) clearTimeout(timer);
     this.timers = [];
     this.started = false;
+
+    // Hanging up mid-line cancels the beat that would have turned the indicator
+    // off, so it is turned off here instead.
+    if (this.speaking) {
+      this.speaking = false;
+      this.emit?.({ type: 'speaking', speaking: false });
+    }
+    this.emit = null;
   }
 }
 

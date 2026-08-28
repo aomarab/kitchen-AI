@@ -32,6 +32,9 @@ const LABELS = 'apps/web/src/lib/labels.ts';
 const OFF_CLIENT = 'apps/api/src/ai/clients/http-open-food-facts.client.ts';
 const BARCODE_SERVICE = 'apps/api/src/ai/barcode/barcode.service.ts';
 const MOBILE_CAPTURE = 'apps/mobile/src/lib/capture.ts';
+const MOCK = 'apps/web/src/lib/assistant/mock-realtime.ts';
+const CONNECTIVITY = 'apps/web/src/stores/connectivity.ts';
+const SCREEN_VIEW = 'apps/web/src/components/screen/SmartScreenView.tsx';
 
 const WEB_SPEC = ['@kitchen/web', 'src/lib/assistant/openai-realtime.test.ts'];
 const API_SPEC = ['@kitchen/api', 'src/ai/assistant/assistant.service.spec.ts'];
@@ -51,6 +54,9 @@ const OFF_CLIENT_SPEC = [
 ];
 const BARCODE_SERVICE_SPEC = ['@kitchen/api', 'src/ai/barcode/barcode.service.spec.ts'];
 const MOBILE_CAPTURE_SPEC = ['@kitchen/mobile', 'src/lib/capture.spec.ts'];
+const MOCK_SPEC = ['@kitchen/web', 'src/lib/assistant/mock-realtime.test.ts'];
+const CONNECTIVITY_SPEC = ['@kitchen/web', 'src/stores/connectivity.test.ts'];
+const SCREEN_VIEW_SPEC = ['@kitchen/web', 'src/components/screen/SmartScreenView.test.tsx'];
 
 const CASES = [
   {
@@ -524,6 +530,109 @@ const CASES = [
     check: 'refuses to build an add with no product or no location',
     from: "  if (!lookup.found || !lookup.productName || options.locationId === '') return null;",
     to: '  if (!lookup.found || !lookup.productName) return null;',
+  },
+
+  /* ---- The speaking state (Feature 5) and the kiosk's connection (Feature 1) ---- */
+
+  {
+    /*
+     * The transcript is the tempting source and the wrong one: it arrives when
+     * the *text* is final, which is after the voice started and often before it
+     * has finished. Driving the indicator from it looks plausible in the demo
+     * and is visibly wrong against a live provider.
+     */
+    name: 'the speaking state is driven by the transcript instead of the audio buffer',
+    file: WEB,
+    spec: WEB_SPEC,
+    check: 'drives the speaking state from the output audio buffer, not the transcript',
+    from: "const AUDIO_STARTED = 'output_audio_buffer.started';",
+    to: "const AUDIO_STARTED = 'response.output_audio_transcript.done';",
+  },
+  {
+    // Barging in discards the queued audio and fires `cleared`, with no
+    // `stopped` to follow. Handling only `stopped` leaves the badge lit over
+    // silence for the rest of the session.
+    name: 'talking over the assistant leaves the speaking state lit',
+    file: WEB,
+    spec: WEB_SPEC,
+    check: 'clears the speaking state when the user talks over the assistant',
+    from: 'if (event.type === AUDIO_STOPPED || event.type === AUDIO_CLEARED) {',
+    to: 'if (event.type === AUDIO_STOPPED) {',
+  },
+  {
+    // A hang-up closes the channel, so no further server event arrives; the
+    // adapter is the only thing that can put the indicator out.
+    name: 'hanging up mid-sentence freezes the speaking state',
+    file: WEB,
+    spec: WEB_SPEC,
+    check: 'puts the speaking state out when the user hangs up mid-sentence',
+    from: "    if (this.speaking) {\n      this.speaking = false;\n      this.emit?.({ type: 'speaking', speaking: false });\n    }",
+    to: '',
+  },
+  {
+    // The mock is what everyone develops against. If its beats coincide with
+    // the caption rather than bracketing it, the demo teaches the wrong shape
+    // and the difference only shows up against the real provider.
+    name: 'the demo flips the speaking state in step with the caption',
+    file: MOCK,
+    spec: MOCK_SPEC,
+    check: 'brackets the assistant line with speaking on and off',
+    from: "      { at: connectMs + stepMs * 2.5, event: { type: 'speaking', speaking: true } },",
+    to: "      { at: connectMs + stepMs * 3.5, event: { type: 'speaking', speaking: true } },",
+  },
+  {
+    // The view's own guard, independent of the adapters': a transport that
+    // drops without a closing event must not leave the badge claiming speech.
+    name: 'the view keeps claiming speech after the session ends',
+    file: VIEW,
+    spec: VIEW_SPEC,
+    check: 'does not leave the speaking state lit when the session ends mid-sentence',
+    from: "          if (event.status === 'ended') setSpeaking(false);",
+    to: '',
+  },
+  {
+    /*
+     * `navigator.onLine` reports that an interface exists, not that our API is
+     * reachable — the captive-portal case. Letting it clear an offline state a
+     * failed request established makes the kiosk claim a connection it does not
+     * have, which is worse than no indicator at all.
+     */
+    name: 'the browser’s optimism overrides a request that actually failed',
+    file: CONNECTIVITY,
+    spec: CONNECTIVITY_SPEC,
+    check: 'does not let navigator.onLine clear an offline state a failed request established',
+    from: '  if (window.navigator.onLine === false) markOffline();',
+    to: '  useConnectivity.getState().setOnline(window.navigator.onLine);',
+  },
+  {
+    // Every consumer re-renders on a state notification, and the kiosk asserts
+    // "online" on every successful request — several a minute, for hours.
+    name: 'an unchanged connection state still notifies every subscriber',
+    file: CONNECTIVITY,
+    spec: CONNECTIVITY_SPEC,
+    check: 'does not notify subscribers when the state is unchanged',
+    from: '  setOnline: (online) => set((prev) => (prev.online === online ? prev : { online })),',
+    to: '  setOnline: (online) => set({ online }),',
+  },
+  {
+    // A kiosk is left open for hours; being right only at mount is the failure
+    // mode that matters, and it is invisible to a render-once test.
+    name: 'the kiosk reads the connection once and never updates',
+    file: SCREEN_VIEW,
+    spec: SCREEN_VIEW_SPEC,
+    check: 'reacts to the connection dropping while the kiosk is left open',
+    from: '  const online = useConnectivity((state) => state.online);',
+    to: '  const [online] = useState(() => useConnectivity.getState().online);',
+  },
+  {
+    // The asymmetry is the design: offline is evidence, online is a belief.
+    // Printing "Connected" on the wall states the belief as fact.
+    name: 'the kiosk states a connection it only believes in',
+    file: SCREEN_VIEW,
+    spec: SCREEN_VIEW_SPEC,
+    check: 'says nothing about a connection it only believes in',
+    from: '        <WifiIcon />\n      </span>',
+    to: "        <WifiIcon />\n        {t('web.screen.connectionOnline')}\n      </span>",
   },
 ];
 

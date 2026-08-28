@@ -242,6 +242,65 @@ describe('OpenAiRealtimeAssistantClient', () => {
     ]);
   });
 
+  it('drives the speaking state from the output audio buffer, not the transcript', async () => {
+    const { pc, events, start } = setup();
+    await start();
+
+    pc.channel.message({ type: 'output_audio_buffer.started' });
+    pc.channel.message({
+      type: 'response.output_audio_transcript.done',
+      transcript: 'You have tomatoes',
+      item_id: 'a1',
+    });
+    pc.channel.message({ type: 'output_audio_buffer.stopped' });
+
+    // The interleaving is the assertion, not the two speaking events on their
+    // own: the transcript has to land *between* them and still be delivered as
+    // a transcript. Reading the state off the transcript instead would produce
+    // the same pair of speaking events — that is exactly how a transcript-driven
+    // indicator hides — but the caption would go missing, and it would light up
+    // late and go out while the voice was still playing.
+    expect(
+      events
+        .filter((event) => event.type === 'speaking' || event.type === 'transcript')
+        .map((event) =>
+          event.type === 'speaking' ? `speaking:${event.speaking}` : `caption:${event.turn.text}`,
+        ),
+    ).toEqual(['speaking:true', 'caption:You have tomatoes', 'speaking:false']);
+  });
+
+  it('clears the speaking state when the user talks over the assistant', async () => {
+    const { pc, events, start } = setup();
+    await start();
+
+    pc.channel.message({ type: 'output_audio_buffer.started' });
+    // Barging in discards the queued audio: this is the event that fires, and
+    // no `stopped` follows it.
+    pc.channel.message({ type: 'output_audio_buffer.cleared' });
+
+    expect(events.at(-1)).toEqual({ type: 'speaking', speaking: false });
+  });
+
+  it('puts the speaking state out when the user hangs up mid-sentence', async () => {
+    const { pc, client, events, start } = setup();
+    await start();
+
+    pc.channel.message({ type: 'output_audio_buffer.started' });
+    await client.stop();
+
+    // Closing the channel produces no further server event, so the adapter has
+    // to say it itself or the badge is frozen mid-word.
+    expect(events.at(-1)).toEqual({ type: 'speaking', speaking: false });
+  });
+
+  it('says nothing about speaking on a stop that interrupted no speech', async () => {
+    const { client, events, start } = setup();
+    await start();
+    await client.stop();
+
+    expect(events.some((event) => event.type === 'speaking')).toBe(false);
+  });
+
   it('turns a report_items tool call into detections', async () => {
     const { pc, events, start } = setup();
     await start();
