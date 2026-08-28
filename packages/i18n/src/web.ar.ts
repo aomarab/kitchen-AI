@@ -110,6 +110,8 @@ export const webAr: WebMessages = {
       barcodeDesc: 'ابحث عن منتج معبّأ.',
       receiptCta: 'صوّر إيصالًا',
       receiptDesc: 'أضف مشترياتك كلها دفعة واحدة.',
+      receiptPick: 'صوّر الإيصال أو ارفعه',
+      readReceipt: 'اقرأ الإيصال',
       manualCta: 'أدخل يدويًا',
       manualDesc: 'اكتب العنصر بنفسك.',
       dropHint: 'اسحب الصور إلى هنا، أو اختر الملفات.',

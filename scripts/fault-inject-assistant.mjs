@@ -85,12 +85,14 @@ const WEB_IMAGE = 'apps/web/src/lib/image.ts';
 const WEB_PHOTO_UPLOADER = 'apps/web/src/lib/photo-uploader.ts';
 const WEB_CAMERA = 'apps/web/src/hooks/camera.ts';
 const PHOTO_CAPTURE = 'apps/web/src/components/kitchen/PhotoCapture.tsx';
+const RECEIPT_CAPTURE = 'apps/web/src/components/kitchen/ReceiptCapture.tsx';
 
 const UPLOAD_SPEC = ['@kitchen/api-client', 'src/upload.spec.ts'];
 const WEB_IMAGE_SPEC = ['@kitchen/web', 'src/lib/image.spec.ts'];
 const WEB_PHOTO_UPLOADER_SPEC = ['@kitchen/web', 'src/lib/photo-uploader.spec.ts'];
 const WEB_CAMERA_SPEC = ['@kitchen/web', 'src/hooks/camera.spec.ts'];
 const PHOTO_CAPTURE_SPEC = ['@kitchen/web', 'src/components/kitchen/PhotoCapture.test.tsx'];
+const RECEIPT_CAPTURE_SPEC = ['@kitchen/web', 'src/components/kitchen/ReceiptCapture.test.tsx'];
 
 const CASES = [
   {
@@ -1011,6 +1013,51 @@ const CASES = [
     check: "couldn't identify",
     from: 'if (session.items.length === 0) {',
     to: 'if (session.items.length < 0) {',
+  },
+  {
+    // Receipt parsing bills per image exactly like vision recognition, so an
+    // uncapped strip lets one submit enqueue an unbounded parse. The cap mirrors
+    // the contract's parseReceiptRequestSchema.max(5); the constant is the single
+    // point both the onFiles slice and the addBlob guard derive from.
+    name: 'the five-page receipt cap is raised',
+    file: RECEIPT_CAPTURE,
+    spec: RECEIPT_CAPTURE_SPEC,
+    check: 'caps the receipt strip at five pages',
+    from: 'const MAX_RECEIPT_PHOTOS = 5;',
+    to: 'const MAX_RECEIPT_PHOTOS = 8;',
+  },
+  {
+    // The whole point of this component is to parse the *uploaded* receipt, not
+    // the deleted sample. Reverting to the hardcoded key is the exact mock this
+    // work removes; the test must reject it.
+    name: 'the receipt is parsed from the deleted sample key',
+    file: RECEIPT_CAPTURE,
+    spec: RECEIPT_CAPTURE_SPEC,
+    check: 'sends the real presigned keys, not the mocked sample receipt',
+    from: 'const started = await parse.mutateAsync(keys);',
+    to: "const started = await parse.mutateAsync(['mock/receipt-1.jpg']);",
+  },
+  {
+    // Presign purpose drives vision billing and storage routing. Signing a
+    // receipt page as an inventory photo misprices it and files it in the wrong
+    // bucket; the purpose assertion must catch the swap.
+    name: 'a receipt page is presigned as an inventory photo',
+    file: RECEIPT_CAPTURE,
+    spec: RECEIPT_CAPTURE_SPEC,
+    check: 'signs each receipt page for the receipt purpose',
+    from: "purpose: 'receipt',",
+    to: "purpose: 'inventory_photo',",
+  },
+  {
+    // A parse enqueue that rejects (e.g. out of credits) hands up no job id, so
+    // the job's failed status can never surface it. Dropping the mutation-error
+    // render traps the user at a reset form; the test must catch the silence.
+    name: 'the receipt parse error is never rendered',
+    file: RECEIPT_CAPTURE,
+    spec: RECEIPT_CAPTURE_SPEC,
+    check: 'surfaces the parse error when the receipt job cannot be enqueued',
+    from: '{parse.isError ? <ErrorState error={parse.error} /> : null}',
+    to: '{false ? <ErrorState error={parse.error} /> : null}',
   },
 ];
 

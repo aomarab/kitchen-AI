@@ -7,16 +7,17 @@ import { useLocale } from '../../lib/locale';
 import { uuid } from '../../lib/uuid';
 import { unitKey } from '../../lib/labels';
 import { useLocations } from '../../hooks/inventory';
-import { useLookupBarcode, useParseReceipt, useRecognitionSession } from '../../hooks/capture';
+import { useLookupBarcode, useRecognitionSession } from '../../hooks/capture';
 import { useJob } from '../../hooks/jobs';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input, Field, Select } from '../ui/Input';
 import { Badge } from '../ui/Badge';
-import { LoadingState, ErrorState } from '../ui/states';
+import { LoadingState } from '../ui/states';
 import { CameraIcon, BarcodeIcon, ReceiptIcon, PlusIcon } from '../ui/icons';
 import { ReviewList } from './ReviewList';
 import { PhotoCapture } from './PhotoCapture';
+import { ReceiptCapture } from './ReceiptCapture';
 
 type Method = 'photo' | 'barcode' | 'receipt' | 'manual';
 const METHODS: Method[] = ['photo', 'barcode', 'receipt', 'manual'];
@@ -133,7 +134,7 @@ export function CaptureFlow() {
       {method === 'photo' ? <PhotoCapture onItems={setItems} /> : null}
       {method === 'barcode' ? <BarcodeStep onItems={setItems} /> : null}
       {method === 'receipt' ? (
-        <ReceiptStep
+        <ReceiptCapture
           job={jobQuery.data}
           onStart={setReceiptJobId}
           pending={Boolean(receiptJobId) && jobQuery.data?.status !== 'failed'}
@@ -219,39 +220,6 @@ function BarcodeStep({ onItems }: { onItems: (items: RecognizedItem[]) => void }
       <Button onClick={submit} disabled={lookup.isPending || code.length < 6}>
         {t('web.capture.lookup')}
       </Button>
-    </Card>
-  );
-}
-
-function ReceiptStep({
-  job,
-  onStart,
-  pending,
-}: {
-  job: Job | undefined;
-  onStart: (jobId: string) => void;
-  pending: boolean;
-}) {
-  const { t } = useLocale();
-  const parse = useParseReceipt();
-  return (
-    <Card className="flex flex-col items-center gap-4 border-dashed py-10 text-center">
-      <ReceiptIcon className="h-10 w-10 text-muted-foreground" />
-      <p className="font-medium">{t('web.capture.receiptCta')}</p>
-      {pending || parse.isPending ? (
-        <LoadingState label={t('capture.parsingReceipt')} />
-      ) : (
-        <Button
-          onClick={() =>
-            parse.mutate(['mock/receipt-1.jpg'], { onSuccess: (created) => onStart(created.id) })
-          }
-        >
-          {t('web.capture.receiptCta')}
-        </Button>
-      )}
-      {job?.status === 'failed' ? (
-        <ErrorState error={{ code: 'JOB_FAILED', messageKey: 'errors.JOB_FAILED' }} />
-      ) : null}
     </Card>
   );
 }

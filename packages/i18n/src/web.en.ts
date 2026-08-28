@@ -111,6 +111,8 @@ export const webEn = {
       barcodeDesc: 'Look up a packaged product.',
       receiptCta: 'Capture a receipt',
       receiptDesc: 'Add a whole shop at once.',
+      receiptPick: 'Photograph or upload the receipt',
+      readReceipt: 'Read receipt',
       manualCta: 'Enter manually',
       manualDesc: 'Type an item in yourself.',
       dropHint: 'Drag photos here, or choose files.',
