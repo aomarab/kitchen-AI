@@ -139,6 +139,8 @@ export const webEn = {
       nothingRecognised: "We couldn't identify anything. Retake the photo or add items by hand.",
       addManually: 'Add manually',
       barcodePlaceholder: 'Enter barcode digits',
+      scanCta: 'Scan with camera',
+      scanHint: 'Point the camera at the barcode.',
       lookup: 'Look up',
       manualName: 'Ingredient name',
       manualNamePlaceholder: 'e.g. tomatoes',

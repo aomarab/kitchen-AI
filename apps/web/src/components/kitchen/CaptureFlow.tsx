@@ -7,17 +7,17 @@ import { useLocale } from '../../lib/locale';
 import { uuid } from '../../lib/uuid';
 import { unitKey } from '../../lib/labels';
 import { useLocations } from '../../hooks/inventory';
-import { useLookupBarcode, useRecognitionSession } from '../../hooks/capture';
+import { useRecognitionSession } from '../../hooks/capture';
 import { useJob } from '../../hooks/jobs';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input, Field, Select } from '../ui/Input';
-import { Badge } from '../ui/Badge';
 import { LoadingState } from '../ui/states';
 import { CameraIcon, BarcodeIcon, ReceiptIcon, PlusIcon } from '../ui/icons';
 import { ReviewList } from './ReviewList';
 import { PhotoCapture } from './PhotoCapture';
 import { ReceiptCapture } from './ReceiptCapture';
+import { BarcodeCapture } from './BarcodeCapture';
 
 type Method = 'photo' | 'barcode' | 'receipt' | 'manual';
 const METHODS: Method[] = ['photo', 'barcode', 'receipt', 'manual'];
@@ -132,7 +132,7 @@ export function CaptureFlow() {
       </div>
 
       {method === 'photo' ? <PhotoCapture onItems={setItems} /> : null}
-      {method === 'barcode' ? <BarcodeStep onItems={setItems} /> : null}
+      {method === 'barcode' ? <BarcodeCapture onItems={setItems} /> : null}
       {method === 'receipt' ? (
         <ReceiptCapture
           job={jobQuery.data}
@@ -174,53 +174,6 @@ function MethodTab({
       {icon}
       {label}
     </button>
-  );
-}
-
-function BarcodeStep({ onItems }: { onItems: (items: RecognizedItem[]) => void }) {
-  const { t } = useLocale();
-  const lookup = useLookupBarcode();
-  const [code, setCode] = useState('');
-  const notFound = lookup.data && !lookup.data.found;
-
-  const submit = () => {
-    lookup.mutate(code, {
-      onSuccess: (res) => {
-        if (!res.found || !res.match) return;
-        const row: RecognizedItem = {
-          tempId: uuid(),
-          match: res.match,
-          nameEn: res.productName ?? res.match.rawName,
-          nameAr: res.productName ?? res.match.rawName,
-          category: 'canned',
-          quantity: res.suggestedQuantity ?? 1,
-          unit: res.suggestedUnit ?? 'piece',
-          confidence: res.match.confidence,
-          suggestedExpiresAt: null,
-          suggestedLocationType: 'pantry',
-          photoKey: null,
-        };
-        onItems([row]);
-      },
-    });
-  };
-
-  return (
-    <Card className="flex flex-col gap-4">
-      <Field label={t('capture.barcode')} htmlFor="barcode">
-        <Input
-          id="barcode"
-          inputMode="numeric"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder={t('web.capture.barcodePlaceholder')}
-        />
-      </Field>
-      {notFound ? <Badge tone="warning">{t('capture.barcodeNotFound')}</Badge> : null}
-      <Button onClick={submit} disabled={lookup.isPending || code.length < 6}>
-        {t('web.capture.lookup')}
-      </Button>
-    </Card>
   );
 }
 
