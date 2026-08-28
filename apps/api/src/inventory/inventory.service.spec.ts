@@ -4,7 +4,7 @@ import type { InventoryEventInput, InventoryItemInput } from '@kitchen/contracts
 import { AppError } from '../common/errors.js';
 import { CatalogService } from '../catalog/catalog.service.js';
 import { eq } from 'drizzle-orm';
-import { inventoryEvents, storageLocations } from '../db/schema.js';
+import { inventoryEvents, inventoryItems, storageLocations } from '../db/schema.js';
 import {
   createTestContext,
   seedUser,
@@ -89,6 +89,29 @@ describe('InventoryService (live DB)', () => {
       ingredients: seededIngredients,
     });
     await ctx.client.end({ timeout: 5 });
+  });
+
+  /**
+   * `inventory_source` is enforced in three places — the zod contract, the
+   * Postgres enum and the migration that added the value. The first two agree
+   * by unit test; only a live INSERT proves the migration actually reached
+   * this database. Without it, `assistant` type-checks everywhere and 500s on
+   * the write.
+   */
+  it('persists an assistant-sourced item, proving the enum value exists in the database', async () => {
+    // Its own location, so this write shares no slot with the other fixtures.
+    const [pantry] = await ctx.db
+      .insert(storageLocations)
+      .values({ householdId: hhA, name: 'Assistant pantry', type: 'pantry' })
+      .returning({ id: storageLocations.id });
+    const [created] = await service.bulkCreate(hhA, userId, {
+      items: [itemInput({ ingredientId: ingI, locationId: pantry!.id, source: 'assistant' })],
+    });
+    const [row] = await ctx.db
+      .select({ source: inventoryItems.source })
+      .from(inventoryItems)
+      .where(eq(inventoryItems.id, created!.id));
+    expect(row!.source).toBe('assistant');
   });
 
   it('merges a compatible unit by converting into the existing item', async () => {

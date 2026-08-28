@@ -305,7 +305,9 @@ export function LiveAssistantView({
           <ReviewList
             items={toRecognized(detections)}
             locations={locationsQuery.data ?? []}
-            source="photo"
+            // Not "photo": nobody took one. The ledger is append-only, so a
+            // wrong provenance here is permanent.
+            source="assistant"
             onDone={(count) => {
               setAddedCount(count);
               setConfirmOpen(false);

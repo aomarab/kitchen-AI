@@ -97,6 +97,7 @@ export const webEn = {
       source: 'Added via',
       sources: {
         photo: 'Photo',
+        assistant: 'Live assistant',
         manual: 'Manual',
         barcode: 'Barcode',
         receipt: 'Receipt',

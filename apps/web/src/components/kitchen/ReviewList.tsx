@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type {
+  IngredientCategory,
   InventorySource,
   RecognizedItem,
   StorageLocation,
@@ -29,6 +30,7 @@ interface ReviewRow {
   rawName: string;
   nameEn: string;
   nameAr: string;
+  category: IngredientCategory;
   quantity: number;
   unit: Unit;
   locationId: string;
@@ -47,6 +49,7 @@ function toRows(items: RecognizedItem[], locations: StorageLocation[]): ReviewRo
       rawName: it.nameEn,
       nameEn: it.nameEn,
       nameAr: it.nameAr,
+      category: it.category,
       quantity: it.quantity,
       unit: it.unit,
       locationId: location?.id ?? '',
@@ -99,6 +102,10 @@ export function ReviewList({
           // Recognition gives us both names; sending only one would have the
           // API file it under both languages in the shared catalog.
           rawNameAr: r.ingredientId ? undefined : r.nameAr,
+          // Recognition already worked the category out and showed it to the
+          // user. `ingredients` is global and defaults to `other`, so dropping
+          // this files the row under `other` for every household, forever.
+          rawCategory: r.ingredientId ? undefined : r.category,
           locationId: r.locationId,
           quantity: r.quantity,
           unit: r.unit,

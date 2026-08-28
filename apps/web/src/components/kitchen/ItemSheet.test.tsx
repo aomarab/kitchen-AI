@@ -54,6 +54,17 @@ describe('ItemSheet', () => {
     removeMutate.mockClear();
   });
 
+  /**
+   * `SOURCE_KEYS` is a `Record<InventorySource, MessageKey>`, so a missing
+   * entry is a compile error — but a *wrong* key is not, and an unlabelled
+   * source renders as the raw key. The live assistant added the fifth source.
+   */
+  it('labels an assistant-sourced item in the user’s language', () => {
+    renderSheet(makeItem('a', { source: 'assistant' }));
+
+    expect(screen.getByText('Live assistant')).toBeInTheDocument();
+  });
+
   it('shows the selected item’s current values', () => {
     renderSheet(makeItem('a'));
 

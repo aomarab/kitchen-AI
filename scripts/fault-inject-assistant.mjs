@@ -26,6 +26,9 @@ const VOICE = 'packages/contracts/src/voice.ts';
 const PROFILES = 'apps/api/src/profiles/profiles.service.ts';
 const PERSONA_VIEW = 'apps/web/src/components/settings/AssistantPersonaView.tsx';
 const AR_CATALOG = 'packages/i18n/src/ar.ts';
+const REVIEW_LIST = 'apps/web/src/components/kitchen/ReviewList.tsx';
+const DB_SCHEMA = 'apps/api/src/db/schema.ts';
+const LABELS = 'apps/web/src/lib/labels.ts';
 
 const WEB_SPEC = ['@kitchen/web', 'src/lib/assistant/openai-realtime.test.ts'];
 const API_SPEC = ['@kitchen/api', 'src/ai/assistant/assistant.service.spec.ts'];
@@ -36,8 +39,63 @@ const VOICE_SPEC = ['@kitchen/contracts', 'src/voice.spec.ts'];
 const PROFILES_SPEC = ['@kitchen/api', 'src/profiles/profiles.service.spec.ts'];
 const PERSONA_VIEW_SPEC = ['@kitchen/web', 'src/components/settings/AssistantPersonaView.test.tsx'];
 const I18N_SPEC = ['@kitchen/i18n', 'src/catalog.spec.ts'];
+const REVIEW_LIST_SPEC = ['@kitchen/web', 'src/components/kitchen/ReviewList.test.tsx'];
+const DB_SCHEMA_SPEC = ['@kitchen/api', 'src/db/schema.spec.ts'];
+const ITEM_SHEET_SPEC = ['@kitchen/web', 'src/components/kitchen/ItemSheet.test.tsx'];
 
 const CASES = [
+  {
+    // The ledger is append-only: provenance written here is permanent. This is
+    // the exact defect that shipped — the assistant logged every confirmed
+    // item as `photo` in a session where nobody took a photo — and it survived
+    // because the test only counted rows.
+    name: 'the assistant writes its items into the ledger as "photo"',
+    file: VIEW,
+    spec: VIEW_SPEC,
+    check: 'writes nothing until the user confirms, then adds via the real ledger path',
+    from: 'source="assistant"',
+    to: 'source="photo"',
+  },
+  {
+    // `ingredients` is a global table defaulting to 'other'. Dropping the
+    // category files the new row under "other" for every household, forever.
+    name: 'the recognized category never reaches the API',
+    file: REVIEW_LIST,
+    spec: REVIEW_LIST_SPEC,
+    check: 'sends every catalog hint — both names and the category — on unresolved rows',
+    from: '          rawCategory: r.ingredientId ? undefined : r.category,',
+    to: '',
+  },
+  {
+    // Same table, same permanence: sending only the English name has the API
+    // file the ingredient under both languages for every household.
+    name: 'the Arabic name is dropped on the confirm payload',
+    file: REVIEW_LIST,
+    spec: REVIEW_LIST_SPEC,
+    check: 'sends every catalog hint — both names and the category — on unresolved rows',
+    from: '          rawNameAr: r.ingredientId ? undefined : r.nameAr,',
+    to: '          rawNameAr: undefined,',
+  },
+  {
+    // A `Record<InventorySource, MessageKey>` makes a *missing* label a compile
+    // error, but not a wrong one — the badge then renders the raw message key.
+    name: 'the assistant source is labelled with the wrong message key',
+    file: LABELS,
+    spec: ITEM_SHEET_SPEC,
+    check: 'labels an assistant-sourced item in the user’s language',
+    from: "  assistant: 'web.kitchen.sources.assistant',",
+    to: "  assistant: 'web.kitchen.sources.photo',",
+  },
+  {
+    // A contract enum and its Postgres enum are independent lists. Drift is
+    // invisible to tsc and surfaces as a 500 on the INSERT.
+    name: 'the Postgres enum drifts from the contract enum',
+    file: DB_SCHEMA,
+    spec: DB_SCHEMA_SPEC,
+    check: 'inventory_source',
+    from: "  'receipt',\n  'assistant',\n])",
+    to: "  'receipt',\n])",
+  },
   {
     // Real provider output arrives padded and multi-item; a parser that took
     // only the first item would halve the pantry the user is asked to confirm,
