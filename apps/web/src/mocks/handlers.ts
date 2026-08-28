@@ -454,6 +454,7 @@ export const handlers = [
       expiresIn: 900,
     }),
   ),
+  http.put(u('/mock-upload/:id'), () => new HttpResponse(null, { status: 200 })),
   http.post(u('/inventory/recognize'), async ({ request }) => {
     const body = (await request.json()) as {
       locationHint?: 'fridge' | 'freezer' | 'pantry' | 'spice_rack';
