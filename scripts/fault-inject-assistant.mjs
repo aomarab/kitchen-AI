@@ -36,6 +36,12 @@ const MOCK = 'apps/web/src/lib/assistant/mock-realtime.ts';
 const CONNECTIVITY = 'apps/web/src/stores/connectivity.ts';
 const SCREEN_VIEW = 'apps/web/src/components/screen/SmartScreenView.tsx';
 const REALTIME_COST = 'apps/api/src/ai/realtime-cost.ts';
+const BUDGET = 'apps/api/src/ai/usage/budget.service.ts';
+const ACTION_COST = 'apps/api/src/ai/usage/action-cost.query.ts';
+const RECOGNITION = 'apps/api/src/ai/recognition/recognition.service.ts';
+const PLAN_SERVICE = 'apps/api/src/ai/plan/plan.service.ts';
+const PLAN_PROCESSOR = 'apps/api/src/ai/jobs/plan.processor.ts';
+const RECEIPT_PROCESSOR = 'apps/api/src/ai/jobs/receipt.processor.ts';
 const CREDITS = 'packages/contracts/src/credits.ts';
 
 const WEB_SPEC = ['@kitchen/web', 'src/lib/assistant/openai-realtime.test.ts'];
@@ -60,6 +66,8 @@ const MOCK_SPEC = ['@kitchen/web', 'src/lib/assistant/mock-realtime.test.ts'];
 const CONNECTIVITY_SPEC = ['@kitchen/web', 'src/stores/connectivity.test.ts'];
 const SCREEN_VIEW_SPEC = ['@kitchen/web', 'src/components/screen/SmartScreenView.test.tsx'];
 const REALTIME_COST_SPEC = ['@kitchen/api', 'src/ai/realtime-cost.spec.ts'];
+const ATTRIBUTION_SPEC = ['@kitchen/api', 'src/credits/cost-attribution.spec.ts'];
+const BILLING_CONTEXT_SPEC = ['@kitchen/api', 'src/ai/__tests__/billing-context.spec.ts'];
 
 const CASES = [
   {
@@ -700,6 +708,82 @@ const CASES = [
     check: 'sells credits for more than they cost',
     from: "{ productId: 'credits_300', credits: 300, priceUsd: 4.99 },",
     to: "{ productId: 'credits_300', credits: 300, priceUsd: 0.99 },",
+  },
+  {
+    // The whole point of the billing context: a usage row that does not carry
+    // the spend group cannot be traced to the action that paid for it, and the
+    // cost of that action silently reads as zero.
+    name: 'the recorded usage row forgets which action paid for it',
+    file: BUDGET,
+    spec: BILLING_CONTEXT_SPEC,
+    check: 'stamps the spend group on the usage row',
+    from: '      ...(billing ? { spendGroupId: billing.spendGroupId } : {}),',
+    to: '',
+  },
+  {
+    // A boundary that does not enter the context leaves its calls anonymous.
+    // Nothing else in the suite notices: the scan still works and is still
+    // charged correctly — only the measurement is lost.
+    name: 'the pantry scan runs outside its billing context',
+    file: RECOGNITION,
+    spec: ATTRIBUTION_SPEC,
+    check: 'stamps every call of the action with the ledger spend group',
+    from: "    return runInBillingContext({ spendGroupId, action: 'pantry.scan' }, () =>",
+    to: '    return runInBillingContext(undefined, () =>',
+  },
+  {
+    // The same defect one layer deeper — the regeneration's model call is made
+    // by the planner, below the service that holds the spend group.
+    name: 'a regeneration attributes nothing, because the planner call is below the boundary',
+    file: PLAN_SERVICE,
+    spec: ATTRIBUTION_SPEC,
+    check: 'attributes the planner\u2019s own gateway call to the regeneration',
+    from: "      { spendGroupId, action: 'plan.regenerateEntry' },",
+    to: '      undefined,',
+  },
+  {
+    // The worker runs long after the spend, in another process. Dropping the
+    // payload's group is how plan generation — the most expensive action in
+    // the table — would come to look free.
+    name: 'the plan worker ignores the spend group its job was charged under',
+    file: PLAN_PROCESSOR,
+    spec: ATTRIBUTION_SPEC,
+    check: 'carries the spend group from the job payload into ai_usage',
+    from: '      const billing = payload.spendGroupId',
+    to: '      const billing = false',
+  },
+  {
+    // A receipt is two model calls under one charge, in a worker that runs
+    // after the spend — the same drop as the plan worker, on the path where
+    // the multi-call shape is most obvious.
+    name: 'the receipt worker ignores the spend group its job was charged under',
+    file: RECEIPT_PROCESSOR,
+    spec: ATTRIBUTION_SPEC,
+    check: 'groups the extraction and the mapping under one charge',
+    from: '        payload.spendGroupId',
+    to: '        false',
+  },
+  {
+    // A spend that splits across the free and paid buckets writes two ledger
+    // rows for one action. Joining usage against both multiplies the measured
+    // cost by two — an error that only appears for households that have run
+    // out of free credits, i.e. exactly the paying ones.
+    name: 'a split spend double-counts its own vendor cost',
+    file: ACTION_COST,
+    spec: ATTRIBUTION_SPEC,
+    check: 'counts a split spend\u2019s cost once, not once per ledger row',
+    from: '        .selectDistinct({',
+    to: '        .select({',
+  },
+  {
+    // Support narrowing to one household must actually narrow. Without it the
+    // per-household view reports the whole estate's spend as that household's.
+    name: 'the per-household cost view leaks other households',
+    file: ACTION_COST,
+    spec: ATTRIBUTION_SPEC,
+    check: 'does not attribute one household usage to another',
+    from: '          scope(creditLedger.householdId),\n        ),\n      )\n      .groupBy(creditLedger.action);',
+    to: '        ),\n      )\n      .groupBy(creditLedger.action);',
   },
 ];
 

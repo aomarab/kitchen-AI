@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
@@ -17,6 +18,7 @@ import { CreditsService } from '../../credits/credits.service.js';
 import { PANTRY_PORT } from '../ai.constants.js';
 import type { PantryPort } from '../planner/pantry-snapshot.js';
 import { cloneSnapshot, consumeFromSnapshot } from '../planner/pantry-snapshot.js';
+import { runInBillingContext } from '../usage/billing-context.js';
 import { validateRecipe } from '../planner/validation.js';
 import type { CatalogIngredientRef, ResolvedRecipe } from '../planner/types.js';
 import { toRecipeSummary, type RecipeRow, type ResolvedMedia } from '../recipes/recipe-mapper.js';
@@ -307,22 +309,29 @@ export class PlanService {
     await this.credits.assertCanAfford(householdId, 'plan.regenerateEntry');
     const existing = await this.loadEntryRow(planId, entryId);
 
-    const { recipeId, fullyCovered } = await this.planner.regenerateEntry({
-      householdId,
-      userId,
-      date: existing.date,
-      slot: existing.slot,
-      excludeRecipeIds: [existing.recipeId, ...body.excludeRecipeIds],
-      ...(body.note ? { note: body.note } : {}),
-      ...(scenario ? { scenario } : {}),
-    });
+    // Minted here so the generation below is recorded against the spend that
+    // follows it, rather than as anonymous usage.
+    const spendGroupId = randomUUID();
+    const { recipeId, fullyCovered } = await runInBillingContext(
+      { spendGroupId, action: 'plan.regenerateEntry' },
+      () =>
+        this.planner.regenerateEntry({
+          householdId,
+          userId,
+          date: existing.date,
+          slot: existing.slot,
+          excludeRecipeIds: [existing.recipeId, ...body.excludeRecipeIds],
+          ...(body.note ? { note: body.note } : {}),
+          ...(scenario ? { scenario } : {}),
+        }),
+    );
 
     await this.db
       .update(mealPlanEntries)
       .set({ recipeId, fullyCovered })
       .where(and(eq(mealPlanEntries.id, entryId), eq(mealPlanEntries.planId, planId)));
 
-    await this.credits.spend(householdId, 'plan.regenerateEntry');
+    await this.credits.spend(householdId, 'plan.regenerateEntry', { spendGroupId });
     return this.loadEntry(planId, entryId);
   }
 

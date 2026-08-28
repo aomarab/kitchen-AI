@@ -70,7 +70,7 @@ export class CreditsService {
   async spend(
     householdId: string,
     action: CreditAction,
-    opts: { aiUsageId?: string; spendGroupId?: string } = {},
+    opts: { spendGroupId?: string } = {},
   ): Promise<string> {
     const cost = CREDIT_COSTS[action];
     // Allow caller to supply the id so it can be written into a sibling row
@@ -120,7 +120,6 @@ export class CreditsService {
           bucket: 'free',
           action,
           spendGroupId,
-          ...(opts.aiUsageId ? { aiUsageId: opts.aiUsageId } : {}),
         });
       }
       if (fromPaid > 0) {
@@ -131,7 +130,6 @@ export class CreditsService {
           bucket: 'paid',
           action,
           spendGroupId,
-          ...(opts.aiUsageId ? { aiUsageId: opts.aiUsageId } : {}),
         });
       }
       if (rows.length > 0) await tx.insert(creditLedger).values(rows);

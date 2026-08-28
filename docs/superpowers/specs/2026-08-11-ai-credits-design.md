@@ -150,9 +150,12 @@ Credits are an **append-only ledger with a materialised balance**, the same shap
 ```
 credit_ledger                  append-only; one row per movement
   id, household_id, delta, kind, bucket, action,
-  ai_usage_id, purchase_id, created_at
+  spend_group_id, purchase_id, created_at
   kind:   grant | purchase | spend | refund | reversal
   bucket: free | paid
+
+ai_usage                       one row per vendor call
+  …, spend_group_id            null when no credit paid for the call
 
 household_credits              materialised state
   household_id PK, free_balance, paid_balance,
@@ -176,9 +179,27 @@ row, so its first balance read creates one at the full grant — new households 
 **`store_transaction_id UNIQUE` is the idempotency key.** Both the client and the webhook report the
 same purchase, and webhooks retry. Without the constraint a redelivery silently doubles a balance.
 
-**`ai_usage_id` on spend rows** ties each debit to the vendor cost that caused it, so "are we
+**`spend_group_id` on both ledgers** ties each debit to the vendor cost that caused it, so "are we
 covering costs?" is a query rather than a guess. For a system whose entire purpose is cost coverage,
 this is the most important column in the schema.
+
+It is written on the *usage* side rather than as an `ai_usage_id` on the spend, because one action
+is several calls: a receipt scan is an extract and a map, a plan is a generation plus the
+translations it triggers, and a two-photo pantry scan is two vision calls. A single foreign key on
+the spend can only name one of them, which is why the original `ai_usage_id` column was never
+written by anything and was removed. The correlation is established by an ambient billing context
+(`apps/api/src/ai/usage/billing-context.ts`) entered at each of the four boundaries that own an
+action end to end — the two synchronous services and the two workers — so calls made several layers
+below the code holding the id are attributed too.
+
+`spend_group_id` is nullable on `ai_usage` and that null is meaningful: media warming and background
+translation are real vendor spend that no credit paid for. They are reported as unattributed rather
+than folded into an action, which would overstate what that action costs.
+
+`ActionCostQuery` (`apps/api/src/ai/usage/action-cost.query.ts`) aggregates the two sides. It counts
+*charged* and *measured* actions separately, because the two differing is information: a spend that
+measures zero cost is either an action that failed before calling a vendor, or `assistant.session`,
+whose cost is unobservable by construction (§1.2).
 
 **`paid_balance` may go negative.** When a refund arrives for credits already consumed, the honest
 record is a negative balance the user must buy out of. Clamping to zero silently writes off exactly

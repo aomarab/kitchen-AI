@@ -7,6 +7,7 @@ import { ReceiptService } from '../receipt/receipt.service.js';
 import type { JobStore } from './job-store.js';
 import type { ReceiptJobPayload } from './jobs.service.js';
 import { describeJobError, toJobError } from './job-error.js';
+import { runInBillingContext } from '../usage/billing-context.js';
 
 /**
  * BullMQ worker for receipt parsing. Produces a `recognition_session` the user
@@ -32,11 +33,19 @@ export class ReceiptProcessor extends WorkerHost {
     await this.store.markRunning(jobId);
     const payload = row.payload as unknown as ReceiptJobPayload;
     try {
-      const sessionId = await this.receipts.process({
-        householdId: row.householdId,
-        userId: payload.userId,
-        request: payload.request,
-      });
+      // The whole parse — extraction, mapping and the catalog resolution it
+      // triggers — is attributed to the spend made at enqueue.
+      const sessionId = await runInBillingContext(
+        payload.spendGroupId
+          ? { spendGroupId: payload.spendGroupId, action: 'receipt.scan' }
+          : undefined,
+        () =>
+          this.receipts.process({
+            householdId: row.householdId,
+            userId: payload.userId,
+            request: payload.request,
+          }),
+      );
       await this.store.markDone(jobId, { kind: 'recognition_session', id: sessionId });
     } catch (err) {
       this.logger.error(`job ${jobId} failed: ${describeJobError(err)}`);

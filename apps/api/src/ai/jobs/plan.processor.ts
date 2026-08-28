@@ -9,6 +9,8 @@ import { RecipeTranslationService } from '../recipes/translation.service.js';
 import type { JobStore } from './job-store.js';
 import type { PlanJobPayload } from './jobs.service.js';
 import { describeJobError, toJobError } from './job-error.js';
+import { creditActionForScope } from '../../credits/credit-actions.js';
+import { runInBillingContext } from '../usage/billing-context.js';
 
 /**
  * BullMQ worker for meal-plan generation. Thin by design: it loads the
@@ -37,11 +39,22 @@ export class PlanProcessor extends WorkerHost {
     await this.store.markRunning(jobId);
     const payload = row.payload as unknown as PlanJobPayload;
     try {
-      const planId = await this.planner.generate({
-        householdId: row.householdId,
-        userId: payload.userId,
-        request: payload.request,
-      });
+      // Generation and the translations it triggers are attributed to the
+      // spend made at enqueue; the warming below deliberately is not, because
+      // nobody was charged a credit for it.
+      const billing = payload.spendGroupId
+        ? {
+            spendGroupId: payload.spendGroupId,
+            action: creditActionForScope(payload.request.scope),
+          }
+        : undefined;
+      const planId = await runInBillingContext(billing, () =>
+        this.planner.generate({
+          householdId: row.householdId,
+          userId: payload.userId,
+          request: payload.request,
+        }),
+      );
       // Marked done *before* warming so the client stops waiting the moment the
       // plan exists; the pictures land seconds later on the next poll. Warming
       // must never reach the catch block below — the plan is already saved and
