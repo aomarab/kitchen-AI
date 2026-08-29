@@ -73,9 +73,18 @@ export class OpenAiProvider implements AiProvider {
   constructor(
     apiKey: string,
     private readonly models: OpenAiModels,
+    options: { baseURL?: string } = {},
   ) {
+    const baseURL = options.baseURL?.trim() || undefined;
     this.client = new OpenAI({
       apiKey,
+      // Empty => OpenAI's own endpoint; set to an OpenAI-compatible gateway
+      // (e.g. OpenRouter) to serve the same chat tiers through it. See env.ts.
+      baseURL,
+      // OpenRouter uses these for attribution/rankings; harmless on OpenAI.
+      defaultHeaders: baseURL
+        ? { 'HTTP-Referer': 'https://mamas-kitchen.app', 'X-Title': "Mama's Kitchen" }
+        : undefined,
       // Per-call overrides below narrow this further; this is the ceiling.
       timeout: Math.max(...Object.values(PROVIDER_TIMEOUT_MS)),
       maxRetries: Math.max(...Object.values(PROVIDER_MAX_RETRIES)),

@@ -41,6 +41,15 @@ describe('estimateCostUsd', () => {
     const cost = estimateCostUsd('text-embedding-3-small', 'cheap', 1_000_000, 0);
     expect(cost).toBeCloseTo(0.02, 10);
   });
+
+  it('prices OpenRouter-namespaced ids from their own exact rate', () => {
+    // When OPENAI_BASE_URL routes chat through OpenRouter, the reported model id
+    // is namespaced (openai/gpt-5). It must hit its own rate, not the tier
+    // fallback and not the bare `gpt-5` entry (whose input rate differs).
+    expect(estimateCostUsd('openai/gpt-5-mini', 'cheap', 1_000_000, 0)).toBeCloseTo(0.25, 10);
+    expect(estimateCostUsd('openai/gpt-5', 'planning', 1_000_000, 0)).toBeCloseTo(1.25, 10);
+    expect(MODEL_RATES_USD_PER_MTOK['openai/gpt-5']).not.toEqual(MODEL_RATES_USD_PER_MTOK['gpt-5']);
+  });
 });
 
 describe('estimateCostUsd — dated snapshot ids resolve to their alias rate', () => {

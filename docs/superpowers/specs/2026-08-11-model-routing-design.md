@@ -37,11 +37,11 @@ upload full camera frames — commonly 4032x3024 — and pay to have them tiled 
 
 List prices as of 2026-08-11 (verify before launch; these move):
 
-| Tier | Current rate (in / out per 1M) | Gemini equivalent | Decision |
-| --- | --- | --- | --- |
-| `cheap` | $0.15 / $0.60 | Flash-Lite, roughly $0.10-0.30 / $0.40-2.50 | **Stay on OpenAI.** Parity at best, and a second vendor on this path buys a failure mode for nothing. |
-| `vision` | $2.50 / $10.00 | Flash, $1.50 / $7.50 | **Move.** ~40% cheaper input, ~25% cheaper output. |
-| `planning` | $2.50 / $10.00 | not evaluated | **Stay.** Quality dominates. |
+| Tier       | Current rate (in / out per 1M) | Gemini equivalent                           | Decision                                                                                              |
+| ---------- | ------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `cheap`    | $0.15 / $0.60                  | Flash-Lite, roughly $0.10-0.30 / $0.40-2.50 | **Stay on OpenAI.** Parity at best, and a second vendor on this path buys a failure mode for nothing. |
+| `vision`   | $2.50 / $10.00                 | Flash, $1.50 / $7.50                        | **Move.** ~40% cheaper input, ~25% cheaper output.                                                    |
+| `planning` | $2.50 / $10.00                 | not evaluated                               | **Stay.** Quality dominates.                                                                          |
 
 The saving compounds with the image work: fewer image tokens multiplied by a lower rate, on
 the heaviest operation we run.
@@ -114,6 +114,26 @@ checked before any routing. New environment keys: `GEMINI_API_KEY`, `GEMINI_MODE
 misconfigured Gemini setup degrades to today's behaviour rather than failing. `config/env.ts`
 gains a production guard: if a tier is bound to Gemini, `GEMINI_API_KEY` must be present, in the
 same style as the existing OAuth and OpenAI guards.
+
+### OpenAI-compatible gateways (OpenRouter)
+
+The cheap/vision/planning tiers can be served through any OpenAI-compatible gateway without a new
+provider adapter, so the app can buy LLM capacity wholesale (e.g. OpenRouter) and resell it as
+in-app credits. `OPENAI_BASE_URL` (empty = OpenAI's own endpoint) is passed straight to the OpenAI
+SDK's `baseURL`; when set, `OpenAiProvider` also sends OpenRouter's attribution headers, which are
+harmless against OpenAI. Routing this way means:
+
+- **Model ids are the gateway's namespaced ids.** Set `OPENAI_MODEL_PLANNING` / `_VISION` /
+  `_CHEAP` to e.g. `openai/gpt-5` and `openai/gpt-5-mini`, and add each to
+  `MODEL_RATES_USD_PER_MTOK` (Stage 3). The gateway reports that same id back, so it exact-matches
+  its rate; an unpriced id only falls back-with-a-warning, so pricing never silently zeroes.
+- **Embeddings stay on the offline mock.** A chat gateway like OpenRouter does not serve OpenAI's
+  `/embeddings`, so `EMBEDDINGS_PORT` selects `MockEmbeddings` whenever `OPENAI_BASE_URL` is set.
+  The ingredient resolver already degrades gracefully to name matching, so catalog matching keeps
+  working; only semantic ranking is reduced.
+- **The realtime assistant is unaffected.** It never routes through this base URL (it is a direct
+  client↔provider transport and mobile ships a mock), so a gateway that lacks the realtime API
+  does not break anything on the launch path.
 
 ## Stage 3 — Price by model, not by tier
 

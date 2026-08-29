@@ -73,11 +73,15 @@ import { redisConnection } from '../common/redis.js';
 export function createAiProvider(env: Env): AiProvider {
   if (env.AI_MOCK) return new MockAiProvider();
 
-  const openai = new OpenAiProvider(env.OPENAI_API_KEY, {
-    cheap: env.OPENAI_MODEL_CHEAP,
-    vision: env.OPENAI_MODEL_VISION,
-    planning: env.OPENAI_MODEL_PLANNING,
-  });
+  const openai = new OpenAiProvider(
+    env.OPENAI_API_KEY,
+    {
+      cheap: env.OPENAI_MODEL_CHEAP,
+      vision: env.OPENAI_MODEL_VISION,
+      planning: env.OPENAI_MODEL_PLANNING,
+    },
+    { baseURL: env.OPENAI_BASE_URL },
+  );
 
   let vision: AiProvider = openai;
   if (env.AI_VISION_VENDOR === 'gemini') {
@@ -169,7 +173,13 @@ export function createAiProvider(env: Env): AiProvider {
       provide: EMBEDDINGS_PORT,
       inject: [ENV],
       useFactory: (env: Env) =>
-        env.AI_MOCK ? new MockEmbeddings() : new OpenAiEmbeddings(env.OPENAI_API_KEY),
+        // Real embeddings need OpenAI's own `/embeddings` endpoint. An
+        // OpenAI-compatible chat gateway like OpenRouter does not serve it, so
+        // whenever OPENAI_BASE_URL routes chat elsewhere we stay on the offline
+        // mock (the ingredient resolver degrades gracefully to name matching).
+        env.AI_MOCK || (env.OPENAI_BASE_URL ?? '').trim() !== ''
+          ? new MockEmbeddings()
+          : new OpenAiEmbeddings(env.OPENAI_API_KEY),
     },
     { provide: CATALOG_PORT, useClass: DrizzleIngredientResolver },
     { provide: USAGE_REPOSITORY, useClass: DrizzleUsageRepository },
