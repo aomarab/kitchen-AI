@@ -109,26 +109,15 @@ services:
         condition: service_healthy
 
   # ---- Optional: self-hosted S3 (MinIO) ----
-  # Uncomment to run storage on the same VM. You must then set, in .env, a
-  # PUBLIC S3_ENDPOINT (e.g. https://storage.example.com) that clients can reach
-  # — NOT http://minio:9000 — and publish/route port 9000 with TLS. Managed S3
-  # is the simpler production choice.
-  #
-  # minio:
-  #   image: minio/minio:latest
-  #   container_name: kitchen-minio
-  #   restart: unless-stopped
-  #   command: server /data --console-address ":9001"
-  #   environment:
-  #     MINIO_ROOT_USER: ${S3_ACCESS_KEY}
-  #     MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
-  #   ports:
-  #     - '9000:9000'
-  #     - '9001:9001'
-  #   volumes:
-  #     - minio-data:/data
+  # Moved to an overlay so R2/S3 deployments don't carry an unused service.
+  # Enable it with:
+  #   docker compose -f docker-compose.prod.yml \
+  #     -f deploy/docker-compose.caddy.yml \
+  #     -f deploy/docker-compose.minio.yml up -d
+  # Caddy then routes /<S3_BUCKET>/* on the API host to MinIO (no extra cert),
+  # so set S3_ENDPOINT=https://<API_DOMAIN>, S3_REGION=us-east-1, path-style.
+  # See deploy/docker-compose.minio.yml and deploy/README.md.
 
 volumes:
   postgres-data:
   redis-data:
-  # minio-data:
