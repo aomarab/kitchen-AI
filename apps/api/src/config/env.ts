@@ -59,6 +59,17 @@ const envSchema = z.object({
   APPLE_TOKEN_ENC_KEY: z.string().default(''),
 
   OPENAI_API_KEY: z.string().default(''),
+  /**
+   * Base URL for the OpenAI-compatible chat provider. Empty = OpenAI's own
+   * endpoint. Set to an OpenAI-compatible gateway — e.g. OpenRouter
+   * (`https://openrouter.ai/api/v1`) — to serve the cheap/vision/planning tiers
+   * through it instead. When routing through such a gateway, set the
+   * `OPENAI_MODEL_*` ids to that gateway's namespaced ids (e.g. `openai/gpt-5`)
+   * and add their rates to `MODEL_RATES_USD_PER_MTOK`. Note: OpenRouter serves
+   * chat only, so embeddings stay on the offline mock whenever this is set
+   * (see `ai.module.ts`). See spec §"OpenAI-compatible gateways (OpenRouter)".
+   */
+  OPENAI_BASE_URL: z.string().default(''),
   OPENAI_MODEL_PLANNING: z.string().default('gpt-5'),
   OPENAI_MODEL_VISION: z.string().default('gpt-5'),
   OPENAI_MODEL_CHEAP: z.string().default('gpt-5-mini'),

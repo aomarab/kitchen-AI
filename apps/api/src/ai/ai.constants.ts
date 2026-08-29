@@ -64,6 +64,12 @@ export const MODEL_RATES_USD_PER_MTOK: Record<string, ModelRate> = {
   'gpt-5-mini': { input: 0.15, output: 0.6 },
   'gemini-3-flash': { input: 1.5, output: 7.5 },
   'text-embedding-3-small': { input: 0.02, output: 0 },
+  // OpenRouter-namespaced ids (served when OPENAI_BASE_URL points at
+  // https://openrouter.ai/api/v1). Prices are OpenRouter's list rates; it also
+  // adds a small service fee on top, which the credit markup absorbs.
+  'openai/gpt-5': { input: 1.25, output: 10 },
+  'openai/gpt-5-mini': { input: 0.25, output: 2 },
+  'google/gemini-2.5-flash': { input: 0.3, output: 2.5 },
 };
 
 /**
