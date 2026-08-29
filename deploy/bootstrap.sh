@@ -15,15 +15,36 @@ set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/aomarab/kitchen-AI.git}"
 APP_DIR="${APP_DIR:-/opt/kitchen-ai}"
-# The non-root user that will own the checkout and run docker. Defaults to the
-# Oracle Ubuntu default login.
-APP_USER="${APP_USER:-ubuntu}"
+# The non-root user that will own the checkout and run docker. Left empty here
+# and auto-detected below so the same script works across clouds (Oracle/AWS
+# use `ubuntu`, Azure uses `azureuser`, Oracle Linux uses `opc`, …). Override by
+# exporting APP_USER before running.
+APP_USER="${APP_USER:-}"
 
 log() { printf '\n\033[1;32m==> %s\033[0m\n' "$*"; }
 
 if [[ $EUID -ne 0 ]]; then
   echo "Run as root (use sudo)." >&2
   exit 1
+fi
+
+# Pick the cloud's default login user if one wasn't supplied. Falling back to
+# the UID-1000 account covers images whose admin user isn't in the known list.
+if [[ -z "$APP_USER" ]]; then
+  for candidate in ubuntu azureuser opc ec2-user debian; do
+    if id "$candidate" >/dev/null 2>&1; then
+      APP_USER="$candidate"
+      break
+    fi
+  done
+fi
+if [[ -z "$APP_USER" ]]; then
+  APP_USER="$(getent passwd 1000 | cut -d: -f1 || true)"
+fi
+if [[ -n "$APP_USER" ]]; then
+  log "Deploying as user: $APP_USER"
+else
+  echo "WARNING: no non-root login user found; the checkout will stay root-owned." >&2
 fi
 
 log "Installing Docker Engine + compose plugin"
