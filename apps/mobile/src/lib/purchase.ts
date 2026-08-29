@@ -23,7 +23,7 @@ export async function buyCredits(
 ): Promise<PurchaseOutcome> {
   const intent = await api.call('createPurchaseIntent', { body: { productId } });
 
-  const result = await port.purchase(productId);
+  const result = await port.purchase(productId, intent.intentId);
   if (isCancelled(result)) return { status: 'cancelled' };
   // The store returned without a transaction id: the charge is unconfirmed, so
   // let the webhook finish it rather than claiming success.

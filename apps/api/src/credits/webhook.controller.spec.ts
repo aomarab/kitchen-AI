@@ -21,9 +21,10 @@ const WEBHOOK_SECRET = 'test-webhook-secret';
 /** A well-formed RevenueCat purchase event for a given intent. */
 function purchaseBody(intentId: string, transactionId: string) {
   return {
+    api_version: '1.0',
     event: {
       type: 'INITIAL_PURCHASE',
-      intent_id: intentId,
+      app_user_id: intentId,
       transaction_id: transactionId,
       product_id: 'credits_300',
       store: 'APP_STORE',
@@ -110,5 +111,22 @@ describe('RevenueCat webhook HTTP route', () => {
 
     const after = await credits.balance(householdId);
     expect(after.paidBalance).toBe(before.paidBalance + 300);
+  });
+
+  it('accepts an ignored event type without a transaction and moves no balance', async () => {
+    // RevenueCat fires many event types (and a TEST ping) that carry no
+    // transaction or product. These must pass validation and be ignored, not
+    // 400 — a rejected delivery is one RevenueCat retries forever.
+    const before = await credits.balance(householdId);
+
+    const res = await request(app.getHttpServer())
+      .post('/webhooks/revenuecat')
+      .set('authorization', WEBHOOK_SECRET)
+      .send({ api_version: '1.0', event: { type: 'TEST', app_user_id: 'not-a-uuid' } });
+
+    expect(res.status).toBe(200);
+
+    const after = await credits.balance(householdId);
+    expect(after.paidBalance).toBe(before.paidBalance);
   });
 });

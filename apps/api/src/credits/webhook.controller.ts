@@ -8,28 +8,39 @@ import { PurchaseService, type WebhookEvent } from './purchase.service.js';
 
 /**
  * RevenueCat webhook body (the subset we act on). RevenueCat POSTs
- * `{ event: { … } }`; the `intent_id` is the purchase intent recorded before
- * checkout (spec §6.2), carried through RevenueCat so a webhook-first delivery
- * can resolve the household.
+ * `{ api_version, event: { … } }`. There is no `intent_id` field — a customer's
+ * purchases are keyed by `app_user_id`, which the client sets to the purchase
+ * intent id before checkout (`Purchases.logIn(intentId)`, spec §6.2), so that is
+ * what resolves the household on a webhook-first delivery.
+ *
+ * Only the purchase/refund events carry a transaction and product; the store's
+ * many other event types (and its TEST ping) must pass validation and be ignored
+ * downstream rather than 400 — a rejected delivery is one RevenueCat retries
+ * forever. The `store` is left as a free string because the Test Store and future
+ * stores report values outside the App/Play set and none of them affect crediting.
  */
-const revenueCatWebhookSchema = z.object({
-  event: z.object({
-    type: z.string().min(1),
-    intent_id: z.string().uuid(),
-    transaction_id: z.string().min(1),
-    product_id: z.string().min(1),
-    store: z.enum(['APP_STORE', 'MAC_APP_STORE', 'PLAY_STORE']),
-  }),
-});
+const revenueCatWebhookSchema = z
+  .object({
+    event: z
+      .object({
+        type: z.string().min(1),
+        app_user_id: z.string().min(1),
+        transaction_id: z.string().min(1).nullish(),
+        product_id: z.string().min(1).nullish(),
+        store: z.string().min(1).nullish(),
+      })
+      .passthrough(),
+  })
+  .passthrough();
 type RevenueCatWebhook = z.infer<typeof revenueCatWebhookSchema>;
 
 function toWebhookEvent(body: RevenueCatWebhook): WebhookEvent {
   const { event } = body;
   return {
     type: event.type,
-    intentId: event.intent_id,
-    storeTransactionId: event.transaction_id,
-    productId: event.product_id,
+    intentId: event.app_user_id,
+    storeTransactionId: event.transaction_id ?? undefined,
+    productId: event.product_id ?? undefined,
     store: event.store === 'PLAY_STORE' ? 'google' : 'apple',
   };
 }

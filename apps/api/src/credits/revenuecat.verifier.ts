@@ -20,9 +20,11 @@ interface RevenueCatSubscriber {
  * success (so a transport hiccup can never be mistaken for a paid receipt), and
  * a mismatched product id returns `valid: false` so the caller refuses it.
  *
- * The precise RevenueCat lookup is finalized once the account exists (spec §10);
- * the security contract — never grant on an unverified receipt — does not depend
- * on that detail.
+ * The subscriber is looked up by RevenueCat *app user id* — which the client
+ * sets to the purchase intent id before checkout — because that, not the store
+ * transaction id, is what keys a customer's receipts (spec §6.2). The security
+ * contract — never grant on an unverified receipt — does not depend on that
+ * detail.
  */
 export class RevenueCatVerifier implements PaymentVerifier {
   constructor(
@@ -30,8 +32,12 @@ export class RevenueCatVerifier implements PaymentVerifier {
     private readonly baseUrl = REVENUECAT_BASE_URL,
   ) {}
 
-  async verify(storeTransactionId: string, productId: string): Promise<VerifiedPurchase> {
-    const url = `${this.baseUrl}/subscribers/${encodeURIComponent(storeTransactionId)}`;
+  async verify(
+    appUserId: string,
+    storeTransactionId: string,
+    productId: string,
+  ): Promise<VerifiedPurchase> {
+    const url = `${this.baseUrl}/subscribers/${encodeURIComponent(appUserId)}`;
 
     let response: Response;
     try {

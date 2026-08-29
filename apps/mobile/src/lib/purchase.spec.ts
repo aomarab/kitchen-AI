@@ -37,7 +37,9 @@ describe('buyCredits', () => {
     expect(call).toHaveBeenNthCalledWith(1, 'createPurchaseIntent', {
       body: { productId: 'credits_300' },
     });
-    expect(storePort.purchase).toHaveBeenCalledWith('credits_300');
+    // The intent id is threaded to the store port so the real adapter can log in
+    // under it — that app_user_id is how the server later resolves the purchase.
+    expect(storePort.purchase).toHaveBeenCalledWith('credits_300', INTENT.intentId);
   });
 
   it('confirms with the store transaction id and returns credited', async () => {
