@@ -67,6 +67,16 @@ export class AssistantService {
     // who never opened settings gets the default persona rather than an error.
     const { assistantPersona } = await this.profiles.get(userId);
 
+    // A scripted (mock) provider never reaches a vendor that bills us, so it is
+    // a demo, not a realtime call. Charging the household 25 credits for it
+    // would bill a household for a badge that says "not live AI yet". Mint
+    // straight through — the mock secret is unusable, so nothing is spent and
+    // nothing connects. The pantry and persona reads still run above so a demo
+    // exercises the same path a live session takes.
+    if (this.provider.isMock) {
+      return this.provider.mint(locale, brief, assistantPersona);
+    }
+
     const spendGroupId = await this.credits.spend(householdId, 'assistant.session');
 
     try {

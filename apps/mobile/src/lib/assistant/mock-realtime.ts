@@ -259,6 +259,14 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
     }
     this.emit = null;
   }
+
+  /**
+   * Cosmetic on the scripted adapter: it reads no audio, so there is no track to
+   * disable. It exists so the screen can wire one mic control for both the mock
+   * and the real adapter without branching, and so a "muted" toggle over the
+   * demo behaves like it does over a live session.
+   */
+  setMicMuted(_muted: boolean): void {}
 }
 
 /** The sample detections, exported for the confirm-before-write mapping. */

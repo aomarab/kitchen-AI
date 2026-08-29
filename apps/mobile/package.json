@@ -52,11 +52,13 @@
     "react-native-reanimated": "4.5.0",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.2",
+    "react-native-webrtc": "^124.0.8",
     "react-native-webview": "13.16.1",
     "zod": "^3.25.0",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@config-plugins/react-native-webrtc": "^15.0.2",
     "@kitchen/config": "workspace:*",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "~57.0.4",

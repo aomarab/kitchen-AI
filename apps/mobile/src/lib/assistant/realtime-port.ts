@@ -76,6 +76,15 @@ export interface StartAssistantOptions {
    * backwards compatibility with the original camera-only screen.
    */
   camera?: boolean;
+  /**
+   * Whether the microphone should be opened for this session. Stated for the
+   * same reason as {@link camera}: the real adapter acquires the mic itself, so
+   * it must be told whether to. A text-only conversation passes `false` so the
+   * phone never listens while the user is typing; voice and live pass `true`.
+   * `undefined` is treated as microphone-on, matching the original camera+voice
+   * screen. The scripted mock reads no audio and ignores this.
+   */
+  audio?: boolean;
 }
 
 export interface RealtimeAssistantClient {
@@ -89,6 +98,13 @@ export interface RealtimeAssistantClient {
    * after {@link stop}, or on whitespace-only input.
    */
   sendText(text: string): void;
+  /**
+   * Mute or unmute the microphone mid-session, without tearing the connection
+   * down. Optional because the scripted mock reads no audio — its mic control
+   * is cosmetic — while the real adapter must actually disable the outgoing
+   * audio track, or a "muted" indicator would be lying about a live mic.
+   */
+  setMicMuted?(muted: boolean): void;
   /** End the session and release every timer/handle it holds. Idempotent. */
   stop(): Promise<void>;
 }

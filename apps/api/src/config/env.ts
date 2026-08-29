@@ -80,6 +80,20 @@ const envSchema = z.object({
    * since its traffic goes client↔provider and we never see a token count.
    */
   OPENAI_MODEL_REALTIME: z.string().default('gpt-realtime'),
+  /**
+   * Dedicated key for the realtime assistant, kept separate from
+   * {@link OPENAI_API_KEY} on purpose. The realtime API only exists on
+   * `api.openai.com` — it is **not** served by OpenAI-compatible gateways such
+   * as OpenRouter — so a deployment that routes the tiers through a gateway
+   * (`OPENAI_BASE_URL` set) needs a genuine `sk-…` OpenAI key here to make the
+   * assistant live, while its gateway key keeps serving planning/vision.
+   *
+   * When empty the assistant runs as a scripted demo (`ai.module.ts` selects
+   * the mock provider), so it degrades honestly rather than 401-ing against the
+   * wrong host. A deployment talking to OpenAI directly (no `OPENAI_BASE_URL`)
+   * falls back to {@link OPENAI_API_KEY}.
+   */
+  OPENAI_REALTIME_API_KEY: z.string().default(''),
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_MODEL_VISION: z.string().default('gemini-3-flash'),
   /**

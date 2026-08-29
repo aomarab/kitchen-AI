@@ -62,6 +62,7 @@
       },
       "infoPlist": {
         "NSCameraUsageDescription": "Mama's Kitchen uses the camera to recognise ingredients in your kitchen.",
+        "NSMicrophoneUsageDescription": "Mama's Kitchen uses the microphone so you can talk to the live assistant hands-free.",
         "NSPhotoLibraryUsageDescription": "Mama's Kitchen reads photos of your kitchen to build your inventory.",
         "UISupportedInterfaceOrientations": [
           "UIInterfaceOrientationPortrait",
@@ -96,7 +97,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
+      "permissions": ["CAMERA", "READ_MEDIA_IMAGES", "RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -110,6 +111,13 @@
         "expo-camera",
         {
           "cameraPermission": "Mama's Kitchen uses the camera to recognise ingredients in your kitchen."
+        }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Mama's Kitchen uses the camera to recognise ingredients in your kitchen.",
+          "microphonePermission": "Mama's Kitchen uses the microphone so you can talk to the live assistant hands-free."
         }
       ],
       [

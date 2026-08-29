@@ -84,6 +84,34 @@ const SESSION: RealtimeSession = {
 };
 
 describe('AssistantService', () => {
+  it('does not charge for a scripted (mock) session — a demo is not a realtime call', async () => {
+    const { calls, credits, spy } = creditsStub();
+    // A mock provider mints an unusable secret and never reaches a vendor that
+    // bills us; charging 25 credits for it would bill a household for the demo
+    // badge. The pantry and persona reads still run so the demo path matches a
+    // live one, but the spend must not.
+    const mockProvider: RealtimeSessionProvider = {
+      isMock: true,
+      mint: async () => {
+        calls.push('mint');
+        return { ...SESSION, clientSecret: 'mock-realtime-secret', isMock: true };
+      },
+    };
+    const service = new AssistantService(
+      credits,
+      mockProvider,
+      pantryStub(calls),
+      profilesStub(calls),
+    );
+
+    const session = await service.createSession('household-1', 'user-1', 'en');
+
+    expect(session.isMock).toBe(true);
+    expect(calls).toEqual(['pantry', 'profile', 'mint']);
+    expect(spy.spend).not.toHaveBeenCalled();
+    expect(spy.refundSpendGroup).not.toHaveBeenCalled();
+  });
+
   it('charges before minting, so an unaffordable session never reaches the provider', async () => {
     const { calls, credits } = creditsStub();
     const service = new AssistantService(

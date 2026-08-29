@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
 import { AppText, Button, Card, Icon, type IconName } from '../../components';
@@ -10,7 +11,8 @@ import { Sheet } from '../../components/Sheet';
 import { useFormat } from '../../hooks/useFormat';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
 import { localizedName } from '../../lib/format';
-import { MockRealtimeAssistantClient } from '../../lib/assistant/mock-realtime';
+import { api } from '../../lib/api';
+import { OpenAiRealtimeAssistantClient } from '../../lib/assistant/openai-realtime';
 import { detectionsToSession } from '../../lib/assistant/detections';
 import type {
   AssistantStatus,
@@ -27,18 +29,20 @@ import { useTheme } from '../../theme/useTheme';
  * the web assistant:
  *
  * - **Text** — a typed chat. No camera, no microphone.
- * - **Voice** — talk hands-free. No camera. (The mic control is a demo mute;
- *   the scripted client reads no real audio, so nothing is recorded.)
- * - **Live** — the original camera + voice surface: point the phone at your
- *   food and the assistant reports what it "sees" as a labelled sample.
+ * - **Voice** — talk hands-free. No camera; the microphone is live and the mic
+ *   control mutes the outgoing audio track.
+ * - **Live** — the camera + voice surface: point the phone at your food and the
+ *   assistant reports what it "sees" as a labelled sample.
  *
- * The transport is a **port** driven today only by the scripted
- * {@link MockRealtimeAssistantClient} — React Native has no realtime WebRTC
- * without a native module, so the live model is a later slice behind the same
- * interface. Because the client is a mock, `isMock` is `true` and a persistent
- * demo badge is shown: a scripted answer over a real camera preview must never
- * read as real vision. Detections are shown as a labelled "Spotted (sample)"
- * row, never as boxes on the feed.
+ * The transport is a **port**. It defaults to the real
+ * {@link OpenAiRealtimeAssistantClient}, which holds a WebRTC session straight
+ * to the realtime model (audio phone↔provider; the API only mints the ephemeral
+ * credential). That adapter hands off to the scripted mock when the API mints a
+ * *mock* session — a deployment with no realtime key configured — so `isMock`
+ * stays `true` and the persistent demo badge stays lit until a key is set: a
+ * scripted answer over a real camera preview must never read as real vision.
+ * Detections are shown as a labelled "Spotted (sample)" row, never as boxes on
+ * the feed.
  *
  * Nothing the assistant reports is auto-written. "Add" opens the same
  * {@link ReviewList} the capture flows use, and only a confirm there reaches the
@@ -46,17 +50,21 @@ import { useTheme } from '../../theme/useTheme';
  *
  * `initialMode`/`lockMode`/`onExit` let a caller embed a fixed mode (the cook
  * screen opens a locked **Voice** session). `createClient` is an injection seam
- * (default: the mock), the same port shape used across the app.
+ * (default: the real adapter), the same port shape used across the app.
  */
 export type AssistantMode = 'text' | 'voice' | 'live';
 
 const MODES: AssistantMode[] = ['text', 'voice', 'live'];
 
+/** Longer edge each sampled camera frame is downscaled to before it is sent as
+ * realtime context. Small because it is context for the model, not a photo. */
+const ASSISTANT_FRAME_EDGE_PX = 512;
+
 export function LiveAssistantScreen({
   initialMode = 'live',
   lockMode = false,
   onExit,
-  createClient = () => new MockRealtimeAssistantClient(),
+  createClient,
 }: {
   initialMode?: AssistantMode;
   lockMode?: boolean;
@@ -82,8 +90,45 @@ export function LiveAssistantScreen({
   const [draft, setDraft] = useState('');
 
   const clientRef = useRef<RealtimeAssistantClient | null>(null);
-  const createClientRef = useRef(createClient);
-  createClientRef.current = createClient;
+  const cameraRef = useRef<CameraView>(null);
+
+  // The screen owns the camera, so it owns the frame source the real adapter
+  // samples for vision. expo-camera has no silent frame API, so a downscaled
+  // still stands in for the browser's canvas draw. A failure returns null (the
+  // adapter skips that tick) rather than throwing into its interval.
+  const captureFrame = useCallback(async (): Promise<string | null> => {
+    const cam = cameraRef.current;
+    if (!cam) return null;
+    try {
+      const shot = await cam.takePictureAsync({ quality: 0.4, skipProcessing: true });
+      if (!shot?.uri) return null;
+      const shrunk = await ImageManipulator.manipulateAsync(
+        shot.uri,
+        [{ resize: { width: ASSISTANT_FRAME_EDGE_PX } }],
+        { compress: 0.5, base64: true, format: ImageManipulator.SaveFormat.JPEG },
+      );
+      return shrunk.base64 ? `data:image/jpeg;base64,${shrunk.base64}` : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Default to the real transport (mirrors web): it hands off to the scripted
+  // mock when the API mints a mock session, so the demo badge stays honest until
+  // a realtime key is configured. Tests inject `createClient` instead.
+  const buildDefaultClient = useCallback(
+    (): RealtimeAssistantClient =>
+      new OpenAiRealtimeAssistantClient({
+        createSession: (loc) =>
+          api.call('createRealtimeSession', { body: { locale: loc as 'en' | 'ar' } }),
+        captureFrame,
+      }),
+    [captureFrame],
+  );
+
+  const effectiveCreateClient = createClient ?? buildDefaultClient;
+  const createClientRef = useRef(effectiveCreateClient);
+  createClientRef.current = effectiveCreateClient;
 
   // Only the live (camera) mode needs a device permission; text and voice are
   // ready at once. Requesting the camera is an explicit tap on the gate card,
@@ -106,6 +151,7 @@ export function LiveAssistantScreen({
     void client.start({
       locale,
       camera: mode === 'live',
+      audio: mode !== 'text',
       onEvent: (event) => {
         if (event.type === 'status') {
           setStatus(event.status);
@@ -136,6 +182,17 @@ export function LiveAssistantScreen({
     setDraft('');
   };
 
+  // Muting must reach the real adapter's outgoing audio track, not just flip a
+  // label — a "muted" mic that keeps sending audio would be lying. The scripted
+  // mock treats it as a cosmetic no-op.
+  const toggleMic = () => {
+    setMicMuted((prev) => {
+      const next = !prev;
+      clientRef.current?.setMicMuted?.(next);
+      return next;
+    });
+  };
+
   const lastAssistant = [...turns].reverse().find((turn) => turn.role === 'assistant');
   const lastUser = [...turns].reverse().find((turn) => turn.role === 'user');
 
@@ -151,6 +208,7 @@ export function LiveAssistantScreen({
       {showCamera ? (
         <>
           <CameraView
+            ref={cameraRef}
             style={{ position: 'absolute', top: 0, bottom: 0, start: 0, end: 0 }}
             facing="back"
           />
@@ -340,7 +398,7 @@ export function LiveAssistantScreen({
                 icon={micMuted ? 'micOff' : 'mic'}
                 label={micMuted ? t('mobile.assistant.micMuted') : t('mobile.assistant.mic')}
                 active={micMuted}
-                onPress={() => setMicMuted((prev) => !prev)}
+                onPress={toggleMic}
               />
               <Control
                 icon="plus"
@@ -373,7 +431,7 @@ export function LiveAssistantScreen({
             micMuted={micMuted}
             onDraftChange={setDraft}
             onSubmit={submitDraft}
-            onToggleMic={() => setMicMuted((prev) => !prev)}
+            onToggleMic={toggleMic}
             scrollRef={scrollRef}
             t={t}
           />

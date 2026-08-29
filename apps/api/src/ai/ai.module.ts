@@ -154,10 +154,20 @@ export function createAiProvider(env: Env): AiProvider {
     {
       provide: REALTIME_SESSION_PROVIDER,
       inject: [ENV],
-      useFactory: (env: Env) =>
-        env.AI_MOCK
+      useFactory: (env: Env) => {
+        // The realtime API lives only on api.openai.com, so a gateway key
+        // (OPENAI_BASE_URL set, e.g. OpenRouter) cannot mint a session with it.
+        // Require a dedicated realtime key in that case; only fall back to the
+        // shared key when we are talking to OpenAI directly.
+        const realtimeKey =
+          env.OPENAI_REALTIME_API_KEY.trim() ||
+          (env.OPENAI_BASE_URL.trim() ? '' : env.OPENAI_API_KEY.trim());
+        // No usable realtime key means the assistant runs as an honest scripted
+        // demo rather than failing every mint against the wrong host.
+        return env.AI_MOCK || !realtimeKey
           ? new MockRealtimeSessionProvider()
-          : new OpenAiRealtimeSessionProvider(env.OPENAI_API_KEY, env.OPENAI_MODEL_REALTIME),
+          : new OpenAiRealtimeSessionProvider(realtimeKey, env.OPENAI_MODEL_REALTIME);
+      },
     },
     AssistantService,
     {
