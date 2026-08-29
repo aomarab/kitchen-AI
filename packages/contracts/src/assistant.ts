@@ -42,6 +42,24 @@ export const REALTIME_SECRET_TTL_MIN_SEC = 10;
 export const REALTIME_SECRET_TTL_MAX_SEC = 7200;
 
 /**
+ * Client-side ceiling on a single live-assistant session, in milliseconds.
+ *
+ * The server *cannot* bound session duration (see {@link REALTIME_SECRET_TTL_SEC}):
+ * once the peer connection is open, the audio is strictly between client and
+ * provider and the provider offers no server-set hard limit. This is the
+ * complementary guard the *client* can enforce — a best-effort auto-hangup so a
+ * session left open on a counter cannot run the provider's per-minute meter
+ * indefinitely.
+ *
+ * It protects the honest common case (a forgotten tab, a phone put down
+ * mid-conversation), not a modified client, which by definition ignores it. When
+ * it fires the user is told the session paused and may resume, which mints a
+ * fresh secret and opens a new connection. Both clients share this value so the
+ * web and mobile assistants pause at the same point.
+ */
+export const MAX_ASSISTANT_SESSION_MS = 5 * 60_000;
+
+/**
  * What the client needs to open a peer connection, and nothing more.
  *
  * `clientSecret` is the provider's ephemeral token (`ek_…`). It is a bearer

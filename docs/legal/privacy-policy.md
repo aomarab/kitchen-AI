@@ -8,9 +8,9 @@
 > code and in `docs/store-listing/data-safety.md`; if the two ever disagree,
 > `data-safety.md` and the code win — update this file in the same change.
 
-**Effective date:** `[DATE]`
-**Provider:** `[LEGAL ENTITY NAME]` (`[JURISDICTION]`), "we", "us".
-**Contact:** `[PRIVACY CONTACT EMAIL]`.
+**Effective date:** `2026-08-29`
+**Provider:** `Abdulraheem Omar` (`Jordan`), "we", "us".
+**Contact:** `aomarab@outlook.com`.
 
 Kitchen AI photographs your kitchen and returns meal plans grounded in what you
 actually have on hand. This policy explains what personal data the app collects,
@@ -46,7 +46,7 @@ internal storage key. They are still data we hold — they land on infrastructur
 we control and are linked to the account that uploaded them.
 
 To recognise the items in a photo, the image is sent to our AI processing
-provider(s) (`[AI VISION PROVIDER, e.g. OpenAI / Google]`). We disclose these
+provider(s) (`OpenAI and Google`). We disclose these
 sub-processors at `[SUB-PROCESSOR LIST URL]`. Photos are resized on-device before
 upload and are used to identify pantry/receipt contents, not for any other
 purpose.
@@ -96,7 +96,7 @@ terms.
 
 ## 7. Where data is stored and how we protect it
 
-Your data is stored on `[HOSTING / REGION, e.g. AWS eu-west-1]`. We use
+Your data is stored on `Microsoft Azure`. We use
 industry-standard measures including encryption in transit (HTTPS/TLS), access
 controls, and least-privilege staff access. No method of transmission or storage
 is perfectly secure, but we work to protect your information.
@@ -137,7 +137,7 @@ port your personal data, and to object to or restrict certain processing.
   those terms are defined, and we do not discriminate against you for exercising
   your rights.
 
-To exercise any right, contact `[PRIVACY CONTACT EMAIL]`. Account deletion is
+To exercise any right, contact `aomarab@outlook.com`. Account deletion is
 available immediately in-app as described above.
 
 ## 10. Children
@@ -161,4 +161,4 @@ an update means you accept the revised policy.
 
 ## 13. Contact
 
-Questions or requests: `[PRIVACY CONTACT EMAIL]`, `[POSTAL ADDRESS IF REQUIRED]`.
+Questions or requests: `aomarab@outlook.com`, `[POSTAL ADDRESS IF REQUIRED]`.

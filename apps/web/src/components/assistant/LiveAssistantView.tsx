@@ -2,15 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from 'react';
-import type { RecognizedItem } from '@kitchen/contracts';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { MAX_ASSISTANT_SESSION_MS, type RecognizedItem } from '@kitchen/contracts';
 import { formatNumber } from '@kitchen/i18n';
 import { useLocale } from '../../lib/locale';
 import { cn } from '../../lib/cn';
@@ -94,6 +87,8 @@ export function LiveAssistantView({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [addedCount, setAddedCount] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
+  const [capReached, setCapReached] = useState(false);
+  const [sessionNonce, setSessionNonce] = useState(0);
 
   const clientRef = useRef<RealtimeAssistantClient | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -150,6 +145,7 @@ export function LiveAssistantView({
     setSpeaking(false);
     setTurns([]);
     setDetections([]);
+    setCapReached(false);
     void client.start({
       locale,
       stream,
@@ -167,13 +163,29 @@ export function LiveAssistantView({
       clientRef.current = null;
     };
     // `need` is derived from `mode`; restarting on a mode change is intended.
-  }, [conversationReady, mediaStream, locale, mode, need]);
+    // `sessionNonce` restarts the same session on demand (used by resume).
+  }, [conversationReady, mediaStream, locale, mode, need, sessionNonce]);
 
   // Keep the transcript pinned to the newest turn.
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [turns, speaking]);
+
+  // Client-side cost guard. A real session left open keeps running the
+  // provider's per-minute meter, which the server cannot bound once the peer
+  // connection is up (see MAX_ASSISTANT_SESSION_MS). Auto-hang up at the ceiling
+  // and offer to resume. Scripted (mock) sessions are free, so they are exempt.
+  useEffect(() => {
+    if (status !== 'live' || clientRef.current?.isMock !== false) return;
+    const id = setTimeout(() => {
+      void clientRef.current?.stop();
+      setSpeaking(false);
+      setStatus('ended');
+      setCapReached(true);
+    }, MAX_ASSISTANT_SESSION_MS);
+    return () => clearTimeout(id);
+  }, [status]);
 
   const isMock = clientRef.current?.isMock ?? true;
 
@@ -182,6 +194,11 @@ export function LiveAssistantView({
     media.stop();
     if (onExit) onExit();
     else router.push('/');
+  };
+
+  const resume = () => {
+    setCapReached(false);
+    setSessionNonce((n) => n + 1);
   };
 
   const submitDraft = (event?: FormEvent) => {
@@ -379,6 +396,32 @@ export function LiveAssistantView({
         ) : null}
       </div>
 
+      {/* Cost guard: the live session auto-paused at the duration ceiling. */}
+      {capReached ? (
+        <div
+          role="status"
+          data-testid="assistant-cap"
+          className="relative z-10 mx-4 mb-3 rounded-2xl bg-inverse/60 p-4 text-center backdrop-blur"
+        >
+          <p className="text-sm font-extrabold text-inverse-foreground">
+            {t('web.assistant.capTitle')}
+          </p>
+          <p className="mt-1 text-xs text-inverse-muted">
+            {t('web.assistant.capBody', {
+              minutes: formatNumber(locale, MAX_ASSISTANT_SESSION_MS / 60_000),
+            })}
+          </p>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <Button size="sm" onClick={resume}>
+              {t('web.assistant.resume')}
+            </Button>
+            <Button size="sm" variant="outlineInverse" onClick={endSession}>
+              {t('web.assistant.exit')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {/* Spotted panel (live/camera only) — a labelled sample, not boxes. */}
       {hasCamera && detections.length > 0 ? (
         <div className="relative z-10 mx-4 mb-3 rounded-2xl bg-inverse/50 p-3 backdrop-blur">
@@ -530,14 +573,18 @@ function ModeSwitch({
 }: {
   mode: AssistantMode;
   onChange: (mode: AssistantMode) => void;
-  t: (key: 'web.assistant.modeText' | 'web.assistant.modeVoice' | 'web.assistant.modeLive') => string;
+  t: (
+    key: 'web.assistant.modeText' | 'web.assistant.modeVoice' | 'web.assistant.modeLive',
+  ) => string;
 }) {
-  const label: Record<AssistantMode, 'web.assistant.modeText' | 'web.assistant.modeVoice' | 'web.assistant.modeLive'> =
-    {
-      text: 'web.assistant.modeText',
-      voice: 'web.assistant.modeVoice',
-      live: 'web.assistant.modeLive',
-    };
+  const label: Record<
+    AssistantMode,
+    'web.assistant.modeText' | 'web.assistant.modeVoice' | 'web.assistant.modeLive'
+  > = {
+    text: 'web.assistant.modeText',
+    voice: 'web.assistant.modeVoice',
+    live: 'web.assistant.modeLive',
+  };
   return (
     <div
       role="tablist"

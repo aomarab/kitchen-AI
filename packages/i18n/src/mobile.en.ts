@@ -575,6 +575,10 @@ export const mobileEn = {
       liveBadge: 'Live',
       demoBadge: 'Demo',
       demoNote: 'Sample assistant — not live AI yet',
+      capTitle: 'Session paused',
+      capBody:
+        'We paused the live assistant after {minutes} minutes to save your credits. Resume to keep talking.',
+      resume: 'Resume',
       personaEntry: 'Assistant voice',
       personaEntryHint: 'Choose who the live assistant sounds like.',
       personaTitle: 'Assistant voice',

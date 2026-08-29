@@ -657,6 +657,10 @@ export const mobileAr: MobileMessages = {
       liveBadge: 'مباشر',
       demoBadge: 'تجريبي',
       demoNote: 'مساعد تجريبي — ليس ذكاءً اصطناعياً مباشراً بعد',
+      capTitle: 'تم إيقاف الجلسة مؤقتًا',
+      capBody:
+        'أوقفنا المساعد المباشر بعد {minutes} دقائق للحفاظ على رصيدك. استأنف لمتابعة المحادثة.',
+      resume: 'استئناف',
       personaEntry: 'صوت المساعِدة',
       personaEntryHint: 'اختاري شخصية المساعِدة التي تتحدث معكِ.',
       personaTitle: 'صوت المساعِدة',

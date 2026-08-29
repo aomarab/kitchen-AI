@@ -1,7 +1,7 @@
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { StorageLocation } from '@kitchen/contracts';
+import { MAX_ASSISTANT_SESSION_MS, type StorageLocation } from '@kitchen/contracts';
 import { LocaleProvider } from '../../lib/locale';
 import { SAMPLE_DETECTIONS } from '../../lib/assistant/mock-realtime';
 import { MockRealtimeAssistantClient } from '../../lib/assistant/mock-realtime';
@@ -393,5 +393,52 @@ describe('LiveAssistantView', () => {
     expect(screen.queryByRole('tab', { name: 'Text' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Type instead' })).toBeNull();
     expect(screen.getByText('Talk with the assistant')).toBeInTheDocument();
+  });
+
+  it('auto-pauses a real session at the duration ceiling, then resumes on demand', () => {
+    // The provider bills realtime audio per minute over a connection the server
+    // never sees, so a session left open is unbounded spend the server cannot
+    // stop. The client hangs up at MAX_ASSISTANT_SESSION_MS as a best-effort
+    // guard. It applies only to a real (billable) session — a scripted mock is
+    // free, so `isMock: false` here is what arms the timer.
+    vi.useFakeTimers();
+    try {
+      const client: RealtimeAssistantClient = {
+        isMock: false,
+        start: vi.fn(async ({ onEvent }: { onEvent: (event: AssistantEvent) => void }) => {
+          onEvent({ type: 'status', status: 'live' });
+        }),
+        stop: vi.fn(async () => {}),
+        sendText: vi.fn(),
+      };
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      render(
+        <QueryClientProvider client={qc}>
+          <LocaleProvider locale="en">
+            <LiveAssistantView createClient={() => client} initialMode="text" />
+          </LocaleProvider>
+        </QueryClientProvider>,
+      );
+
+      // Text mode goes live with no device, and stays live while under the cap.
+      expect(screen.getByTestId('assistant-live')).toBeInTheDocument();
+      expect(screen.queryByTestId('assistant-cap')).toBeNull();
+      expect(client.stop).not.toHaveBeenCalled();
+
+      // Crossing the ceiling hangs up the transport and shows the pause banner.
+      act(() => {
+        vi.advanceTimersByTime(MAX_ASSISTANT_SESSION_MS);
+      });
+      expect(client.stop).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('assistant-cap')).toHaveTextContent('Session paused');
+      expect(screen.getByText(/save your credits/)).toBeInTheDocument();
+
+      // Resume mints a fresh session: `start` runs again and the banner clears.
+      fireEvent.click(screen.getByRole('button', { name: 'Resume' }));
+      expect((client.start as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(2);
+      expect(screen.queryByTestId('assistant-cap')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

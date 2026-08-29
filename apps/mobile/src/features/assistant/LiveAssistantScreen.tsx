@@ -20,6 +20,8 @@ import type {
   RealtimeAssistantClient,
   TranscriptTurn,
 } from '../../lib/assistant/realtime-port';
+import { MAX_ASSISTANT_SESSION_MS } from '@kitchen/contracts';
+import { formatNumber } from '@kitchen/i18n';
 import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
@@ -88,6 +90,8 @@ export function LiveAssistantScreen({
   const [micMuted, setMicMuted] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  const [capReached, setCapReached] = useState(false);
+  const [sessionNonce, setSessionNonce] = useState(0);
 
   const clientRef = useRef<RealtimeAssistantClient | null>(null);
   const cameraRef = useRef<CameraView>(null);
@@ -145,6 +149,7 @@ export function LiveAssistantScreen({
   useEffect(() => {
     if (!conversationReady) return;
     setSpeaking(false);
+    setCapReached(false);
     if (mode !== 'live') setDetections([]);
     const client = createClientRef.current();
     clientRef.current = client;
@@ -165,7 +170,22 @@ export function LiveAssistantScreen({
       void client.stop();
       clientRef.current = null;
     };
-  }, [locale, mode, conversationReady]);
+  }, [locale, mode, conversationReady, sessionNonce]);
+
+  // Client-side cost guard (mirrors web). A real session left open keeps the
+  // provider's per-minute meter running; the server cannot bound duration once
+  // the peer connection is up (see MAX_ASSISTANT_SESSION_MS). Auto-hang up at the
+  // ceiling and offer to resume. Scripted (mock) sessions are free, so exempt.
+  useEffect(() => {
+    if (status !== 'live' || clientRef.current?.isMock !== false) return;
+    const id = setTimeout(() => {
+      void clientRef.current?.stop();
+      setSpeaking(false);
+      setStatus('ended');
+      setCapReached(true);
+    }, MAX_ASSISTANT_SESSION_MS);
+    return () => clearTimeout(id);
+  }, [status]);
 
   const isMock = clientRef.current?.isMock ?? true;
 
@@ -173,6 +193,11 @@ export function LiveAssistantScreen({
     void clientRef.current?.stop();
     if (onExit) onExit();
     else router.back();
+  };
+
+  const resume = () => {
+    setCapReached(false);
+    setSessionNonce((n) => n + 1);
   };
 
   const submitDraft = () => {
@@ -266,6 +291,25 @@ export function LiveAssistantScreen({
           <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }}>
             <ModeSwitch mode={mode} onChange={setMode} t={t} />
           </View>
+        ) : null}
+
+        {/* Cost guard: the live session auto-paused at the duration ceiling. */}
+        {capReached ? (
+          <Card
+            style={{
+              gap: spacing.sm,
+              marginHorizontal: spacing.lg,
+              marginBottom: spacing.sm,
+            }}
+          >
+            <AppText variant="heading">{t('mobile.assistant.capTitle')}</AppText>
+            <AppText muted>
+              {t('mobile.assistant.capBody', {
+                minutes: formatNumber(locale, MAX_ASSISTANT_SESSION_MS / 60_000),
+              })}
+            </AppText>
+            <Button title={t('mobile.assistant.resume')} onPress={resume} />
+          </Card>
         ) : null}
 
         {mode === 'live' && !cameraReady ? (

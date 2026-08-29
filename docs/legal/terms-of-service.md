@@ -7,9 +7,9 @@
 > grounded in `packages/contracts/src/credits.ts` and the app's design specs; if
 > they drift, the code wins — update this file in the same change.
 
-**Effective date:** `[DATE]`
-**Provider:** `[LEGAL ENTITY NAME]` (`[JURISDICTION]`), "we", "us".
-**Contact:** `[SUPPORT EMAIL]`.
+**Effective date:** `2026-08-29`
+**Provider:** `Abdulraheem Omar` (`Jordan`), "we", "us".
+**Contact:** `aomarab@outlook.com`.
 
 By creating an account or using Kitchen AI (the "app"), you agree to these Terms.
 If you do not agree, do not use the app.
@@ -44,10 +44,10 @@ The app uses **credits** to pay for AI-powered actions (for example scanning a
 pantry photo, parsing a receipt, or generating a plan).
 
 - **Free monthly credits.** You receive a free grant of credits each calendar
-  month (currently `[150]`). Unused free credits **do not roll over** — the free
+  month (currently `150`). Unused free credits **do not roll over** — the free
   balance resets at the start of each month.
 - **Purchased credits.** You may buy additional credits (for example the
-  `[300-credit]` pack for `[$4.99]`). Purchased credits **do not expire**.
+  `300-credit` pack for `$4.99`). Purchased credits **do not expire**.
 - **Order of use.** Free credits are always spent before purchased credits.
 - **How you pay.** Purchases are made through **Apple** In-App Purchase or
   **Google Play** Billing and are subject to their terms. Prices are shown in the
@@ -138,7 +138,7 @@ consumer protections.]`
 
 ## 12. Governing law and disputes
 
-These Terms are governed by the laws of `[GOVERNING LAW / JURISDICTION]`, without
+These Terms are governed by the laws of `Jordan`, without
 regard to conflict-of-laws rules. `[DISPUTE RESOLUTION / ARBITRATION / VENUE — set
 with counsel, and note Apple's requirement that its EULA governs where stricter.]`
 
@@ -150,4 +150,4 @@ an update means you accept the revised Terms.
 
 ## 14. Contact
 
-`[SUPPORT EMAIL]`, `[POSTAL ADDRESS IF REQUIRED]`.
+`aomarab@outlook.com`, `[POSTAL ADDRESS IF REQUIRED]`.
