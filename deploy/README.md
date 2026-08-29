@@ -33,6 +33,17 @@ one-shot migration) plus the Caddy overlay in this folder. See
 4. If a **web** client will upload directly, add a CORS rule on the bucket
    allowing your web origin and `PUT`/`GET`. Native mobile does not need this.
 
+> **$0 alternative — self-hosted MinIO on the same VM.** Skip R2 entirely and run
+> S3-compatible storage in a container. Add the overlay
+> [`deploy/docker-compose.minio.yml`](./docker-compose.minio.yml) to the `up`
+> command; Caddy routes `/<S3_BUCKET>/*` on the API host to MinIO (no second
+> certificate). In `.env` set `S3_ENDPOINT=https://<API_DOMAIN>`,
+> `S3_REGION=us-east-1` (MinIO's SigV4 scope — **not** `auto`),
+> `S3_BUCKET=kitchen-photos`, `S3_FORCE_PATH_STYLE=true`, and strong
+> `S3_ACCESS_KEY`/`S3_SECRET_KEY` (they become MinIO's root credentials, e.g.
+> `openssl rand -hex 24`). The overlay creates the bucket automatically. Trade-off:
+> photo bytes then live on the VM (mind the volume in backups) instead of R2.
+
 ## 2. Create the free VM (Oracle Cloud Always Free)
 
 > **Automate this step:** if you'd rather provision the VM and its network as

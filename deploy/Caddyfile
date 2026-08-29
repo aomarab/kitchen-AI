@@ -11,8 +11,21 @@
 {$API_DOMAIN} {
 	encode zstd gzip
 
-	# Single upstream on the private compose network. No active health-checking:
-	# with one backend it would only pre-emptively 503 traffic during a cold
-	# start or blip (until the next probe) instead of just trying the request.
-	reverse_proxy api:3333
+	# Self-hosted object storage (MinIO), when the deploy/docker-compose.minio.yml
+	# overlay is used. Only requests under the bucket path go to MinIO — served on
+	# this same host so no second certificate or hostname is needed. The prefix
+	# must match S3_BUCKET. `handle` (not handle_path) keeps the prefix, which
+	# path-style S3 requires. Harmless without the overlay: nothing is signed for
+	# this host unless S3_ENDPOINT points here, so the route is never hit.
+	@storage path /kitchen-photos/*
+	handle @storage {
+		reverse_proxy minio:9000
+	}
+
+	# Everything else is the API, reached over the private compose network. No
+	# active health-checking: with one backend it would only pre-emptively 503
+	# traffic during a cold start or blip instead of just trying the request.
+	handle {
+		reverse_proxy api:3333
+	}
 }
