@@ -20,7 +20,13 @@ export type PurchaseResult = StorePurchase | { cancelled: true };
  * shape as the API's `PAYMENT_VERIFIER` behind `PAYMENTS_MOCK`.
  */
 export interface PurchasesPort {
-  purchase(productId: string): Promise<PurchaseResult>;
+  /**
+   * `appUserId`, when given, is the purchase intent id: the real adapter logs
+   * the RevenueCat customer in under it before checkout so the store attributes
+   * the transaction to that app user id, which is how the server's webhook and
+   * receipt verifier find the purchase (spec §6.2). The mock ignores it.
+   */
+  purchase(productId: string, appUserId?: string): Promise<PurchaseResult>;
   /**
    * The store's own price for a product, already localized to the user's
    * storefront currency and formatting, or `null` when there is no store price
@@ -87,10 +93,18 @@ async function loadPackage(productId: string) {
 
 /** Real RevenueCat adapter — reached only when mocks are off. */
 export const nativePurchases: PurchasesPort = {
-  async purchase(productId: string): Promise<PurchaseResult> {
+  async purchase(productId: string, appUserId?: string): Promise<PurchaseResult> {
     const { Purchases, pkg } = await loadPackage(productId);
     if (!pkg) {
       throw new Error(`No store package configured for product ${productId}`);
+    }
+
+    // Identify the customer as the purchase intent before checkout, so the store
+    // records the transaction under `app_user_id = intentId`. That is the id the
+    // server's webhook and receipt verifier look the purchase up by (spec §6.2);
+    // without it a real purchase would credit nothing.
+    if (appUserId) {
+      await Purchases.logIn(appUserId);
     }
 
     try {

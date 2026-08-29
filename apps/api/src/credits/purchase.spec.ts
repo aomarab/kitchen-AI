@@ -173,7 +173,7 @@ describe('PurchaseService', () => {
 
   it('grants nothing when verification is rejected', async () => {
     const rejecting: PaymentVerifier = {
-      verify: async (storeTransactionId, productId) => ({
+      verify: async (_appUserId, storeTransactionId, productId) => ({
         storeTransactionId,
         productId,
         valid: false,
@@ -284,6 +284,24 @@ describe('PurchaseService', () => {
     expect(rowHealed?.status).toBe('active');
 
     spy.mockRestore();
+  });
+
+  it('ignores a webhook whose app_user_id is not one of our intents', async () => {
+    // app_user_id doubles as the intent id; an anonymous RevenueCat customer or
+    // an event for some other user is a non-uuid we must swallow as a no-op —
+    // never a 500 from feeding a bad value to the uuid-typed id column.
+    await expect(
+      purchases.applyWebhook({
+        type: 'INITIAL_PURCHASE',
+        intentId: '$RCAnonymousID:deadbeef',
+        storeTransactionId: txn('anon'),
+        productId: 'credits_300',
+        store: 'apple',
+      }),
+    ).resolves.toBeUndefined();
+
+    const balance = await credits.balance(householdId);
+    expect(balance.paidBalance).toBe(0);
   });
 
   it('rejects an unknown product', async () => {

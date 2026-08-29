@@ -15,14 +15,21 @@ import { PAYMENT_VERIFIER, type PaymentVerifier } from './payment-verifier.js';
 
 export interface WebhookEvent {
   type: string;
+  /**
+   * RevenueCat's `app_user_id`, which the client sets to the purchase intent id
+   * before checkout — this is how a webhook-first delivery resolves the intent.
+   */
   intentId: string;
-  storeTransactionId: string;
-  productId: string;
+  /** Absent on the events we ignore (e.g. RevenueCat's TEST ping). */
+  storeTransactionId?: string;
+  productId?: string;
   store: 'apple' | 'google';
 }
 
 const PURCHASE_EVENTS = new Set(['INITIAL_PURCHASE', 'NON_RENEWING_PURCHASE']);
 const REFUND_EVENTS = new Set(['CANCELLATION', 'REFUND']);
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Postgres `unique_violation`; the `store_transaction_id` UNIQUE index fired. */
 function isUniqueViolation(error: unknown): boolean {
@@ -86,7 +93,11 @@ export class PurchaseService {
   async confirm(householdId: string, body: ConfirmPurchaseRequest): Promise<CreditBalance> {
     const intent = await this.loadIntent(householdId, body.intentId);
 
-    const verified = await this.verifier.verify(body.storeTransactionId, intent.productId);
+    const verified = await this.verifier.verify(
+      intent.id,
+      body.storeTransactionId,
+      intent.productId,
+    );
     if (!verified.valid) {
       throw new AppError('VALIDATION_FAILED', 'errors.VALIDATION_FAILED', {
         storeTransactionId: body.storeTransactionId,
@@ -104,6 +115,13 @@ export class PurchaseService {
   }
 
   async applyWebhook(event: WebhookEvent): Promise<void> {
+    // `intentId` is RevenueCat's app_user_id; a value that is not one of our
+    // intent uuids (an anonymous customer, or an event for some other user) is a
+    // safe no-op — and the guard also stops a non-uuid from ever reaching the
+    // uuid-typed `id` column, which would otherwise be a 500 that RevenueCat
+    // retries forever.
+    if (!UUID_RE.test(event.intentId)) return;
+
     const [intent] = await this.db
       .select()
       .from(creditPurchases)
@@ -112,6 +130,9 @@ export class PurchaseService {
     if (!intent) return;
 
     if (PURCHASE_EVENTS.has(event.type)) {
+      // A purchase event without a transaction id cannot be credited (the id is
+      // the idempotency backstop); treat it as a no-op rather than a bad write.
+      if (!event.storeTransactionId) return;
       await this.claimAndCredit(
         intent.id,
         intent.householdId,
