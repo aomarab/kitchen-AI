@@ -52,3 +52,12 @@ deploy/oci/*.tfstate.*
 deploy/oci/*.tfvars
 !deploy/oci/*.tfvars.example
 deploy/oci/crash.log
+
+# Terraform (deploy/azure) — local state and subscription-specific vars
+deploy/azure/.terraform/
+deploy/azure/.terraform.lock.hcl
+deploy/azure/*.tfstate
+deploy/azure/*.tfstate.*
+deploy/azure/*.tfvars
+!deploy/azure/*.tfvars.example
+deploy/azure/crash.log
