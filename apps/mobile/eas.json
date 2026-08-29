@@ -13,7 +13,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://20-216-43-148.nip.io",
         "EXPO_PUBLIC_USE_MOCKS": "false",
-        "EXPO_PUBLIC_USE_STORE_MOCKS": "true"
+        "EXPO_PUBLIC_USE_STORE_MOCKS": "true",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "395259860403-pl0c1h83mr7uh5hrqj9btgpmavuqtmrt.apps.googleusercontent.com"
       }
     },
     "preview": {
@@ -24,7 +25,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://20-216-43-148.nip.io",
         "EXPO_PUBLIC_USE_MOCKS": "false",
-        "EXPO_PUBLIC_USE_STORE_MOCKS": "true"
+        "EXPO_PUBLIC_USE_STORE_MOCKS": "true",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "395259860403-pl0c1h83mr7uh5hrqj9btgpmavuqtmrt.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -32,7 +34,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://20-216-43-148.nip.io",
         "EXPO_PUBLIC_USE_MOCKS": "false",
-        "EXPO_PUBLIC_USE_STORE_MOCKS": "true"
+        "EXPO_PUBLIC_USE_STORE_MOCKS": "true",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "395259860403-pl0c1h83mr7uh5hrqj9btgpmavuqtmrt.apps.googleusercontent.com"
       }
     }
   },
