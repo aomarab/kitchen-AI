@@ -36,10 +36,11 @@ one-shot migration) plus the Caddy overlay in this folder. See
 ## 2. Create the free VM (Oracle Cloud Always Free)
 
 > **Automate this step:** if you'd rather provision the VM and its network as
-> code, use the Terraform in [`deploy/oci`](./oci/README.md). It creates the VM
-> plus the 22/80/443 ingress rules (step 3 below) in one `terraform apply`, and
-> you authenticate with your own Oracle login — no keys stored. The manual
-> console walkthrough below is the alternative.
+> code, use the Terraform in [`deploy/oci`](./oci/README.md) (Oracle, $0 forever)
+> or [`deploy/azure`](./azure/README.md) (Azure, **billable** — no permanent free
+> VM). Each creates the VM plus the 22/80/443 ingress rules (step 3 below) in one
+> `terraform apply`, and you authenticate with your own cloud login — no keys
+> stored. The manual console walkthrough below is the alternative.
 
 1. Create an **Always Free** compute instance — an **Ampere A1** (ARM) shape is
    the roomiest free option; a small **AMD (VM.Standard.E2.1.Micro)** also works.
