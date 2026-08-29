@@ -93,6 +93,16 @@ EXPO_PUBLIC_REVENUECAT_API_KEY=<revenuecat PUBLIC SDK key>
 #   (src/lib/purchases.ts).
 ```
 
+**EAS builds are pre-wired.** `apps/mobile/eas.json` → `build.production.env`
+already sets `EXPO_PUBLIC_USE_MOCKS=false` and `EXPO_PUBLIC_USE_STORE_MOCKS=false`
+and carries a **placeholder** `EXPO_PUBLIC_REVENUECAT_API_KEY` of
+`appl_REPLACE_WITH_REVENUECAT_PUBLIC_SDK_KEY`. Going live is a **single value**:
+replace that placeholder with the RevenueCat **public SDK key** from Step 2.
+Until you do, a production build's Buy taps configure the SDK with a bad key and
+fail loudly (never a silent success), so do not `eas submit` a production build
+before the real key is in and the IAP is approved. The `preview` and
+`development` profiles keep the store mocked, so internal builds are unaffected.
+
 The DI factory in `credits.module.ts` swaps the mock verifier for
 `RevenueCatVerifier` purely on `PAYMENTS_MOCK`; no code change is needed to go
 live.
