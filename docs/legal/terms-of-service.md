@@ -1,13 +1,15 @@
 # Terms of Service — Kitchen AI
 
-> **DRAFT — NOT LEGAL ADVICE.** Engineering's honest description of how the
-> product behaves, written so counsel can turn it into enforceable terms. Must be
-> reviewed by a qualified lawyer before publication. Fill every `[BRACKETED]`
-> placeholder. Factual claims about credits, purchases, and AI behaviour are
-> grounded in `packages/contracts/src/credits.ts` and the app's design specs; if
-> they drift, the code wins — update this file in the same change.
+<!--
+  Source of truth: packages/contracts/src/credits.ts and the app's design specs.
+  If this file and the code drift, the code wins — update this file in the same
+  change. These Terms have not been reviewed by a lawyer; have counsel review
+  them and adjust jurisdiction-specific clauses (dispute resolution, consumer
+  carve-outs, liability caps).
+-->
 
-**Effective date:** `2026-08-29`
+**Effective date:** `2026-08-30`
+**Last updated:** `2026-08-30`
 **Provider:** `Abdulraheem Omar` (`Jordan`), "we", "us".
 **Contact:** `aomarab@outlook.com`.
 
@@ -23,7 +25,8 @@ can be inaccurate or incomplete — see the disclaimer in Section 7.
 
 ## 2. Eligibility
 
-You must be at least `[MINIMUM AGE, e.g. 13 / 16 / 18]` and able to form a binding
+You must be at least **13** (or the higher minimum age required where you live)
+and able to form a binding
 contract. If you use the app on behalf of a household, you are responsible for the
 conduct of household members you invite.
 
@@ -55,8 +58,9 @@ pantry photo, parsing a receipt, or generating a plan).
 - **Refunds.** Because purchases are processed by Apple or Google, refunds are
   handled under **their** refund policies, through the App Store or Google Play —
   not by us directly. Except where required by law, purchased credits are
-  non-refundable once granted. `[CONFIRM CONSUMER-LAW CARVE-OUTS WITH COUNSEL,
-e.g. EU/UK statutory withdrawal rights.]`
+  non-refundable once granted. Nothing in these Terms removes any statutory refund
+  or withdrawal right you have under the mandatory law of your country of
+  residence.
 - **Changes.** We may change credit prices, pack contents, the free grant, or the
   cost of actions going forward. Changes do not retroactively reduce credits you
   have already purchased.
@@ -114,8 +118,8 @@ Delete account** (or the web deletion page). Deletion erases or de-attributes yo
 data as described in the Privacy Policy, Section 8. We may suspend or terminate
 access if you materially breach these Terms or use the app in a way that harms the
 service or other users. Unused free credits are lost on termination; the treatment
-of purchased credits on termination for cause is `[TO BE DETERMINED WITH
-COUNSEL]`.
+of purchased credits on termination for cause is handled in accordance with
+applicable law.
 
 ## 10. Disclaimers
 
@@ -131,16 +135,19 @@ To the fullest extent permitted by law, we will not be liable for any indirect,
 incidental, special, consequential, or punitive damages, or for any loss arising
 from your reliance on AI output (including any allergic reaction, dietary, or
 health outcome). Our total liability for any claim relating to the app is limited
-to the greater of `[AMOUNT, e.g. the amount you paid us in the 12 months before
-the claim]` or `[STATUTORY MINIMUM]`. Some jurisdictions do not allow these
-limits, so they may not fully apply to you. `[COUNSEL: reconcile with mandatory
-consumer protections.]`
+to the greater of the total amount you paid us in the 12 months before the claim
+or **USD 50**. Some jurisdictions do not allow these limits, so they may not fully
+apply to you, and nothing in these Terms limits liability that cannot be limited
+under applicable law.
 
 ## 12. Governing law and disputes
 
 These Terms are governed by the laws of `Jordan`, without
-regard to conflict-of-laws rules. `[DISPUTE RESOLUTION / ARBITRATION / VENUE — set
-with counsel, and note Apple's requirement that its EULA governs where stricter.]`
+regard to conflict-of-laws rules. Disputes will be resolved in the competent
+courts of `Jordan`, except where mandatory local law lets you bring proceedings
+in your own country of residence. For the app obtained through the Apple App
+Store, Apple's standard Licensed Application End User License Agreement (EULA)
+also applies and governs where it is stricter.
 
 ## 13. Changes to these Terms
 
@@ -150,4 +157,4 @@ an update means you accept the revised Terms.
 
 ## 14. Contact
 
-`aomarab@outlook.com`, `[POSTAL ADDRESS IF REQUIRED]`.
+`aomarab@outlook.com` (postal address available on request).

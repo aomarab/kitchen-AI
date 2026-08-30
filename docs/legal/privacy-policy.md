@@ -1,14 +1,14 @@
 # Privacy Policy — Kitchen AI
 
-> **DRAFT — NOT LEGAL ADVICE.** This document is engineering's honest description
-> of what the app does with data, written so a lawyer can turn it into a
-> published policy quickly and correctly. It must be reviewed by qualified
-> counsel before it is published or linked from the App Store / Play Console.
-> Fill every `[BRACKETED]` placeholder. Its factual claims are grounded in the
-> code and in `docs/store-listing/data-safety.md`; if the two ever disagree,
-> `data-safety.md` and the code win — update this file in the same change.
+<!--
+  Source of truth: the app's code and docs/store-listing/data-safety.md. If this
+  file and the code/data-safety doc ever disagree, the code and data-safety.md
+  win — update this file in the same change. This policy has not been reviewed by
+  a lawyer; have counsel review it and adjust jurisdiction-specific clauses.
+-->
 
-**Effective date:** `2026-08-29`
+**Effective date:** `2026-08-30`
+**Last updated:** `2026-08-30`
 **Provider:** `Abdulraheem Omar` (`Jordan`), "we", "us".
 **Contact:** `aomarab@outlook.com`.
 
@@ -47,7 +47,9 @@ we control and are linked to the account that uploaded them.
 
 To recognise the items in a photo, the image is sent to our AI processing
 provider(s) (`OpenAI and Google`). We disclose these
-sub-processors at `[SUB-PROCESSOR LIST URL]`. Photos are resized on-device before
+sub-processors here: **OpenAI** and **Google** (AI processing), and, as noted
+elsewhere in this policy, **Microsoft Azure** (hosting and storage, Section 7)
+and **RevenueCat** (purchase verification, Section 6). Photos are resized on-device before
 upload and are used to identify pantry/receipt contents, not for any other
 purpose.
 
@@ -88,8 +90,7 @@ deletion below for what happens to it when you leave.
 ## 6. Purchases
 
 If you buy credits, the purchase is processed by **Apple** or **Google** through
-their in-app purchase systems and verified on our side via `[PAYMENTS PROVIDER,
-e.g. RevenueCat]`. We receive a record that a purchase was made and the credits
+their in-app purchase systems and verified on our side via **RevenueCat**. We receive a record that a purchase was made and the credits
 it granted. We do **not** receive or store your full payment card details — those
 are handled by the app store and its payment processor under their own privacy
 terms.
@@ -104,8 +105,7 @@ is perfectly secure, but we work to protect your information.
 ## 8. Retention and deletion
 
 We keep your data for as long as your account exists. You can delete your account
-at any time, from **Settings → Delete account** in the app, or from the web page
-at `[https://YOUR-DOMAIN]/settings/delete-account`.
+at any time, from **Settings → Delete account** in the app.
 
 Deleting your account:
 
@@ -132,7 +132,9 @@ port your personal data, and to object to or restrict certain processing.
 - **EEA/UK (GDPR):** our legal basis is performance of our contract with you
   (providing the service) and our legitimate interests (security, support, and
   improving the product). You may lodge a complaint with your local supervisory
-  authority. `[APPOINT EU/UK REPRESENTATIVE IF REQUIRED.]`
+  authority. We are established outside the EEA/UK; if we are required under
+  Article 27 of the GDPR / UK GDPR to appoint a representative, we will appoint
+  one and update this policy.
 - **California (CCPA/CPRA):** we do not sell or "share" personal information as
   those terms are defined, and we do not discriminate against you for exercising
   your rights.
@@ -144,14 +146,15 @@ available immediately in-app as described above.
 
 Kitchen AI is rated 4+ / Everyone but is a general-purpose productivity app that
 is **not directed to children**. We do not knowingly collect personal data from
-children under `[13 / 16 as required by jurisdiction]`. If you believe a child
+children under **13** (or the higher minimum age of digital consent that applies
+where you live, such as 16 in parts of the EEA). If you believe a child
 has provided us data, contact us and we will delete it.
 
 ## 11. International transfers
 
 We may process and store data in countries other than the one you live in. Where
 we transfer personal data out of the EEA/UK, we rely on appropriate safeguards
-such as Standard Contractual Clauses. `[CONFIRM MECHANISM WITH COUNSEL.]`
+such as the Standard Contractual Clauses.
 
 ## 12. Changes to this policy
 
@@ -161,4 +164,5 @@ an update means you accept the revised policy.
 
 ## 13. Contact
 
-Questions or requests: `aomarab@outlook.com`, `[POSTAL ADDRESS IF REQUIRED]`.
+Questions or requests: `aomarab@outlook.com` (a postal address is available on
+request).
