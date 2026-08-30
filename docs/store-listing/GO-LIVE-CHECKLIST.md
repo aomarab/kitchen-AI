@@ -111,8 +111,14 @@ on-device testing, but it **cannot** use App Store Connect (ASC returns
 ## Phase 6 — Listing assets
 
 - [ ] Screenshots for required device sizes (show the pantry, a meal plan, and
-      the live assistant).
-- [ ] Description, keywords, support URL, marketing URL (optional).
+      the live assistant). Still needs a simulator/device run — the only Phase 6
+      item that isn't drafted yet.
+- [x] Description, keywords, subtitle, promo text, what's-new — **drafted (en +
+      ar)** in `docs/store-listing/listing-copy.md`, annotated with Apple's
+      character limits. Paste at submission.
+- [x] Support URL + Marketing URL — **live**:
+      `https://aomarab.github.io/kitchen-AI/` (tagline, support email, in-app
+      deletion note, legal links).
 - [ ] **Age rating** questionnaire → `docs/store-listing/age-rating.md`.
 
 ## Phase 7 — Build & submit
