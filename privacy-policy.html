@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Kitchen AI</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header class="site"><div class="bar">
+<span class="brand">Kitchen AI</span>
+<a href="./index.html">Home</a>
+<a href="./privacy-policy.html">Privacy</a>
+<a href="./terms-of-service.html">Terms</a>
+</div></header>
+<main>
+<h1>Privacy Policy — Kitchen AI</h1>
+<p><strong>Effective date:</strong> <code>2026-08-30</code> <strong>Last updated:</strong> <code>2026-08-30</code> <strong>Provider:</strong> <code>Abdulraheem Omar</code> (<code>Jordan</code>), "we", "us". <strong>Contact:</strong> <code>aomarab@outlook.com</code>.</p>
+<p>Kitchen AI photographs your kitchen and returns meal plans grounded in what you actually have on hand. This policy explains what personal data the app collects, why, who can see it, and how you can delete it.</p>
+<h2>1. Data we collect</h2>
+<p>We collect only what the app needs to function. We do <strong>not</strong> collect advertising identifiers, and there is no third-party analytics or advertising SDK in the app, so no App Tracking Transparency prompt is shown.</p>
+<table><thead><tr><th>Data</th><th>Where it comes from</th><th>Why we need it</th></tr></thead><tbody><tr><td>Email address</td><td>Account creation or OAuth</td><td>Sign-in and account recovery</td></tr><tr><td>Name / display name</td><td>Account creation or OAuth</td><td>Showing who you are in the app</td></tr><tr><td>Photos</td><td>Kitchen and receipt capture</td><td>Recognising the items you have</td></tr><tr><td>Feedback message</td><td>The in-app feedback form</td><td>Understanding and acting on what you told us</td></tr><tr><td>Feedback rating</td><td>The in-app feedback form</td><td>The same product-support purpose</td></tr><tr><td>Dietary preferences</td><td>Your profile (optional)</td><td>Tailoring meal plans (allergies, halal, etc.)</td></tr></tbody></table>
+<p>All of the above is <strong>linked to your account</strong> and <strong>none of it is used to track you</strong> across other apps or services.</p>
+<p>We do <strong>not</strong> sell your personal data and we do <strong>not</strong> share it with data brokers.</p>
+<h2>2. How your photos are handled</h2>
+<p>Photos are uploaded <strong>directly from your device to our object storage</strong> through a short-lived, single-purpose upload link (a presigned URL); they do not pass through our application servers, and afterwards they are referenced only by an internal storage key. They are still data we hold — they land on infrastructure we control and are linked to the account that uploaded them.</p>
+<p>To recognise the items in a photo, the image is sent to our AI processing provider(s) (<code>OpenAI and Google</code>). We disclose these sub-processors here: <strong>OpenAI</strong> and <strong>Google</strong> (AI processing), and, as noted elsewhere in this policy, <strong>Microsoft Azure</strong> (hosting and storage, Section 7) and <strong>RevenueCat</strong> (purchase verification, Section 6). Photos are resized on-device before upload and are used to identify pantry/receipt contents, not for any other purpose.</p>
+<h2>3. How we use your data</h2>
+<ul><li><strong>Provide the service</strong> — sign you in, recognise items from your photos, and generate meal plans and shopping lists grounded in your pantry.</li><li><strong>Personalise plans</strong> — apply the dietary preferences, allergies, and halal setting you choose to store in your profile.</li><li><strong>Support the product</strong> — read the feedback you send us so we can fix and improve the app.</li><li><strong>Keep the service working and safe</strong> — operate, secure, debug, and prevent abuse of the service.</li></ul>
+<p>We do not use your data for advertising, and we do not make automated decisions that produce legal or similarly significant effects about you.</p>
+<h2>4. Feedback</h2>
+<p>When you send us feedback, we receive your rating, your message, the app version, and your language. Our staff can see this along with the email address and display name on your account, so we can understand and act on what you told us. We do not use your feedback to decide whether to show you an App Store or Google Play review prompt.</p>
+<blockquote>The final sentence above is a commitment enforced in code (<code>apps/mobile/src/lib/store-policy.spec.ts</code> fails the build if the app imports a store-review API). Keep it verbatim.</blockquote>
+<h2>5. Households and shared data</h2>
+<p>Kitchen AI organises data around a <strong>household</strong>, not a single user. Members of a household can see that household's pantry, plans, and shopping lists. Your profile (including dietary preferences) is your own. When you contribute to a household's inventory history, that history belongs to the household — see deletion below for what happens to it when you leave.</p>
+<h2>6. Purchases</h2>
+<p>If you buy credits, the purchase is processed by <strong>Apple</strong> or <strong>Google</strong> through their in-app purchase systems and verified on our side via <strong>RevenueCat</strong>. We receive a record that a purchase was made and the credits it granted. We do <strong>not</strong> receive or store your full payment card details — those are handled by the app store and its payment processor under their own privacy terms.</p>
+<h2>7. Where data is stored and how we protect it</h2>
+<p>Your data is stored on <code>Microsoft Azure</code>. We use industry-standard measures including encryption in transit (HTTPS/TLS), access controls, and least-privilege staff access. No method of transmission or storage is perfectly secure, but we work to protect your information.</p>
+<h2>8. Retention and deletion</h2>
+<p>We keep your data for as long as your account exists. You can delete your account at any time, from <strong>Settings → Delete account</strong> in the app.</p>
+<p>Deleting your account:</p>
+<ul><li><strong>Erases</strong> your sign-in credentials and OAuth links, your profile (dietary preferences, allergies, halal flag), the feedback you submitted, and any household that is left with no remaining members — including that household's storage locations, inventory, meal plans, shopping lists, and receipts.</li><li><strong>Hands over</strong> any household you shared with others to a remaining member, so their data is not destroyed with your account.</li><li><strong>De-attributes</strong> shared history that belongs to a household: your past inventory changes remain in the household's ledger but are no longer linked to you.</li><li><strong>Revokes</strong> your Sign in with Apple token (best-effort), as Apple requires.</li><li><strong>Clears local data</strong> on your device, including any queued offline changes.</li></ul>
+<p>If you signed in with Apple or Google, deletion also removes the stored link to those providers.</p>
+<h2>9. Your rights</h2>
+<p>Depending on where you live, you may have rights to access, correct, delete, or port your personal data, and to object to or restrict certain processing.</p>
+<ul><li><strong>EEA/UK (GDPR):</strong> our legal basis is performance of our contract with you (providing the service) and our legitimate interests (security, support, and improving the product). You may lodge a complaint with your local supervisory authority. We are established outside the EEA/UK; if we are required under Article 27 of the GDPR / UK GDPR to appoint a representative, we will appoint one and update this policy.</li><li><strong>California (CCPA/CPRA):</strong> we do not sell or "share" personal information as those terms are defined, and we do not discriminate against you for exercising your rights.</li></ul>
+<p>To exercise any right, contact <code>aomarab@outlook.com</code>. Account deletion is available immediately in-app as described above.</p>
+<h2>10. Children</h2>
+<p>Kitchen AI is rated 4+ / Everyone but is a general-purpose productivity app that is <strong>not directed to children</strong>. We do not knowingly collect personal data from children under <strong>13</strong> (or the higher minimum age of digital consent that applies where you live, such as 16 in parts of the EEA). If you believe a child has provided us data, contact us and we will delete it.</p>
+<h2>11. International transfers</h2>
+<p>We may process and store data in countries other than the one you live in. Where we transfer personal data out of the EEA/UK, we rely on appropriate safeguards such as the Standard Contractual Clauses.</p>
+<h2>12. Changes to this policy</h2>
+<p>We may update this policy. When we make material changes, we will update the effective date and, where appropriate, notify you in the app. Continued use after an update means you accept the revised policy.</p>
+<h2>13. Contact</h2>
+<p>Questions or requests: <code>aomarab@outlook.com</code> (a postal address is available on request).</p>
+<footer>© 2026 Abdulraheem Omar · Kitchen AI · <a href="mailto:aomarab@outlook.com">aomarab@outlook.com</a></footer>
+</main>
+</body>
+</html>
