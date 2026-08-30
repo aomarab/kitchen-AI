@@ -50,8 +50,15 @@ export function Screen({
   // two sections was 12 and the gap inside one was 8, so nothing grouped and
   // every screen read as one undifferentiated stack.
   const pad: ViewStyle = padded ? { padding: spacing.lg, gap: spacing.lg } : {};
-  // `undefined` below the breakpoint leaves the phone layout untouched.
-  const constrain: ViewStyle = maxWidth ? { maxWidth, width: '100%', alignSelf: 'center' } : {};
+  // `undefined` below the breakpoint leaves the phone layout untouched. Above
+  // it the content is capped and centred — but the centring is applied to a
+  // *wrapper* (`alignItems: 'center'`) around a max-width child, not to the
+  // child itself. Under the root view's `direction: 'rtl'` (Arabic tablets),
+  // `alignSelf: 'center'`, auto margins and numeric margins on a ScrollView
+  // content container all collapse the block to one edge; wrapper centring is
+  // the only form that stays centred in both directions (spec §4.3).
+  const centering: ViewStyle = maxWidth ? { alignItems: 'center' } : {};
+  const block: ViewStyle = maxWidth ? { width: '100%', maxWidth } : { width: '100%' };
   return (
     <SafeAreaView edges={edges} style={[{ flex: 1, backgroundColor: colors.bg }, style]}>
       <KeyboardAvoidingView
@@ -63,7 +70,7 @@ export function Screen({
       >
         {scroll ? (
           <ScrollView
-            contentContainerStyle={[pad, { flexGrow: 1 }, constrain, contentStyle]}
+            contentContainerStyle={[{ flexGrow: 1 }, centering]}
             keyboardShouldPersistTaps="handled"
             refreshControl={
               onRefresh ? (
@@ -71,13 +78,17 @@ export function Screen({
               ) : undefined
             }
           >
-            {children}
+            <View style={[{ flexGrow: 1 }, pad, block, contentStyle]}>{children}</View>
           </ScrollView>
         ) : (
-          <View style={[{ flex: 1 }, pad, constrain, contentStyle]}>{children}</View>
+          <View style={[{ flex: 1 }, centering]}>
+            <View style={[{ flex: 1 }, pad, block, contentStyle]}>{children}</View>
+          </View>
         )}
         {footer ? (
-          <View style={[{ padding: spacing.lg, paddingTop: spacing.sm }, constrain]}>{footer}</View>
+          <View style={centering}>
+            <View style={[{ padding: spacing.lg, paddingTop: spacing.sm }, block]}>{footer}</View>
+          </View>
         ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>

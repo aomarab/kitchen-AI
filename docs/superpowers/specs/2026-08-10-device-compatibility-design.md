@@ -9,12 +9,12 @@ Scope: sub-project 3 of 4 (see the [decomposition table](./2026-08-09-product-fe
 The mobile app has never been run anywhere except a portrait iPhone simulator.
 Four concrete defects follow from that, each verified in the current source:
 
-| # | Defect | Evidence |
-| - | ------ | -------- |
-| 1 | `app.json` declares `"supportsTablet": true` while locking `"orientation": "portrait"`. The app tells Apple it is an iPad app, then refuses to rotate. iPad review exercises rotation. | `apps/mobile/app.json:7,12` |
-| 2 | Chrome grows unbounded at large Dynamic Type sizes, pushing content off-screen. Buttons, labels, and captions expand with the user's text preference, breaking the layout before the content text even has room to scale. | `apps/mobile/src/theme/index.ts:133` |
-| 3 | `QuantityStepper` renders a 40×40 control, below the 44pt (Apple) and 48dp (Android) minimum touch target. | `apps/mobile/src/components/QuantityStepper.tsx:33-34` |
-| 4 | There is no keyboard avoidance anywhere, so on short devices the keyboard can cover the field being typed into. | no `KeyboardAvoidingView` in `apps/mobile/src` |
+| #   | Defect                                                                                                                                                                                                                    | Evidence                                               |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| 1   | `app.json` declares `"supportsTablet": true` while locking `"orientation": "portrait"`. The app tells Apple it is an iPad app, then refuses to rotate. iPad review exercises rotation.                                    | `apps/mobile/app.json:7,12`                            |
+| 2   | Chrome grows unbounded at large Dynamic Type sizes, pushing content off-screen. Buttons, labels, and captions expand with the user's text preference, breaking the layout before the content text even has room to scale. | `apps/mobile/src/theme/index.ts:133`                   |
+| 3   | `QuantityStepper` renders a 40×40 control, below the 44pt (Apple) and 48dp (Android) minimum touch target.                                                                                                                | `apps/mobile/src/components/QuantityStepper.tsx:33-34` |
+| 4   | There is no keyboard avoidance anywhere, so on short devices the keyboard can cover the field being typed into.                                                                                                           | no `KeyboardAvoidingView` in `apps/mobile/src`         |
 
 The app also contains no `useWindowDimensions`, no `Dimensions`, and no
 font-scale caps, so there is currently no mechanism by which any layout can
@@ -41,19 +41,19 @@ breaking. Not a tablet-specific product.
 
 These were settled during brainstorming and constrain everything below.
 
-| Decision | Choice | Consequence |
-| -------- | ------ | ----------- |
-| Tablet ambition | Adapt gracefully; no iPad-specific design | Rules out multi-column and master–detail |
-| Orientation | Rotation on tablets only; phones stay portrait | No landscape phone layouts to design |
-| Text scaling | Scale correctly; uncapped content, chrome capped at `1.6×` | Accessible where it matters, controls stay intact |
-| Verification | iOS simulators now; Android correct-by-construction, verified later | No Android SDK on the build machine |
-| Testing | Pure functions + source-scanning guards, per existing mobile convention | No render harness, no new dependency |
-| Approach | Constrain-and-center | Smallest change that satisfies iPad review |
+| Decision        | Choice                                                                  | Consequence                                       |
+| --------------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
+| Tablet ambition | Adapt gracefully; no iPad-specific design                               | Rules out multi-column and master–detail          |
+| Orientation     | Rotation on tablets only; phones stay portrait                          | No landscape phone layouts to design              |
+| Text scaling    | Scale correctly; uncapped content, chrome capped at `1.6×`              | Accessible where it matters, controls stay intact |
+| Verification    | iOS simulators now; Android correct-by-construction, verified later     | No Android SDK on the build machine               |
+| Testing         | Pure functions + source-scanning guards, per existing mobile convention | No render harness, no new dependency              |
+| Approach        | Constrain-and-center                                                    | Smallest change that satisfies iPad review        |
 
 ## 4. Architecture
 
 Four independent changes. Each is separately reviewable and separately
-testable, and each is a *rule that phones already satisfy* — which is what
+testable, and each is a _rule that phones already satisfy_ — which is what
 keeps the blast radius of touching shared components down to zero visible
 change on a phone.
 
@@ -106,19 +106,20 @@ uncapped so the user's text-size preference is honoured for long-form reading.
 to React Native's `maxFontSizeMultiplier` prop, which accepts `null`, `0`, or a
 number `>= 1`; `Infinity` is not legal there.
 
-**Tab bars are not covered by `maxFontScaleFor`.** Tab labels render through
-react-navigation's `BottomTabItem`, not through `AppText`, so they never receive
-a `maxFontSizeMultiplier` cap from this mechanism. The implemented behaviour is:
-`BottomTabItem` sets `allowFontScaling = SUPPORTS_LARGE_CONTENT_VIEWER ? false :
-undefined`. On iOS this disables Dynamic Type scaling entirely for tab labels —
-users get the long-press large-content viewer instead, so the tab bar cannot
-overflow. On Android tab labels scale uncapped; whether they clip at accessibility
-text sizes is unverified and is a named follow-up.
+**Tab labels are covered by `maxFontScaleFor` through a custom tab bar.** The app
+does not use react-navigation's default `BottomTabItem`; `(tabs)/_layout.tsx`
+supplies a custom `TabBar` (`components/TabBar.tsx`) that renders each label as
+`<AppText variant="caption">`. Because `caption` is a chrome variant, the label
+inherits the same `1.6×` `maxFontSizeMultiplier` cap as every other piece of
+chrome — no special-casing is needed, so the tab bar cannot overflow. Verified on
+iPad at the largest accessibility text size: the five tab items stay on one row
+and labels truncate rather than push each other off-screen. On Android the same
+capped `<Text>` path applies; visual confirmation there is a named follow-up.
 
 `AppText` imports `maxFontScaleFor` and passes `maxFontSizeMultiplier={maxFontScaleFor(variant)}`
 to the underlying `<Text>` element. It calls `typography(locale)` and applies the returned
 `fontSize`, `lineHeight`, `letterSpacing`, and `color` from the theme. This cap is the
-*only* scale-related thing applied in the theme — it is enforced at render time by React
+_only_ scale-related thing applied in the theme — it is enforced at render time by React
 Native when it applies the system font scale.
 
 This rests on one platform behaviour worth stating explicitly: React Native 0.86
@@ -148,11 +149,17 @@ Returns `undefined` below the tablet breakpoint of `700` — meaning full bleed,
 the current phone behaviour — and `640` at or above it.
 
 `Screen` reads the live window width from `useWindowDimensions()` and, when a
-cap is returned, applies `maxWidth` with a centering horizontal margin. Because
-the rule keys off the *window* and not the device, iPad landscape, iPad
-portrait, Split View, Slide Over and Stage Manager resizing are all the same
-case; a narrow Split View pane returns `undefined` and renders exactly like a
-phone.
+cap is returned, centers a `maxWidth` block. The centering is applied to a
+_wrapper_ (`alignItems: 'center'`) around a max-width child, not to the child
+itself: RTL on tablets is a live `direction: 'rtl'` on the root view, and under
+it `alignSelf: 'center'`, auto margins and numeric side margins on a ScrollView
+content container all collapse the block to the start (right) edge instead of
+centering. The wrapper form is the only one that stays centred in both
+directions — verified on iPad in Arabic, portrait (113/113pt) and landscape
+(301/301pt). Because the rule keys off the _window_ and not the device, iPad
+landscape, iPad portrait, Split View, Slide Over and Stage Manager resizing are
+all the same case; a narrow Split View pane returns `undefined` and renders
+exactly like a phone.
 
 `Screen` also extends its safe-area edges from `['top', 'bottom']` to include
 `'left'` and `'right'`. On a portrait phone those insets are `0`, so this is
@@ -183,22 +190,22 @@ that cannot be expressed that way is pinned by a source-scanning guard.
 
 `contentMaxWidth`:
 
-| Input | Expected | Why |
-| ----- | -------- | --- |
-| `390` (iPhone) | `undefined` | Phones are untouched |
-| `834` (iPad portrait) | `640` | Caps a wide measure |
-| `1194` (iPad landscape) | `640` | Same cap, not a second layout |
+| Input                     | Expected    | Why                                 |
+| ------------------------- | ----------- | ----------------------------------- |
+| `390` (iPhone)            | `undefined` | Phones are untouched                |
+| `834` (iPad portrait)     | `640`       | Caps a wide measure                 |
+| `1194` (iPad landscape)   | `640`       | Same cap, not a second layout       |
 | `507` (narrow Split View) | `undefined` | Keys off the window, not the device |
-| `700` (exact breakpoint) | `640` | Boundary is inclusive and pinned |
+| `700` (exact breakpoint)  | `640`       | Boundary is inclusive and pinned    |
 
 `typography`:
 
-| Case | Expected |
-| ---- | -------- |
-| `typography('en')` body | `lineHeight` is `round(16 × 1.35)` = `22` |
-| `typography('ar')` body | `lineHeight` is `round(16 × 1.7)` = `27` |
+| Case                      | Expected                                           |
+| ------------------------- | -------------------------------------------------- |
+| `typography('en')` body   | `lineHeight` is `round(16 × 1.35)` = `22`          |
+| `typography('ar')` body   | `lineHeight` is `round(16 × 1.7)` = `27`           |
 | `typography('en')` button | Text is 16pt; `maxFontScaleFor('button')` is `1.6` |
-| `typography('ar')` any | `letterSpacing` is `0` |
+| `typography('ar')` any    | `letterSpacing` is `0`                             |
 
 The core tests for `typography(locale)` assert fixed values like `Math.round(16 × 1.35)`
 for body text, and these values do not change across this work — `typography()` returns
@@ -231,11 +238,11 @@ Tests cannot see clipping, double-padding or a broken tablet layout. The
 following matrix is checked on simulators and is part of the definition of
 done:
 
-| Device | Text size | Locales |
-| ------ | --------- | ------- |
-| iPhone 17e (smallest available) | default, largest | en, ar |
-| iPhone 17 Pro Max | default, largest | en, ar |
-| iPad | default, largest | en, ar |
+| Device                          | Text size        | Locales |
+| ------------------------------- | ---------------- | ------- |
+| iPhone 17e (smallest available) | default, largest | en, ar  |
+| iPhone 17 Pro Max               | default, largest | en, ar  |
+| iPad                            | default, largest | en, ar  |
 
 iPad is additionally rotated to confirm §4.1 took effect and that content
 centers rather than stretching.
@@ -262,13 +269,13 @@ suite, broken app.
 
 ## 6. Risks
 
-| Risk | Mitigation |
-| ---- | ---------- |
-| Android is unverified — no SDK on the build machine | §4.2–§4.4 are shared React Native code that cannot diverge by platform; §4.1 is declarative config. Android verification is a named follow-up, not a silent assumption. |
-| The API 36 large-screen orientation behaviour may not apply on older Android | Failure mode is an Android tablet that stays portrait: degraded, not broken, and within the goal |
-| `Screen` is used by every screen, so a mistake there is global | Contained by the phone-width assertions in `apps/mobile/src/theme/layout.spec.ts`, which prove phone output is unchanged |
-| `KeyboardAvoidingView` double-pads when combined with `SafeAreaView` | Platform-specific configuration plus a mandatory visual check on the shortest device |
-| Dense screens remain tight at the largest text sizes | Accepted. This work fixes clipping; it does not redesign dense screens. |
+| Risk                                                                         | Mitigation                                                                                                                                                              |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Android is unverified — no SDK on the build machine                          | §4.2–§4.4 are shared React Native code that cannot diverge by platform; §4.1 is declarative config. Android verification is a named follow-up, not a silent assumption. |
+| The API 36 large-screen orientation behaviour may not apply on older Android | Failure mode is an Android tablet that stays portrait: degraded, not broken, and within the goal                                                                        |
+| `Screen` is used by every screen, so a mistake there is global               | Contained by the phone-width assertions in `apps/mobile/src/theme/layout.spec.ts`, which prove phone output is unchanged                                                |
+| `KeyboardAvoidingView` double-pads when combined with `SafeAreaView`         | Platform-specific configuration plus a mandatory visual check on the shortest device                                                                                    |
+| Dense screens remain tight at the largest text sizes                         | Accepted. This work fixes clipping; it does not redesign dense screens.                                                                                                 |
 
 ## 7. Out of scope
 
