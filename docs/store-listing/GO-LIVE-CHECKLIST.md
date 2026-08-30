@@ -125,6 +125,24 @@ on-device testing, but it **cannot** use App Store Connect (ASC returns
       (`isAllowedEmbedUrl` allowlist; feedback is staff-only, never rendered to
       other users). Enter the answers at submission.
 
+## Phase 6.5 — Device compatibility (verified)
+
+→ spec: `docs/superpowers/specs/2026-08-10-device-compatibility-design.md` (§5.3
+definition-of-done matrix)
+
+- [x] §5.1 pure-function + §5.2 guard tests pass (773 mobile tests, `tsc`, eslint
+      clean).
+- [x] §5.3 visual matrix run on simulators — iPad (en/ar, default/largest text,
+      portrait **and** landscape) and iPhone 17e (phone layout + largest-text
+      chrome cap). Content constrains-and-centres on iPad; phone layout untouched.
+- [x] Fixed a real RTL tablet centering bug found during the matrix run
+      (Arabic content pinned to the start edge instead of centering) — commit
+      `cc5b79c`. Arabic now centres 113/113pt portrait, 301/301pt landscape.
+- [ ] iPhone 17 Pro Max cell of the matrix is covered by the shared phone code
+      path (width < 700 → no cap → identical to 17e); an explicit pass on that
+      device and on-device (non-simulator) checks fold into the Phase 7 signed
+      build.
+
 ## Phase 7 — Build & submit
 
 → full CLI runbook: `docs/store-listing/eas-release-runbook.md`
