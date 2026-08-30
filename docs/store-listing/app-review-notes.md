@@ -67,7 +67,10 @@ Settings → Delete account removes the account and its data in-app
 PRIVACY
 No tracking, no ads, no third-party analytics SDK, so no ATT prompt. Photos
 upload directly to our storage and are used only to recognize items. See our
-Privacy Policy (URL in App Information).
+Privacy Policy (URL in App Information). The app also links to the Privacy
+Policy and Terms of Service in-app under Settings → Legal:
+- Privacy Policy: https://aomarab.github.io/kitchen-AI/privacy-policy.html
+- Terms of Service: https://aomarab.github.io/kitchen-AI/terms-of-service.html
 
 CONTACT
 aomarab@outlook.com

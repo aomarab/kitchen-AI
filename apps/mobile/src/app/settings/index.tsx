@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { View, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { type Locale } from '@kitchen/i18n';
@@ -7,6 +7,9 @@ import { useLocale } from '../../lib/locale';
 import { useSettingsStore } from '../../stores/settings';
 import { spacing } from '../../theme';
 import { ThemePicker } from '../../features/settings/ThemePicker';
+
+const PRIVACY_POLICY_URL = 'https://aomarab.github.io/kitchen-AI/privacy-policy.html';
+const TERMS_URL = 'https://aomarab.github.io/kitchen-AI/terms-of-service.html';
 
 export default function Settings() {
   const { t, locale, setLocale } = useLocale();
@@ -97,6 +100,24 @@ export default function Settings() {
         titleColor="danger"
         showChevron
         onPress={() => router.push('/settings/delete-account')}
+      />
+
+      <View style={{ gap: spacing.xs }}>
+        <AppText variant="label" muted>
+          {t('mobile.settings.legal')}
+        </AppText>
+      </View>
+
+      <ListRow
+        title={t('mobile.settings.privacyPolicy')}
+        showChevron
+        onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+      />
+
+      <ListRow
+        title={t('mobile.settings.terms')}
+        showChevron
+        onPress={() => void Linking.openURL(TERMS_URL)}
       />
 
       <View style={{ gap: spacing.xs }}>

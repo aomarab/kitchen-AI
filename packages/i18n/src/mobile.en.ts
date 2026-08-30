@@ -233,6 +233,9 @@ export const mobileEn = {
       showHijri: 'Show Hijri dates',
       showHijriHint: 'Display the Hijri date alongside the Gregorian one.',
       about: 'About',
+      legal: 'Legal',
+      privacyPolicy: 'Privacy Policy',
+      terms: 'Terms of Service',
       rtlRestartTitle: 'Restart needed',
       rtlRestartBody:
         'Changing language flips the layout direction. Fully close and reopen the app to apply it.',
