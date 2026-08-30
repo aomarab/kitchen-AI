@@ -12,18 +12,29 @@ later phases assume earlier ones are done.
 
 ---
 
-## Phase 0 — Security (do this FIRST, before any public build)
+## Phase 0 — Security (do this FIRST, before any public build) — ✅ DONE (2026-08-30)
 
-Keys were pasted into a chat transcript, so treat them as compromised.
+Keys were pasted into a chat transcript, so they were treated as compromised
+and rotated. Each new key was verified against production before the old one was
+revoked; new secrets never passed back through the chat (hidden-prompt helper
+scripts on the VM did the swap).
 
-- [ ] Rotate the **OpenAI** key (`OPENAI_REALTIME_API_KEY`, used for realtime).
-- [ ] Rotate the **OpenRouter** key (`OPENAI_API_KEY` + `OPENAI_BASE_URL`, used
-      for all normal AI via `AiGateway`).
-- [ ] Rotate the **RevenueCat** keys (public SDK key + secret/webhook key).
-- [ ] Set an **OpenAI hard monthly spend limit** so a runaway can't drain the
-      account.
-- [ ] Update the deployed API's environment with the new keys and redeploy;
-      confirm a scan + a live-assistant session still work.
+- [x] Rotated the **OpenAI** key (`OPENAI_REALTIME_API_KEY`, realtime). Old
+      `kitchenai` key **revoked**; new `kitchenai-realtime` live + verified.
+- [x] Rotated the **OpenRouter** key (`OPENAI_API_KEY` + `OPENAI_BASE_URL`, all
+      normal AI via `AiGateway`). Liveness-tested a `chat/completions` call
+      before swapping; old `kitchen-ai` key **deleted**; new `kitchen-ai-2` live.
+- [x] Rotated the **RevenueCat** secret verifier key (`REVENUECAT_API_KEY`, v1
+      REST). Liveness-tested `GET /v1/subscribers/...` before swapping; old
+      "Kitchen AI backend verifier" **revoked**; new v2 (v1 API) live.
+- [x] Set an **OpenAI hard monthly spend limit** ($50, "Enforce a hard limit").
+- [x] Redeployed the API (`--force-recreate --no-deps api`) after each swap;
+      `/health` OK each time; `.env` backups kept on the VM.
+- [ ] **Still open (only if it was ever shared):** rotate
+      `REVENUECAT_WEBHOOK_SECRET` in RevenueCat → Integrations → Webhooks, then
+      update `.env` + recreate `api`. The **public SDK key** for the real App
+      Store app is created later in **Phase 3** (the test-store key isn't used in
+      production).
 
 ## Phase 1 — App Store Connect: create the app record
 
@@ -124,11 +135,11 @@ Keys were pasted into a chat transcript, so treat them as compromised.
 
 ## Doc map
 
-| Phase        | Doc                                              |
-| ------------ | ------------------------------------------------ |
-| 1–3          | `docs/store-listing/iap-setup.md`                |
-| 4            | `docs/legal/privacy-policy.md`, `terms-of-service.md` |
-| 5            | `docs/store-listing/app-store-privacy-answers.md` · `data-safety.md` |
-| 6            | `docs/store-listing/age-rating.md`               |
-| 7            | `docs/store-listing/eas-release-runbook.md`      |
-| 8            | `docs/store-listing/app-review-notes.md`         |
+| Phase | Doc                                                                  |
+| ----- | -------------------------------------------------------------------- |
+| 1–3   | `docs/store-listing/iap-setup.md`                                    |
+| 4     | `docs/legal/privacy-policy.md`, `terms-of-service.md`                |
+| 5     | `docs/store-listing/app-store-privacy-answers.md` · `data-safety.md` |
+| 6     | `docs/store-listing/age-rating.md`                                   |
+| 7     | `docs/store-listing/eas-release-runbook.md`                          |
+| 8     | `docs/store-listing/app-review-notes.md`                             |
