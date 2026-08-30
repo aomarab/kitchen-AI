@@ -89,26 +89,32 @@ on-device testing, but it **cannot** use App Store Connect (ASC returns
 
 → full runbook: `docs/store-listing/backend-and-oauth-runbook.md`
 
-Today "Continue with Google/Apple" is a **mock** — the shipped build has
-`EXPO_PUBLIC_USE_MOCKS=true`, so it never contacts a provider or a server. The
-real flow is fully coded (native PKCE + server-side `aud`-pinned token
-verification); it only needs deploying and configuring. Real login works even
-with `AI_MOCK`/`PAYMENTS_MOCK` left on, so this can ship before the paid
-subsystems.
+The backend is **already deployed and live** (`https://20-216-43-148.nip.io`,
+`/health` → 200; Azure VM codified in `docker-compose.prod.yml` + `deploy/`), and
+the `eas.json` `production` profile is **already** configured for the real world
+(`EXPO_PUBLIC_USE_MOCKS=false`, deployed API URL, real
+`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`). The build on the phone is a mock only because
+`expo run:ios` reads the repo-root `.env`; EAS builds don't. The real flow is
+fully coded (native PKCE + server-side `aud`-pinned token verification). Real
+login works even with `AI_MOCK`/`PAYMENTS_MOCK` left on, so this can ship before
+the paid subsystems.
 
-- [ ] Provision Postgres 17 + pgvector, Redis, and an S3 bucket; run
-      `db:migrate` + `db:seed` against the prod database (runbook Part A).
-- [ ] Deploy `apps/api` at a public HTTPS URL; set the production env
-      (`NODE_ENV`, `DATABASE_URL`, `REDIS_URL`, `S3_*`, `JWT_SECRET` 32+,
-      `CORS_ORIGINS`). It fails closed if anything required is missing (Part B).
+- [x] Backend deployed at a public HTTPS URL (`/health` → 200); infra codified in
+      `docker-compose.prod.yml` + `deploy/`, operated per `docs/production-launch.md`.
+- [x] App build env set in `eas.json` production/preview (`EXPO_PUBLIC_USE_MOCKS=false`,
+      deployed `EXPO_PUBLIC_API_URL`, real `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`).
 - [ ] Google Cloud → OAuth consent screen **published to "In production"**
-      (Testing caps at 100 users), scopes `openid/email/profile`; create an
-      **iOS** OAuth client id for `com.abedomar.kitchenai` (Part C).
-- [ ] Set `GOOGLE_CLIENT_ID` (list incl. the iOS id) **and** `APPLE_CLIENT_ID`
-      (`com.abedomar.kitchenai`) on the API — both are required in production.
-- [ ] Set the app build env: `EXPO_PUBLIC_USE_MOCKS=false`,
-      `EXPO_PUBLIC_API_URL=<deployed>`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=<ios id>`
-      (Part D) — feeds the Phase 7 production build.
+      (Testing caps at 100 users), scopes `openid/email/profile`. This is the real
+      "all users" gate (Part C). The iOS OAuth client id already exists (it's in
+      `eas.json`); add Android/Web only when those platforms ship.
+- [ ] On the **live API host**, confirm `GOOGLE_CLIENT_ID` (comma-separated list
+      incl. the `eas.json` iOS id) **and** `APPLE_CLIENT_ID` (`com.abedomar.kitchenai`)
+      are set — both required in production; can't be read back over HTTP (Part B).
+- [ ] (Before real Apple sign-in) set `APPLE_REVOKE_MOCK=false` + the four
+      `APPLE_*` keys so account deletion revokes the Apple token (Guideline
+      5.1.1(v)).
+- [ ] Verify on TestFlight: real Google sheet → signed in; real Apple → signed
+      in; `GET /health` = 200 (Part E).
 - [ ] (Before real Apple sign-in) set `APPLE_REVOKE_MOCK=false` + the four
       `APPLE_*` keys so account deletion revokes the Apple token (Guideline
       5.1.1(v)).
