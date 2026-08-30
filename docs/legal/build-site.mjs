@@ -177,32 +177,35 @@ function page(title, bodyHtml) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title} — Kitchen AI</title>
+<title>${title} — Mama's Kitchen</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <header class="site"><div class="bar">
-<span class="brand">Kitchen AI</span>
+<span class="brand">Mama's Kitchen</span>
 <a href="./index.html">Home</a>
 <a href="./privacy-policy.html">Privacy</a>
 <a href="./terms-of-service.html">Terms</a>
 </div></header>
 <main>
 ${bodyHtml}
-<footer>© ${new Date().getFullYear()} Abdulraheem Omar · Kitchen AI · <a href="mailto:aomarab@outlook.com">aomarab@outlook.com</a></footer>
+<footer>© ${new Date().getFullYear()} Abdulraheem Omar · Mama's Kitchen · <a href="mailto:aomarab@outlook.com">aomarab@outlook.com</a></footer>
 </main>
 </body>
 </html>
 `;
 }
 
-const INDEX_BODY = `<h1>Kitchen AI — Legal</h1>
-<p>Kitchen AI photographs your kitchen and returns meal plans grounded in what you actually have on hand. These are the app's current legal documents.</p>
+const INDEX_BODY = `<h1>Mama's Kitchen</h1>
+<p>Photograph your fridge, pantry and spice rack — and get meal plans you can actually cook tonight, grounded in what you already have. Fully bilingual (English &amp; Arabic).</p>
+<h2>Support</h2>
+<p>Questions, problems, or account requests? Email <a href="mailto:aomarab@outlook.com">aomarab@outlook.com</a> and we'll help. We usually reply within a couple of days.</p>
+<p>You can delete your account and its data at any time from <strong>Settings → Delete account</strong> in the app.</p>
+<h2>Legal</h2>
 <ul>
 <li><a href="./privacy-policy.html">Privacy Policy</a></li>
 <li><a href="./terms-of-service.html">Terms of Service</a></li>
-</ul>
-<p>Questions or requests: <a href="mailto:aomarab@outlook.com">aomarab@outlook.com</a>.</p>`;
+</ul>`;
 
 // build
 mkdirSync(outDir, { recursive: true });
@@ -227,7 +230,7 @@ for (const d of docs) {
   const md = readFileSync(join(here, d.src), 'utf8');
   writeFileSync(join(outDir, d.out), page(d.title, mdToHtml(md)));
 }
-writeFileSync(join(outDir, 'index.html'), page('Legal', INDEX_BODY));
+writeFileSync(join(outDir, 'index.html'), page('Support', INDEX_BODY));
 writeFileSync(join(outDir, 'style.css'), STYLE);
 writeFileSync(join(outDir, '.nojekyll'), '');
 
