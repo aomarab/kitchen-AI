@@ -36,6 +36,25 @@ scripts on the VM did the swap).
       Store app is created later in **Phase 3** (the test-store key isn't used in
       production).
 
+## Phase 0.5 — Apple Developer Program enrollment (HARD PREREQUISITE)
+
+Discovered 2026-08-30: the Apple ID `aomarab@outlook.com` is **not** in the paid
+Apple Developer Program (the Developer portal only offers "Enroll today"), and
+the repo's `appleTeamId` **`YVBW6U3Q43`** is a **free/personal team** — valid for
+on-device testing, but it **cannot** use App Store Connect (ASC returns
+`INVALIDITCUSER`). Nothing in Phases 1–8 works until this is done.
+
+- [ ] Enroll in the **Apple Developer Program** ($99/yr) as **Individual / Sole
+      Proprietor**, easiest via the **Apple Developer** iPhone app (Account tab →
+      sign in → Enroll → identity verification → pay → accept the Developer
+      Agreement). Approval takes a few hours to ~2 days.
+- [ ] After approval, read the **real paid Team ID** at
+      `developer.apple.com/account` → Membership. If it differs from
+      `YVBW6U3Q43`, update `apps/mobile/app.json` (`ios.appleTeamId`) **and**
+      `apps/mobile/eas.json` (`submit.production.ios.appleTeamId`), then commit.
+- [ ] Sign in to App Store Connect once to accept the latest **Paid Applications
+      Agreement** (required before any IAP goes live).
+
 ## Phase 1 — App Store Connect: create the app record
 
 → details: `docs/store-listing/iap-setup.md`
