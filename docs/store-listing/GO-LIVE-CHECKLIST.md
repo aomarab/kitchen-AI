@@ -110,9 +110,8 @@ on-device testing, but it **cannot** use App Store Connect (ASC returns
 
 ## Phase 6 — Listing assets
 
-- [ ] Screenshots for required device sizes (show the pantry, a meal plan, and
-      the live assistant). Still needs a simulator/device run — the only Phase 6
-      item that isn't drafted yet.
+- [x] Screenshots for required device sizes (show the pantry, a meal plan, and
+      the live assistant). **Done** — 6.9" iPhone (1320×2868, no alpha), English + Arabic RTL, in `docs/store-listing/screenshots/` (see its README).
 - [x] Description, keywords, subtitle, promo text, what's-new — **drafted (en +
       ar)** in `docs/store-listing/listing-copy.md`, annotated with Apple's
       character limits. Paste at submission.
