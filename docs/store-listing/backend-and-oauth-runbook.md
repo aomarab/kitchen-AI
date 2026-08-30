@@ -37,8 +37,9 @@ So the backend is already deployed (Azure VM; codified in `docker-compose.prod.y
 1. ✅ **The API is deployed** at a public HTTPS URL and boots in `production`
    — done: `https://20-216-43-148.nip.io` (`/health` → 200).
 2. ⚠️ **Google OAuth client IDs exist** and are wired into the app _and_ the API.
-   The app side is set (`eas.json`); the API's `GOOGLE_CLIENT_ID` and the consent
-   screen's publishing status are the open items — Part C.
+   The app side is set (`eas.json`); the consent screen is now **published to "In
+   production"** (2026-08-30). The one open item is confirming the API's
+   `GOOGLE_CLIENT_ID` on the live host includes the iOS id — Part C / Part B.
 3. ✅ **The app is built with `EXPO_PUBLIC_USE_MOCKS=false`** and the deployed API
    URL — already the `eas.json` `production`/`preview` profile.
 4. ⚠️ **The app is distributed through TestFlight / the App Store** — needs Apple
@@ -93,7 +94,16 @@ In the [Google Cloud Console](https://console.cloud.google.com/):
      Google app verification needed).
    - **Publishing status → "In production".** While it is "Testing", only the
      ≤100 test users you list can sign in — that is the difference between "some"
-     and "all users".
+     and "all users". **✅ Done 2026-08-30** (project `mamas-kitchen-507006`, now
+     "In production"). Gotcha: the **Publish app** button stays disabled with an
+     "OAuth configuration is incomplete — visit Branding" banner until the Branding
+     page has an **Authorized domain** plus **home page / privacy / terms** links
+     (the required App name / support email / developer contact alone are not
+     enough to publish). The app **logo was removed** so publishing did not trigger
+     brand verification — non-sensitive scopes + no logo + one domain publish
+     instantly with no review. (2026 UI: these settings live under **APIs &
+     Services → Google Auth Platform → Branding / Audience / Clients / Data
+     Access**, not the old single "OAuth consent screen" page.)
 3. **APIs & Services → Credentials → Create credentials → OAuth client ID:**
    - **iOS** — Bundle ID `com.abedomar.kitchenai`. Produces
      `<abc>.apps.googleusercontent.com`. No client secret. **This is the id the
@@ -156,13 +166,13 @@ placeholder until IAP is wired (`iap-setup.md`) — it does not affect sign-in.
 The **app-side** config is already done in `eas.json` (mock off, live API URL,
 real iOS client id). What actually remains:
 
-| Thing                 | Where                              | Status now                         | Needs to be                                              |
-| --------------------- | ---------------------------------- | ---------------------------------- | -------------------------------------------------------- |
-| Google consent screen | Google Cloud Console               | unverified / likely "Testing"      | **"In production"** (Part C — the real "all users" gate) |
-| Google aud pin (API)  | live API `.env` `GOOGLE_CLIENT_ID` | can't read remotely — confirm host | list incl. the `395259860403-…` iOS id                   |
-| Apple aud pin (API)   | live API `.env` `APPLE_CLIENT_ID`  | can't read remotely — confirm host | `com.abedomar.kitchenai`                                 |
-| Distribution          | App Store Connect                  | free personal-team build           | Apple enrollment → TestFlight / App Store                |
-| RevenueCat key        | `eas.json` production              | placeholder                        | real key — blocks **purchases**, not sign-in             |
+| Thing                 | Where                              | Status now                          | Needs to be                                    |
+| --------------------- | ---------------------------------- | ----------------------------------- | ---------------------------------------------- |
+| Google consent screen | Google Cloud Console               | **✅ "In production" (2026-08-30)** | done — any Google account can sign in (Part C) |
+| Google aud pin (API)  | live API `.env` `GOOGLE_CLIENT_ID` | can't read remotely — confirm host  | list incl. the `395259860403-…` iOS id         |
+| Apple aud pin (API)   | live API `.env` `APPLE_CLIENT_ID`  | can't read remotely — confirm host  | `com.abedomar.kitchenai`                       |
+| Distribution          | App Store Connect                  | free personal-team build            | Apple enrollment → TestFlight / App Store      |
+| RevenueCat key        | `eas.json` production              | placeholder                         | real key — blocks **purchases**, not sign-in   |
 
 App-side settings for reference (already correct):
 

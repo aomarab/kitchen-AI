@@ -103,10 +103,15 @@ the paid subsystems.
       `docker-compose.prod.yml` + `deploy/`, operated per `docs/production-launch.md`.
 - [x] App build env set in `eas.json` production/preview (`EXPO_PUBLIC_USE_MOCKS=false`,
       deployed `EXPO_PUBLIC_API_URL`, real `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`).
-- [ ] Google Cloud → OAuth consent screen **published to "In production"**
-      (Testing caps at 100 users), scopes `openid/email/profile`. This is the real
-      "all users" gate (Part C). The iOS OAuth client id already exists (it's in
-      `eas.json`); add Android/Web only when those platforms ship.
+- [x] Google Cloud → OAuth consent screen **published to "In production"**
+      (2026-08-30, project `mamas-kitchen-507006`). Testing's 100-user cap is
+      lifted — any Google account can now sign in. Scopes `openid/email/profile`;
+      no verification review required (no logo, non-sensitive scopes, one domain).
+      Unblocking the disabled **Publish app** button required adding an Authorized
+      domain + home page/privacy/terms links on the Branding page; the app logo was
+      removed to avoid triggering brand verification (re-uploading later would
+      require a review). The iOS OAuth client id already exists (it's in `eas.json`);
+      add Android/Web only when those platforms ship.
 - [ ] On the **live API host**, confirm `GOOGLE_CLIENT_ID` (comma-separated list
       incl. the `eas.json` iOS id) **and** `APPLE_CLIENT_ID` (`com.abedomar.kitchenai`)
       are set — both required in production; can't be read back over HTTP (Part B).
