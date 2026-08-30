@@ -118,7 +118,12 @@ on-device testing, but it **cannot** use App Store Connect (ASC returns
 - [x] Support URL + Marketing URL — **live**:
       `https://aomarab.github.io/kitchen-AI/` (tagline, support email, in-app
       deletion note, legal links).
-- [ ] **Age rating** questionnaire → `docs/store-listing/age-rating.md`.
+- [x] **Age rating** questionnaire → **drafted** in
+      `docs/store-listing/age-rating.md`. Expected result **4+ / Everyone**;
+      every content question is **None/No**, with the two contested answers
+      (unrestricted web access, user-generated content) grounded in the code
+      (`isAllowedEmbedUrl` allowlist; feedback is staff-only, never rendered to
+      other users). Enter the answers at submission.
 
 ## Phase 7 — Build & submit
 
