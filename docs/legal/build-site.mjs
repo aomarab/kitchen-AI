@@ -205,8 +205,18 @@ const INDEX_BODY = `<h1>Kitchen AI — Legal</h1>
 <p>Questions or requests: <a href="mailto:aomarab@outlook.com">aomarab@outlook.com</a>.</p>`;
 
 // build
-rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
+// Remove only the files we own — never wipe the whole dir, so it is safe to
+// build straight into a git worktree (which keeps its .git link there).
+for (const f of [
+  'privacy-policy.html',
+  'terms-of-service.html',
+  'index.html',
+  'style.css',
+  '.nojekyll',
+]) {
+  rmSync(join(outDir, f), { force: true });
+}
 
 const docs = [
   { src: 'privacy-policy.md', out: 'privacy-policy.html', title: 'Privacy Policy' },

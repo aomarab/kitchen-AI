@@ -25,13 +25,13 @@ Answer: **Yes, we collect data from this app.**
 On the "Select the data types collected" grid, check exactly these — nothing
 else:
 
-| App Store data type      | Category      | Comes from            | Collected |
-| ------------------------ | ------------- | --------------------- | --------- |
-| **Email Address**        | Contact Info  | Account creation / OAuth | Yes    |
-| **Name**                 | Contact Info  | Account creation / OAuth | Yes    |
-| **Photos or Videos**     | User Content  | Kitchen / receipt capture | Yes   |
-| **Other User Content**   | User Content  | Feedback message      | Yes       |
-| **Product Interaction**  | Usage Data    | Feedback rating       | Yes       |
+| App Store data type     | Category     | Comes from                | Collected |
+| ----------------------- | ------------ | ------------------------- | --------- |
+| **Email Address**       | Contact Info | Account creation / OAuth  | Yes       |
+| **Name**                | Contact Info | Account creation / OAuth  | Yes       |
+| **Photos or Videos**    | User Content | Kitchen / receipt capture | Yes       |
+| **Other User Content**  | User Content | Feedback message          | Yes       |
+| **Product Interaction** | Usage Data   | Feedback rating           | Yes       |
 
 Leave **everything else "Not Collected"** — in particular:
 
@@ -79,8 +79,8 @@ After saving, the generated label should read:
 
 - **Data Linked to You:** Email Address, Name, Photos or Videos, Other User
   Content, Product Interaction.
-- **Data Used to Track You:** *(none)*.
-- **Data Not Linked to You:** *(none)*.
+- **Data Used to Track You:** _(none)_.
+- **Data Not Linked to You:** _(none)_.
 
 If anything else appears, you over-declared — go back and uncheck it.
 
@@ -91,12 +91,14 @@ If anything else appears, you over-declared — go back and uncheck it.
 These live outside the App Privacy questionnaire but are checked at review:
 
 - **Privacy Policy URL** (App Information → General): required, must be a public
-  HTTPS page. Publish `docs/legal/privacy-policy.md` and paste its URL. Contact
-  on the policy: **aomarab@outlook.com**; provider **Abdulraheem Omar
-  (Jordan)**.
+  HTTPS page. **Published:**
+  **https://aomarab.github.io/kitchen-AI/privacy-policy.html** (Terms:
+  **https://aomarab.github.io/kitchen-AI/terms-of-service.html**). Contact on the
+  policy: **aomarab@outlook.com**; provider **Abdulraheem Omar (Jordan)**.
 - **Account deletion** (Guideline 5.1.1(v)): the app ships in-app deletion
-  (`DELETE /me`, Settings on both clients). If a form asks for a deletion URL,
-  use the web route **`/settings/delete-account`**.
+  (`DELETE /me`, Settings on both clients). The policy documents the in-app path
+  (**Settings → Delete account**); if a form requires a URL, point it at the
+  Privacy Policy above, which describes deletion in Section 8.
 - **Age rating** questionnaire: see `docs/store-listing/age-rating.md`.
 - **Sign in with Apple**: required by Guideline 4.8 because the app offers Google
   sign-in — it is already implemented; make sure it is offered on the sign-in

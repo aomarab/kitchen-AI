@@ -85,14 +85,19 @@ on-device testing, but it **cannot** use App Store Connect (ASC returns
       **`apps/mobile/eas.json`** (`build.production.env`) with that key, then
       commit. **This is the single code value left to fill.**
 
-## Phase 4 — Legal hosting
+## Phase 4 — Legal hosting — ✅ DONE (2026-08-30, publishing part)
 
 → source docs: `docs/legal/privacy-policy.md`, `docs/legal/terms-of-service.md`
+→ published site: built by `docs/legal/build-site.mjs` onto the `gh-pages` branch
 
-- [ ] Have counsel review both documents (a few counsel/URL brackets are still
-      flagged in them).
-- [ ] Publish both at **public HTTPS URLs**.
-- [ ] Paste the **Privacy Policy URL** into App Store Connect → App Information.
+- [x] All bracketed placeholders resolved; documents finalized.
+- [x] Published at public HTTPS URLs (GitHub Pages, HTTPS enforced):
+  - Privacy Policy: **https://aomarab.github.io/kitchen-AI/privacy-policy.html**
+  - Terms of Service: **https://aomarab.github.io/kitchen-AI/terms-of-service.html**
+- [ ] (Recommended, not blocking) Have counsel review both documents and adjust
+      jurisdiction-specific clauses (EU/UK rep, dispute resolution, liability).
+- [ ] Paste the **Privacy Policy URL** above into App Store Connect → App
+      Information (done during Phase 1/5, after the app record exists).
 
 ## Phase 5 — App Privacy questionnaire
 
