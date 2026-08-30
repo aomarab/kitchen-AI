@@ -85,6 +85,36 @@ on-device testing, but it **cannot** use App Store Connect (ASC returns
       **`apps/mobile/eas.json`** (`build.production.env`) with that key, then
       commit. **This is the single code value left to fill.**
 
+## Phase 3.7 — Real backend + Google/Apple sign-in
+
+→ full runbook: `docs/store-listing/backend-and-oauth-runbook.md`
+
+Today "Continue with Google/Apple" is a **mock** — the shipped build has
+`EXPO_PUBLIC_USE_MOCKS=true`, so it never contacts a provider or a server. The
+real flow is fully coded (native PKCE + server-side `aud`-pinned token
+verification); it only needs deploying and configuring. Real login works even
+with `AI_MOCK`/`PAYMENTS_MOCK` left on, so this can ship before the paid
+subsystems.
+
+- [ ] Provision Postgres 17 + pgvector, Redis, and an S3 bucket; run
+      `db:migrate` + `db:seed` against the prod database (runbook Part A).
+- [ ] Deploy `apps/api` at a public HTTPS URL; set the production env
+      (`NODE_ENV`, `DATABASE_URL`, `REDIS_URL`, `S3_*`, `JWT_SECRET` 32+,
+      `CORS_ORIGINS`). It fails closed if anything required is missing (Part B).
+- [ ] Google Cloud → OAuth consent screen **published to "In production"**
+      (Testing caps at 100 users), scopes `openid/email/profile`; create an
+      **iOS** OAuth client id for `com.abedomar.kitchenai` (Part C).
+- [ ] Set `GOOGLE_CLIENT_ID` (list incl. the iOS id) **and** `APPLE_CLIENT_ID`
+      (`com.abedomar.kitchenai`) on the API — both are required in production.
+- [ ] Set the app build env: `EXPO_PUBLIC_USE_MOCKS=false`,
+      `EXPO_PUBLIC_API_URL=<deployed>`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=<ios id>`
+      (Part D) — feeds the Phase 7 production build.
+- [ ] (Before real Apple sign-in) set `APPLE_REVOKE_MOCK=false` + the four
+      `APPLE_*` keys so account deletion revokes the Apple token (Guideline
+      5.1.1(v)).
+- [ ] Verify on TestFlight: real Google sheet → signed in; real Apple → signed
+      in; `GET /health` = 200 (Part E).
+
 ## Phase 4 — Legal hosting — ✅ DONE (2026-08-30, publishing part)
 
 → source docs: `docs/legal/privacy-policy.md`, `docs/legal/terms-of-service.md`
@@ -151,7 +181,10 @@ definition-of-done matrix)
       commit it).
 - [ ] `eas build --platform ios --profile production` (store mocks off, real RC
       key, remote-managed build number). **This build is what makes the 5-minute
-      session cap real on-device.**
+      session cap real on-device.** For real accounts, this build must also carry
+      the Phase 3.7 env (`EXPO_PUBLIC_USE_MOCKS=false`, deployed
+      `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`) — otherwise
+      sign-in stays a mock.
 - [ ] `eas submit --platform ios --profile production --latest` (pick the app
       record from Phase 1, or set `ascAppId` in `eas.json` first).
 
@@ -190,6 +223,7 @@ definition-of-done matrix)
 | Phase | Doc                                                                  |
 | ----- | -------------------------------------------------------------------- |
 | 1–3   | `docs/store-listing/iap-setup.md`                                    |
+| 3.7   | `docs/store-listing/backend-and-oauth-runbook.md`                    |
 | 4     | `docs/legal/privacy-policy.md`, `terms-of-service.md`                |
 | 5     | `docs/store-listing/app-store-privacy-answers.md` · `data-safety.md` |
 | 6     | `docs/store-listing/age-rating.md`                                   |
