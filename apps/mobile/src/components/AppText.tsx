@@ -43,6 +43,7 @@ export function AppText({ variant = 'body', color, center, muted, style, ...rest
     // The weight-specific Arabic family already encodes the weight; setting
     // fontWeight on top of it makes iOS synthesize a heavier face.
     ...(fontFamily ? null : { fontWeight: token.fontWeight }),
+    ...(token.fontVariant ? { fontVariant: token.fontVariant } : null),
     ...(center ? { textAlign: 'center' } : null),
   };
   return <Text style={[base, style]} maxFontSizeMultiplier={maxFontScaleFor(variant)} {...rest} />;

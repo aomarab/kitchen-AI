@@ -80,6 +80,8 @@ export interface TextStyleToken {
   lineHeight: number;
   fontWeight: '400' | '500' | '600' | '700';
   letterSpacing: number;
+  /** Only on `numeral`: counts that tick must not jitter as digits change width. */
+  fontVariant?: 'tabular-nums'[];
 }
 
 const LATIN_LINE_HEIGHT = 1.35;
@@ -91,17 +93,29 @@ const ARABIC_LINE_HEIGHT = 1.7;
  * forces gaps into the joins.
  */
 const SCALE = {
-  display: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.22 },
-  title: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.09 },
-  heading: { fontSize: 18, fontWeight: '600' as const, letterSpacing: -0.02 },
+  hero: { fontSize: 34, fontWeight: '600' as const, letterSpacing: -0.68 },
+  display: { fontSize: 28, fontWeight: '600' as const, letterSpacing: -0.56 },
+  title: { fontSize: 22, fontWeight: '600' as const, letterSpacing: -0.33 },
+  heading: { fontSize: 18, fontWeight: '600' as const, letterSpacing: -0.18 },
   body: { fontSize: 16, fontWeight: '400' as const, letterSpacing: 0 },
-  bodyStrong: { fontSize: 16, fontWeight: '600' as const, letterSpacing: 0 },
-  button: { fontSize: 16, fontWeight: '700' as const, letterSpacing: 0.2 },
+  bodyStrong: { fontSize: 16, fontWeight: '500' as const, letterSpacing: 0 },
+  numeral: {
+    fontSize: 40,
+    fontWeight: '700' as const,
+    letterSpacing: -0.8,
+    fontVariant: ['tabular-nums' as const],
+  },
+  button: { fontSize: 16, fontWeight: '600' as const, letterSpacing: 0.1 },
   label: { fontSize: 14, fontWeight: '500' as const, letterSpacing: 0.1 },
-  caption: { fontSize: 12, fontWeight: '500' as const, letterSpacing: 0.1 },
+  caption: { fontSize: 13, fontWeight: '400' as const, letterSpacing: 0.1 },
 } satisfies Record<
   string,
-  { fontSize: number; fontWeight: TextStyleToken['fontWeight']; letterSpacing: number }
+  {
+    fontSize: number;
+    fontWeight: TextStyleToken['fontWeight'];
+    letterSpacing: number;
+    fontVariant?: TextStyleToken['fontVariant'];
+  }
 >;
 
 export type TypographyVariant = keyof typeof SCALE;
@@ -130,12 +144,13 @@ export function typography(locale: Locale): Record<TypographyVariant, TextStyleT
   const factor = isArabic ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;
   const out = {} as Record<TypographyVariant, TextStyleToken>;
   for (const key of Object.keys(SCALE) as TypographyVariant[]) {
-    const entry = SCALE[key]!;
+    const entry: (typeof SCALE)[TypographyVariant] = SCALE[key];
     out[key] = {
       fontSize: entry.fontSize,
       fontWeight: entry.fontWeight,
       lineHeight: Math.round(entry.fontSize * factor),
       letterSpacing: isArabic ? 0 : entry.letterSpacing,
+      ...('fontVariant' in entry ? { fontVariant: [...entry.fontVariant] } : null),
     };
   }
   return out;
