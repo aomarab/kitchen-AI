@@ -155,56 +155,50 @@ describe('notification settings', () => {
 });
 
 describe('theme preference', () => {
-  it('defaults to violet following the system, so nothing changes on upgrade', () => {
-    useSettingsStore.setState({ themeFamily: 'violet', themePreference: 'system' });
-    expect(useSettingsStore.getState().themeFamily).toBe('violet');
-    expect(useSettingsStore.getState().themePreference).toBe('system');
+  it('defaults to following the system', () => {
+    expect(useSettingsStore.getInitialState().themePreference).toBe('system');
   });
 
-  it('persists both halves of the choice', async () => {
-    useSettingsStore.getState().setThemeFamily('terracotta');
+  it('persists the appearance choice, and nothing about colour families', async () => {
     useSettingsStore.getState().setThemePreference('dark');
     await Promise.resolve();
 
-    const written = fileSystem.writeAsStringAsync.mock.calls.at(-1)?.[1] as string;
-    expect(JSON.parse(written)).toMatchObject({
-      themeFamily: 'terracotta',
-      themePreference: 'dark',
-    });
+    const written = JSON.parse(fileSystem.writeAsStringAsync.mock.calls.at(-1)?.[1] as string);
+    expect(written).toMatchObject({ themePreference: 'dark' });
+    expect(written).not.toHaveProperty('themeFamily');
   });
 
-  it('restores a saved theme', async () => {
+  /**
+   * Installs from before the single Apricot palette saved a colour family next
+   * to the mode. The family is gone; the mode the user chose must survive.
+   */
+  it('restores the saved mode from a file that still names a family', async () => {
     fileSystem.readAsStringAsync.mockResolvedValue(
       JSON.stringify({ themeFamily: 'green', themePreference: 'light' }),
     );
     await useSettingsStore.getState().hydrate();
 
-    expect(useSettingsStore.getState().themeFamily).toBe('green');
     expect(useSettingsStore.getState().themePreference).toBe('light');
+    expect(useSettingsStore.getState()).not.toHaveProperty('themeFamily');
   });
 
   /**
-   * The failure this guards is a downgrade: a build that knows four families
-   * writes the fourth, the user reinstalls an older build, and `paletteFor`
-   * gets a key it has never heard of. Casting the saved string would put
-   * `undefined.colors` on screen; validating it falls back to the default.
+   * The failure this guards is a downgrade: a newer build writes a mode this
+   * one has never heard of. Casting the saved string would hand
+   * `resolveThemeMode` a value it cannot resolve; validating falls back.
    */
-  it('falls back when the saved theme is not one this build knows', async () => {
-    fileSystem.readAsStringAsync.mockResolvedValue(
-      JSON.stringify({ themeFamily: 'chartreuse', themePreference: 'sepia' }),
-    );
+  it('falls back when the saved mode is not one this build knows', async () => {
+    fileSystem.readAsStringAsync.mockResolvedValue(JSON.stringify({ themePreference: 'sepia' }));
     await useSettingsStore.getState().hydrate();
 
-    expect(useSettingsStore.getState().themeFamily).toBe('violet');
     expect(useSettingsStore.getState().themePreference).toBe('system');
   });
 
   it('reads an older settings file, written before themes existed, as the default', async () => {
-    useSettingsStore.setState({ themeFamily: 'green', themePreference: 'dark' });
+    useSettingsStore.setState({ themePreference: 'dark' });
     fileSystem.readAsStringAsync.mockResolvedValue(JSON.stringify({ easternNumerals: true }));
     await useSettingsStore.getState().hydrate();
 
-    expect(useSettingsStore.getState().themeFamily).toBe('violet');
     expect(useSettingsStore.getState().themePreference).toBe('system');
   });
 });

@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
 import { useColorScheme, type StyleSheet } from 'react-native';
 import { resolveThemeMode, shadowFor, tintIn, type Shadow } from './index';
-import { paletteFor, type Palette, type Tint, type ThemeMode } from './palettes';
+import {
+  DEFAULT_THEME_FAMILY,
+  paletteFor,
+  type Palette,
+  type Tint,
+  type ThemeMode,
+} from './palettes';
 import { useSettingsStore } from '../stores/settings';
 
 export interface Theme {
@@ -21,13 +27,12 @@ export interface Theme {
  * for the same value and one more thing to forget to wrap a screen in.
  */
 export function useTheme(): Theme {
-  const family = useSettingsStore((state) => state.themeFamily);
   const preference = useSettingsStore((state) => state.themePreference);
   const system = useColorScheme();
   const mode: ThemeMode = resolveThemeMode(preference, system);
 
   return useMemo(() => {
-    const palette = paletteFor(family, mode);
+    const palette = paletteFor(DEFAULT_THEME_FAMILY, mode);
     return {
       colors: palette.colors,
       tints: palette.tints,
@@ -37,7 +42,7 @@ export function useTheme(): Theme {
       isDark: mode === 'dark',
       tintFor: (index: number) => tintIn(palette.tints, index),
     };
-  }, [family, mode]);
+  }, [mode]);
 }
 
 /**
