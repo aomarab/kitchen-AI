@@ -75,7 +75,7 @@ export default function Kitchen() {
   };
 
   return (
-    <Screen padded={false} edges={['top']}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
       <View style={{ padding: spacing.lg, gap: spacing.md }}>
         <TabHeader title={t('inventory.title')} />
         <Field

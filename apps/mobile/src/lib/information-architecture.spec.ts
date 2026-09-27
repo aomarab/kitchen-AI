@@ -110,4 +110,31 @@ describe('information architecture (spec §4)', () => {
     const row = read('components', 'ListRow.tsx');
     expect(row).toMatch(/grouped\s*\?\s*\{[^}]*minHeight:\s*56/);
   });
+
+  it('keeps inline tab controls named and inside safe areas (spec §12)', () => {
+    const shopping = read('app', '(tabs)', 'shopping.tsx');
+    const checkbox = shopping.match(
+      /<Pressable[\s\S]*?accessibilityRole="checkbox"[\s\S]*?style=\{\{([\s\S]*?)\}\}/,
+    );
+    const checkboxSource = checkbox?.[0] ?? '';
+    const checkboxStyle = checkbox?.[1] ?? '';
+
+    expect(checkboxSource, 'shopping checkbox Pressable is missing').not.toBe('');
+    expect(checkboxStyle, 'shopping checkbox touch target width is below 44pt').toMatch(
+      /(?:minWidth|width):\s*44/,
+    );
+    expect(checkboxStyle, 'shopping checkbox touch target height is below 44pt').toMatch(
+      /(?:minHeight|height):\s*44/,
+    );
+    expect(checkboxSource, 'shopping checkbox must be named for its item').not.toContain(
+      "accessibilityLabel={t('shopping.purchased')}",
+    );
+    expect(checkboxSource, 'shopping checkbox label should use the localized item name').toMatch(
+      /accessibilityLabel=\{(?:itemLabel|localizedName\(locale,\s*item\.nameEn,\s*item\.nameAr\))\}/,
+    );
+
+    const kitchen = read('app', '(tabs)', 'kitchen.tsx');
+    expect(kitchen).not.toContain("edges={['top']}");
+    expect(kitchen).toContain("edges={['top', 'left', 'right']}");
+  });
 });

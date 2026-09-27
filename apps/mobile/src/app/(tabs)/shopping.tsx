@@ -46,38 +46,48 @@ export default function Shopping() {
       ) : (
         <>
           <View style={{ gap: spacing.sm }}>
-            {items.map((item) => (
-              <ListRow
-                key={item.id}
-                title={localizedName(locale, item.nameEn, item.nameAr)}
-                subtitle={formatMeasure(t, locale, item.quantity, item.unit, prefs)}
-                accessibilityLabel={
-                  item.purchased
-                    ? t('shopping.purchased')
-                    : localizedName(locale, item.nameEn, item.nameAr)
-                }
-                leading={
-                  <Pressable
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: item.purchased }}
-                    accessibilityLabel={t('shopping.purchased')}
-                    onPress={() => toggle.mutate({ id: item.id, purchased: !item.purchased })}
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: radius.sm,
-                      borderWidth: 1,
-                      borderColor: item.purchased ? colors.success : colors.border,
-                      backgroundColor: item.purchased ? colors.successSoft : colors.surface,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {item.purchased ? <Icon name="check" size={16} color={colors.success} /> : null}
-                  </Pressable>
-                }
-              />
-            ))}
+            {items.map((item) => {
+              const itemLabel = localizedName(locale, item.nameEn, item.nameAr);
+              return (
+                <ListRow
+                  key={item.id}
+                  title={itemLabel}
+                  subtitle={formatMeasure(t, locale, item.quantity, item.unit, prefs)}
+                  accessibilityLabel={item.purchased ? t('shopping.purchased') : itemLabel}
+                  leading={
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: item.purchased }}
+                      accessibilityLabel={itemLabel}
+                      onPress={() => toggle.mutate({ id: item.id, purchased: !item.purchased })}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: radius.sm,
+                          borderWidth: 1,
+                          borderColor: item.purchased ? colors.success : colors.border,
+                          backgroundColor: item.purchased ? colors.successSoft : colors.surface,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {item.purchased ? (
+                          <Icon name="check" size={16} color={colors.success} />
+                        ) : null}
+                      </View>
+                    </Pressable>
+                  }
+                />
+              );
+            })}
           </View>
 
           <Button
