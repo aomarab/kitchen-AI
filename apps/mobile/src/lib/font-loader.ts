@@ -1,12 +1,16 @@
 import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
-import { ARABIC_FONTS, useFontStore } from './fonts';
+import { ARABIC_FONTS, LATIN_FONTS, useFontStore } from './fonts';
+import RegularLatin from '../../assets/fonts/Outfit-Regular.ttf';
+import MediumLatin from '../../assets/fonts/Outfit-Medium.ttf';
+import SemiBoldLatin from '../../assets/fonts/Outfit-SemiBold.ttf';
+import BoldLatin from '../../assets/fonts/Outfit-Bold.ttf';
 import RegularArabic from '../../assets/fonts/Tajawal-Regular.ttf';
 import MediumArabic from '../../assets/fonts/Tajawal-Medium.ttf';
 import BoldArabic from '../../assets/fonts/Tajawal-Bold.ttf';
 
 /**
- * The vendored Tajawal faces, bundled as Metro assets so they ship
+ * The vendored Outfit and Tajawal faces, bundled as Metro assets so they ship
  * inside the JS bundle (offline, no CDN) and appear in `expo export` output. The
  * same files are ALSO embedded natively via the `expo-font` config plugin in
  * app.json (its `fonts` array), which pre-registers them for standalone builds
@@ -18,15 +22,19 @@ import BoldArabic from '../../assets/fonts/Tajawal-Bold.ttf';
  * fall back to the system font.
  */
 const FONT_SOURCES = {
+  [LATIN_FONTS.regular]: RegularLatin,
+  [LATIN_FONTS.medium]: MediumLatin,
+  [LATIN_FONTS.semibold]: SemiBoldLatin,
+  [LATIN_FONTS.bold]: BoldLatin,
   [ARABIC_FONTS.regular]: RegularArabic,
   [ARABIC_FONTS.medium]: MediumArabic,
   [ARABIC_FONTS.bold]: BoldArabic,
 };
 
 /**
- * Registers the Arabic font faces. Call once, high in the tree. The app never
+ * Registers the Latin and Arabic font faces. Call once, high in the tree. The app never
  * blocks on it: standalone builds already have the faces from the config plugin,
- * and in Expo Go the screens render with the system Arabic font for a frame and
+ * and in Expo Go the screens render with the system font for a frame and
  * re-render once loading resolves.
  */
 export function useAppFonts(): boolean {

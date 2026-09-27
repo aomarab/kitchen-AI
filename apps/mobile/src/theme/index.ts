@@ -71,7 +71,7 @@ export type Shadow = ReturnType<typeof shadowFor>;
 
 /**
  * Typography scale. Arabic runs at a larger line-height than Latin per spec §7,
- * and the `fontFamily` itself (Tajawal) is resolved per locale and
+ * and the `fontFamily` itself (Outfit or Tajawal) is resolved per locale and
  * weight in `lib/fonts.ts` — text primitives call `resolveFontFamily` so nothing
  * here needs to know about font loading.
  */

@@ -124,6 +124,10 @@
         "expo-font",
         {
           "fonts": [
+            "./assets/fonts/Outfit-Regular.ttf",
+            "./assets/fonts/Outfit-Medium.ttf",
+            "./assets/fonts/Outfit-SemiBold.ttf",
+            "./assets/fonts/Outfit-Bold.ttf",
             "./assets/fonts/Tajawal-Regular.ttf",
             "./assets/fonts/Tajawal-Medium.ttf",
             "./assets/fonts/Tajawal-Bold.ttf"

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ARABIC_FONTS, arabicFontFamily, resolveFontFamily } from './fonts';
+import {
+  ARABIC_FONTS,
+  LATIN_FONTS,
+  arabicFontFamily,
+  latinFontFamily,
+  resolveFontFamily,
+} from './fonts';
 
 describe('ARABIC_FONTS', () => {
   it('uses the PostScript names the .ttf files self-report', () => {
@@ -10,6 +16,29 @@ describe('ARABIC_FONTS', () => {
 
   it('declares only cuts Tajawal actually ships — it has no semibold', () => {
     expect(Object.keys(ARABIC_FONTS).sort()).toEqual(['bold', 'medium', 'regular']);
+  });
+});
+
+describe('LATIN_FONTS', () => {
+  it('uses the PostScript names the .ttf files self-report', () => {
+    expect(LATIN_FONTS.regular).toBe('Outfit-Regular');
+    expect(LATIN_FONTS.medium).toBe('Outfit-Medium');
+    expect(LATIN_FONTS.semibold).toBe('Outfit-SemiBold');
+    expect(LATIN_FONTS.bold).toBe('Outfit-Bold');
+  });
+});
+
+describe('latinFontFamily', () => {
+  /** Outfit ships a real 600, so no tier shares a cut the way Tajawal's must. */
+  it('gives each of the four weights its own cut', () => {
+    const cuts = (['400', '500', '600', '700'] as const).map(latinFontFamily);
+    expect(cuts).toEqual([
+      LATIN_FONTS.regular,
+      LATIN_FONTS.medium,
+      LATIN_FONTS.semibold,
+      LATIN_FONTS.bold,
+    ]);
+    expect(new Set(cuts).size).toBe(4);
   });
 });
 
@@ -36,8 +65,15 @@ describe('resolveFontFamily', () => {
     expect(resolveFontFamily('ar', false, '700')).toBeUndefined();
   });
 
-  it('never overrides the system font for Latin locales', () => {
-    expect(resolveFontFamily('en', true, '700')).toBeUndefined();
-    expect(resolveFontFamily('en', false, '400')).toBeUndefined();
+  it('returns the weight-specific Outfit face for Latin once fonts are loaded', () => {
+    expect(resolveFontFamily('en', true, '400')).toBe('Outfit-Regular');
+    expect(resolveFontFamily('en', true, '500')).toBe('Outfit-Medium');
+    expect(resolveFontFamily('en', true, '600')).toBe('Outfit-SemiBold');
+    expect(resolveFontFamily('en', true, '700')).toBe('Outfit-Bold');
+    expect(resolveFontFamily('en', true)).toBe('Outfit-Regular');
+  });
+
+  it('falls back to the system font for Latin until the faces have loaded', () => {
+    expect(resolveFontFamily('en', false, '700')).toBeUndefined();
   });
 });

@@ -40,8 +40,9 @@ export function AppText({ variant = 'body', color, center, muted, style, ...rest
     // the way we want and is not subject to that swap. Verified in the
     // simulator; `text-direction.spec.ts` guards it.
     writingDirection: dir,
-    // The weight-specific Arabic family already encodes the weight; setting
-    // fontWeight on top of it makes iOS synthesize a heavier face.
+    // The weight-specific family (an Outfit or Tajawal cut) already encodes
+    // the weight; setting fontWeight on top of it makes iOS synthesize a
+    // heavier face.
     ...(fontFamily ? null : { fontWeight: token.fontWeight }),
     ...(token.fontVariant ? { fontVariant: token.fontVariant } : null),
     ...(center ? { textAlign: 'center' } : null),
