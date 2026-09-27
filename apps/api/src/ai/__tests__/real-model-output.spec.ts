@@ -5,11 +5,7 @@ import {
   unitSchema,
   visionResultSchema,
 } from '@kitchen/contracts';
-import {
-  MAX_RECIPES_PER_GENERATION,
-  planDates,
-  planGroups,
-} from '../planner/date-range.js';
+import { MAX_RECIPES_PER_GENERATION, planDates, planGroups } from '../planner/date-range.js';
 import { PROVIDER_MAX_OUTPUT_TOKENS, PROVIDER_MAX_RETRIES } from '../ai.constants.js';
 import { buildPlanningPrompt } from '../prompts/planning.prompt.js';
 import type { PlanPromptContext } from '../prompts/prompt.types.js';
@@ -190,8 +186,16 @@ describe('the prompt actually states the shape it wants', () => {
   it('names every field the schema requires', () => {
     const { system } = buildPlanningPrompt(planCtx('ar'));
     for (const field of [
-      'title', 'description', 'cuisine', 'difficulty', 'prepMinutes', 'cookMinutes',
-      'servings', 'ingredients', 'steps', 'nutritionPerServing',
+      'title',
+      'description',
+      'cuisine',
+      'difficulty',
+      'prepMinutes',
+      'cookMinutes',
+      'servings',
+      'ingredients',
+      'steps',
+      'nutritionPerServing',
     ]) {
       expect(system, field).toContain(field);
     }
@@ -212,9 +216,15 @@ describe('the prompt actually states the shape it wants', () => {
 
 describe('structured steps are recovered rather than discarded', () => {
   const base = {
-    title: 'أرز', description: 'د', difficulty: 'easy', prepMinutes: 5, cookMinutes: 5,
-    servings: 2, ingredients: [{ name: 'Rice', quantity: 1, unit: 'kg', optional: false }],
-    cuisine: null, nutritionPerServing: null,
+    title: 'أرز',
+    description: 'د',
+    difficulty: 'easy',
+    prepMinutes: 5,
+    cookMinutes: 5,
+    servings: 2,
+    ingredients: [{ name: 'Rice', quantity: 1, unit: 'kg', optional: false }],
+    cuisine: null,
+    nutritionPerServing: null,
   };
   const parse = (steps: unknown) =>
     generatedPlanSchema.safeParse({
@@ -222,7 +232,10 @@ describe('structured steps are recovered rather than discarded', () => {
     });
 
   it('unwraps the object form real gpt-5 returned', () => {
-    const r = parse([{ step: 1, text: 'اغسل الأرز' }, { step: 2, text: 'اطبخ' }]);
+    const r = parse([
+      { step: 1, text: 'اغسل الأرز' },
+      { step: 2, text: 'اطبخ' },
+    ]);
     expect(r.success, JSON.stringify(r.error?.issues)).toBe(true);
     expect(r.data!.entries[0]!.recipe.steps).toEqual(['اغسل الأرز', 'اطبخ']);
   });
@@ -256,8 +269,49 @@ describe('sourcing rule matches what the planner will actually accept', () => {
   it('names the failure mode it exists to prevent', () => {
     // Real output degraded to "water soup with olive oil" once the simulated
     // pantry emptied mid-week.
-    const { system } = buildPlanningPrompt({ ...planCtx('en'), scope: 'weekly' } as PlanPromptContext);
+    const { system } = buildPlanningPrompt({
+      ...planCtx('en'),
+      scope: 'weekly',
+    } as PlanPromptContext);
     expect(system).toMatch(/water/i);
     expect(system).toMatch(/never invent a filler recipe/i);
+  });
+});
+
+/**
+ * `vision/v2` asks for a box per item. Both answers must keep parsing: a model
+ * that ignores the new field (or an old prompt still in a retry) must not start
+ * failing scans, and the new field must not be required to be well-formed.
+ */
+describe('vision output parses with and without boxes', () => {
+  const v1Item = {
+    nameEn: 'Roma tomato',
+    nameAr: 'طماطم روما',
+    category: 'vegetable',
+    estimatedQuantity: 400,
+    unit: 'g',
+    confidence: 0.81,
+  };
+
+  it('accepts a v1 answer with no box key at all', () => {
+    const parsed = visionResultSchema.safeParse({ ingredients: [v1Item] });
+    expect(parsed.success, JSON.stringify(parsed.error?.issues)).toBe(true);
+    expect(parsed.data!.ingredients[0]!.box).toBeNull();
+  });
+
+  it('accepts a v2 answer mixing a box, an explicit null and a malformed box', () => {
+    const parsed = visionResultSchema.safeParse({
+      ingredients: [
+        { ...v1Item, box: { x: 0.12, y: 0.4, w: 0.3, h: 0.22 } },
+        { ...v1Item, nameEn: 'Labneh', box: null },
+        { ...v1Item, nameEn: 'Cucumber', box: [0.1, 0.2, 0.3, 0.4] },
+      ],
+    });
+    expect(parsed.success, JSON.stringify(parsed.error?.issues)).toBe(true);
+    expect(parsed.data!.ingredients.map((i) => i.box)).toEqual([
+      { x: 0.12, y: 0.4, w: 0.3, h: 0.22 },
+      null,
+      null,
+    ]);
   });
 });

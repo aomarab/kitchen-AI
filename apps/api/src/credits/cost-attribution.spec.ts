@@ -88,6 +88,7 @@ const visionRaw: VisionResult = {
       estimatedQuantity: 200,
       unit: 'g',
       confidence: 0.95,
+      box: null,
     },
   ],
 };
