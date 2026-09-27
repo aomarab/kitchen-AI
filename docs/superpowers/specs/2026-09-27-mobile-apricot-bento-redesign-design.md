@@ -508,6 +508,8 @@ Arabic word order differs.
 - "classifies every variant" gains `hero` and `numeral`, both content tier.
 - "carries a 700-weight button tier" becomes 600.
 - "leaves the content variants uncapped" adds `hero` and `numeral`.
+- New: `numeral` carries `fontVariant: ['tabular-nums']` in both locales, and `body` carries none.
+  `AppText` passes the token's `fontVariant` through.
 - New: `resolveFontFamily('en', true, w)` returns the Outfit face for each of the four weights, and
   `undefined` when not loaded.
 
@@ -1093,16 +1095,21 @@ export type NormalizedBox = z.infer<typeof normalizedBoxSchema>;
 
 /** Model-facing and deliberately loose: sanitised by the API, never trusted as-is. */
 const rawBoxSchema = z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() });
+export type RawVisionBox = z.infer<typeof rawBoxSchema>;
 
 // visionIngredientSchema gains:
-box: modelNullable(rawBoxSchema),
+box: modelNullable(rawBoxSchema).catch(null),
 // recognizedItemSchema gains:
 box: normalizedBoxSchema.nullish(),
 ```
 
 - **The raw model field is loose on purpose.** A strict 0..1 schema would fail validation on a
   slightly out-of-range number, which triggers the gateway's repair retry and a second full-priced
-  call. That is the exact failure `modelNullable` was introduced to avoid.
+  call. That is the exact failure `modelNullable` was introduced to avoid. `.catch(null)` extends
+  it to a box that is malformed outright (an array, a string, a missing side): the item keeps
+  parsing and simply has no box. A position is a nicety, never worth a paid retry.
+- **The raw output type makes `box` required** (`RawVisionBox | null`), because the default fills
+  it. Typed `VisionResult` literals must therefore spell `box: null`; see §14.
 - **The response field is `nullish`,** not `.nullable().default(null)`. That keeps it optional in
   the inferred type, so the other `RecognizedItem` constructors compile unchanged: receipts, web
   barcode, web and mobile mocks, and assistant detections. Clients treat `null` and `undefined`
@@ -1180,15 +1187,17 @@ a week of real traffic, per the model-routing spec.
 
 - New `ai/recognition/box.spec.ts` (pure): null in; each rejection rule; clamping; clipping; a
   0–1000 input returning null.
-- New `ai/__tests__/vision-box.spec.ts`: builds `RecognitionService` the way
-  `credits/cost-attribution.spec.ts` does (`makeRecognitionService` with a stub gateway). It asserts
-  that a model box comes back sanitised on the item, that a missing box yields null, and that an
-  all-empty result still throws `AI_NO_RESULT` with `emptyPhotoKeys`. It is an integration spec and
-  needs the database (see "Test topology").
+- New `ai/__tests__/vision-box.spec.ts`: builds `RecognitionService` on the real `AiGateway`,
+  `SchemaGuard` and `BudgetService` behind a stub provider, so the raw JSON is parsed by the same
+  code that parses a real model's answer. It asserts that a model box comes back sanitised on the
+  item, that a 0–1000 box and a missing box yield null, and that an all-empty result still throws
+  `AI_NO_RESULT` with `emptyPhotoKeys`. It is an integration spec and needs the database (see "Test
+  topology").
 - `ai/__tests__/real-model-output.spec.ts`: one recorded v2 output with boxes, and one v1 output
   without them, which proves both parse.
-- The same new spec asserts `buildVisionPrompt(...).version === 'vision/v2'` and that the system
-  text mentions `"box"`. No prompt test exists today.
+- New `ai/prompts/vision.prompt.spec.ts` (pure) asserts that the prompt's version is
+  `'vision/v2'` and that the system text mentions `"box"` in both locales. No prompt test exists
+  today.
 
 **Contracts:** a new `packages/contracts/src/ai.spec.ts` asserts that `normalizedBoxSchema`
 accepts an edge-touching box and rejects one that overflows, and that a vision item without `box`
@@ -1355,6 +1364,10 @@ Each change below is **mechanical**: the thresholds and the intent of every asse
     - the scrim worst case: `textInverse` over the composite of `scrim` at `textMinAlpha` on
       `#FFFFFF` ≥ 4.5
     - the inverted tile: `bg` on `text` ≥ 4.5
+    - the scrim's shape: alpha is at least `textMinAlpha` over the whole bottom 40%, and 0 over
+      the top 35%, so the knee that fixed the linear ramp cannot regress
+    - the media group is identical in light and dark
+    - every `TintName` resolves through `tintNamed`
   - **Removed with the feature it guarded:** "families are distinguishable" (the block from line 301), because
     there is one family.
 - **`components/visual-rhythm.spec.ts`:**
@@ -1375,7 +1388,8 @@ Each change below is **mechanical**: the thresholds and the intent of every asse
   - `resolveFontFamily('en', false, w)` returns `undefined` (the system font until loaded).
 - **`stores/settings.spec.ts`, the "theme preference" block (157–208):**
   - 158, "defaults to violet following the system": becomes "defaults to following the system"
-    and asserts `themePreference` only.
+    and asserts `themePreference` only, read from `getInitialState()` so earlier tests cannot leak
+    into it.
   - 164, "persists both halves of the choice": **rewritten** as "persists the appearance choice".
     It sets only `themePreference: 'dark'` and asserts the written file has it and has no
     `themeFamily` key, so preference persistence keeps its coverage.
@@ -1393,6 +1407,9 @@ Each change below is **mechanical**: the thresholds and the intent of every asse
     - `'Tile.tsx': /minHeight:\s*(\d+)/`
     - `'ArPins.tsx': /minHeight:\s*(\d+)/`
   - The hex, `lineHeight` and letter-spacing sweeps are unchanged.
+- **API `VisionResult` fixtures:** the typed literals in `credits/cost-attribution.spec.ts` (88) and
+  `credits/credit-debits.spec.ts` (106) gain `box: null`, because the raw output type makes `box`
+  required (§10.1). Untyped fixtures such as `vision.fixtures.ts` are parsed and need no change.
 - **`lib/image.spec.ts`:** "returns the uri from the manipulator" (70) destructures `{ uri }`, and
   a new case asserts the manipulator's `width` and `height` pass through.
 - **New specs** are listed with their features: `lib/capture.spec.ts` and
