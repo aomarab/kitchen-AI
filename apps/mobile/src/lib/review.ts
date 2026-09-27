@@ -98,3 +98,7 @@ export function focusIndex(
   if (!focus) return -1;
   return rows.filter((row) => row.include).findIndex((row) => row.tempId === focus);
 }
+
+export function reviewScrollTarget(bentoY: number, rowY: number): number {
+  return Math.max(0, bentoY + rowY);
+}

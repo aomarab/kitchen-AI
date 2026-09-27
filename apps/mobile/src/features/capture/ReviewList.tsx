@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Pressable, View } from 'react-native';
 import type {
   InventoryItemInput,
@@ -15,6 +15,7 @@ import {
   needsAnswer,
   newReviewRow,
   reviewHeadlineCount,
+  reviewScrollTarget,
   unansweredCount,
 } from '../../lib/review';
 import { localizedName } from '../../lib/format';
@@ -159,6 +160,8 @@ function ReviewAddTile({ onPress }: { onPress: () => void; span?: TileSpan }) {
       onPress={onPress}
       style={({ pressed }) => ({
         flex: 1,
+        flexBasis: 0,
+        minWidth: 0,
         minHeight: 140,
         borderRadius: radius.xl,
         borderWidth: 1,
@@ -191,17 +194,26 @@ function ReviewBento({
   tiles: TileDescriptor[];
   onTileLayout?: (tempId: string, index: number, y: number) => void;
 }) {
+  const bentoY = useRef(0);
   return (
-    <Bento
-      onRowLayout={(indices, y) => {
-        for (const index of indices) {
-          const tile = tiles[index];
-          if (tile?.tempId) onTileLayout?.(tile.tempId, index, y);
-        }
+    <View
+      onLayout={(event) => {
+        bentoY.current = event.nativeEvent.layout.y;
       }}
     >
-      {tiles.map((tile) => tile.element)}
-    </Bento>
+      <Bento
+        onRowLayout={(indices, rowY) => {
+          for (const index of indices) {
+            const tile = tiles[index];
+            if (tile?.tempId) {
+              onTileLayout?.(tile.tempId, index, reviewScrollTarget(bentoY.current, rowY));
+            }
+          }
+        }}
+      >
+        {tiles.map((tile) => tile.element)}
+      </Bento>
+    </View>
   );
 }
 

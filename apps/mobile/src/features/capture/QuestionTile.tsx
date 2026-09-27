@@ -30,6 +30,8 @@ function AnswerButton({
       style={({ pressed }) => ({
         minHeight: 44,
         flex: 1,
+        flexBasis: 0,
+        minWidth: 0,
         borderRadius: radius.pill,
         borderWidth: 1,
         borderColor: colors.bg,
@@ -55,6 +57,7 @@ export function QuestionTile({ name, onYes, onNo }: QuestionTileProps) {
     <View
       style={{
         flex: 1,
+        minWidth: 0,
         minHeight: 140,
         borderRadius: radius.xl,
         borderWidth: 1,

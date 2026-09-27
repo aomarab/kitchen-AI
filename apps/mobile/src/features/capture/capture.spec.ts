@@ -161,4 +161,20 @@ describe('review screen source contract (G4)', () => {
     expect(source).not.toContain('bentoRows');
     expect(source).not.toContain("from '../../components/tile-layout'");
   });
+
+  it('adds the Bento offset back to row-local focus positions', () => {
+    const source = read('features', 'capture', 'ReviewList.tsx');
+
+    expect(source).toContain('reviewScrollTarget(bentoY.current, rowY)');
+  });
+
+  it('keeps the review stepper visually inside the shared tile frame', () => {
+    const source = read('features', 'capture', 'ReviewTile.tsx');
+
+    expect(source).toContain('<Tile');
+    expect(source).toContain("position: 'absolute'");
+    expect(source).toContain('start: spacing.md');
+    expect(source).toContain('bottom: spacing.xs');
+    expect(source).not.toContain('BentoColumn');
+  });
 });

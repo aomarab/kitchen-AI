@@ -39,6 +39,14 @@ describe('bento grid (spec §6.7)', () => {
     const source = readFileSync(join(__dirname, 'Tile.tsx'), 'utf8');
 
     expect(source).toContain('onRowLayout?:');
+    expect(source).toContain('relative to the Bento container');
     expect(source).toContain('onRowLayout?.(row.indices, event.nativeEvent.layout.y)');
+  });
+
+  it('keeps half cells equal-width regardless of intrinsic content', () => {
+    const source = readFileSync(join(__dirname, 'Tile.tsx'), 'utf8');
+
+    expect(source).toContain('flexBasis: 0');
+    expect(source).toContain('minWidth: 0');
   });
 });

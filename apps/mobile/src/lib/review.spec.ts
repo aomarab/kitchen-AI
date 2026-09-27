@@ -8,6 +8,7 @@ import {
   needsAnswer,
   newReviewRow,
   reviewHeadlineCount,
+  reviewScrollTarget,
   unansweredCount,
 } from './review';
 import { LOW_CONFIDENCE, type ReviewRow as CaptureReviewRow } from './capture';
@@ -174,5 +175,11 @@ describe('review counts and focus', () => {
     expect(focusIndex(rows, 'b')).toBe(-1);
     expect(focusIndex(rows, 'c')).toBe(1);
     expect(focusIndex(rows, undefined)).toBe(-1);
+  });
+
+  it('scrolls to the bento offset plus the focused row offset', () => {
+    expect(reviewScrollTarget(96, 244)).toBe(340);
+    expect(reviewScrollTarget(0, 88)).toBe(88);
+    expect(reviewScrollTarget(-12, 4)).toBe(0);
   });
 });

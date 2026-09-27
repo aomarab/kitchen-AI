@@ -210,7 +210,11 @@ export function Tile({
 
 export interface BentoProps {
   children: ReactNode;
-  /** Reports the y-position of each packed row to screens that need focus scrolling. */
+  /**
+   * Reports each packed row's y-position relative to the Bento container.
+   * Screens that need ScrollView coordinates must add the Bento container's
+   * own y-position inside the scroll content.
+   */
   onRowLayout?: (indices: readonly number[], y: number) => void;
 }
 
@@ -232,8 +236,12 @@ export function Bento({ children, onRowLayout }: BentoProps) {
             onLayout={(event) => onRowLayout?.(row.indices, event.nativeEvent.layout.y)}
             style={{ flexDirection: 'row', gap: BENTO_GUTTER }}
           >
-            {row.indices.map((index) => items[index])}
-            {row.filler ? <View style={{ flex: 1 }} /> : null}
+            {row.indices.map((index) => (
+              <View key={items[index]?.key ?? index} style={{ flex: 1, flexBasis: 0, minWidth: 0 }}>
+                {items[index]}
+              </View>
+            ))}
+            {row.filler ? <View style={{ flex: 1, flexBasis: 0, minWidth: 0 }} /> : null}
           </View>
         ))}
       </View>
@@ -249,5 +257,5 @@ export interface BentoColumnProps {
 
 /** Stacks tiles in one half of a row; they split its height evenly. */
 export function BentoColumn({ children }: BentoColumnProps) {
-  return <View style={{ flex: 1, gap: BENTO_GUTTER }}>{children}</View>;
+  return <View style={{ flex: 1, flexBasis: 0, minWidth: 0, gap: BENTO_GUTTER }}>{children}</View>;
 }

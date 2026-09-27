@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import type { StorageLocation } from '@kitchen/contracts';
-import { AppText, BentoColumn, Chip, FoodIcon, QuantityStepper, Tile } from '../../components';
+import { AppText, Chip, FoodIcon, QuantityStepper, Tile } from '../../components';
 import type { TileSpan } from '../../components/Tile';
 import { useFormat } from '../../hooks/useFormat';
 import type { ReviewRow } from '../../lib/capture';
@@ -26,14 +26,7 @@ function phraseLabel(
 }
 
 /** A bento review tile whose body and quantity stepper are separate accessibility elements. */
-export function ReviewTile({
-  span,
-  row,
-  tint,
-  location,
-  onPress,
-  onQuantityChange,
-}: ReviewTileProps) {
+export function ReviewTile({ row, tint, location, onPress, onQuantityChange }: ReviewTileProps) {
   const { t, locale } = useFormat();
   const { colors } = useTheme();
   const name = localizedName(locale, row.nameEn, row.nameAr);
@@ -51,11 +44,11 @@ export function ReviewTile({
           : colors.textMuted;
 
   return (
-    <BentoColumn span={span}>
+    <View style={{ flex: 1, minWidth: 0, minHeight: 140 }}>
       <Tile
         tint={tint.name}
-        height={124}
-        style={{ padding: spacing.md }}
+        height={140}
+        style={{ padding: spacing.md, paddingBottom: 52 }}
         accessibilityLabel={t('mobile.review.tileLabel', {
           name,
           location: locationText,
@@ -88,14 +81,16 @@ export function ReviewTile({
         </View>
       </Tile>
 
-      <QuantityStepper
-        value={row.quantity}
-        onChange={onQuantityChange}
-        unit={unitLabel(t, row.unit)}
-        accessibilityLabel={name}
-        decrementLabel={t('mobile.common.decrease')}
-        incrementLabel={t('mobile.common.increase')}
-      />
-    </BentoColumn>
+      <View style={{ position: 'absolute', start: spacing.md, bottom: spacing.xs }}>
+        <QuantityStepper
+          value={row.quantity}
+          onChange={onQuantityChange}
+          unit={unitLabel(t, row.unit)}
+          accessibilityLabel={name}
+          decrementLabel={t('mobile.common.decrease')}
+          incrementLabel={t('mobile.common.increase')}
+        />
+      </View>
+    </View>
   );
 }
