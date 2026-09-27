@@ -7,6 +7,7 @@ import { useLocale } from '../lib/locale';
 export interface HeaderProps {
   title: string;
   onBack?: () => void;
+  /** One trailing control, such as F4's ghost "Retake" or a status badge. */
   trailing?: React.ReactNode;
   subtitle?: string;
 }
