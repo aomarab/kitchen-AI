@@ -60,4 +60,28 @@ describe('capture screen source contract (G3b)', () => {
     expect(source).toContain("direction: 'ltr'");
     expect(source).not.toMatch(/I18nManager|isRTL/);
   });
+
+  it('keeps CameraGate inside CaptureChrome so permission prompts cannot remove navigation', () => {
+    for (const file of ['PhotoCapture.tsx', 'BarcodeCapture.tsx']) {
+      const source = read('features', 'capture', file);
+      expect(source, `${file} should render the chrome`).toContain('<CaptureChrome');
+      expect(source, `${file} must not wrap the chrome in CameraGate`).not.toMatch(
+        /return\s*\(\s*<CameraGate[\s\S]*?<CaptureChrome/,
+      );
+    }
+  });
+
+  it('puts the measured media scrim behind inverse hint text', () => {
+    const source = read('features', 'capture', 'PhotoCapture.tsx');
+
+    expect(source).toContain('scrimGradient(scrim)');
+    expect(source.indexOf('renderHintScrim()')).toBeLessThan(source.indexOf('renderHint()'));
+  });
+
+  it('lets the top trailing slot grow for the Retake text pill', () => {
+    const source = read('features', 'capture', 'CaptureChrome.tsx');
+
+    expect(source).toContain('minWidth: 44');
+    expect(source).not.toContain('width: 44, alignItems');
+  });
 });

@@ -82,7 +82,7 @@ export function CaptureChrome({
               ]}
             />
           </View>
-          <View style={{ width: 44, alignItems: 'flex-end' }}>{trailing}</View>
+          <View style={{ minWidth: 44, alignItems: 'flex-end' }}>{trailing}</View>
         </View>
       </SafeAreaView>
 

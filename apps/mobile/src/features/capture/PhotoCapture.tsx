@@ -3,17 +3,19 @@ import {
   Image,
   Pressable,
   ScrollView,
+  StyleSheet,
   View,
   useWindowDimensions,
   type LayoutChangeEvent,
 } from 'react-native';
 import { CameraView } from 'expo-camera';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { MessageKey } from '@kitchen/i18n';
 import type { RecognizedItem } from '@kitchen/contracts';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { AppText, Button, Chip, Icon, RoundButton, Sheet } from '../../components';
-import { CameraGate } from './CameraGate';
+import { CameraGate, useCameraAccess } from './CameraGate';
 import { CaptureChrome, type CaptureMediaMethod } from './CaptureChrome';
 import { MamaBubble } from './MamaBubble';
 import { Shutter } from './Shutter';
@@ -46,6 +48,7 @@ import { useToastStore } from '../../stores/toast';
 import { useCaptureStore, type CaptureSource } from '../../stores/capture';
 import { maxPhotosFor } from './limits';
 import { radius, spacing } from '../../theme';
+import { scrimGradient } from '../../theme/scrim';
 import { useTheme } from '../../theme/useTheme';
 
 interface PhotoCaptureProps {
@@ -76,7 +79,7 @@ function safeSize(size: ViewSize | null): size is ViewSize {
  */
 export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCaptureProps) {
   const { t, locale, dir, prefs } = useFormat();
-  const { colors } = useTheme();
+  const { colors, scrim } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const setSession = useCaptureStore((state) => state.setSession);
@@ -85,6 +88,8 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
   const resetCapture = useCaptureStore((state) => state.reset);
   const toast = useToastStore((state) => state.show);
   const cameraRef = useRef<CameraView>(null);
+  const [cameraPermission, requestCameraPermission] = useCameraAccess();
+  const cameraGranted = !!cameraPermission?.granted;
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [torch, setTorch] = useState(false);
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
@@ -161,7 +166,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
     });
 
   const takePhoto = async () => {
-    if (atLimit || flow === 'result') return;
+    if (!cameraGranted || atLimit || flow === 'result') return;
     setCaptureError(false);
     try {
       const shot = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
@@ -360,8 +365,14 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
 
   const renderLiveCamera = () => (
     <View style={{ flex: 1 }} onLayout={(event) => setMediaSize(sizeFrom(event))}>
-      <CameraView ref={cameraRef} style={{ flex: 1 }} facing={facing} enableTorch={torch} />
-      {renderGuide()}
+      <CameraGate
+        permission={cameraPermission}
+        requestPermission={requestCameraPermission}
+        promptStyle={{ paddingTop: topHeight, paddingBottom: bottomHeight }}
+      >
+        <CameraView ref={cameraRef} style={{ flex: 1 }} facing={facing} enableTorch={torch} />
+        {renderGuide()}
+      </CameraGate>
     </View>
   );
 
@@ -447,8 +458,19 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
     return renderLiveCamera();
   };
 
+  const renderHintScrim = () => {
+    if ((flow !== 'framing' || !cameraGranted) && flow !== 'result') return null;
+    return (
+      <LinearGradient
+        pointerEvents="none"
+        {...scrimGradient(scrim)}
+        style={StyleSheet.absoluteFill}
+      />
+    );
+  };
+
   const renderHint = () => {
-    if (flow !== 'framing') return null;
+    if (flow !== 'framing' || !cameraGranted) return null;
     return (
       <View
         pointerEvents="none"
@@ -648,7 +670,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
         fullWidth={false}
         onPress={retake}
       />
-    ) : (
+    ) : cameraGranted ? (
       <RoundButton
         icon="flash"
         size={40}
@@ -657,7 +679,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
         accessibilityState={{ checked: torch }}
         onPress={() => setTorch((value) => !value)}
       />
-    );
+    ) : null;
 
   const bottom = (
     <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, gap: spacing.xs }}>
@@ -690,7 +712,13 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
           count={photos.length}
           accessibilityLabel={t('mobile.capture.shutter')}
           countAccessibilityLabel={t('mobile.capture.openTray', { count: photos.length })}
-          disabled={atLimit || flow === 'result' || flow === 'looking' || flow === 'nothingFound'}
+          disabled={
+            !cameraGranted ||
+            atLimit ||
+            flow === 'result' ||
+            flow === 'looking' ||
+            flow === 'nothingFound'
+          }
           onPress={() => void takePhoto()}
           onOpenTray={() => setTrayOpen(true)}
         />
@@ -699,7 +727,9 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
           size={40}
           tone="media"
           accessibilityLabel={t('mobile.capture.flip')}
-          disabled={flow === 'result' || flow === 'looking' || flow === 'nothingFound'}
+          disabled={
+            !cameraGranted || flow === 'result' || flow === 'looking' || flow === 'nothingFound'
+          }
           onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))}
         />
       </View>
@@ -712,22 +742,21 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
   );
 
   return (
-    <CameraGate>
-      <CaptureChrome
-        method={method}
-        onMethodChange={onMethodChange}
-        onClose={onClose}
-        trailing={trailing}
-        bottom={bottom}
-        onTopLayout={setTopHeight}
-        onBottomLayout={setBottomHeight}
-      >
-        {renderMedia()}
-        {renderHint()}
-        {renderTray()}
-        {renderBubble()}
-        {renderPhotoTray()}
-      </CaptureChrome>
-    </CameraGate>
+    <CaptureChrome
+      method={method}
+      onMethodChange={onMethodChange}
+      onClose={onClose}
+      trailing={trailing}
+      bottom={bottom}
+      onTopLayout={setTopHeight}
+      onBottomLayout={setBottomHeight}
+    >
+      {renderMedia()}
+      {renderHintScrim()}
+      {renderHint()}
+      {renderTray()}
+      {renderBubble()}
+      {renderPhotoTray()}
+    </CaptureChrome>
   );
 }

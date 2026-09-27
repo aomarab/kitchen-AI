@@ -4,7 +4,7 @@ import { CameraView, type BarcodeScanningResult } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import type { RouteResponse, Unit } from '@kitchen/contracts';
 import { AppText, Badge, Button, Card, Chip, Field, QuantityStepper } from '../../components';
-import { CameraGate } from './CameraGate';
+import { CameraGate, useCameraAccess } from './CameraGate';
 import { CaptureChrome, type CaptureMediaMethod } from './CaptureChrome';
 import { useFormat } from '../../hooks/useFormat';
 import { useBarcodeLookup } from '../../hooks/capture';
@@ -28,6 +28,9 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const router = useRouter();
+  const [cameraPermission, requestCameraPermission] = useCameraAccess();
+  const [topHeight, setTopHeight] = useState(0);
+  const [bottomHeight, setBottomHeight] = useState(0);
   const [manual, setManual] = useState('');
   const [result, setResult] = useState<Lookup | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -132,14 +135,20 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
   );
 
   return (
-    <CameraGate>
-      <CaptureChrome
-        method={method}
-        onMethodChange={onMethodChange}
-        onClose={onClose}
-        bottom={bottom}
-      >
-        <View style={{ flex: 1 }}>
+    <CaptureChrome
+      method={method}
+      onMethodChange={onMethodChange}
+      onClose={onClose}
+      bottom={bottom}
+      onTopLayout={setTopHeight}
+      onBottomLayout={setBottomHeight}
+    >
+      <View style={{ flex: 1 }}>
+        <CameraGate
+          permission={cameraPermission}
+          requestPermission={requestCameraPermission}
+          promptStyle={{ paddingTop: topHeight, paddingBottom: bottomHeight }}
+        >
           <CameraView
             style={{ flex: 1 }}
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_e', 'code128', 'qr'] }}
@@ -159,8 +168,8 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
               opacity: 0.8,
             }}
           />
-        </View>
-      </CaptureChrome>
-    </CameraGate>
+        </CameraGate>
+      </View>
+    </CaptureChrome>
   );
 }
