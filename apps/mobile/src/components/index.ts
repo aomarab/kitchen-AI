@@ -18,6 +18,7 @@ export type { IconName } from './Icon';
 export { ListRow } from './ListRow';
 export { OAuthButtons } from './OAuthButtons';
 export { OfflineBanner } from './OfflineBanner';
+export { OrbMascot } from './OrbMascot';
 export { SyncFailuresBanner } from './SyncFailuresBanner';
 export { YoutubePlayer } from './YoutubePlayer';
 export { QuantityStepper } from './QuantityStepper';
