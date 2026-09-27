@@ -9,10 +9,13 @@ import {
   LOW_CONFIDENCE,
   buildBarcodeInput,
   buildInventoryInputs,
+  canAddAll,
   includedCount,
   initialReviewRows,
   isLowConfidence,
+  photoForItem,
   pickLocationForType,
+  zipPhotos,
 } from '../lib/capture';
 
 function recognized(overrides: Partial<RecognizedItem> = {}): RecognizedItem {
@@ -211,5 +214,70 @@ describe('buildBarcodeInput', () => {
     expect(buildBarcodeInput({ ...found, found: false }, options)).toBeNull();
     expect(buildBarcodeInput({ ...found, productName: null }, options)).toBeNull();
     expect(buildBarcodeInput(found, { ...options, locationId: '' })).toBeNull();
+  });
+});
+
+describe('photo mapping', () => {
+  const local = (uri: string, width = 640, height = 480) => ({ uri, width, height });
+
+  it('zips local photos to uploaded keys by index', () => {
+    expect(zipPhotos([local('file://a.jpg'), local('file://b.jpg')], ['key-a', 'key-b'])).toEqual([
+      { uri: 'file://a.jpg', width: 640, height: 480, photoKey: 'key-a' },
+      { uri: 'file://b.jpg', width: 640, height: 480, photoKey: 'key-b' },
+    ]);
+  });
+
+  it('returns no mapping when the key count does not match the photo count', () => {
+    expect(zipPhotos([local('file://a.jpg'), local('file://b.jpg')], ['key-a'])).toEqual([]);
+  });
+
+  it('finds the photo for an item key only when the mapped dimensions are known', () => {
+    const photos = zipPhotos([local('file://a.jpg'), local('file://b.jpg')], ['key-a', 'key-b']);
+
+    expect(photoForItem(photos, recognized({ photoKey: 'key-b' }))).toEqual(photos[1]);
+    expect(photoForItem(photos, recognized({ photoKey: null }))).toBeNull();
+    expect(photoForItem(photos, recognized({ photoKey: 'missing' }))).toBeNull();
+  });
+
+  it('keeps unknown-dimension photos in the mapping but refuses to pin them', () => {
+    const [zero, infinite] = zipPhotos(
+      [local('file://zero.jpg', 0, 480), local('file://infinite.jpg', 640, Infinity)],
+      ['zero', 'infinite'],
+    );
+
+    expect(zero).toEqual({ uri: 'file://zero.jpg', width: 0, height: 480, photoKey: 'zero' });
+    expect(photoForItem([zero!], recognized({ photoKey: 'zero' }))).toBeNull();
+    expect(photoForItem([infinite!], recognized({ photoKey: 'infinite' }))).toBeNull();
+  });
+});
+
+describe('canAddAll', () => {
+  it('is false with any unsure item', () => {
+    expect(
+      canAddAll(
+        session([recognized(), recognized({ tempId: 'tmp-2', confidence: LOW_CONFIDENCE - 0.01 })]),
+        LOCATIONS,
+      ),
+    ).toBe(false);
+  });
+
+  it('is false while locations are unloaded or unavailable', () => {
+    expect(canAddAll(session([recognized()]), [])).toBe(false);
+  });
+
+  it('is true only when every item is confident and resolves to an inventory input', () => {
+    expect(
+      canAddAll(
+        session([
+          recognized({ tempId: 'tmp-1', suggestedLocationType: 'fridge' }),
+          recognized({ tempId: 'tmp-2', suggestedLocationType: 'pantry' }),
+        ]),
+        LOCATIONS,
+      ),
+    ).toBe(true);
+  });
+
+  it('is false for an empty session', () => {
+    expect(canAddAll(session([]), LOCATIONS)).toBe(false);
   });
 });

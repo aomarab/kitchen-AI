@@ -14,6 +14,7 @@ import { api } from '../../lib/api';
 import { expoPhotoUploader } from '../../lib/photo-uploader';
 import { uploadPhotos } from '../../lib/upload';
 import { captureErrorKey } from '../../lib/capture-error';
+import { zipPhotos, type LocalPhoto } from '../../lib/capture';
 import { resizeForUpload } from '../../lib/image';
 import { useCaptureStore, type CaptureSource } from '../../stores/capture';
 import { maxPhotosFor } from './limits';
@@ -33,7 +34,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
   const setSession = useCaptureStore((state) => state.setSession);
   const cameraRef = useRef<CameraView>(null);
   const [facing, setFacing] = useState<'back' | 'front'>('back');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [captureError, setCaptureError] = useState(false);
   const maxPhotos = maxPhotosFor(mode);
   const atLimit = photos.length >= maxPhotos;
@@ -67,8 +68,8 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
     });
   }, [job.data, mode, router, setSession]);
 
-  const addPhoto = (uri: string) =>
-    setPhotos((prev) => (prev.length >= maxPhotos ? prev : [...prev, uri]));
+  const addPhoto = (photo: LocalPhoto) =>
+    setPhotos((prev) => (prev.length >= maxPhotos ? prev : [...prev, photo]));
 
   const takePhoto = async () => {
     if (atLimit) return;
@@ -109,11 +110,11 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
     }
   };
 
-  const removePhoto = (uri: string) => setPhotos((prev) => prev.filter((item) => item !== uri));
+  const removePhoto = (uri: string) => setPhotos((prev) => prev.filter((item) => item.uri !== uri));
 
   const uploadKeys = () =>
     uploadPhotos(
-      photos,
+      photos.map((photo) => photo.uri),
       (contentLength) =>
         presign.mutateAsync({
           contentType: 'image/jpeg',
@@ -135,7 +136,7 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
         return;
       }
       const session = await recognize.mutateAsync({ photoKeys: keys });
-      setSession(session, 'photo');
+      setSession(session, 'photo', zipPhotos(photos, keys));
       router.replace('/capture/review');
     } catch (error) {
       // Only `uploadPhotos` can fail to send bytes. Everything after it —
@@ -210,17 +211,17 @@ export function PhotoCapture({ mode }: { mode: CaptureSource }) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: spacing.sm, padding: spacing.lg }}
           >
-            {photos.map((uri) => (
-              <View key={uri}>
+            {photos.map((photo) => (
+              <View key={photo.uri}>
                 <Image
-                  source={{ uri }}
+                  source={{ uri: photo.uri }}
                   style={{ width: 64, height: 64, borderRadius: radius.md }}
                 />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('mobile.capture.removePhoto')}
                   hitSlop={12}
-                  onPress={() => removePhoto(uri)}
+                  onPress={() => removePhoto(photo.uri)}
                   style={{
                     position: 'absolute',
                     top: -6,

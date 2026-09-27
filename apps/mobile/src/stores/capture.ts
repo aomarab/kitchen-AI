@@ -1,12 +1,18 @@
 import { create } from 'zustand';
 import type { RecognitionSession } from '@kitchen/contracts';
+import type { CapturedPhoto } from '../lib/capture';
 
 export type CaptureSource = 'photo' | 'receipt';
 
-interface CaptureState {
+export interface CaptureState {
   session: RecognitionSession | null;
   source: CaptureSource;
-  setSession: (session: RecognitionSession, source: CaptureSource) => void;
+  photos: CapturedPhoto[];
+  setSession: (
+    session: RecognitionSession,
+    source: CaptureSource,
+    photos?: CapturedPhoto[],
+  ) => void;
   reset: () => void;
 }
 
@@ -18,6 +24,7 @@ interface CaptureState {
 export const useCaptureStore = create<CaptureState>((set) => ({
   session: null,
   source: 'photo',
-  setSession: (session, source) => set({ session, source }),
-  reset: () => set({ session: null }),
+  photos: [],
+  setSession: (session, source, photos = []) => set({ session, source, photos }),
+  reset: () => set({ session: null, photos: [] }),
 }));

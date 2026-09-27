@@ -36,8 +36,42 @@ export interface ReviewRow {
   include: boolean;
 }
 
+export interface LocalPhoto {
+  uri: string;
+  width: number;
+  height: number;
+}
+
+export interface CapturedPhoto extends LocalPhoto {
+  photoKey: string;
+}
+
 export function isLowConfidence(confidence: number): boolean {
   return confidence < LOW_CONFIDENCE;
+}
+
+function hasKnownDimensions(photo: LocalPhoto): boolean {
+  return (
+    Number.isFinite(photo.width) &&
+    photo.width > 0 &&
+    Number.isFinite(photo.height) &&
+    photo.height > 0
+  );
+}
+
+export function zipPhotos(locals: readonly LocalPhoto[], keys: readonly string[]): CapturedPhoto[] {
+  if (locals.length !== keys.length) return [];
+  return locals.map((photo, index) => ({ ...photo, photoKey: keys[index]! }));
+}
+
+export function photoForItem(
+  photos: readonly CapturedPhoto[],
+  item: { photoKey?: string | null },
+): CapturedPhoto | null {
+  if (!item.photoKey) return null;
+  const photo = photos.find((candidate) => candidate.photoKey === item.photoKey);
+  if (!photo || !hasKnownDimensions(photo)) return null;
+  return photo;
 }
 
 /** Resolve the storage location whose type matches, else the first location. */
@@ -97,6 +131,18 @@ export function buildInventoryInputs(
       confidence: row.confidence,
       photoKey: row.photoKey,
     }));
+}
+
+export function canAddAll(
+  session: RecognitionSession,
+  locations: readonly StorageLocation[],
+): boolean {
+  if (session.items.length === 0) return false;
+  if (!session.items.every((item) => item.confidence >= LOW_CONFIDENCE)) return false;
+  return (
+    buildInventoryInputs(initialReviewRows(session, locations), 'photo').length ===
+    session.items.length
+  );
 }
 
 export function includedCount(rows: readonly ReviewRow[]): number {

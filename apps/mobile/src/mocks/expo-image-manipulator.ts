@@ -16,7 +16,7 @@ export const manipulateAsync = async (
   _uri: string,
   actions: unknown[],
   _options?: unknown,
-): Promise<{ uri: string }> => {
+): Promise<{ uri: string; width: number; height: number }> => {
   lastManipulatorActions = actions;
-  return { uri: _uri };
+  return { uri: _uri, width: 111, height: 222 };
 };

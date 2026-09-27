@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError, NetworkError, TimeoutError } from '@kitchen/api-client';
-import { captureErrorKey } from './capture-error';
+import { captureErrorKey, isNothingFound } from './capture-error';
 import { PhotoUploadError } from './upload';
 
 const apiError = (code: string, messageKey: string, status = 400) =>
@@ -40,5 +40,17 @@ describe('captureErrorKey', () => {
 
   it('falls back to a generic message for anything unrecognised', () => {
     expect(captureErrorKey(new Error('boom'))).toBe('errors.INTERNAL_ERROR');
+  });
+});
+
+describe('isNothingFound', () => {
+  it('is true only for the API no-result error', () => {
+    expect(isNothingFound(apiError('AI_NO_RESULT', 'errors.AI_NO_RESULT'))).toBe(true);
+    expect(isNothingFound(new PhotoUploadError('unreadable', 'file:///a.jpg'))).toBe(false);
+    expect(
+      isNothingFound(apiError('INSUFFICIENT_CREDITS', 'errors.INSUFFICIENT_CREDITS', 402)),
+    ).toBe(false);
+    expect(isNothingFound(new Error('boom'))).toBe(false);
+    expect(isNothingFound(null)).toBe(false);
   });
 });
