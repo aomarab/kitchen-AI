@@ -4,6 +4,7 @@ import {
   applyIngredient,
   expiryPhrase,
   focusIndex,
+  hasValidIngredientSelection,
   needsAnswer,
   newReviewRow,
   reviewHeadlineCount,
@@ -101,6 +102,15 @@ describe('applyIngredient', () => {
     const blank = newReviewRow(LOCATIONS);
 
     expect(applyIngredient(blank, OIL, { unitTouched: true }).unit).toBe('ml');
+  });
+});
+
+describe('ingredient picker selection validity', () => {
+  it('requires the field to still match the chosen suggestion label', () => {
+    expect(hasValidIngredientSelection('Olive oil', 'Olive oil')).toBe(true);
+    expect(hasValidIngredientSelection('  Olive oil  ', 'Olive oil')).toBe(true);
+    expect(hasValidIngredientSelection('Banana', 'Olive oil')).toBe(false);
+    expect(hasValidIngredientSelection('Olive oil', null)).toBe(false);
   });
 });
 

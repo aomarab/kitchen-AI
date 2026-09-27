@@ -16,7 +16,7 @@ import {
 import { useFormat } from '../../hooks/useFormat';
 import { useSearchIngredients } from '../../hooks/profile';
 import type { ReviewRow } from '../../lib/capture';
-import { applyIngredient, isNewReviewRow } from '../../lib/review';
+import { applyIngredient, hasValidIngredientSelection, isNewReviewRow } from '../../lib/review';
 import { ingredientName, localizedName, locationLabel, unitLabel } from '../../lib/format';
 import { COMMON_UNITS } from '../../lib/units';
 import { radius, spacing } from '../../theme';
@@ -83,12 +83,15 @@ export function ReviewEditSheet({
   const nameRef = useRef<TextInput>(null);
   const [draft, setDraft] = useState<ReviewRow | null>(row);
   const [term, setTerm] = useState('');
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [unitTouched, setUnitTouched] = useState(false);
   const search = useSearchIngredients(term);
 
   useEffect(() => {
     setDraft(row);
-    setTerm(row ? localizedName(locale, row.nameEn, row.nameAr) : '');
+    const label = row ? localizedName(locale, row.nameEn, row.nameAr) : '';
+    setTerm(label);
+    setSelectedLabel(row && !isNewReviewRow(row) ? label : null);
     setUnitTouched(false);
   }, [locale, row]);
 
@@ -103,9 +106,16 @@ export function ReviewEditSheet({
     setDraft((current) => {
       if (!current) return current;
       const next = applyIngredient(current, ingredient, { unitTouched });
-      setTerm(ingredientName(locale, ingredient));
+      const label = ingredientName(locale, ingredient);
+      setTerm(label);
+      setSelectedLabel(label);
       return next;
     });
+  };
+
+  const changeTerm = (text: string) => {
+    setTerm(text);
+    if (!hasValidIngredientSelection(text, selectedLabel)) setSelectedLabel(null);
   };
 
   const setUnit = (unit: Unit) => {
@@ -114,7 +124,7 @@ export function ReviewEditSheet({
   };
 
   const suggestions = (search.data?.items ?? []).slice(0, 5);
-  const saveDisabled = isNewReviewRow(draft) || draft.locationId === '';
+  const saveDisabled = draft.locationId === '' || !hasValidIngredientSelection(term, selectedLabel);
 
   const form = (
     <View style={{ gap: spacing.md }}>
@@ -128,7 +138,7 @@ export function ReviewEditSheet({
         ref={nameRef}
         label={t('mobile.capture.searchIngredient')}
         value={term}
-        onChangeText={setTerm}
+        onChangeText={changeTerm}
         placeholder={t('mobile.capture.searchIngredient')}
         autoCorrect={false}
         autoFocus={focusName}

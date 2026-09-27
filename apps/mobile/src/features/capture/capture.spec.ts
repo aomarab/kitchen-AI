@@ -153,4 +153,12 @@ describe('review screen source contract (G4)', () => {
     expect(source).toContain('export function ReviewFooter');
     expect(source).not.toContain("t('mobile.review.hint')");
   });
+
+  it('uses the shared Bento primitive instead of forking bento layout', () => {
+    const source = read('features', 'capture', 'ReviewList.tsx');
+
+    expect(source).toContain('<Bento');
+    expect(source).not.toContain('bentoRows');
+    expect(source).not.toContain("from '../../components/tile-layout'");
+  });
 });

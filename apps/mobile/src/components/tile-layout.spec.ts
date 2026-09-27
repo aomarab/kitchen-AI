@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BENTO_GUTTER, bentoRows } from './tile-layout';
 
@@ -31,5 +33,12 @@ describe('bento grid (spec §6.7)', () => {
 
   it('lays out nothing for no tiles', () => {
     expect(bentoRows([])).toEqual([]);
+  });
+
+  it('keeps row-layout callbacks inside the shared Bento primitive', () => {
+    const source = readFileSync(join(__dirname, 'Tile.tsx'), 'utf8');
+
+    expect(source).toContain('onRowLayout?:');
+    expect(source).toContain('onRowLayout?.(row.indices, event.nativeEvent.layout.y)');
   });
 });

@@ -27,6 +27,10 @@ export function isNewReviewRow(row: ReviewRow): boolean {
   return !row.ingredientId && row.nameEn === '' && row.nameAr === '' && row.rawName === '';
 }
 
+export function hasValidIngredientSelection(term: string, selectedLabel: string | null): boolean {
+  return !!selectedLabel && term.trim() === selectedLabel.trim();
+}
+
 export function applyIngredient(
   row: ReviewRow,
   ingredient: Ingredient,

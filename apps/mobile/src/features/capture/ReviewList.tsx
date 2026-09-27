@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Pressable, View } from 'react-native';
 import type {
   InventoryItemInput,
@@ -6,8 +6,8 @@ import type {
   RecognitionSession,
   StorageLocation,
 } from '@kitchen/contracts';
-import { AppText, Button, Icon } from '../../components';
-import { BENTO_GUTTER, bentoRows } from '../../components/tile-layout';
+import { AppText, Bento, Button, Icon } from '../../components';
+import type { TileSpan } from '../../components/Tile';
 import { useFormat } from '../../hooks/useFormat';
 import { buildInventoryInputs, initialReviewRows, type ReviewRow } from '../../lib/capture';
 import {
@@ -149,7 +149,7 @@ export function useReviewListState({
   };
 }
 
-function ReviewAddTile({ onPress }: { onPress: () => void }) {
+function ReviewAddTile({ onPress }: { onPress: () => void; span?: TileSpan }) {
   const { t } = useFormat();
   const { colors } = useTheme();
   return (
@@ -191,33 +191,17 @@ function ReviewBento({
   tiles: TileDescriptor[];
   onTileLayout?: (tempId: string, index: number, y: number) => void;
 }) {
-  const rows = bentoRows(tiles.map(() => 1));
-  const bentoY = useRef(0);
   return (
-    <View
-      onLayout={(event) => {
-        bentoY.current = event.nativeEvent.layout.y;
+    <Bento
+      onRowLayout={(indices, y) => {
+        for (const index of indices) {
+          const tile = tiles[index];
+          if (tile?.tempId) onTileLayout?.(tile.tempId, index, y);
+        }
       }}
-      style={{ gap: BENTO_GUTTER }}
     >
-      {rows.map((row) => (
-        <View
-          key={row.indices.join('-')}
-          onLayout={(event) => {
-            for (const index of row.indices) {
-              const tile = tiles[index];
-              if (tile?.tempId) {
-                onTileLayout?.(tile.tempId, index, bentoY.current + event.nativeEvent.layout.y);
-              }
-            }
-          }}
-          style={{ flexDirection: 'row', gap: BENTO_GUTTER }}
-        >
-          {row.indices.map((index) => tiles[index]?.element)}
-          {row.filler ? <View style={{ flex: 1 }} /> : null}
-        </View>
-      ))}
-    </View>
+      {tiles.map((tile) => tile.element)}
+    </Bento>
   );
 }
 
@@ -288,6 +272,7 @@ export function ReviewList({
     const element = shouldAsk ? (
       <QuestionTile
         key={row.tempId}
+        span={1}
         name={name}
         onYes={() => review.answerYes(row)}
         onNo={() => review.openEdit(row, { focusName: true })}
@@ -295,6 +280,7 @@ export function ReviewList({
     ) : (
       <ReviewTile
         key={row.tempId}
+        span={1}
         row={row}
         tint={tintIn(index)}
         location={locations.find((location) => location.id === row.locationId)}
@@ -307,7 +293,7 @@ export function ReviewList({
 
   tiles.push({
     key: 'add-something',
-    element: <ReviewAddTile key="add-something" onPress={review.openAdd} />,
+    element: <ReviewAddTile key="add-something" span={1} onPress={review.openAdd} />,
   });
 
   return (

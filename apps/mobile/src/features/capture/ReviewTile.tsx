@@ -1,14 +1,16 @@
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import type { StorageLocation } from '@kitchen/contracts';
-import { AppText, Chip, FoodIcon, QuantityStepper } from '../../components';
+import { AppText, BentoColumn, Chip, FoodIcon, QuantityStepper, Tile } from '../../components';
+import type { TileSpan } from '../../components/Tile';
 import { useFormat } from '../../hooks/useFormat';
 import type { ReviewRow } from '../../lib/capture';
 import { expiryPhrase } from '../../lib/review';
 import { localizedName, locationLabel, unitLabel } from '../../lib/format';
-import { radius, spacing, type Tint } from '../../theme';
+import { spacing, type Tint } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 export interface ReviewTileProps {
+  span?: TileSpan;
   row: ReviewRow;
   tint: Tint;
   location: StorageLocation | undefined;
@@ -24,9 +26,16 @@ function phraseLabel(
 }
 
 /** A bento review tile whose body and quantity stepper are separate accessibility elements. */
-export function ReviewTile({ row, tint, location, onPress, onQuantityChange }: ReviewTileProps) {
+export function ReviewTile({
+  span,
+  row,
+  tint,
+  location,
+  onPress,
+  onQuantityChange,
+}: ReviewTileProps) {
   const { t, locale } = useFormat();
-  const { colors, isDark, shadow } = useTheme();
+  const { colors } = useTheme();
   const name = localizedName(locale, row.nameEn, row.nameAr);
   const fallbackLocation = t('mobile.capture.selectLocation');
   const locationText = location ? locationLabel(t, location) : fallbackLocation;
@@ -42,33 +51,18 @@ export function ReviewTile({ row, tint, location, onPress, onQuantityChange }: R
           : colors.textMuted;
 
   return (
-    <View
-      style={{
-        flex: 1,
-        minHeight: 140,
-        borderRadius: radius.xl,
-        borderWidth: 1,
-        borderColor: isDark ? colors.border : tint.bg,
-        backgroundColor: tint.bg,
-        padding: spacing.md,
-        gap: spacing.sm,
-        ...(isDark ? null : shadow.card),
-      }}
-    >
-      <Pressable
-        accessibilityRole="button"
+    <BentoColumn span={span}>
+      <Tile
+        tint={tint.name}
+        height={124}
+        style={{ padding: spacing.md }}
         accessibilityLabel={t('mobile.review.tileLabel', {
           name,
           location: locationText,
           expiry: expiryText,
         })}
         onPress={onPress}
-        style={({ pressed }) => [
-          { flex: 1, gap: spacing.xs, opacity: pressed ? 0.92 : 1 },
-          { transform: [{ scale: pressed ? 0.98 : 1 }] },
-        ]}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+        leading={
           <View
             style={{
               width: 40,
@@ -81,18 +75,18 @@ export function ReviewTile({ row, tint, location, onPress, onQuantityChange }: R
           >
             <FoodIcon item={row} size={32} />
           </View>
-          <View style={{ flex: 1 }} />
-          <Chip label={locationText} variant="tag" />
+        }
+        corner={<Chip label={locationText} variant="tag" />}
+      >
+        <View style={{ gap: 2 }}>
+          <AppText variant="bodyStrong" numberOfLines={2}>
+            {name}
+          </AppText>
+          <AppText variant="caption" style={{ color: expiryColor }}>
+            {expiryText}
+          </AppText>
         </View>
-
-        <View style={{ flex: 1 }} />
-        <AppText variant="bodyStrong" numberOfLines={2}>
-          {name}
-        </AppText>
-        <AppText variant="caption" style={{ color: expiryColor }}>
-          {expiryText}
-        </AppText>
-      </Pressable>
+      </Tile>
 
       <QuantityStepper
         value={row.quantity}
@@ -102,6 +96,6 @@ export function ReviewTile({ row, tint, location, onPress, onQuantityChange }: R
         decrementLabel={t('mobile.common.decrease')}
         incrementLabel={t('mobile.common.increase')}
       />
-    </View>
+    </BentoColumn>
   );
 }

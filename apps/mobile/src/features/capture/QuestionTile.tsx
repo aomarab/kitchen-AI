@@ -1,10 +1,12 @@
 import { Pressable, View } from 'react-native';
 import { AppText, OrbMascot } from '../../components';
+import type { TileSpan } from '../../components/Tile';
 import { useFormat } from '../../hooks/useFormat';
 import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 export interface QuestionTileProps {
+  span?: TileSpan;
   name: string;
   onYes: () => void;
   onNo: () => void;

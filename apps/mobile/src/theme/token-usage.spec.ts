@@ -62,7 +62,6 @@ describe('mobile source sweep', () => {
       pattern: /minHeight:\s*(\d+)/,
     },
     'ReviewList.tsx': { path: 'features/capture/ReviewList.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'ReviewTile.tsx': { path: 'features/capture/ReviewTile.tsx', pattern: /minHeight:\s*(\d+)/ },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {

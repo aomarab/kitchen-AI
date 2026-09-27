@@ -210,13 +210,15 @@ export function Tile({
 
 export interface BentoProps {
   children: ReactNode;
+  /** Reports the y-position of each packed row to screens that need focus scrolling. */
+  onRowLayout?: (indices: readonly number[], y: number) => void;
 }
 
 /**
  * Lays tiles and columns out on the two-column grid (spec §6.7). Each child's
  * `span` decides whether it takes a row or half of one.
  */
-export function Bento({ children }: BentoProps) {
+export function Bento({ children, onRowLayout }: BentoProps) {
   const items = Children.toArray(children).filter(isValidElement) as ReactElement<{
     span?: TileSpan;
   }>[];
@@ -225,7 +227,11 @@ export function Bento({ children }: BentoProps) {
     <InBento.Provider value>
       <View style={{ gap: BENTO_GUTTER }}>
         {rows.map((row) => (
-          <View key={row.indices.join('-')} style={{ flexDirection: 'row', gap: BENTO_GUTTER }}>
+          <View
+            key={row.indices.join('-')}
+            onLayout={(event) => onRowLayout?.(row.indices, event.nativeEvent.layout.y)}
+            style={{ flexDirection: 'row', gap: BENTO_GUTTER }}
+          >
             {row.indices.map((index) => items[index])}
             {row.filler ? <View style={{ flex: 1 }} /> : null}
           </View>
