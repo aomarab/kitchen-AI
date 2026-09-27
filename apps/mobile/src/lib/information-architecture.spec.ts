@@ -137,4 +137,35 @@ describe('information architecture (spec §4)', () => {
     expect(kitchen).not.toContain("edges={['top']}");
     expect(kitchen).toContain("edges={['top', 'left', 'right']}");
   });
+
+  it('keeps the redesigned Home tab inside the G1 screen scope', () => {
+    const home = read('app', '(tabs)', 'home.tsx');
+
+    expect(home).not.toContain('bell');
+    expect(home).not.toContain('StatTiles');
+    expect(home).not.toContain('KitchenGlance');
+    expect(existsSync(join(SRC, 'features', 'home', 'StatTiles.tsx'))).toBe(false);
+    expect(existsSync(join(SRC, 'features', 'home', 'KitchenGlance.tsx'))).toBe(false);
+
+    for (const route of [
+      '/recipe/',
+      '/cook',
+      '/kitchen',
+      '/assistant',
+      '/buy-credits',
+      '/capture?method=receipt',
+      '/generate-plan',
+      '/plans',
+    ]) {
+      expect(home, `Home no longer routes to ${route}`).toContain(route);
+    }
+  });
+
+  it('mirrors only the Home arrow affordance, not the media play glyph', () => {
+    const home = read('app', '(tabs)', 'home.tsx');
+    expect(home).toContain('<RoundButton');
+    expect(home).toContain('icon="play"');
+    expect(home).not.toContain('<DirectionalIcon name="play"');
+    expect(home).toContain('<DirectionalIcon name="arrowForward"');
+  });
 });

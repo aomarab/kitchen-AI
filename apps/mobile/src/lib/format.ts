@@ -122,6 +122,11 @@ export function formatDateL(
   return formatDate(locale, iso, options);
 }
 
+/** Weekday only, through the shared locale date formatter. */
+export function formatWeekday(locale: Locale, iso: string | Date): string {
+  return formatDateL(locale, iso, { weekday: 'long' });
+}
+
 /** Gregorian date, plus the Hijri date in Arabic when the user opts in. */
 export function formatDateWithHijri(
   locale: Locale,

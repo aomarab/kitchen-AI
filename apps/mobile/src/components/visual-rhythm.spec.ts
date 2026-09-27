@@ -92,18 +92,42 @@ describe('screen rhythm', () => {
 describe('home screen palette', () => {
   const source = read('../app/(tabs)/home.tsx');
 
-  it('paints the week progress in the brand colour, not the lone accent blue', () => {
+  it('paints the sage plan tile progress in the brand colour, not the herb accent', () => {
     expect(source).not.toMatch(/backgroundColor:\s*colors\.accent/);
     expect(source).toMatch(/backgroundColor:\s*colors\.primary/);
-    // Guards the premise: accent really is a different hue, so painting one
-    // bar with it stranded a blue element on an otherwise violet screen.
+    // Guards the premise: accent really is a different hue, so painting this
+    // progress bar with it would strand one herb-green metric on a coral screen.
     expect(colors.accent).not.toBe(colors.primary);
   });
 
-  it('does not mark the quick-add actions with a drill-down chevron', () => {
-    // Photo, barcode and receipt open a capture flow; they do not push a
-    // detail page. A disclosure indicator on an action row is the iOS
-    // convention for "there is more underneath", which there is not.
+  it('does not mark the Home action tiles with a drill-down chevron', () => {
+    // Scan receipt and plan week are actions, not detail pages. A disclosure
+    // indicator says "there is more underneath", which there is not.
     expect(source).not.toMatch(/showChevron/);
+  });
+});
+
+describe('G1 primitive extensions', () => {
+  it('lets Tile replace the icon with a leading slot, fall back to ember and expose actions', () => {
+    const source = read('./Tile.tsx');
+    expect(source).toContain('leading?: ReactNode');
+    expect(source).toContain('accessibilityActions');
+    expect(source).toContain('onAccessibilityAction');
+    expect(source).toContain('photo && !image');
+    expect(source).toContain('gradientHero');
+  });
+
+  it('renders TabHeader accent text as primaryText in the same display line', () => {
+    const source = read('./TabHeader.tsx');
+    expect(source).toContain('titleAccent?: string');
+    expect(source).toContain('color="primaryText"');
+    expect(source).toContain('variant="display"');
+  });
+
+  it('keeps a 48pt RoundButton target for the Tonight play control', () => {
+    const source = read('./RoundButton.tsx');
+    expect(source).toContain('36 | 40 | 44 | 48');
+    expect(source).toContain('const targetSize = size === 48 ? 48 : 44');
+    expect(source).toContain('size === 48 ? { width: targetSize, height: targetSize } : null');
   });
 });

@@ -5,6 +5,7 @@ import { errorMessageKey } from '../lib/errors';
 import { unitSchema, storageLocationTypeSchema, type Unit } from '@kitchen/contracts';
 import {
   formatExpiryLabel,
+  formatWeekday,
   ingredientName,
   itemName,
   localizedName,
@@ -53,6 +54,13 @@ describe('formatExpiryLabel', () => {
     const ar = createTranslator('ar');
     const label = formatExpiryLabel(ar, 'ar', '2026-07-29', { easternNumerals: true }, NOW);
     expect(label).toContain('٣');
+  });
+});
+
+describe('formatWeekday', () => {
+  it('formats the weekday through the shared date formatter', () => {
+    expect(formatWeekday('en', new Date('2026-09-24T12:00:00'))).toBe('Thursday');
+    expect(formatWeekday('ar', new Date('2026-09-24T12:00:00'))).toBe('الخميس');
   });
 });
 

@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  type AccessibilityActionEvent,
   Image,
   Pressable,
   StyleSheet,
@@ -35,8 +36,12 @@ export interface TileProps {
   onPress?: () => void;
   /** The whole sentence a screen reader hears, e.g. "32 items at home". */
   accessibilityLabel: string;
+  /** Screen-reader actions for visual controls nested inside the one tile element. */
+  actions?: { name: string; label: string; onPress: () => void }[];
   /** Drawn in a 36pt circle at the top. */
   icon?: IconName;
+  /** Drawn at the top-leading position instead of the standard icon circle. */
+  leading?: ReactNode;
   /** The trailing chip or arrow at the top. */
   corner?: ReactNode;
   count?: string | number;
@@ -62,7 +67,9 @@ export function Tile({
   image,
   onPress,
   accessibilityLabel,
+  actions,
   icon,
+  leading,
   corner,
   count,
   caption,
@@ -71,11 +78,17 @@ export function Tile({
   style,
   testID,
 }: TileProps) {
-  const { colors, isDark, shadow, scrim, tintNamed } = useTheme();
+  const { colors, gradientHero, isDark, shadow, scrim, tintNamed } = useTheme();
   const inBento = useContext(InBento);
   const photo = tint === 'photo';
   const fill = photo ? colors.surfaceInverse : tintNamed(tint).bg;
   const ink = photo ? { color: colors.textInverse } : undefined;
+  const accessibilityActions = actions?.map(({ name, label }) => ({ name, label }));
+  const onAccessibilityAction = actions
+    ? (event: AccessibilityActionEvent) => {
+        actions.find((action) => action.name === event.nativeEvent.actionName)?.onPress();
+      }
+    : undefined;
 
   const container: ViewStyle = {
     minHeight: 120,
@@ -104,7 +117,15 @@ export function Tile({
           <LinearGradient {...scrimGradient(scrim)} style={StyleSheet.absoluteFill} />
         </>
       ) : null}
-      {icon || corner ? (
+      {photo && !image ? (
+        <LinearGradient
+          colors={gradientHero as unknown as readonly [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
+      {leading || icon || corner ? (
         <View
           style={{
             flexDirection: 'row',
@@ -112,7 +133,9 @@ export function Tile({
             justifyContent: 'space-between',
           }}
         >
-          {icon ? (
+          {leading ? (
+            leading
+          ) : icon ? (
             <View
               style={{
                 width: 36,
@@ -151,6 +174,8 @@ export function Tile({
       <View
         accessible
         accessibilityLabel={accessibilityLabel}
+        accessibilityActions={accessibilityActions}
+        onAccessibilityAction={onAccessibilityAction}
         testID={testID}
         style={[container, style]}
       >
@@ -162,6 +187,8 @@ export function Tile({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
       onPress={onPress}
       testID={testID}
       style={({ pressed }) => [

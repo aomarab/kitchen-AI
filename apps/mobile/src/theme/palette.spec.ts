@@ -128,6 +128,20 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     );
   });
 
+  it('primaryText reads as the Home greeting accent on the page background', () => {
+    expect(contrast(colors.primaryText, colors.bg), 'on bg').toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it.each(['warn', 'danger'] as const)(
+    '%s reads as Use-soon status text on surfaceAlt',
+    (status) => {
+      expect(
+        contrast(colors[status], colors.surfaceAlt),
+        `${status} on surfaceAlt`,
+      ).toBeGreaterThanOrEqual(AA_TEXT);
+    },
+  );
+
   it('media surfaces invert legibly', () => {
     expect(contrast(colors.textInverse, colors.surfaceInverse), 'primary').toBeGreaterThanOrEqual(
       AA_TEXT,
