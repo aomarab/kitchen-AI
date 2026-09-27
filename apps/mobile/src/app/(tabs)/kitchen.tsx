@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { InventoryItem, StorageLocation } from '@kitchen/contracts';
 import {
   Screen,
-  AppText,
+  TabHeader,
   Field,
   Chip,
   ListRow,
@@ -77,7 +77,7 @@ export default function Kitchen() {
   return (
     <Screen padded={false} edges={['top']}>
       <View style={{ padding: spacing.lg, gap: spacing.md }}>
-        <AppText variant="title">{t('inventory.title')}</AppText>
+        <TabHeader title={t('inventory.title')} />
         <Field
           value={search}
           onChangeText={setSearch}

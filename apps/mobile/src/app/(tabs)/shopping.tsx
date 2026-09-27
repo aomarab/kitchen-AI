@@ -1,25 +1,23 @@
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import {
   Screen,
-  Header,
+  TabHeader,
   Button,
   Icon,
   ListRow,
   LoadingState,
   ErrorState,
   EmptyState,
-} from '../components';
-import { useFormat } from '../hooks/useFormat';
-import { useShoppingList, useToggleShoppingItem, useCheckoutShopping } from '../hooks/shopping';
-import { useLocations } from '../hooks/inventory';
-import { localizedName, formatMeasure } from '../lib/format';
-import { radius, spacing } from '../theme';
-import { useTheme } from '../theme/useTheme';
+} from '../../components';
+import { useFormat } from '../../hooks/useFormat';
+import { useShoppingList, useToggleShoppingItem, useCheckoutShopping } from '../../hooks/shopping';
+import { useLocations } from '../../hooks/inventory';
+import { localizedName, formatMeasure } from '../../lib/format';
+import { radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 export default function Shopping() {
   const { t, locale, prefs } = useFormat();
-  const router = useRouter();
   const { colors } = useTheme();
   const list = useShoppingList();
   const toggle = useToggleShoppingItem();
@@ -36,8 +34,8 @@ export default function Shopping() {
   };
 
   return (
-    <Screen scroll refreshing={list.isRefetching} onRefresh={() => void list.refetch()}>
-      <Header title={t('shopping.title')} onBack={() => router.back()} />
+    <Screen scroll tabBar refreshing={list.isRefetching} onRefresh={() => void list.refetch()}>
+      <TabHeader title={t('shopping.title')} />
 
       {list.isLoading ? (
         <LoadingState />

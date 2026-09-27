@@ -3,9 +3,9 @@ import { Icon, TabBar } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 
 /**
- * Dashboard-first bottom navigation (spec §6.1): Home · Kitchen · Plans · More,
- * with a capture action in the centre that opens the photo flow. Shopping,
- * household and settings live under More.
+ * Bottom navigation (spec §4.1): Home · Kitchen · [camera] · Plan · Shop. The
+ * camera in the centre opens the photo flow. Household, credits, the kitchen
+ * tools and settings live on Account, behind the avatar in every tab header.
  *
  * The bar is rendered by `TabBar` rather than React Navigation's default so the
  * capture action can hold a column of its own. As an overlay it sat on the seam
@@ -43,15 +43,15 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="plans"
         options={{
-          title: t('mobile.tabs.plans'),
+          title: t('mobile.tabs.plan'),
           tabBarIcon: ({ color }) => <Icon name="plans" color={color} size={22} />,
         }}
       />
       <Tabs.Screen
-        name="more"
+        name="shopping"
         options={{
-          title: t('mobile.tabs.more'),
-          tabBarIcon: ({ color }) => <Icon name="more" color={color} size={22} />,
+          title: t('mobile.tabs.shop'),
+          tabBarIcon: ({ color }) => <Icon name="basket" color={color} size={22} />,
         }}
       />
     </Tabs>

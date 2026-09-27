@@ -26,6 +26,8 @@ export const mobileEn = {
       capture: 'Capture',
       plans: 'Plans',
       more: 'More',
+      plan: 'Plan',
+      shop: 'Shop',
     },
     home: {
       greeting: 'What should I cook tonight?',
@@ -200,6 +202,9 @@ export const mobileEn = {
       videoUnavailable: 'This video cannot be played right now.',
       openInYoutube: 'Open in YouTube',
       imageLabel: 'Recipe image for {title}',
+    },
+    account: {
+      title: 'Account',
     },
     more: {
       title: 'More',

@@ -3,6 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Screen,
+  TabHeader,
   AppText,
   Card,
   Button,
@@ -99,7 +100,7 @@ export default function Home() {
       refreshing={plansQuery.isRefetching}
       onRefresh={() => void plansQuery.refetch()}
     >
-      <AppText variant="title">{t('mobile.home.greeting')}</AppText>
+      <TabHeader title={t('mobile.home.greeting')} />
 
       <Card gradient>
         <AppText variant="label" color="primaryInverse">

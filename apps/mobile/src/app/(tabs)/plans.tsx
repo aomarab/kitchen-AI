@@ -3,8 +3,8 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Screen,
-  AppText,
-  Button,
+  RoundButton,
+  TabHeader,
   SegmentedControl,
   LoadingState,
   ErrorState,
@@ -30,17 +30,19 @@ export default function Plans() {
 
   return (
     <Screen scroll tabBar refreshing={plans.isRefetching} onRefresh={() => void plans.refetch()}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <AppText variant="title">{t('plans.title')}</AppText>
-        {showHeaderAction ? (
-          <Button
-            title={t('plans.generate')}
-            icon="plus"
-            fullWidth={false}
-            onPress={() => router.push('/generate-plan')}
-          />
-        ) : null}
-      </View>
+      <TabHeader
+        title={t('plans.title')}
+        action={
+          showHeaderAction ? (
+            <RoundButton
+              icon="plus"
+              tone="primary"
+              accessibilityLabel={t('plans.generate')}
+              onPress={() => router.push('/generate-plan')}
+            />
+          ) : undefined
+        }
+      />
 
       <SegmentedControl<PlanView>
         value={view}
