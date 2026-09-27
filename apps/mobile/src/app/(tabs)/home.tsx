@@ -121,13 +121,13 @@ export default function Home() {
             >
               <Button
                 title={t('mobile.home.viewRecipe')}
-                variant="primaryInverse"
+                variant="media"
                 onPress={() => router.push(`/recipe/${tonight.recipe.id}`)}
                 fullWidth={false}
               />
               <Button
                 title={t('mobile.home.cook')}
-                variant="ghostInverse"
+                variant="media"
                 onPress={() => router.push(`/recipe/${tonight.recipe.id}/cook`)}
                 fullWidth={false}
               />

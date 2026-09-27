@@ -3,7 +3,7 @@ import { AppText } from './AppText';
 import { radius, spacing, type PaletteColors } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
-export type BadgeTone = 'neutral' | 'success' | 'warn' | 'danger' | 'info' | 'inverse';
+export type BadgeTone = 'neutral' | 'success' | 'warn' | 'danger' | 'info';
 
 export interface BadgeProps {
   label: string;
@@ -16,10 +16,6 @@ const toneFor = (colors: PaletteColors): Record<BadgeTone, { bg: string; fg: str
   warn: { bg: colors.warnSoft, fg: colors.warn },
   danger: { bg: colors.dangerSoft, fg: colors.danger },
   info: { bg: colors.primarySoft, fg: colors.primaryText },
-  // For the always-dark cook surface. Every other tone pairs a mode-following
-  // soft tint with its own strong colour, and in dark mode those tints sit on
-  // the same side of the lightness line as the cook ground.
-  inverse: { bg: colors.surfaceInverseAlt, fg: colors.textInverse },
 });
 
 export function Badge({ label, tone = 'neutral' }: BadgeProps) {

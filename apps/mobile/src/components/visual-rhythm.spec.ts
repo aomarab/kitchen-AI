@@ -17,13 +17,11 @@ const colors = palettes.apricot.light.colors;
 describe('borderless buttons align to the content margin', () => {
   const source = read('./Button.tsx');
 
-  it('gives ghost variants no horizontal padding', () => {
+  it('gives the ghost variant no horizontal padding', () => {
     // A ghost button paints neither fill nor border, so `paddingHorizontal`
     // only offsets its label from the margin. On the home screen that put
     // "See all" 16pt inside the right edge of every card beneath it.
-    expect(source).toMatch(
-      /paddingHorizontal:\s*variant === 'ghost' \|\| variant === 'ghostInverse'\s*\?\s*0\s*:\s*spacing\.lg/,
-    );
+    expect(source).toMatch(/paddingHorizontal:\s*variant === 'ghost'\s*\?\s*0\s*:\s*spacing\.lg/);
   });
 
   it('keeps the touch target legal without that padding', () => {
