@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useIsFocused } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RoundButton, SegmentedControl } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
@@ -37,10 +38,11 @@ export function CaptureChrome({
 }: CaptureChromeProps) {
   const { t } = useFormat();
   const { colors } = useTheme();
+  const isFocused = useIsFocused();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.surfaceInverse }}>
-      <StatusBar style="light" />
+      {isFocused ? <StatusBar style="light" /> : null}
       <View style={{ flex: 1 }}>{children}</View>
 
       <SafeAreaView

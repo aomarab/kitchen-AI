@@ -101,11 +101,16 @@ describe('capture screen source contract (G3b)', () => {
     expect(source).not.toContain('width: 44, alignItems');
   });
 
-  it('forces light status bar content on the dark media surface', () => {
+  it('focus-gates light status bar content on the dark media surface', () => {
     const source = read('features', 'capture', 'CaptureChrome.tsx');
 
+    expect(source).toContain("from 'expo-router'");
+    expect(source).toContain('useIsFocused()');
     expect(source).toContain("from 'expo-status-bar'");
-    expect(source).toContain('<StatusBar style="light" />');
+    expect(source).toContain('{isFocused ? <StatusBar style="light" /> : null}');
+    expect(source).not.toMatch(
+      /<StatusBar style="light" \/>\s*<View style=\{\{ flex: 1 \}\}>\{children\}<\/View>/,
+    );
   });
 });
 
