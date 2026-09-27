@@ -197,7 +197,7 @@ describe('layoutPins placement', () => {
     expect(tray).toEqual(['trapped']);
   });
 
-  it('caps pins at eight, demoting the lowest confidence and later reading-order tie', () => {
+  it('caps pins at eight, demoting the lowest confidence and later geometric-order tie', () => {
     const items = Array.from({ length: 10 }, (_, index) =>
       item(`pin-${index}`, boxAt(((index + 1) * 90) / 1000, 0.5), {
         chipWidth: 44,
@@ -212,6 +212,22 @@ describe('layoutPins placement', () => {
     expect(tray).toEqual(['pin-2', 'pin-8']);
     expect(pins.map((pin) => pin.id)).not.toContain('pin-2');
     expect(pins.map((pin) => pin.id)).not.toContain('pin-8');
+  });
+
+  it('uses the same cap tie-break across directions', () => {
+    const items = Array.from({ length: 10 }, (_, index) =>
+      item(`pin-${index}`, boxAt(((index + 1) * 90) / 1000, 0.5), {
+        chipWidth: 44,
+        confidence: index === 2 ? 0.1 : index === 4 || index === 8 ? 0.2 : 0.9,
+      }),
+    );
+    const frame: PinFrame = { ...baseFrame, width: 1000, imageWidth: 1000 };
+
+    const ltr = layoutPins(items, frame, 'ltr');
+    const rtl = layoutPins(items, frame, 'rtl');
+
+    expect(ltr.tray).toEqual(['pin-2', 'pin-8']);
+    expect(rtl.tray).toEqual(ltr.tray);
   });
 });
 
@@ -231,6 +247,27 @@ describe('layoutPins ordering and direction', () => {
       const rtlPin = rtl.find((pin) => pin.id === ltrPin.id)!;
       expect(rtlPin.anchor).toEqual(ltrPin.anchor);
       expect(rtlPin.chip).toEqual(ltrPin.chip);
+    }
+  });
+
+  it('keeps overlapping pin coordinates and tray identical while returning reading order', () => {
+    const items = [
+      item('left', boxAt(100 / 400, 0.5), { chipWidth: 80 }),
+      item('right', boxAt(130 / 400, 0.5), { chipWidth: 80 }),
+    ];
+
+    const ltr = layoutPins(items, baseFrame, 'ltr');
+    const rtl = layoutPins(items, baseFrame, 'rtl');
+
+    expect(ltr.tray).toEqual([]);
+    expect(rtl.tray).toEqual(ltr.tray);
+    expect(ltr.pins.map((pin) => pin.id)).toEqual(['left', 'right']);
+    expect(rtl.pins.map((pin) => pin.id)).toEqual(['right', 'left']);
+    for (const ltrPin of ltr.pins) {
+      const rtlPin = rtl.pins.find((pin) => pin.id === ltrPin.id)!;
+      expect(rtlPin.anchor).toEqual(ltrPin.anchor);
+      expect(rtlPin.chip).toEqual(ltrPin.chip);
+      expect(rtlPin.placement).toBe(ltrPin.placement);
     }
   });
 

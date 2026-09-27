@@ -45,9 +45,18 @@ interface Candidate {
   anchor: { x: number; y: number };
 }
 
-interface Row {
+interface OrderedEntry {
+  inputIndex: number;
+  anchor: { x: number; y: number };
+}
+
+interface PlacedRecord extends OrderedEntry {
+  pin: PlacedPin;
+}
+
+interface Row<T extends OrderedEntry> {
   firstY: number;
-  candidates: Candidate[];
+  entries: T[];
 }
 
 interface Rect {
@@ -93,8 +102,9 @@ export function layoutPins(
     candidates.push({ item, inputIndex, anchor });
   });
 
+  const geometricOrder = sortGeometricOrder(candidates);
   const order = new Map<number, number>();
-  sortReadingOrder(candidates, direction).forEach((candidate, index) => {
+  geometricOrder.forEach((candidate, index) => {
     order.set(candidate.inputIndex, index);
   });
 
@@ -114,18 +124,24 @@ export function layoutPins(
     placeable = placeable.filter((candidate) => !demoted.has(candidate.inputIndex));
   }
 
-  const pins: PlacedPin[] = [];
-  for (const candidate of sortReadingOrder(placeable, direction)) {
-    const placed = placeCandidate(candidate, frame, pins);
+  const placedPins: PlacedPin[] = [];
+  const placedRecords: PlacedRecord[] = [];
+  for (const candidate of sortGeometricOrder(placeable)) {
+    const placed = placeCandidate(candidate, frame, placedPins);
     if (placed) {
-      pins.push(placed);
+      placedPins.push(placed);
+      placedRecords.push({
+        inputIndex: candidate.inputIndex,
+        anchor: candidate.anchor,
+        pin: placed,
+      });
     } else {
       trayIndexes.add(candidate.inputIndex);
     }
   }
 
   return {
-    pins,
+    pins: sortReadingOrder(placedRecords, direction).map((record) => record.pin),
     tray: items
       .map((item, index) => (trayIndexes.has(index) ? item.id : null))
       .filter((id): id is string => id !== null),
@@ -160,9 +176,20 @@ function isAnchorVisible(anchor: { x: number; y: number }, frame: PinFrame): boo
   );
 }
 
-function sortReadingOrder(candidates: readonly Candidate[], direction: 'ltr' | 'rtl'): Candidate[] {
-  const rows: Row[] = [];
-  for (const candidate of [...candidates].sort((a, b) => {
+function sortGeometricOrder<T extends OrderedEntry>(entries: readonly T[]): T[] {
+  return sortRows(entries, 'ltr');
+}
+
+function sortReadingOrder<T extends OrderedEntry>(
+  entries: readonly T[],
+  direction: 'ltr' | 'rtl',
+): T[] {
+  return sortRows(entries, direction);
+}
+
+function sortRows<T extends OrderedEntry>(entries: readonly T[], direction: 'ltr' | 'rtl'): T[] {
+  const rows: Row<T>[] = [];
+  for (const entry of [...entries].sort((a, b) => {
     const y = a.anchor.y - b.anchor.y;
     if (y !== 0) return y;
     const x = a.anchor.x - b.anchor.x;
@@ -170,15 +197,15 @@ function sortReadingOrder(candidates: readonly Candidate[], direction: 'ltr' | '
     return a.inputIndex - b.inputIndex;
   })) {
     const current = rows[rows.length - 1];
-    if (current && Math.abs(candidate.anchor.y - current.firstY) <= PIN_ROW_TOLERANCE) {
-      current.candidates.push(candidate);
+    if (current && Math.abs(entry.anchor.y - current.firstY) <= PIN_ROW_TOLERANCE) {
+      current.entries.push(entry);
     } else {
-      rows.push({ firstY: candidate.anchor.y, candidates: [candidate] });
+      rows.push({ firstY: entry.anchor.y, entries: [entry] });
     }
   }
 
   return rows.flatMap((row) =>
-    row.candidates.sort((a, b) => {
+    row.entries.sort((a, b) => {
       const x = direction === 'ltr' ? a.anchor.x - b.anchor.x : b.anchor.x - a.anchor.x;
       if (x !== 0) return x;
       return a.inputIndex - b.inputIndex;
