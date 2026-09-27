@@ -158,6 +158,16 @@ describe('information architecture (spec §4)', () => {
       /<RoundButton[\s\S]*icon=\{searchOpen \? 'close' : 'search'\}[\s\S]*accessibilityLabel=\{searchLabel\}/,
     );
     expect(kitchen).toMatch(/<RoundButton[\s\S]*icon="plus"[\s\S]*accessibilityLabel=\{addLabel\}/);
+
+    const compactPlaceTile =
+      kitchen.match(/function CompactPlaceContent[\s\S]*?function MiniItemCard/)?.[0] ?? '';
+    expect(compactPlaceTile, 'compact place tiles must use numeral counts').toContain(
+      'variant="numeral"',
+    );
+    expect(
+      compactPlaceTile,
+      'place tiles grow with Dynamic Type instead of truncating count or label text',
+    ).not.toContain('numberOfLines');
   });
 
   it('keeps the redesigned Home tab inside the G1 screen scope', () => {

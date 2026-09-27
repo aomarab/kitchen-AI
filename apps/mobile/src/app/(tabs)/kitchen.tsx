@@ -134,10 +134,8 @@ function CompactPlaceContent({
     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
       <PlaceIcon type={location.type} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <AppText variant="title" numberOfLines={1}>
-          {count}
-        </AppText>
-        <AppText variant="caption" muted numberOfLines={1}>
+        <AppText variant="numeral">{count}</AppText>
+        <AppText variant="caption" muted>
           {label}
         </AppText>
       </View>
