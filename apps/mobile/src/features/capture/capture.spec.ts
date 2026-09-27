@@ -84,4 +84,11 @@ describe('capture screen source contract (G3b)', () => {
     expect(source).toContain('minWidth: 44');
     expect(source).not.toContain('width: 44, alignItems');
   });
+
+  it('forces light status bar content on the dark media surface', () => {
+    const source = read('features', 'capture', 'CaptureChrome.tsx');
+
+    expect(source).toContain("from 'expo-status-bar'");
+    expect(source).toContain('<StatusBar style="light" />');
+  });
 });

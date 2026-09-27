@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RoundButton, SegmentedControl } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
@@ -39,6 +40,7 @@ export function CaptureChrome({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.surfaceInverse }}>
+      <StatusBar style="light" />
       <View style={{ flex: 1 }}>{children}</View>
 
       <SafeAreaView
