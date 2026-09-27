@@ -34,8 +34,9 @@ land first.
 ## Global Constraints
 
 - Run every command from the repo root. Node >= 20 (CI uses 22). pnpm 10.34.5.
-- **Colour hex literals live only in `apps/mobile/src/theme/palettes.ts`.** `theme/token-usage.spec.ts`
-  sweeps the rest of `src` for them.
+- **Colour hex literals live only in `apps/mobile/src/theme/palettes.ts`.** No mobile test enforces
+  this (only the web `token-usage.test.ts` sweeps for hex), so it is a review rule: add none
+  elsewhere. The `#000` in `components/YoutubePlayer.tsx` and `lib/youtube.ts` predates this plan.
 - **Guard tests are never relaxed to make a change pass.** In `palette.spec.ts` the bar is 4.5 for
   text and 3.0 for non-text.
 - **No physical-direction style keys on mobile** (`marginLeft`, `left`, `borderRightColor`…).

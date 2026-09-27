@@ -1406,7 +1406,8 @@ Each change below is **mechanical**: the thresholds and the intent of every asse
     - `'RoundButton.tsx': /height:\s*(\d+)/`
     - `'Tile.tsx': /minHeight:\s*(\d+)/`
     - `'ArPins.tsx': /minHeight:\s*(\d+)/`
-  - The hex, `lineHeight` and letter-spacing sweeps are unchanged.
+  - The `lineHeight` sweep is unchanged. (The mobile sweep has no hex or letter-spacing rule;
+    only the web `token-usage.test.ts` sweeps for hex.)
 - **API `VisionResult` fixtures:** the typed literals in `credits/cost-attribution.spec.ts` (88) and
   `credits/credit-debits.spec.ts` (106) gain `box: null`, because the raw output type makes `box`
   required (§10.1). Untyped fixtures such as `vision.fixtures.ts` are parsed and need no change.
