@@ -46,6 +46,7 @@ describe('mobile source sweep', () => {
     'RoundButton.tsx': /height:\s*(\d+)/,
     'SegmentedControl.tsx': /minHeight:\s*(\d+)/,
     'StarRating.tsx': /minHeight:\s*(\d+)/,
+    'Tile.tsx': /minHeight:\s*(\d+)/,
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {

@@ -29,4 +29,5 @@ export { SegmentedControl } from './SegmentedControl';
 export { Sheet } from './Sheet';
 export { StarRating } from './StarRating';
 export { EmptyState, ErrorState, LoadingState } from './States';
+export { Bento, BentoColumn, Tile } from './Tile';
 export { ToggleRow } from './ToggleRow';

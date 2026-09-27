@@ -49,6 +49,35 @@ describe('pushed-screen header', () => {
   });
 });
 
+describe('surfaces', () => {
+  it.each(['./Card.tsx', './Tile.tsx'])(
+    '%s lifts by shadow in light mode and by its edge in dark mode',
+    (file) => {
+      // Spec §6.7: a dark page makes any shadow invisible, so depth moves to
+      // the border there; in light mode the border matches the fill.
+      const source = read(file);
+      expect(source).toMatch(/isDark \? colors\.border/);
+      expect(source).toMatch(/shadow\.card/);
+    },
+  );
+
+  it.each(['./Card.tsx', './Tile.tsx'])(
+    '%s dims to 0.92 and scales to 0.98 when pressed',
+    (file) => {
+      const source = read(file);
+      expect(source).toMatch(/pressed \? 0\.92/);
+      expect(source).toMatch(/scale: pressed \? 0\.98/);
+    },
+  );
+
+  it('a sheet floats on the raised shadow and closes through a sunk round button', () => {
+    const source = read('./Sheet.tsx');
+    expect(source).toMatch(/shadow\.raised/);
+    expect(source).toMatch(/<RoundButton[^>]*tone="sunk"/);
+    expect(source).toMatch(/variant="title"/);
+  });
+});
+
 describe('screen rhythm', () => {
   const source = read('./Screen.tsx');
 
