@@ -1,8 +1,17 @@
-import { Pressable, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Keyboard, Platform, Pressable, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
 import { Fab } from './Fab';
-import { spacing } from '../theme';
+import {
+  TAB_BAR_HEIGHT,
+  TAB_BAR_SIDE_INSET,
+  splitTabs,
+  tabBarBottom,
+  tabBarClearance,
+} from '../lib/tab-bar';
+import { radius, spacing } from '../theme';
+import { contentMaxWidth } from '../theme/layout';
 import { useTheme } from '../theme/useTheme';
 
 /**
@@ -39,8 +48,35 @@ export interface TabBarProps {
   captureLabel: string;
 }
 
+/** The bottom padding a tab screen's scroll content needs to clear the bar. */
+export function useTabBarClearance(): number {
+  return tabBarClearance(useSafeAreaInsets().bottom);
+}
+
 /**
- * Bottom navigation with a centre capture action (spec §6.1).
+ * Android resizes the window for the keyboard, which would lift a floating bar
+ * onto the keyboard's top edge. iOS does not, so the keyboard simply covers it.
+ */
+function useAndroidKeyboardVisible(): boolean {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const show = Keyboard.addListener('keyboardDidShow', () => setVisible(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setVisible(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return visible;
+}
+
+/**
+ * The floating capsule (spec §8.1) with a centre capture action.
+ *
+ * It is absolutely positioned, so React Navigation gives the screens the full
+ * height and each tab screen pads its own content past the bar
+ * (`useTabBarClearance`, or `Screen`'s `tabBar` prop).
  *
  * The capture button gets a real column of its own. Previously it was an
  * absolutely positioned FAB laid over a four-tab bar, which put it exactly on
@@ -52,8 +88,9 @@ export interface TabBarProps {
  */
 export function TabBar({ state, descriptors, navigation, onCapture, captureLabel }: TabBarProps) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
-  const middle = Math.floor(state.routes.length / 2);
+  const { width } = useWindowDimensions();
+  const { colors, isDark, shadow } = useTheme();
+  const keyboardVisible = useAndroidKeyboardVisible();
 
   const renderTab = (route: TabRoute, index: number) => {
     const { options } = descriptors[route.key]!;
@@ -92,29 +129,45 @@ export function TabBar({ state, descriptors, navigation, onCapture, captureLabel
     );
   };
 
-  const tabs = state.routes.map(renderTab);
+  if (keyboardVisible) return null;
+  const { leading, trailing } = splitTabs(state.routes.map(renderTab));
 
   return (
+    // Centred by a wrapper, as `Screen` does, so a tablet caps the capsule at
+    // the content width in both directions.
     <View
+      pointerEvents="box-none"
       style={{
-        flexDirection: 'row',
+        position: 'absolute',
+        bottom: tabBarBottom(insets.bottom),
+        start: TAB_BAR_SIDE_INSET,
+        end: TAB_BAR_SIDE_INSET,
         alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
-        paddingTop: spacing.md,
-        // The gesture indicator is a device fact, not a constant. Falling back
-        // to `sm` keeps the bar off the very edge on hardware with no inset.
-        paddingBottom: Math.max(insets.bottom, spacing.sm),
       }}
     >
-      {tabs.slice(0, middle)}
+      <View
+        style={{
+          width: '100%',
+          maxWidth: contentMaxWidth(width),
+          height: TAB_BAR_HEIGHT,
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: spacing.xs,
+          borderRadius: radius.pill,
+          borderWidth: 1,
+          borderColor: isDark ? colors.border : colors.surface,
+          backgroundColor: colors.surface,
+          ...shadow.raised,
+        }}
+      >
+        {leading}
 
-      <View style={{ flex: 1, alignItems: 'center' }}>
-        <Fab icon="camera" accessibilityLabel={captureLabel} onPress={onCapture} />
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Fab icon="camera" accessibilityLabel={captureLabel} onPress={onCapture} />
+        </View>
+
+        {trailing}
       </View>
-
-      {tabs.slice(middle)}
     </View>
   );
 }

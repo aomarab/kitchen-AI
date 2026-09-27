@@ -29,7 +29,7 @@ export default function Plans() {
   const showHeaderAction = !plans.isLoading && !plans.isError && !isEmpty;
 
   return (
-    <Screen scroll refreshing={plans.isRefetching} onRefresh={() => void plans.refetch()}>
+    <Screen scroll tabBar refreshing={plans.isRefetching} onRefresh={() => void plans.refetch()}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <AppText variant="title">{t('plans.title')}</AppText>
         {showHeaderAction ? (

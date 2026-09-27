@@ -26,7 +26,7 @@ export default function More() {
   );
 
   return (
-    <Screen scroll>
+    <Screen scroll tabBar>
       <AppText variant="title">{t('mobile.more.title')}</AppText>
 
       {user ? (

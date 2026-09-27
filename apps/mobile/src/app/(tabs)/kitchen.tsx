@@ -16,6 +16,7 @@ import {
   LoadingState,
 } from '../../components';
 import type { BadgeTone } from '../../components/Badge';
+import { useTabBarClearance } from '../../components/TabBar';
 import { useFormat } from '../../hooks/useFormat';
 import { useInventory, useLocations } from '../../hooks/inventory';
 import { itemName, formatMeasure, formatExpiryLabel, locationLabel } from '../../lib/format';
@@ -35,6 +36,7 @@ const EXPIRY_TONE: Record<ExpiryStatus, BadgeTone> = {
 export default function Kitchen() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
+  const clearance = useTabBarClearance();
   // Arriving from the home dashboard's location chart opens this list already
   // filtered; the chips stay live afterwards, so the param is only a seed.
   const params = useLocalSearchParams<{ locationId?: string }>();
@@ -126,6 +128,7 @@ export default function Kitchen() {
           contentContainerStyle={{
             padding: spacing.lg,
             paddingTop: 0,
+            paddingBottom: clearance,
             gap: spacing.sm,
           }}
           refreshing={inventory.isRefetching}

@@ -46,6 +46,7 @@ describe('mobile source sweep', () => {
     'RoundButton.tsx': /height:\s*(\d+)/,
     'SegmentedControl.tsx': /minHeight:\s*(\d+)/,
     'StarRating.tsx': /minHeight:\s*(\d+)/,
+    'TabBar.tsx': /minHeight:\s*(\d+)/,
     'Tile.tsx': /minHeight:\s*(\d+)/,
   };
 
