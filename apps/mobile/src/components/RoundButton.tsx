@@ -1,4 +1,10 @@
-import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  View,
+  type AccessibilityState,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { AppText } from './AppText';
 import { DirectionalIcon } from './DirectionalIcon';
 import { Icon, type IconName } from './Icon';
@@ -20,6 +26,7 @@ export interface RoundButtonProps {
   /** The visible circle. The touch target is 44×44 whatever this is (spec §12). */
   size?: 36 | 40 | 44 | 48;
   disabled?: boolean;
+  accessibilityState?: AccessibilityState;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -38,6 +45,7 @@ export function RoundButton({
   tone = 'surface',
   size = 40,
   disabled = false,
+  accessibilityState,
   style,
   testID,
 }: RoundButtonProps) {
@@ -49,7 +57,7 @@ export function RoundButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ ...accessibilityState, disabled }}
       disabled={disabled}
       onPress={onPress}
       testID={testID}

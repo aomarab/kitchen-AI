@@ -20,6 +20,7 @@ import { useAuthStore } from '../stores/auth';
 import { shouldRedirectSignedOut } from '../lib/entry-route';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { SyncFailuresBanner } from '../components/SyncFailuresBanner';
+import { Toast } from '../components/Toast';
 import { useTheme } from '../theme/useTheme';
 
 /**
@@ -148,6 +149,7 @@ export default function RootLayout() {
             <OfflineBanner />
             <SyncFailuresBanner />
           </View>
+          <Toast />
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

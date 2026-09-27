@@ -55,6 +55,27 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, apricot %s', (mo
     const off = segmentTone(colors, false);
     expect(contrast(off.label, segmentTrack(colors)), 'unselected').toBeGreaterThanOrEqual(AA_TEXT);
   });
+
+  it('media segments use inverse camera-surface tokens', () => {
+    expect(segmentTrack(colors, 'media')).toBe(colors.surfaceInverseAlt);
+
+    const selected = segmentTone(colors, true, mode === 'dark', 'media');
+    expect(selected).toMatchObject({
+      fill: colors.textInverse,
+      label: colors.onPrimaryInverse,
+      border: colors.textInverse,
+    });
+    expect(contrast(selected.label, selected.fill), 'media selected').toBeGreaterThanOrEqual(
+      AA_TEXT,
+    );
+
+    const unselected = segmentTone(colors, false, mode === 'dark', 'media');
+    expect(unselected.label).toBe(colors.textInverseMuted);
+    expect(
+      contrast(unselected.label, segmentTrack(colors, 'media')),
+      'media unselected',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+  });
 });
 
 describe('control touch targets', () => {

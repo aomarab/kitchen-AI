@@ -17,6 +17,7 @@ export { Header } from './Header';
 export { Icon, IONICONS } from './Icon';
 export { TabBar } from './TabBar';
 export { TabHeader } from './TabHeader';
+export { Toast } from './Toast';
 export type { IconName } from './Icon';
 export { ListGroup } from './ListGroup';
 export { ListRow } from './ListRow';

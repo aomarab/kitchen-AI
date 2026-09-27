@@ -36,24 +36,29 @@ describe('mobile source sweep', () => {
    * dimension. Adding a control means adding a line here, which is the point:
    * it forces the size to be a decision rather than an accident.
    */
-  const TOUCH_TARGETS: Record<string, RegExp> = {
-    'Button.tsx': /minHeight:\s*(\d+)/,
-    'Fab.tsx': /height:\s*(\d+)/,
-    'Field.tsx': /minHeight:\s*(\d+)/,
-    'Header.tsx': /minHeight:\s*(\d+)/,
-    'QuantityStepper.tsx': /height:\s*(\d+)/,
+  const TOUCH_TARGETS: Record<string, { path: string; pattern: RegExp }> = {
+    'Button.tsx': { path: 'components/Button.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Fab.tsx': { path: 'components/Fab.tsx', pattern: /height:\s*(\d+)/ },
+    'Field.tsx': { path: 'components/Field.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Header.tsx': { path: 'components/Header.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'QuantityStepper.tsx': { path: 'components/QuantityStepper.tsx', pattern: /height:\s*(\d+)/ },
     // The visual circle is 36-40pt; the Pressable around it is what is measured.
-    'RoundButton.tsx': /height:\s*(\d+)/,
-    'SegmentedControl.tsx': /minHeight:\s*(\d+)/,
-    'StarRating.tsx': /minHeight:\s*(\d+)/,
-    'TabBar.tsx': /minHeight:\s*(\d+)/,
-    'Tile.tsx': /minHeight:\s*(\d+)/,
+    'RoundButton.tsx': { path: 'components/RoundButton.tsx', pattern: /height:\s*(\d+)/ },
+    'SegmentedControl.tsx': {
+      path: 'components/SegmentedControl.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'StarRating.tsx': { path: 'components/StarRating.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'TabBar.tsx': { path: 'components/TabBar.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Tile.tsx': { path: 'components/Tile.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'ArPins.tsx': { path: 'features/capture/ArPins.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Shutter.tsx': { path: 'features/capture/Shutter.tsx', pattern: /width:\s*(\d+)/ },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {
-    for (const [file, pattern] of Object.entries(TOUCH_TARGETS)) {
-      const content = readFileSync(join(SRC, 'components', file), 'utf8');
-      const match = content.match(pattern);
+    for (const [file, target] of Object.entries(TOUCH_TARGETS)) {
+      const content = readFileSync(join(SRC, target.path), 'utf8');
+      const match = content.match(target.pattern);
       expect(
         match,
         `${file} no longer declares the touch dimension this guard tracks. If ` +

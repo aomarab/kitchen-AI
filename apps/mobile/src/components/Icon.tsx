@@ -17,6 +17,8 @@ export const IONICONS = {
   more: 'ellipsis-horizontal',
   camera: 'camera-outline',
   cameraReverse: 'camera-reverse-outline',
+  flash: 'flash-outline',
+  images: 'images-outline',
   barcode: 'barcode-outline',
   receipt: 'receipt-outline',
   manual: 'create-outline',

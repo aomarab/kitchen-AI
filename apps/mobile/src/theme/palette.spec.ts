@@ -206,6 +206,21 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     expect(contrast(colors.primary, colors.surfaceInverse)).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 
+  it('capture pins and toast affordances read on inverse media fills', () => {
+    expect(
+      contrast(colors.onPrimaryInverse, colors.textInverse),
+      'pin chip label on textInverse',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+    expect(
+      contrast(colors.primary, colors.surfaceInverse),
+      'shutter primary on surfaceInverse',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(
+      contrast(colors.warnInverse, colors.textInverse),
+      'warn dot on textInverse',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
   /**
    * Text on a photo sits over the scrim. The worst photo is pure white, so the
    * white label is measured against the scrim composited over white at the

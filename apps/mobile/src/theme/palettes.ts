@@ -38,6 +38,8 @@ export interface PaletteColors {
   readonly accent: string;
   readonly accentSoft: string;
   readonly warn: string;
+  /** Media-safe warning dot for inverse chips where dark-mode `warn` is too light. */
+  readonly warnInverse: string;
   readonly warnSoft: string;
   readonly danger: string;
   readonly dangerSoft: string;
@@ -130,6 +132,7 @@ const apricotLight: Palette = {
     success: '#1E7A46',
     successSoft: '#E4F2E9',
     warn: '#9A5B00',
+    warnInverse: '#A56300',
     warnSoft: '#F8ECDA',
     danger: '#C0341D',
     dangerSoft: '#FBE5E1',
@@ -168,6 +171,7 @@ const apricotDark: Palette = {
     success: '#74D29B',
     successSoft: '#15291D',
     warn: '#F2B45E',
+    warnInverse: '#A56300',
     warnSoft: '#35260F',
     danger: '#FF8A78',
     dangerSoft: '#3D1C16',

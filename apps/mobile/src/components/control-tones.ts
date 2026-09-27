@@ -16,6 +16,8 @@ export interface ControlTone {
   border: string;
 }
 
+export type SegmentTone = 'default' | 'media';
+
 export function chipTone(
   colors: PaletteColors,
   variant: ChipVariant,
@@ -43,11 +45,26 @@ export function stepperTone(
     : { fill: colors.surfaceAlt, glyph: colors.text };
 }
 
-export function segmentTrack(colors: PaletteColors): string {
-  return colors.surfaceAlt;
+export function segmentTrack(colors: PaletteColors, tone: SegmentTone = 'default'): string {
+  return tone === 'media' ? colors.surfaceInverseAlt : colors.surfaceAlt;
 }
 
-export function segmentTone(colors: PaletteColors, selected: boolean, isDark = false): ControlTone {
+export function segmentTone(
+  colors: PaletteColors,
+  selected: boolean,
+  isDark = false,
+  tone: SegmentTone = 'default',
+): ControlTone {
+  if (tone === 'media') {
+    if (!selected) {
+      return { fill: 'transparent', label: colors.textInverseMuted, border: 'transparent' };
+    }
+    return {
+      fill: colors.textInverse,
+      label: colors.onPrimaryInverse,
+      border: colors.textInverse,
+    };
+  }
   if (!selected) return { fill: 'transparent', label: colors.textMuted, border: 'transparent' };
   // The thumb lifts off the track by its shadow in light mode and its edge in dark.
   return {

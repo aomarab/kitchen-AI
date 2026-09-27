@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { AppText } from './AppText';
-import { segmentTone, segmentTrack } from './control-tones';
+import { segmentTone, segmentTrack, type SegmentTone } from './control-tones';
 import { radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
@@ -13,6 +13,7 @@ export interface SegmentedControlProps<T extends string> {
   options: readonly SegmentOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  tone?: SegmentTone;
 }
 
 /**
@@ -24,6 +25,7 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  tone = 'default',
 }: SegmentedControlProps<T>) {
   const { colors, isDark, shadow } = useTheme();
   return (
@@ -33,12 +35,12 @@ export function SegmentedControl<T extends string>({
         minHeight: 44,
         padding: spacing.xs,
         borderRadius: radius.sm + spacing.xs,
-        backgroundColor: segmentTrack(colors),
+        backgroundColor: segmentTrack(colors, tone),
       }}
     >
       {options.map((option) => {
         const selected = option.value === value;
-        const tone = segmentTone(colors, selected, isDark);
+        const segment = segmentTone(colors, selected, isDark, tone);
         return (
           <Pressable
             key={option.value}
@@ -55,14 +57,14 @@ export function SegmentedControl<T extends string>({
                 paddingVertical: spacing.xs,
                 borderRadius: radius.sm,
                 borderWidth: 1,
-                borderColor: tone.border,
-                backgroundColor: tone.fill,
+                borderColor: segment.border,
+                backgroundColor: segment.fill,
                 opacity: pressed && !selected ? 0.85 : 1,
               },
-              selected && !isDark ? shadow.card : null,
+              selected && tone === 'default' && !isDark ? shadow.card : null,
             ]}
           >
-            <AppText variant="label" center numberOfLines={2} style={{ color: tone.label }}>
+            <AppText variant="label" center numberOfLines={2} style={{ color: segment.label }}>
               {option.label}
             </AppText>
           </Pressable>
