@@ -1,7 +1,7 @@
 export { AppText } from './AppText';
 export { AuthLayout } from './AuthLayout';
 export { AuthSwitchLink } from './AuthSwitchLink';
-export { Badge } from './Badge';
+export { Badge, CountBadge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
 export { Chip } from './Chip';

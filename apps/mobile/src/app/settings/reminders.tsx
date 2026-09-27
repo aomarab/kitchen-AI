@@ -145,6 +145,7 @@ export default function Reminders() {
           onChange={(v) => update.mutate({ hydrationGoalCups: clampHydrationGoal(v) })}
           min={1}
           label={t('mobile.reminders.hydrationGoalValue', { count: s.hydrationGoalCups })}
+          accessibilityLabel={t('mobile.reminders.hydrationGoalTitle')}
           decrementLabel={t('mobile.reminders.decrease')}
           incrementLabel={t('mobile.reminders.increase')}
         />
@@ -166,6 +167,7 @@ export default function Reminders() {
             onChange={(v) => update.mutate({ quietHoursStart: clampQuietHour(v) })}
             min={0}
             label={t('mobile.reminders.hourValue', { hour: s.quietHoursStart })}
+            accessibilityLabel={t('mobile.reminders.quietFrom')}
             decrementLabel={t('mobile.reminders.decrease')}
             incrementLabel={t('mobile.reminders.increase')}
           />
@@ -179,6 +181,7 @@ export default function Reminders() {
             onChange={(v) => update.mutate({ quietHoursEnd: clampQuietHour(v) })}
             min={0}
             label={t('mobile.reminders.hourValue', { hour: s.quietHoursEnd })}
+            accessibilityLabel={t('mobile.reminders.quietTo')}
             decrementLabel={t('mobile.reminders.decrease')}
             incrementLabel={t('mobile.reminders.increase')}
           />

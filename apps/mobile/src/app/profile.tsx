@@ -103,6 +103,7 @@ export default function Profile() {
             value={data.householdSize}
             min={1}
             onChange={(householdSize) => update.mutate({ householdSize })}
+            accessibilityLabel={t('profile.householdSize')}
             decrementLabel={t('mobile.common.decrease')}
             incrementLabel={t('mobile.common.increase')}
           />
@@ -162,9 +163,7 @@ export default function Profile() {
               key={item}
               label={item}
               selected
-              onPress={() =>
-                update.mutate({ allergies: data.allergies.filter((a) => a !== item) })
-              }
+              onPress={() => update.mutate({ allergies: data.allergies.filter((a) => a !== item) })}
             />
           ))}
         </View>

@@ -170,15 +170,14 @@ export default function ItemDetail() {
         <AppText variant="label" muted>
           {t('inventory.quantity')}
         </AppText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <QuantityStepper
-            value={item.quantity}
-            onChange={onAdjust}
-            decrementLabel={t('mobile.common.decrease')}
-            incrementLabel={t('mobile.common.increase')}
-          />
-          <AppText muted>{unitLabel(t, item.unit)}</AppText>
-        </View>
+        <QuantityStepper
+          value={item.quantity}
+          onChange={onAdjust}
+          unit={unitLabel(t, item.unit)}
+          accessibilityLabel={t('inventory.quantity')}
+          decrementLabel={t('mobile.common.decrease')}
+          incrementLabel={t('mobile.common.increase')}
+        />
       </Card>
 
       <Card style={{ gap: spacing.md }}>

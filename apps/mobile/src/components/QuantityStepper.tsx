@@ -1,7 +1,8 @@
 import { Pressable, View } from 'react-native';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
-import { hitSlop, radius, spacing } from '../theme';
+import { stepperTone } from './control-tones';
+import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 export interface QuantityStepperProps {
@@ -9,49 +10,94 @@ export interface QuantityStepperProps {
   onChange: (value: number) => void;
   step?: number;
   min?: number;
+  /** Replaces the bare number, e.g. "8 cups". */
   label?: string;
+  /** Shown as a caption under the value, e.g. "kg". */
+  unit?: string;
+  /** What is being adjusted, spoken before the value. */
+  accessibilityLabel?: string;
   decrementLabel: string;
   incrementLabel: string;
 }
 
-/** Accessible +/- stepper. Row direction mirrors automatically under RTL. */
+/**
+ * `−` and `+` circles of 32pt, each centred in a 44pt Pressable, around a
+ * `bodyStrong` value (spec §8.4). To a screen reader it is one adjustable
+ * element: swipe up or down to change it. Row direction mirrors under RTL.
+ */
 export function QuantityStepper({
   value,
   onChange,
   step = 1,
   min = 0,
   label,
+  unit,
+  accessibilityLabel,
   decrementLabel,
   incrementLabel,
 }: QuantityStepperProps) {
   const { colors } = useTheme();
-  const button = (icon: 'plus' | 'minus', onPress: () => void, a11y: string) => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={a11y}
-      hitSlop={hitSlop}
-      onPress={onPress}
-      style={{
-        width: 44,
-        height: 44,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.surface,
-      }}
-    >
-      <Icon name={icon} size={18} color={colors.text} />
-    </Pressable>
-  );
+  const decrement = () => onChange(Math.max(min, value - step));
+  const increment = () => onChange(value + step);
+  const atMin = value <= min;
+  const display = label ?? String(value);
+
+  const circle = (action: 'decrement' | 'increment', onPress: () => void, disabled: boolean) => {
+    const tone = stepperTone(colors, action);
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+      >
+        {({ pressed }) => (
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: tone.fill,
+              opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+            }}
+          >
+            <Icon name={action === 'increment' ? 'plus' : 'minus'} size={18} color={tone.glyph} />
+          </View>
+        )}
+      </Pressable>
+    );
+  };
+
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-      {button('minus', () => onChange(Math.max(min, value - step)), decrementLabel)}
-      <AppText variant="bodyStrong" style={{ minWidth: 40, textAlign: 'center' }}>
-        {label ?? String(value)}
-      </AppText>
-      {button('plus', () => onChange(value + step), incrementLabel)}
+    <View
+      accessible
+      accessibilityRole="adjustable"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityValue={{ text: unit ? `${display} ${unit}` : display }}
+      accessibilityActions={[
+        { name: 'increment', label: incrementLabel },
+        { name: 'decrement', label: decrementLabel },
+      ]}
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === 'increment') increment();
+        else if (event.nativeEvent.actionName === 'decrement' && !atMin) decrement();
+      }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+    >
+      {circle('decrement', decrement, atMin)}
+      <View style={{ minWidth: 40, alignItems: 'center' }}>
+        <AppText variant="bodyStrong" center style={{ fontVariant: ['tabular-nums'] }}>
+          {display}
+        </AppText>
+        {unit ? (
+          <AppText variant="caption" muted center>
+            {unit}
+          </AppText>
+        ) : null}
+      </View>
+      {circle('increment', increment, false)}
     </View>
   );
 }

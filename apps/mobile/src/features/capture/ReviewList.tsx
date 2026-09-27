@@ -80,15 +80,14 @@ export function ReviewList({ session, source, locations, submitting, onConfirm }
 
           {row.include ? (
             <>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                <QuantityStepper
-                  value={row.quantity}
-                  onChange={(quantity) => update(row.tempId, { quantity })}
-                  decrementLabel={t('common.delete')}
-                  incrementLabel={t('common.add')}
-                />
-                <AppText muted>{unitLabel(t, row.unit)}</AppText>
-              </View>
+              <QuantityStepper
+                value={row.quantity}
+                onChange={(quantity) => update(row.tempId, { quantity })}
+                unit={unitLabel(t, row.unit)}
+                accessibilityLabel={localizedName(locale, row.nameEn, row.nameAr)}
+                decrementLabel={t('common.delete')}
+                incrementLabel={t('common.add')}
+              />
 
               <View style={{ gap: spacing.xs }}>
                 <AppText variant="label" muted>

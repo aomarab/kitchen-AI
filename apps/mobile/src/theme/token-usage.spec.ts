@@ -44,6 +44,7 @@ describe('mobile source sweep', () => {
     'QuantityStepper.tsx': /height:\s*(\d+)/,
     // The visual circle is 36-40pt; the Pressable around it is what is measured.
     'RoundButton.tsx': /height:\s*(\d+)/,
+    'SegmentedControl.tsx': /minHeight:\s*(\d+)/,
     'StarRating.tsx': /minHeight:\s*(\d+)/,
   };
 
