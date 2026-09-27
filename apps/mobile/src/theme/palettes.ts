@@ -129,7 +129,7 @@ const apricotLight: Palette = {
     onDanger: '#FFFFFF',
     accent: '#3F6A36',
     accentSoft: '#E3EDDD',
-    success: '#1E7A46',
+    success: '#1C7443',
     successSoft: '#E4F2E9',
     warn: '#9A5B00',
     warnInverse: '#A56300',

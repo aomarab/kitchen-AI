@@ -81,6 +81,10 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     expect(contrast(colors.bg, colors.text)).toBeGreaterThanOrEqual(AA_TEXT);
   });
 
+  it('the inverted question tile outline separates', () => {
+    expect(contrast(colors.bg, colors.text)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
   /**
    * A fill also has to be *seen*, which contrast against its own label cannot
    * tell you. In dark mode this is the live risk: a primary dark enough to
@@ -279,6 +283,15 @@ describe.each(ALL)('%s palette', (_name, palette) => {
   describe('card tints', () => {
     it.each(tints)('$name carries its own foreground', (tint) => {
       expect(contrast(tint.fg, tint.bg), `${tint.name} fg`).toBeGreaterThanOrEqual(AA_TEXT);
+    });
+
+    it.each(tints)('$name carries review status text', (tint) => {
+      for (const status of STATUSES) {
+        expect(
+          contrast(colors[status], tint.bg),
+          `${status} on ${tint.name}`,
+        ).toBeGreaterThanOrEqual(AA_TEXT);
+      }
     });
 
     it.each(tints)('$name reads with the standard text colours', (tint) => {

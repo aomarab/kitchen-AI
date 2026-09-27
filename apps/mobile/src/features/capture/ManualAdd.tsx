@@ -18,10 +18,9 @@ import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
 import { ingredientName, locationLabel, unitLabel } from '../../lib/format';
 import { isValidExpiryInput } from '../../lib/expiry';
 import { errorMessageKey } from '../../lib/errors';
+import { COMMON_UNITS } from '../../lib/units';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
-
-const COMMON_UNITS: Unit[] = ['piece', 'g', 'kg', 'ml', 'l', 'bunch', 'can', 'packet'];
 
 /** Manual add: search the catalog, then fill quantity, unit, location and expiry. */
 export function ManualAdd() {

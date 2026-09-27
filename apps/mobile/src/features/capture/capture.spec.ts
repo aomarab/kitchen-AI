@@ -1,9 +1,25 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const SRC = join(__dirname, '..', '..');
 const read = (...parts: string[]) => readFileSync(join(SRC, ...parts), 'utf8');
+
+function sourceFiles(dir = SRC): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) out.push(...sourceFiles(full));
+    else if (/\.tsx?$/.test(entry) && !/\.spec\.tsx?$/.test(entry)) out.push(full);
+  }
+  return out;
+}
+
+function executableSource(file: string): string {
+  return readFileSync(file, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '');
+}
 
 describe('capture screen source contract (G3b)', () => {
   it('keeps the media segmented control to Photo, Barcode and Receipt only', () => {
@@ -90,5 +106,46 @@ describe('capture screen source contract (G3b)', () => {
 
     expect(source).toContain("from 'expo-status-bar'");
     expect(source).toContain('<StatusBar style="light" />');
+  });
+});
+
+describe('review screen source contract (G4)', () => {
+  it('keeps inventory writes behind ReviewList confirm and PhotoCapture add-all only', () => {
+    const callers = sourceFiles()
+      .filter((file) => !file.endsWith(join('lib', 'capture.ts')))
+      .filter((file) => executableSource(file).includes('buildInventoryInputs('))
+      .map((file) => relative(SRC, file).replaceAll('\\', '/'))
+      .sort();
+
+    expect(callers).toEqual([
+      'features/capture/PhotoCapture.tsx',
+      'features/capture/ReviewList.tsx',
+    ]);
+
+    const review = read('features', 'capture', 'ReviewList.tsx');
+    expect(review).toContain('const confirm = useCallback');
+    expect(review).toContain('onConfirm(buildInventoryInputs(rows, source))');
+  });
+
+  it('keeps the question tile free of the coral primary colour', () => {
+    const source = read('features', 'capture', 'QuestionTile.tsx');
+
+    expect(source).not.toContain('colors.primary');
+    expect(source).not.toContain('variant="primary"');
+  });
+
+  it('renders a trailing Retake action in the review header', () => {
+    const source = read('app', 'capture', 'review.tsx');
+
+    expect(source).toContain('trailing={');
+    expect(source).toContain("t('mobile.review.retake')");
+  });
+
+  it('drops the old review hint and exposes a sticky-footer split', () => {
+    const source = read('features', 'capture', 'ReviewList.tsx');
+
+    expect(source).toContain("footer?: 'inline' | 'none'");
+    expect(source).toContain('export function ReviewFooter');
+    expect(source).not.toContain("t('mobile.review.hint')");
   });
 });

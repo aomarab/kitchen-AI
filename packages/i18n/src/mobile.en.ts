@@ -171,9 +171,42 @@ export const mobileEn = {
     },
     review: {
       hint: 'Nothing is saved until you confirm. Check the quantities — we estimate them from the photo.',
+      retake: 'Retake',
+      headline: 'Nice haul —',
+      headlineAccent: plural('count', {
+        one: '1 thing',
+        other: '{count} things',
+      }),
+      headlineTail: 'for your kitchen',
+      useIn: plural('count', {
+        zero: 'Use today',
+        one: 'Use in 1 day',
+        other: 'Use in {count} days',
+      }),
+      goodForDays: plural('count', {
+        one: 'Good for 1 day',
+        other: 'Good for {count} days',
+      }),
+      goodForWeeks: plural('count', {
+        one: 'Good for 1 wk',
+        other: 'Good for {count} wks',
+      }),
+      notSure: 'Not sure',
+      isThis: 'Is this {name}?',
+      yes: 'Yes',
+      no: 'No',
+      resolveFirst: plural('count', {
+        one: 'Answer 1 question to continue',
+        other: 'Answer {count} questions to continue',
+      }),
+      savedOnAdd: 'Nothing is saved until you add it',
+      editTitle: 'Edit item',
+      tileLabel: '{name}, {location}, {expiry}',
+      addSomething: 'Add something',
       remove: 'Remove',
       addCount: plural('count', {
-        other: 'Add {count} to kitchen',
+        one: 'Add 1 to Kitchen',
+        other: 'Add {count} to Kitchen',
       }),
       emptyPhotos: plural('count', {
         one: '{count} photo had nothing to recognise.',

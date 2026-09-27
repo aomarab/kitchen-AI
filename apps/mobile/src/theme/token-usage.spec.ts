@@ -53,6 +53,16 @@ describe('mobile source sweep', () => {
     'Tile.tsx': { path: 'components/Tile.tsx', pattern: /minHeight:\s*(\d+)/ },
     'ArPins.tsx': { path: 'features/capture/ArPins.tsx', pattern: /minHeight:\s*(\d+)/ },
     'Shutter.tsx': { path: 'features/capture/Shutter.tsx', pattern: /width:\s*(\d+)/ },
+    'QuestionTile.tsx': {
+      path: 'features/capture/QuestionTile.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'ReviewEditSheet.tsx': {
+      path: 'features/capture/ReviewEditSheet.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'ReviewList.tsx': { path: 'features/capture/ReviewList.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'ReviewTile.tsx': { path: 'features/capture/ReviewTile.tsx', pattern: /minHeight:\s*(\d+)/ },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {
