@@ -173,13 +173,13 @@ the trailing end of the header row on Home, Kitchen, Plan and Shop, and tapping 
 `/account`. Account is a stack of white group cards that holds every row "More" held, with nothing
 removed:
 
-| Group         | Rows (existing destination)                                                                                  |
-| ------------- | ------------------------------------------------------------------------------------------------------------ |
-| _(header)_    | Name and email → `/profile`                                                                                  |
-| Household     | Household → `/settings/household` · Credits & AI usage → `/ai-usage` (shows the balance via `CreditBalance`) |
-| Kitchen tools | Smart screen → `/screen` · Timers → `/timers` · Wellness → `/wellness`                                       |
-| Preferences   | Notifications → `/settings/notifications` · Settings → `/settings`                                           |
-| _(footer)_    | Sign out (ghost button) · app version · icon credit line                                                     |
+| Group         | Rows (existing destination)                                                                              |
+| ------------- | -------------------------------------------------------------------------------------------------------- |
+| _(header)_    | Name and email → `/profile`                                                                              |
+| Household     | Household → `/settings/household` · Credits → `/ai-usage`, with the spendable balance as the row's value |
+| Kitchen tools | Smart screen → `/screen` · Timers → `/timers` · Wellness → `/wellness`                                   |
+| Preferences   | Notifications → `/settings/notifications` · Settings → `/settings`                                       |
+| _(footer)_    | Sign out (ghost button) · app version · icon credit line                                                 |
 
 The icon credit line is required by the CC-BY licence that the bundled food artwork ships under
 (see `more.tsx`). It must move with the rest of the footer. The screen title adds
@@ -190,6 +190,10 @@ The icon credit line is required by the CC-BY licence that the bundled food artw
 - `mobile.screen.entry`, `mobile.timers.entry` and `mobile.wellness.entry`
 
 `mobile.more.shopping` is no longer rendered, because Shop is a tab.
+
+The group names above describe the grouping; the cards carry no headings, so they add no keys. The
+header row shows the name and email, and its accessibility hint is `mobile.more.profile`
+("Preferences"), the screen it opens.
 
 ### §4.3 i18n
 
@@ -531,6 +535,8 @@ The tracking, Arabic and line-height assertions stay unchanged.
   - There is no pill behind the active tab.
 - **Direction:** it mirrors in RTL.
 - **Translucency:** it is opaque in v1 (no blur).
+- **Tablets and the keyboard:** the capsule is capped at the content width, and it hides while the
+  Android keyboard is up, where it would otherwise ride above the keys.
 
 ### §8.2 `Tile` and `Bento` (new, `components/Tile.tsx`)
 
@@ -541,7 +547,8 @@ The tracking, Arabic and line-height assertions stay unchanged.
 - `onPress`
 - optional `image`, which is rendered under the scrim
 
-The tile is radius `xl`, with `shadow.card` in light mode and a `border` edge in dark mode.
+The tile is radius `xl`, with `shadow.card` in light mode and a `border` edge in dark mode. A photo
+tile has no shadow, because iOS drops the shadow of a view that clips with `overflow: 'hidden'`.
 
 The shared anatomy, top to bottom, is optional at each step:
 
@@ -580,12 +587,14 @@ its full sentence ("32 items at home").
   - Default: `surface` fill and `text` label.
   - Selected: `text` fill and `bg` label.
   - Location chip inside a tile: radius `xs`, `surface` fill, `textMuted` label.
+  - An unselected chip keeps a `border` edge in both modes, because most chips sit on white cards.
 - **`Badge`** (status): a `*Soft` fill with its status text, and the word is always spelled out
-  ("Use in 2 days"). A count badge is a 20pt circle with `text` fill and `bg` label.
+  ("Use in 2 days"). A count badge is a 20pt circle with `text` fill and `bg` label. The `inverse`
+  status tone is removed: cook mode was its only caller, and it now follows the theme.
 - **`QuantityStepper`** (existing, restyled): `−` is a 32pt `surfaceAlt` circle with a `text` glyph, and `+` is a 32pt
   `primary` circle with an ink glyph. Each sits in a 44pt hit area. The value is `bodyStrong` with
   the unit as a caption. Its accessibility role is `adjustable`, with increment and decrement
-  actions.
+  actions. `−` is disabled at the minimum.
 
 ### §8.5 `Button`
 
@@ -603,15 +612,16 @@ its full sentence ("32 items at home").
   `ghostInverse`. Cook mode follows the theme, and the old home hero is gone. Every call site is
   migrated:
 
-  | Call site                                                | Today              | Becomes     |
-  | -------------------------------------------------------- | ------------------ | ----------- |
-  | `cook.tsx` 85 (exit cook mode)                           | `ghostInverse`     | `ghost`     |
-  | `cook.tsx` 95, 132, 219 (ask Mama, previous, step timer) | `secondaryInverse` | `secondary` |
-  | `cook.tsx` 141, 148 (finish, next)                       | `primaryInverse`   | `primary`   |
-  | `home.tsx` 124, 130 (hero actions)                       | both               | deleted     |
+  | Call site                                                | Today              | Becomes               |
+  | -------------------------------------------------------- | ------------------ | --------------------- |
+  | `cook.tsx` 85 (exit cook mode)                           | `ghostInverse`     | `ghost`               |
+  | `cook.tsx` 95, 132, 219 (ask Mama, previous, step timer) | `secondaryInverse` | `secondary`           |
+  | `cook.tsx` 141, 148 (finish, next)                       | `primaryInverse`   | `primary`             |
+  | `home.tsx` 124, 130 (hero actions)                       | both               | `media`, then deleted |
 
-  The home hero is replaced by the Tonight tile (§9.2). A button on a photo or camera surface uses
-  the new `media` variant.
+  The home hero sits on the ember gradient, a media surface, so its actions move to `media` when the
+  variants are removed (Plan 3). Plan 4 then replaces the whole hero with the Tonight tile (§9.2). A
+  button on a photo or camera surface uses the new `media` variant.
 
 - The `ButtonVariant` union loses the three members, so any missed call site is a type error, not a
   silent restyle. Cook's `surfaceInverse` backgrounds and `textInverse*` text colours become
@@ -1288,7 +1298,10 @@ Motion is restrained, with a few moments of character:
 - **Everything else:** tab switches are instant, sheets and pushes use platform defaults, and the
   cook progress segment fills over 200ms. There are no entrance animations on tiles.
 
-This uses `react-native-reanimated`, which is already a dependency.
+This uses React Native's `Animated` on the native driver (`useNativeDriver: true`), including the
+pin spring. `react-native-reanimated` 4.5 is listed in `package.json`, but it needs
+`react-native-worklets`, which is only a transitive dependency. Under pnpm that package is neither
+declared nor autolinked, and nothing in the app uses reanimated.
 
 ## §14 Migration and guards
 
@@ -1407,6 +1420,9 @@ Each change below is **mechanical**: the thresholds and the intent of every asse
     - `'RoundButton.tsx': /height:\s*(\d+)/`
     - `'Tile.tsx': /minHeight:\s*(\d+)/`
     - `'ArPins.tsx': /minHeight:\s*(\d+)/`
+    - `'SegmentedControl.tsx': /minHeight:\s*(\d+)/`, because the 44pt dimension moves from the
+      segments to the track
+    - `'TabBar.tsx': /minHeight:\s*(\d+)/`, which locks the tabs at 44 through the capsule rebuild
   - The `lineHeight` sweep is unchanged. (The mobile sweep has no hex or letter-spacing rule;
     only the web `token-usage.test.ts` sweeps for hex.)
 - **API `VisionResult` fixtures:** the typed literals in `credits/cost-attribution.spec.ts` (88) and
