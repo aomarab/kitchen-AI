@@ -35,8 +35,9 @@ Plan 4, not this plan.
     rescaled on a guess")
 - **Otherwise sanitising** clamps `x` and `y` to [0,1] and clips `w` and `h` to fit. It then
   rejects a `w` or `h` under 0.02, and an area over 0.9.
-- **Prompt:** `VISION_PROMPT_VERSION` becomes `'vision/v2'`. The system prompt adds exactly this
-  sentence, and the rest of the prompt is unchanged:
+- **Prompt:** `VISION_PROMPT_VERSION` becomes `'vision/v2'`. The JSON shape the prompt asks for
+  gains `"box"` after `"confidence"`, and the system prompt adds exactly this sentence. The rest of
+  the prompt is unchanged:
 
   ```text
   "box" is {x,y,w,h} as fractions (0–1) of the image width and height, origin top-left, drawn tightly around the item. If several of the same item are visible, box the group. Use null if you cannot localise it.
