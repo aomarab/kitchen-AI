@@ -268,7 +268,7 @@ while the light danger fill takes white.
 | `onDanger`       | `#FFFFFF`             | **New.** Label on `danger`                                                        |
 | `accent`         | `#3F6A36`             | Herb: foreground on sage                                                          |
 | `accentSoft`     | `#E3EDDD`             | Sage                                                                              |
-| `success`        | `#1E7A46`             | Status: fresh / in stock / cooked                                                 |
+| `success`        | `#1C7443`             | Status: fresh / in stock / cooked (darkened from #1E7A46: 4.8:1 on the `sage` tint) |
 | `successSoft`    | `#E4F2E9`             |                                                                                   |
 | `warn`           | `#9A5B00`             | Status: use soon / running low / to buy                                           |
 | `warnSoft`       | `#F8ECDA`             |                                                                                   |
