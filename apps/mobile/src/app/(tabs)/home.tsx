@@ -50,7 +50,7 @@ function ProgressBar({ ratio }: { ratio: number }) {
 }
 
 export default function Home() {
-  const { colors, tintFor } = useTheme();
+  const { colors, tintIn } = useTheme();
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const plansQuery = usePlans();
@@ -166,7 +166,7 @@ export default function Home() {
               {expiring.slice(0, 8).map((item, index) => (
                 <Card
                   key={item.id}
-                  tint={tintFor(index)}
+                  tint={tintIn(index)}
                   onPress={() => router.push(`/item/${item.id}`)}
                   style={{ width: 150 }}
                 >

@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { useColorScheme, type StyleSheet } from 'react-native';
-import { resolveThemeMode, shadowFor, tintIn, type Shadow } from './index';
+import { resolveThemeMode, shadowFor, tintIn, tintNamed, type Shadow } from './index';
 import {
-  DEFAULT_THEME_FAMILY,
   paletteFor,
   type Palette,
+  type Scrim,
   type Tint,
+  type TintName,
   type ThemeMode,
 } from './palettes';
 import { useSettingsStore } from '../stores/settings';
@@ -14,10 +15,14 @@ export interface Theme {
   readonly colors: Palette['colors'];
   readonly tints: readonly Tint[];
   readonly gradientHero: readonly string[];
+  readonly scrim: Scrim;
   readonly shadow: Shadow;
   readonly mode: ThemeMode;
   readonly isDark: boolean;
-  readonly tintFor: (index: number) => Tint;
+  /** Rotating tints for a list, so neighbours never repeat. */
+  readonly tintIn: (index: number) => Tint;
+  /** The tint for a tile whose colour has a fixed role. */
+  readonly tintNamed: (name: TintName) => Tint;
 }
 
 /**
@@ -32,15 +37,17 @@ export function useTheme(): Theme {
   const mode: ThemeMode = resolveThemeMode(preference, system);
 
   return useMemo(() => {
-    const palette = paletteFor(DEFAULT_THEME_FAMILY, mode);
+    const palette = paletteFor(mode);
     return {
       colors: palette.colors,
       tints: palette.tints,
       gradientHero: palette.gradientHero,
+      scrim: palette.scrim,
       shadow: shadowFor(palette),
       mode,
       isDark: mode === 'dark',
-      tintFor: (index: number) => tintIn(palette.tints, index),
+      tintIn: (index: number) => tintIn(palette.tints, index),
+      tintNamed: (name: TintName) => tintNamed(palette.tints, name),
     };
   }, [mode]);
 }

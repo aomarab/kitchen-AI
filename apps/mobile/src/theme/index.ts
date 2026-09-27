@@ -1,5 +1,5 @@
 import type { Locale } from '@kitchen/i18n';
-import type { Palette, ThemeMode, Tint } from './palettes';
+import type { Palette, ThemeMode, Tint, TintName } from './palettes';
 
 /**
  * Design tokens. Kept flat and dependency-free so any component can pull colours,
@@ -8,8 +8,16 @@ import type { Palette, ThemeMode, Tint } from './palettes';
  * logical style keys (start/end) at the call site.
  */
 
-export { paletteFor, palettes, THEME_FAMILIES, DEFAULT_THEME_FAMILY } from './palettes';
-export type { Palette, PaletteColors, Tint, ThemeFamily, ThemeMode, ColorToken } from './palettes';
+export { paletteFor, palettes } from './palettes';
+export type {
+  Palette,
+  PaletteColors,
+  Scrim,
+  Tint,
+  TintName,
+  ThemeMode,
+  ColorToken,
+} from './palettes';
 
 export const spacing = {
   xs: 4,
@@ -21,34 +29,33 @@ export const spacing = {
 } as const;
 
 /**
- * The reference rounds generously — cards read ~20px and controls are pills.
- * `xl` is the card radius; `pill` stays for chips and the FAB.
+ * Apricot rounds generously (spec §6.7): `xl` is the bento tile, `lg` the group
+ * card, chat bubble and sheet, `md` inputs and thumbnails. Buttons, chips, the
+ * composer and the tab bar are pills.
  */
 export const radius = {
-  xs: 6,
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 22,
+  xs: 8,
+  sm: 12,
+  md: 18,
+  lg: 24,
+  xl: 28,
   pill: 999,
 } as const;
 
 /**
- * Depth comes from soft diffused shadow rather than borders. Spread across two
- * layers on iOS; Android gets the matching `elevation`. Opacities were lifted
- * when the page went near-white: against the old lavender the card's white fill
- * carried most of the separation on its own and the shadow only had to hint.
- * White-on-near-white leaves the shadow doing that work alone.
+ * Tiles separate from the cream page by fill, so the card shadow only hints.
+ * `raised` is for what floats: the tab bar, the camera button, sheets and the
+ * orb's bubble on the camera. Android gets the matching `elevation`.
  */
 export function shadowFor(palette: Palette) {
   const { shadowColor, shadowScale } = palette;
   return {
     card: {
       shadowColor,
-      shadowOpacity: 0.08 * shadowScale,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 3,
+      shadowOpacity: 0.05 * shadowScale,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
     },
     raised: {
       shadowColor,
@@ -168,4 +175,13 @@ export function tintIn(tints: readonly Tint[], index: number): Tint {
   const count = tints.length;
   const wrapped = ((Math.trunc(index) % count) + count) % count;
   return tints[wrapped] ?? tints[0]!;
+}
+
+/**
+ * The tint with a fixed role, such as the butter count tile or the sage plan
+ * tile (spec §5.3). Rotation (`tintIn`) is for lists; a tile whose colour means
+ * something asks for it by name.
+ */
+export function tintNamed(tints: readonly Tint[], name: TintName): Tint {
+  return tints.find((tint) => tint.name === name) ?? tints[0]!;
 }

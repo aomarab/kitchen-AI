@@ -12,7 +12,8 @@ file to the feature: `2026-07-26-kitchen-ai-design.md` (system baseline),
 `2026-08-10-publishing-compliance-design.md`, `2026-08-11-ai-credits-design.md`,
 `2026-08-11-recipe-media-resolution-design.md`, `2026-08-11-model-routing-design.md` (vision
 vendor + per-model cost), `2026-08-26-kitchen-companion-design.md` (smart screen, reminders,
-timers, live assistant). Adding a subsystem means adding a spec, not just code.
+timers, live assistant), `2026-09-27-mobile-apricot-bento-redesign-design.md` (mobile UI, which
+supersedes the Slack-inspired spec for `apps/mobile`). Adding a subsystem means adding a spec, not just code.
 
 ## Commands
 
@@ -158,7 +159,9 @@ Non-obvious system rules:
 ## Design tokens (self-enforcing)
 
 Colour, radius and tracking resolve from exactly two files: `apps/web/src/app/globals.css`
-(`@theme inline` Tailwind v4 tokens) and `apps/mobile/src/theme/index.ts`. Components reference
+(`@theme inline` Tailwind v4 tokens) and `apps/mobile/src/theme/` (`palettes.ts` for colour — one
+Apricot palette in light and dark, where `onFill` is ink on the coral, never white — and `index.ts`
+for radius, spacing and type). Components reference
 tokens by name. Three guard tests keep it honest and must not be relaxed to make a change pass:
 
 - `apps/web/src/app/palette.test.ts` + `apps/mobile/src/theme/palette.spec.ts` parse the token files

@@ -31,7 +31,7 @@ export function StatTiles({
   shopping: number;
 }) {
   const { t, locale, prefs } = useFormat();
-  const { tintFor } = useTheme();
+  const { tintIn } = useTheme();
   const router = useRouter();
 
   const tiles: Tile[] = [
@@ -61,7 +61,7 @@ export function StatTiles({
   return (
     <View style={{ flexDirection: 'row', gap: spacing.sm }}>
       {tiles.map((tile, index) => {
-        const tint = tintFor(index);
+        const tint = tintIn(index);
         return (
           <Card
             key={tile.key}

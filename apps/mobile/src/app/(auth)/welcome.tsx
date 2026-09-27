@@ -33,7 +33,7 @@ const LOCALES = [
 export default function Welcome() {
   const { t, locale, setLocale } = useLocale();
   const router = useRouter();
-  const { colors, tintFor } = useTheme();
+  const { colors, tintIn } = useTheme();
   // Only the top edge is inset by `Screen`, so the light panel below can run to
   // the physical bottom instead of leaving a dark strip beneath it. That means
   // the bottom inset has to be re-applied here, or the second button lands
@@ -134,7 +134,7 @@ export default function Welcome() {
       >
         <View style={{ gap: spacing.lg, flexGrow: 1, justifyContent: 'center' }}>
           {points.map((point, index) => {
-            const tint = tintFor(index);
+            const tint = tintIn(index);
             return (
               <View
                 key={point.icon}

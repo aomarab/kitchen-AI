@@ -12,7 +12,7 @@ import { palettes } from '../theme/palettes';
  */
 
 const read = (relative: string) => readFileSync(join(__dirname, relative), 'utf8');
-const colors = palettes.violet.light.colors;
+const colors = palettes.apricot.light.colors;
 
 describe('borderless buttons align to the content margin', () => {
   const source = read('./Button.tsx');
