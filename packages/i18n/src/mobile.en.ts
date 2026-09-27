@@ -160,6 +160,30 @@ export const mobileEn = {
       addLocation: 'Add location',
       manageLocations: 'Locations',
       itemTitle: 'Item',
+      search: 'Search',
+      soonCount: plural('count', {
+        one: '1 soon',
+        other: '{count} soon',
+      }),
+      inType: {
+        fridge: 'in the fridge',
+        freezer: 'in the freezer',
+        pantry: 'in the pantry',
+        spice_rack: 'on the spice rack',
+        other: 'elsewhere',
+      },
+      inPlace: 'in {place}',
+      placeLabel: plural('count', {
+        one: '{place}, 1 item',
+        other: '{place}, {count} items',
+      }),
+      placeSoon: plural('count', {
+        one: '1 expiring soon',
+        other: '{count} expiring soon',
+      }),
+      useFirst: 'Use these first',
+      justAdded: 'Just added',
+      allItems: 'All items',
     },
     plans: {
       day: 'Day',

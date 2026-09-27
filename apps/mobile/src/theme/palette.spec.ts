@@ -142,6 +142,12 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     },
   );
 
+  it.each(['warn', 'danger'] as const)('%s reads as mini-tile status text on surface', (status) => {
+    expect(contrast(colors[status], colors.surface), `${status} on surface`).toBeGreaterThanOrEqual(
+      AA_TEXT,
+    );
+  });
+
   it('media surfaces invert legibly', () => {
     expect(contrast(colors.textInverse, colors.surfaceInverse), 'primary').toBeGreaterThanOrEqual(
       AA_TEXT,

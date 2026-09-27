@@ -13,6 +13,7 @@ import {
   StyleSheet,
   View,
   type ImageSourcePropType,
+  type AccessibilityState,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -36,6 +37,8 @@ export interface TileProps {
   onPress?: () => void;
   /** The whole sentence a screen reader hears, e.g. "32 items at home". */
   accessibilityLabel: string;
+  /** Selection or other state announced for the one tile element. */
+  accessibilityState?: AccessibilityState;
   /** Screen-reader actions for visual controls nested inside the one tile element. */
   actions?: { name: string; label: string; onPress: () => void }[];
   /** Drawn in a 36pt circle at the top. */
@@ -67,6 +70,7 @@ export function Tile({
   image,
   onPress,
   accessibilityLabel,
+  accessibilityState,
   actions,
   icon,
   leading,
@@ -174,6 +178,7 @@ export function Tile({
       <View
         accessible
         accessibilityLabel={accessibilityLabel}
+        accessibilityState={accessibilityState}
         accessibilityActions={accessibilityActions}
         onAccessibilityAction={onAccessibilityAction}
         testID={testID}
@@ -187,6 +192,7 @@ export function Tile({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
       accessibilityActions={accessibilityActions}
       onAccessibilityAction={onAccessibilityAction}
       onPress={onPress}

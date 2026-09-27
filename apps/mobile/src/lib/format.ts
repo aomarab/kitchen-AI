@@ -81,6 +81,14 @@ const SEEDED_NAMES: Record<StorageLocationType, string> = {
   other: 'Other',
 };
 
+/** The server's default names are placeholders; blank names also fall back to the type label. */
+export function isSeededLocationName(
+  location: Pick<StorageLocation, 'type'> & Partial<Pick<StorageLocation, 'name'>>,
+): boolean {
+  const name = location.name?.trim();
+  return !name || name === SEEDED_NAMES[location.type];
+}
+
 /**
  * Storage location name in the active language.
  *
@@ -99,7 +107,7 @@ export function locationLabel(
   location: Pick<StorageLocation, 'type'> & Partial<Pick<StorageLocation, 'name'>>,
 ): string {
   const name = location.name?.trim();
-  if (name && name !== SEEDED_NAMES[location.type]) return name;
+  if (name && !isSeededLocationName(location)) return name;
   return t(`inventory.locations.${location.type}` as MessageKey);
 }
 

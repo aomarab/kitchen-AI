@@ -51,6 +51,8 @@ export const IONICONS = {
   offline: 'cloud-offline',
   sync: 'sync',
   location: 'location-outline',
+  snowflake: 'snow-outline',
+  box: 'cube-outline',
   swap: 'swap-horizontal',
   chevron: 'chevron-forward',
   chevronDown: 'chevron-down',

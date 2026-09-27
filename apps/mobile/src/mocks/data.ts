@@ -352,7 +352,7 @@ export function buildInventory(): InventoryItem[] {
       source: seed.source,
       confidence: seed.confidence ?? null,
       photoKey: null,
-      createdAt: isoDateTime(-3),
+      createdAt: isoDateTime(-index),
       updatedAt: isoDateTime(-1),
     };
   });

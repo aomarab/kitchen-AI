@@ -138,6 +138,28 @@ describe('information architecture (spec §4)', () => {
     expect(kitchen).toContain("edges={['top', 'left', 'right']}");
   });
 
+  it('keeps Kitchen wired to the G2 screen contract', () => {
+    const kitchen = read('app', '(tabs)', 'kitchen.tsx');
+
+    expect(kitchen, "Kitchen's add button must open manual capture").toContain(
+      "'/capture?method=manual'",
+    );
+    expect(kitchen, 'Kitchen must validate the sort param through parseSort').toContain(
+      'parseSort(params.sort)',
+    );
+    expect(
+      kitchen.match(/params\.sort/g) ?? [],
+      'The sort param is a seed and must not be read outside parseSort',
+    ).toHaveLength(1);
+    expect(kitchen).not.toContain('From scan');
+    expect(kitchen).not.toMatch(/provenance/i);
+    expect(kitchen).not.toMatch(/sourceLabel|sourceKey/);
+    expect(kitchen).toMatch(
+      /<RoundButton[\s\S]*icon=\{searchOpen \? 'close' : 'search'\}[\s\S]*accessibilityLabel=\{searchLabel\}/,
+    );
+    expect(kitchen).toMatch(/<RoundButton[\s\S]*icon="plus"[\s\S]*accessibilityLabel=\{addLabel\}/);
+  });
+
   it('keeps the redesigned Home tab inside the G1 screen scope', () => {
     const home = read('app', '(tabs)', 'home.tsx');
 
