@@ -168,4 +168,11 @@ describe('information architecture (spec §4)', () => {
     expect(home).not.toContain('<DirectionalIcon name="play"');
     expect(home).toContain('<DirectionalIcon name="arrowForward"');
   });
+
+  it('keeps the empty Tonight tile at the populated Tonight height', () => {
+    const home = read('app', '(tabs)', 'home.tsx');
+    expect(home).toMatch(
+      /tint="apricot"[\s\S]*?height=\{220\}[\s\S]*?accessibilityLabel=\{t\('mobile\.home\.tonightEmpty'\)\}/,
+    );
+  });
 });

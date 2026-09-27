@@ -3,6 +3,7 @@ import {
   dayPart,
   firstName,
   pantryLine,
+  tonightLabel,
   tonightEntry,
   useSoonLabel,
   useSoonPreview,
@@ -103,6 +104,41 @@ describe('pantryLine', () => {
 
   it('returns no line when neither recipe nor coverage can prove the pantry state', () => {
     expect(pantryLine(undefined, false)).toBeNull();
+  });
+});
+
+describe('tonightLabel', () => {
+  it('includes the chip, dish, minutes and pantry count line', () => {
+    expect(
+      tonightLabel({
+        chip: 'Tonight',
+        title: 'Spinach shakshuka',
+        minutes: '25 min',
+        pantryLine: 'uses 6 of your items',
+      }),
+    ).toBe('Tonight, Spinach shakshuka, 25 min, uses 6 of your items');
+  });
+
+  it('includes the all-in-kitchen fallback when that is the shown pantry line', () => {
+    expect(
+      tonightLabel({
+        chip: 'Tonight',
+        title: 'Spinach shakshuka',
+        minutes: '25 min',
+        pantryLine: 'all in your kitchen',
+      }),
+    ).toBe('Tonight, Spinach shakshuka, 25 min, all in your kitchen');
+  });
+
+  it('omits the pantry segment when no pantry line is shown', () => {
+    expect(
+      tonightLabel({
+        chip: 'Tonight',
+        title: 'Spinach shakshuka',
+        minutes: '25 min',
+        pantryLine: null,
+      }),
+    ).toBe('Tonight, Spinach shakshuka, 25 min');
   });
 });
 

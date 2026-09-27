@@ -50,6 +50,20 @@ export function pantryLine(recipe: PantryRecipe | undefined, fullyCovered: boole
   return fullyCovered ? { key: 'allInKitchen' } : null;
 }
 
+export function tonightLabel({
+  chip,
+  title,
+  minutes,
+  pantryLine: pantry,
+}: {
+  chip: string;
+  title: string;
+  minutes: string;
+  pantryLine?: string | null;
+}): string {
+  return [chip, title, minutes, pantry].filter(Boolean).join(', ');
+}
+
 export function useSoonPreview<T>(items: readonly T[]): T[] {
   return items.slice(0, 3);
 }

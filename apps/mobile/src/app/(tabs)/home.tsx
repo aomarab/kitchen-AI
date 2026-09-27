@@ -34,6 +34,7 @@ import {
   dayPart,
   firstName,
   pantryLine,
+  tonightLabel,
   tonightEntry,
   useSoonLabel,
   useSoonPreview,
@@ -237,6 +238,32 @@ export default function Home() {
   };
   const topUp = () => router.push('/buy-credits');
   const generatePlan = () => router.push('/generate-plan');
+  const tonightMinutes =
+    tonight !== undefined ? tonight.recipe.prepMinutes + tonight.recipe.cookMinutes : 0;
+  const tonightMinutesLabel =
+    tonight !== undefined
+      ? minuteMessage(t, tonightMinutes, formatMinutes(locale, tonightMinutes, prefs))
+      : null;
+  const tonightPantryLabel =
+    pantry?.key === 'usesYourItems'
+      ? countMessage(
+          t,
+          'mobile.home.usesYourItems',
+          pantry.count,
+          formatQty(locale, pantry.count, prefs),
+        )
+      : pantry?.key === 'allInKitchen'
+        ? t('mobile.home.allInKitchen')
+        : null;
+  const tonightAccessibilityLabel =
+    tonight && tonightMinutesLabel
+      ? tonightLabel({
+          chip: t('mobile.home.tonightTitle'),
+          title: tonight.recipe.title,
+          minutes: tonightMinutesLabel,
+          pantryLine: tonightPantryLabel,
+        })
+      : null;
   const weekProgressText = week
     ? t('mobile.home.weekProgress', { cooked: week.cooked, total: week.total })
         .replace(String(week.cooked), formatQty(locale, week.cooked, prefs))
@@ -264,7 +291,7 @@ export default function Home() {
             height={220}
             image={tonight.recipe.heroImageUrl ? { uri: tonight.recipe.heroImageUrl } : undefined}
             leading={<TonightChip label={t('mobile.home.tonightTitle')} />}
-            accessibilityLabel={`${t('mobile.home.tonightTitle')}, ${tonight.recipe.title}`}
+            accessibilityLabel={tonightAccessibilityLabel ?? tonight.recipe.title}
             actions={[{ name: 'cook', label: t('mobile.home.cook'), onPress: cook }]}
             onPress={() => router.push(`/recipe/${tonight.recipe.id}`)}
           >
@@ -274,26 +301,9 @@ export default function Home() {
                   {tonight.recipe.title}
                 </AppText>
                 <AppText variant="caption" color="textInverseMuted">
-                  {minuteMessage(
-                    t,
-                    tonight.recipe.prepMinutes + tonight.recipe.cookMinutes,
-                    formatMinutes(
-                      locale,
-                      tonight.recipe.prepMinutes + tonight.recipe.cookMinutes,
-                      prefs,
-                    ),
-                  )}
-                  {pantry ? ' · ' : ''}
-                  {pantry?.key === 'usesYourItems'
-                    ? countMessage(
-                        t,
-                        'mobile.home.usesYourItems',
-                        pantry.count,
-                        formatQty(locale, pantry.count, prefs),
-                      )
-                    : pantry?.key === 'allInKitchen'
-                      ? t('mobile.home.allInKitchen')
-                      : null}
+                  {tonightMinutesLabel}
+                  {tonightPantryLabel ? ' · ' : ''}
+                  {tonightPantryLabel}
                 </AppText>
               </View>
               <RoundButton
@@ -309,6 +319,7 @@ export default function Home() {
           <Tile
             span={2}
             tint="apricot"
+            height={220}
             accessibilityLabel={t('mobile.home.tonightEmpty')}
             actions={[{ name: 'generatePlan', label: t('plans.generate'), onPress: generatePlan }]}
           >
