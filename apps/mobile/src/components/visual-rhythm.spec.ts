@@ -32,6 +32,23 @@ describe('borderless buttons align to the content margin', () => {
   });
 });
 
+describe('pushed-screen header', () => {
+  const source = read('./Header.tsx');
+
+  it('centres a bodyStrong title between two equal sides', () => {
+    // Spec §8.6. Equal flex on both sides is what keeps the title optically
+    // centred when only one side (usually back) is occupied.
+    expect(source).toMatch(/variant="bodyStrong"/);
+    expect(source).not.toMatch(/variant="title"/);
+    expect(source.match(/flex:\s*1\b/g) ?? []).toHaveLength(2);
+  });
+
+  it('backs out through a 44pt round button that mirrors in RTL', () => {
+    // The old bare 26pt chevron relied on hitSlop for its touch target.
+    expect(source).toMatch(/<RoundButton[^>]*icon="back"[^>]*directional/);
+  });
+});
+
 describe('screen rhythm', () => {
   const source = read('./Screen.tsx');
 

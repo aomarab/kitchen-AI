@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BUTTON_VARIANTS, buttonTone } from './button-tones';
+import { BUTTON_VARIANTS, ROUND_BUTTON_TONES, buttonTone, roundButtonTone } from './button-tones';
 import { palettes, type ThemeMode } from '../theme/palettes';
 import { contrast } from '../theme/contrast';
 
@@ -44,5 +44,11 @@ describe.each(['light', 'dark'] as ThemeMode[])('button tones, apricot %s', (mod
     // A reviewer's shorthand for spec §3: coral is never white-labelled.
     expect(buttonTone(colors, 'primary').label).toBe(colors.onFill);
     expect(buttonTone(colors, 'danger').label).toBe(colors.onDanger);
+  });
+
+  it.each(ROUND_BUTTON_TONES)('the %s round button carries a readable glyph', (name) => {
+    // Held to the text bar, not 3:1: the avatar's glyph is a letter.
+    const tone = roundButtonTone(colors, name);
+    expect(contrast(tone.glyph, tone.fill), name).toBeGreaterThanOrEqual(AA_TEXT);
   });
 });

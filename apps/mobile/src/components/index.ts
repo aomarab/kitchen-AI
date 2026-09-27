@@ -22,6 +22,7 @@ export { SyncFailuresBanner } from './SyncFailuresBanner';
 export { YoutubePlayer } from './YoutubePlayer';
 export { QuantityStepper } from './QuantityStepper';
 export { RecipeThumb } from './RecipeThumb';
+export { RoundButton } from './RoundButton';
 export { Ring } from './Ring';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';

@@ -74,3 +74,48 @@ export function buttonTone(colors: PaletteColors, variant: ButtonVariant): Butto
       };
   }
 }
+
+/**
+ * The fills a `RoundButton` circle takes (spec §14, "Small controls"): back
+ * and close on the page, the same inside a card or sheet, the brand action,
+ * the avatar, and controls over the camera or a photo.
+ */
+export const ROUND_BUTTON_TONES = ['surface', 'sunk', 'primary', 'soft', 'media'] as const;
+
+export type RoundButtonTone = (typeof ROUND_BUTTON_TONES)[number];
+
+export interface RoundButtonColors {
+  fill: string;
+  glyph: string;
+  border: string;
+}
+
+export function roundButtonTone(
+  colors: PaletteColors,
+  tone: RoundButtonTone,
+  isDark = false,
+): RoundButtonColors {
+  switch (tone) {
+    case 'surface':
+      // White on the cream page separates by its shadow in light mode. Dark
+      // mode has no visible shadow, so the edge is drawn instead.
+      return {
+        fill: colors.surface,
+        glyph: colors.text,
+        border: isDark ? colors.border : colors.surface,
+      };
+    case 'sunk':
+      // Inside a card or a sheet, where a `surface` circle would vanish.
+      return { fill: colors.surfaceAlt, glyph: colors.text, border: colors.surfaceAlt };
+    case 'primary':
+      return { fill: colors.primary, glyph: colors.onFill, border: colors.primary };
+    case 'soft':
+      return { fill: colors.primarySoft, glyph: colors.primaryText, border: colors.primarySoft };
+    case 'media':
+      return {
+        fill: colors.surfaceInverseAlt,
+        glyph: colors.textInverse,
+        border: colors.borderInverse,
+      };
+  }
+}
