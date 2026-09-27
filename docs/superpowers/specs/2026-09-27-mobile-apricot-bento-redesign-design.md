@@ -1312,7 +1312,8 @@ This uses `react-native-reanimated`, which is already a dependency.
 - **Call sites of `tintFor`:** `app/(auth)/welcome.tsx`, `app/(tabs)/home.tsx`,
   `features/home/KitchenGlance.tsx`, `StatTiles.tsx` and `WeekStrip.tsx`.
   - Components absorbed by the new Home (§9.2) are deleted, and their data hooks stay.
-  - `WeekStrip` survives on Plan and moves to `tintIn`.
+  - `WeekStrip` survives on Plan and its planned bar uses `tintNamed('apricot')`, because
+    `tintIn(0)` is `plain` — the card's own surface.
 - **Fonts (§7.1):**
   - `lib/fonts.ts`: `LATIN_FONTS`, `latinFontFamily` and the Latin branch of `resolveFontFamily`.
   - `lib/font-loader.ts`: register the four Outfit faces.

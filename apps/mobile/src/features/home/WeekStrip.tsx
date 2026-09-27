@@ -21,7 +21,7 @@ const TRACK = 56;
  */
 export function WeekStrip({ bars, today }: { bars: readonly DayBar[]; today: string }) {
   const { t, locale, prefs } = useFormat();
-  const { colors, tintIn } = useTheme();
+  const { colors, tintNamed } = useTheme();
   const router = useRouter();
 
   const busiest = Math.max(1, ...bars.map((bar) => bar.planned));
@@ -64,7 +64,7 @@ export function WeekStrip({ bars, today }: { bars: readonly DayBar[]; today: str
               <View
                 style={{
                   height,
-                  backgroundColor: tintIn(0).bg,
+                  backgroundColor: tintNamed('apricot').bg,
                   justifyContent: 'flex-end',
                 }}
               >
