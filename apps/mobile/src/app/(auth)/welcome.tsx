@@ -8,6 +8,11 @@ import { useFormat } from '../../hooks/useFormat';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
+const LOCALES = [
+  { value: 'en', labelKey: 'common.english' },
+  { value: 'ar', labelKey: 'common.arabic' },
+] as const;
+
 const WELCOME_BODY_GAP = spacing.xl;
 
 const FEATURES = [
@@ -61,10 +66,12 @@ function FeatureRow({
  * The signed-out landing. It introduces the photo-to-inventory promise before account creation.
  */
 export default function Welcome() {
-  const { t } = useFormat();
+  const { t, locale, setLocale } = useFormat();
   const router = useRouter();
   const isFocused = useIsFocused();
   const collageLabel = t('mobile.welcome.collageLabel');
+  const localeToggle = LOCALES.find((option) => option.value !== locale) ?? LOCALES[0];
+  const localeToggleLabel = t(localeToggle.labelKey);
 
   return (
     <Screen
@@ -120,6 +127,18 @@ export default function Welcome() {
             variant="ghost"
             onPress={() => router.push('/sign-in')}
           />
+          <View style={{ alignItems: 'center' }}>
+            <Button
+              title={localeToggleLabel}
+              accessibilityLabel={t('mobile.welcome.switchLanguageTo', {
+                language: localeToggleLabel,
+              })}
+              variant="ghost"
+              size="S"
+              fullWidth={false}
+              onPress={() => setLocale(localeToggle.value)}
+            />
+          </View>
         </View>
       </View>
     </Screen>

@@ -619,6 +619,11 @@ describe('information architecture (spec §4)', () => {
     expect(welcome).toContain("t('mobile.welcome.collageLabel')");
     expect(welcome).toContain("t('common.appName')");
     expect(welcome).toContain("t('mobile.welcome.haveAccount')");
+    expect(welcome).toContain('const LOCALES = [');
+    expect(welcome).toContain('setLocale');
+    expect(welcome).toContain('localeToggle');
+    expect(welcome).toContain('size="S"');
+    expect(welcome).toContain("t('mobile.welcome.switchLanguageTo'");
     expect(welcome).not.toContain('haveAccountShort');
     expect(welcome).not.toContain('SegmentedControl');
     expect(welcome).not.toContain('surfaceInverse');
@@ -644,6 +649,7 @@ describe('information architecture (spec §4)', () => {
       'mobile.welcome.collage.itemsSpotted',
       'mobile.welcome.getStarted',
       'mobile.welcome.haveAccount',
+      'mobile.welcome.switchLanguageTo',
     ]) {
       expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
       expect(translate('ar', key as never)).not.toBe(translate('en', key as never));

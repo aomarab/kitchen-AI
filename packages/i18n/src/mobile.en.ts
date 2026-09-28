@@ -559,6 +559,7 @@ export const mobileEn = {
         tonight: 'Tonight · {minutes} min',
       },
       haveAccountShort: 'I have an account',
+      switchLanguageTo: 'Switch language to {language}',
     },
     auth: {
       welcomeTitle: 'Welcome back',

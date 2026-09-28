@@ -698,6 +698,7 @@ export const mobileAr: MobileMessages = {
         tonight: 'الليلة · {minutes} دقيقة',
       },
       haveAccountShort: 'لدي حساب',
+      switchLanguageTo: 'تغيير اللغة إلى {language}',
     },
     auth: {
       welcomeTitle: 'مرحبًا بعودتك',
