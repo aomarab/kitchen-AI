@@ -87,6 +87,15 @@ describe('surfaces', () => {
     },
   );
 
+  it('keeps deprecated gradient cards to a single content padding box', () => {
+    const source = read('./Card.tsx');
+    const baseBlock = source.match(/const base: ViewStyle = \{[\s\S]*?\n {2}\};/)?.[0] ?? '';
+
+    expect(baseBlock).toContain('padding: gradient ? 0 : spacing.lg');
+    expect(source).toContain('style={[{ padding: spacing.lg, gap: spacing.sm }, contentStyle]}');
+    expect(source.match(/contentStyle/g) ?? []).toHaveLength(3);
+  });
+
   it('a sheet floats on the sheet shadow and closes through a plain 44pt icon button', () => {
     const source = read('./Sheet.tsx');
     expect(source).toMatch(/shadow\.sheet/);

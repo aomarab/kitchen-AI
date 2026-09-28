@@ -29,10 +29,9 @@ import { Icon, type IconName } from './Icon';
 import { Illustration, type IllustrationName } from './Illustration';
 import { usePressFeedback } from './press-feedback';
 import {
-  bentoColumns,
   BENTO_GUTTER,
   bentoGap,
-  bentoRows,
+  bentoRowLayout,
   type BentoVariant,
   type TileSpan,
 } from './tile-layout';
@@ -264,40 +263,53 @@ export interface BentoProps {
 }
 
 export function Bento({ children, variant = 'tiles', onRowLayout }: BentoProps) {
+  const [containerWidth, setContainerWidth] = useState(0);
   const items = Children.toArray(children).filter(isValidElement) as ReactElement<{
     span?: TileSpan;
     weight?: number;
   }>[];
-  const columns = bentoColumns(variant);
   const gap = bentoGap(variant);
-  const rows = bentoRows(
+  const rows = bentoRowLayout(
     items.map((item) => item.props.span ?? 1),
-    columns,
+    variant,
+    containerWidth,
   );
+  const handleLayout = (width: number) => {
+    setContainerWidth((current) => (current === width ? current : width));
+  };
+  const cellStyle = (width: number, span: number, weight?: number): ViewStyle =>
+    containerWidth > 0
+      ? { width, minWidth: 0 }
+      : { flex: weight ?? span, flexBasis: 0, minWidth: 0 };
+
   return (
     <InBento.Provider value>
-      <View style={{ gap }}>
-        {rows.map((row) => (
-          <View
-            key={row.indices.join('-')}
-            onLayout={(event) => onRowLayout?.(row.indices, event.nativeEvent.layout.y)}
-            style={{ flexDirection: 'row', gap }}
-          >
-            {row.indices.map((index) => {
-              const flex = items[index]?.props.weight ?? 1;
-              return (
-                <View key={items[index]?.key ?? index} style={{ flex, flexBasis: 0, minWidth: 0 }}>
-                  {items[index]}
-                </View>
-              );
-            })}
-            {row.filler
-              ? Array.from({ length: columns - row.indices.length }).map((_, index) => (
-                  <View key={`filler-${index}`} style={{ flex: 1, flexBasis: 0, minWidth: 0 }} />
-                ))
-              : null}
-          </View>
-        ))}
+      <View onLayout={(event) => handleLayout(event.nativeEvent.layout.width)} style={{ gap }}>
+        {rows.map((row) => {
+          const indices = row.cells.map((cell) => cell.index);
+          return (
+            <View
+              key={indices.join('-')}
+              onLayout={(event) => onRowLayout?.(indices, event.nativeEvent.layout.y)}
+              style={{ flexDirection: 'row', gap }}
+            >
+              {row.cells.map((cell) => {
+                const item = items[cell.index];
+                return (
+                  <View
+                    key={item?.key ?? cell.index}
+                    style={cellStyle(cell.width, cell.span, item?.props.weight)}
+                  >
+                    {item}
+                  </View>
+                );
+              })}
+              {row.fillerSpan > 0 ? (
+                <View key="filler" style={cellStyle(row.fillerWidth, row.fillerSpan)} />
+              ) : null}
+            </View>
+          );
+        })}
       </View>
     </InBento.Provider>
   );

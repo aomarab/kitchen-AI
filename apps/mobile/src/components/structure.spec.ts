@@ -161,6 +161,8 @@ describe('Coral structure source guards', () => {
     expect(credit).toContain('mobile.home.creditsLeft');
     expect(credit).toContain('mobile.home.topUp');
     expect(credit).toContain('<DirectionalIcon name="chevron"');
+    expect(credit).toContain('const trailing = onTopUp ? (');
+    expect(credit).toContain('{trailing}');
     const auth = read('AuthLayout.tsx');
     expect(auth).not.toContain('<OrbMascot');
     expect(auth).toContain('paddingTop: spacing.gutter');

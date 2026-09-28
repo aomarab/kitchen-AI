@@ -21,6 +21,14 @@ export function CreditBalance({ balance, onTopUp, style }: CreditBalanceProps) {
   const pressFeedback = usePressFeedback();
   const total = formatQty(locale, totalCredits(balance), prefs);
   const label = `${total} ${t('mobile.home.creditsLeft')}`;
+  const trailing = onTopUp ? (
+    <>
+      <AppText variant="label" color="primaryText">
+        {t('mobile.home.topUp')}
+      </AppText>
+      <DirectionalIcon name="chevron" size={18} color={colors.control} />
+    </>
+  ) : null;
   const row = (
     <Animated.View
       style={[
@@ -41,10 +49,7 @@ export function CreditBalance({ balance, onTopUp, style }: CreditBalanceProps) {
       <AppText variant="body" style={{ flex: 1 }}>
         {label}
       </AppText>
-      <AppText variant="label" color="primaryText">
-        {t('mobile.home.topUp')}
-      </AppText>
-      <DirectionalIcon name="chevron" size={18} color={colors.control} />
+      {trailing}
     </Animated.View>
   );
 

@@ -17,6 +17,21 @@ export interface BentoRow {
   filler: boolean;
 }
 
+export interface BentoRowCell {
+  index: number;
+  span: number;
+}
+
+export interface BentoLayoutCell extends BentoRowCell {
+  width: number;
+}
+
+export interface BentoLayoutRow {
+  cells: BentoLayoutCell[];
+  fillerSpan: number;
+  fillerWidth: number;
+}
+
 export function bentoColumns(variant: BentoVariant = 'tiles'): number {
   return variant === 'quickActions' ? BENTO_QUICK_ACTION_COLUMNS : BENTO_TILE_COLUMNS;
 }
@@ -31,30 +46,75 @@ export function bentoColumnWidth(containerWidth: number, variant: BentoVariant =
   return Math.floor((containerWidth - gap * (columns - 1)) / columns);
 }
 
-export function bentoRows(spans: readonly TileSpan[], columns = BENTO_TILE_COLUMNS): BentoRow[] {
-  const rows: BentoRow[] = [];
-  let current: number[] = [];
+function normalizedSpan(span: TileSpan | number, columns: number): number {
+  return Math.min(Math.max(1, Math.trunc(span)), columns);
+}
+
+function spanRows(
+  spans: readonly TileSpan[],
+  columns: number,
+): { cells: BentoRowCell[]; used: number }[] {
+  const rows: { cells: BentoRowCell[]; used: number }[] = [];
+  let current: BentoRowCell[] = [];
   let used = 0;
 
   const flush = () => {
     if (current.length === 0) return;
-    rows.push({ indices: current, filler: used < columns });
+    rows.push({ cells: current, used });
     current = [];
     used = 0;
   };
 
   spans.forEach((rawSpan, index) => {
-    const span = Math.min(Math.max(1, rawSpan), columns);
+    const span = normalizedSpan(rawSpan, columns);
     if (span === columns) {
       flush();
-      rows.push({ indices: [index], filler: false });
+      rows.push({ cells: [{ index, span }], used: columns });
       return;
     }
     if (used + span > columns) flush();
-    current.push(index);
+    current.push({ index, span });
     used += span;
     if (used === columns) flush();
   });
   flush();
   return rows;
+}
+
+export function bentoCellWidth(
+  containerWidth: number,
+  span: TileSpan | number,
+  variant: BentoVariant = 'tiles',
+): number {
+  const columns = bentoColumns(variant);
+  const gap = bentoGap(variant);
+  const safeSpan = normalizedSpan(span as TileSpan, columns);
+  const columnWidth = (containerWidth - gap * (columns - 1)) / columns;
+  return columnWidth * safeSpan + gap * (safeSpan - 1);
+}
+
+export function bentoRowLayout(
+  spans: readonly TileSpan[],
+  variant: BentoVariant = 'tiles',
+  containerWidth = 0,
+): BentoLayoutRow[] {
+  const columns = bentoColumns(variant);
+  return spanRows(spans, columns).map((row) => {
+    const fillerSpan = Math.max(0, columns - row.used);
+    return {
+      cells: row.cells.map((cell) => ({
+        ...cell,
+        width: bentoCellWidth(containerWidth, cell.span, variant),
+      })),
+      fillerSpan,
+      fillerWidth: fillerSpan > 0 ? bentoCellWidth(containerWidth, fillerSpan, variant) : 0,
+    };
+  });
+}
+
+export function bentoRows(spans: readonly TileSpan[], columns = BENTO_TILE_COLUMNS): BentoRow[] {
+  return spanRows(spans, columns).map((row) => ({
+    indices: row.cells.map((cell) => cell.index),
+    filler: row.used < columns,
+  }));
 }

@@ -7,8 +7,10 @@ import {
   BENTO_QUICK_ACTION_GAP,
   BENTO_TILE_COLUMNS,
   BENTO_TILE_GAP,
+  bentoCellWidth,
   bentoColumnWidth,
   bentoGap,
+  bentoRowLayout,
   bentoRows,
 } from './tile-layout';
 
@@ -23,6 +25,8 @@ describe('bento grid (spec §8)', () => {
     expect(bentoGap('quickActions')).toBe(10);
     expect(bentoColumnWidth(350, 'tiles')).toBe(167);
     expect(bentoColumnWidth(350, 'quickActions')).toBe(110);
+    expect(bentoCellWidth(350, 2, 'quickActions')).toBe(230);
+    expect(bentoCellWidth(350, 3, 'quickActions')).toBe(350);
   });
 
   it('pairs half tiles and gives a full tile its own row', () => {
@@ -55,6 +59,44 @@ describe('bento grid (spec §8)', () => {
     ]);
   });
 
+  it('computes span-aware quick-action cell and filler widths', () => {
+    expect(bentoRowLayout([2, 1, 1], 'quickActions', 350)).toEqual([
+      {
+        cells: [
+          { index: 0, span: 2, width: 230 },
+          { index: 1, span: 1, width: 110 },
+        ],
+        fillerSpan: 0,
+        fillerWidth: 0,
+      },
+      {
+        cells: [{ index: 2, span: 1, width: 110 }],
+        fillerSpan: 2,
+        fillerWidth: 230,
+      },
+    ]);
+  });
+
+  it('computes span-aware tile cell and filler widths', () => {
+    expect(bentoRowLayout([1, 2, 1], 'tiles', 350)).toEqual([
+      {
+        cells: [{ index: 0, span: 1, width: 167 }],
+        fillerSpan: 1,
+        fillerWidth: 167,
+      },
+      {
+        cells: [{ index: 1, span: 2, width: 350 }],
+        fillerSpan: 0,
+        fillerWidth: 0,
+      },
+      {
+        cells: [{ index: 2, span: 1, width: 167 }],
+        fillerSpan: 1,
+        fillerWidth: 167,
+      },
+    ]);
+  });
+
   it('lays out nothing for no tiles', () => {
     expect(bentoRows([])).toEqual([]);
   });
@@ -64,7 +106,8 @@ describe('bento grid (spec §8)', () => {
 
     expect(source).toContain('onRowLayout?:');
     expect(source).toContain('relative to the Bento container');
-    expect(source).toContain('onRowLayout?.(row.indices, event.nativeEvent.layout.y)');
+    expect(source).toContain('const indices = row.cells.map((cell) => cell.index)');
+    expect(source).toContain('onRowLayout?.(indices, event.nativeEvent.layout.y)');
   });
 
   it('keeps cells equal-width regardless of intrinsic content', () => {
@@ -74,15 +117,14 @@ describe('bento grid (spec §8)', () => {
     expect(source).toContain('minWidth: 0');
   });
 
-  it('lets a packed row opt into uneven cell weights without changing the default', () => {
+  it('renders rows from the span-aware layout helper instead of item count', () => {
     const source = readFileSync(join(__dirname, 'Tile.tsx'), 'utf8');
 
     expect(source).toContain('weight?: number;');
-    expect(source).toContain('const flex = items[index]?.props.weight ?? 1;');
-    expect(source).toContain('style={{ flex, flexBasis: 0, minWidth: 0 }}');
-    expect(source).toContain(
-      'key={`filler-${index}`} style={{ flex: 1, flexBasis: 0, minWidth: 0 }}',
-    );
+    expect(source).toContain('bentoRowLayout(');
+    expect(source).toContain('cell.width');
+    expect(source).toContain('row.fillerWidth');
+    expect(source).not.toContain('columns - row.indices.length');
   });
 
   it('keeps photo scrims by default while allowing an explicit opt-out', () => {

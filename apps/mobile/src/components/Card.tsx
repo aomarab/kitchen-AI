@@ -42,7 +42,7 @@ export function Card({
   const base: ViewStyle = {
     borderWidth: 1,
     borderColor: colors.cardEdge,
-    padding: spacing.lg,
+    padding: gradient ? 0 : spacing.lg,
     gap: spacing.sm,
     backgroundColor: fill,
     ...shadow.card,
