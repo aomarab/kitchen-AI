@@ -262,26 +262,29 @@ During migration `IconName = GlyphName | LegacyIconName`, where `LEGACY_ICON_ALI
 old Ionicons key to a glyph. The sweep (C16) rewrites callers to glyph names and deletes the
 alias table and `@expo/vector-icons` use (except brand marks, below).
 
-| Legacy    | Glyph    | Legacy       | Glyph        | Legacy             | Glyph                  |
-| --------- | -------- | ------------ | ------------ | ------------------ | ---------------------- |
-| home      | home     | kitchen      | fridge       | plans              | calendar               |
-| more      | more     | camera       | camera       | cameraReverse      | flip                   |
-| flash     | zap      | images       | image        | barcode            | barcode                |
-| receipt   | receipt  | manual       | keyboard     | plus / minus       | plus / minus           |
-| search    | search   | check        | check        | close              | x                      |
-| clock     | clock    | calendar     | calendar     | trash              | trash                  |
-| edit      | pencil   | warning      | alert        | info               | info                   |
-| flame     | flame    | leaf         | leaf         | star / starOutline | star (filled / stroke) |
-| basket    | bag      | share        | share        | restaurant         | utensils               |
-| settings  | settings | bell         | bell         | user               | user                   |
-| household | users    | play / pause | play / pause | mic / micOff       | mic / micOff           |
-| send      | send     | captions     | captions     | wallet             | coins                  |
-| sparkles  | coins    | offline      | wifiOff      | sync               | refresh                |
-| location  | pin      | snowflake    | box          | box                | box                    |
-| swap      | shuffle  | chevron      | chevR        | chevronDown        | chevD                  |
-| back      | chevL    | arrowForward | arrowR       | water              | droplet                |
-| stretch   | activity | sunrise      | sun          | timerPause         | timer                  |
-| screen    | tablet   |              |              |                    |                        |
+| Legacy    | Glyph    | Legacy       | Glyph    | Legacy             | Glyph                  |
+| --------- | -------- | ------------ | -------- | ------------------ | ---------------------- |
+| home      | home     | kitchen      | fridge   | plans              | calendar               |
+| more      | more     | camera       | camera   | cameraReverse      | flip                   |
+| flash     | zap      | images       | image    | barcode            | barcode                |
+| receipt   | receipt  | manual       | keyboard | plus / minus       | plus / minus           |
+| search    | search   | check        | check    | close              | x                      |
+| clock     | clock    | calendar     | calendar | trash              | trash                  |
+| edit      | pencil   | warning      | alert    | info               | info                   |
+| flame     | flame    | leaf         | leaf     | star / starOutline | star (filled / stroke) |
+| basket    | bag      | share        | share    | restaurant         | utensils               |
+| settings  | settings | bell         | bell     | user               | user                   |
+| household | users    | play         | play     | mic / micOff       | mic / micOff           |
+| send      | send     | captions     | captions | wallet             | coins                  |
+| sparkles  | coins    | offline      | wifiOff  | sync               | refresh                |
+| location  | pin      | snowflake    | box      | box                | box                    |
+| swap      | shuffle  | chevron      | chevR    | chevronDown        | chevD                  |
+| back      | chevL    | arrowForward | arrowR   | water              | droplet                |
+| stretch   | activity | sunrise      | sun      | timerPause         | pause                  |
+| screen    | tablet   | pause        | coffee   |                    |                        |
+
+Legacy `pause` is the wellness "break" (a cup), so it maps to `coffee`; the timer's pause control
+uses legacy `timerPause`, which maps to the `pause` glyph.
 
 **Directional glyphs** mirror under RTL through `DirectionalIcon` (scaleX −1): `chevL chevR
 arrowL arrowR send logout` (and the legacy `chevron back arrowForward`). Everything else is
@@ -300,7 +303,7 @@ produce `carrot`, dairy `milk`, meat and fish `chicken`, grains and bakery `brea
 use it (`apple bread carrot cheese chicken egg garlic herb(s) lemon milk oil onion potato rice salt
 tomato yoghurt`).
 
-Places use `fridge freezer pantry spicerack`; unknown places use `box`. Empty states use the
+Places use `fridge freezer pantry spicerack`; unknown places use `pantry`. Empty states use the
 drawing named in §9. The emoji PNGs under `assets/emoji`, `lib/food-icon-assets.ts` and the CC-BY
 icon credit line on Account retire together in the sweep once nothing references them.
 
