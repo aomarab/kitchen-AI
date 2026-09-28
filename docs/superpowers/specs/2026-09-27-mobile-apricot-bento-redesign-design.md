@@ -1079,7 +1079,9 @@ These screens are specified in words. Each reuses the primitives above.
 - A butter balance tile with the orb and a `numeral` balance.
 - Packs as plain tiles. The selected one gets a 2pt `primary` edge.
 - One `primary` purchase CTA. RevenueCat and Apple rules are unchanged.
-- The usage list sits in a group card.
+- The balance breakdown (free this month, purchased, the refill note) sits in a group card, with
+  the low-balance notice. There is no per-action usage list: clients see credits, never vendor cost
+  (AI credits spec).
 
 **Timers, wellness and smart screen (`timers`, `wellness`, `screen`)**
 

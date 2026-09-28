@@ -16,6 +16,7 @@ import {
   Tile,
 } from '../components';
 import { BalanceTile } from '../features/credits/BalanceTile';
+import { LowBalanceNotice } from '../features/credits/LowBalanceNotice';
 import { useFormat } from '../hooks/useFormat';
 import { useCredits, usePackPrices } from '../hooks/credits';
 import { qk } from '../hooks/keys';
@@ -77,6 +78,10 @@ export default function BuyCreditsScreen() {
   const balance = credits.data;
   const selectedPack =
     CREDIT_PACKS.find((pack) => pack.productId === selectedProductId) ?? CREDIT_PACKS[0] ?? null;
+  const busyPack = busyProduct
+    ? (CREDIT_PACKS.find((pack) => pack.productId === busyProduct) ?? null)
+    : null;
+  const ctaPack = busyPack ?? selectedPack;
   const shortfall =
     balance && action && !canAfford(balance, action) ? creditsShort(balance, action) : 0;
 
@@ -92,6 +97,7 @@ export default function BuyCreditsScreen() {
       ) : (
         <>
           <BalanceTile balance={balance} />
+          <LowBalanceNotice balance={balance} />
 
           {shortfall > 0 ? (
             <Card
@@ -133,13 +139,12 @@ export default function BuyCreditsScreen() {
                   span={2}
                   icon="sparkles"
                   accessibilityRole="radio"
-                  accessibilityState={{ checked: selected }}
+                  accessibilityState={{ checked: selected, disabled: busyProduct !== null }}
                   accessibilityLabel={`${creditsLabel}, ${price}`}
-                  onPress={() => setSelectedProductId(pack.productId)}
-                  style={{
-                    borderWidth: selected ? 2 : undefined,
-                    borderColor: selected ? colors.primary : undefined,
+                  onPress={() => {
+                    if (busyProduct === null) setSelectedProductId(pack.productId);
                   }}
+                  style={selected ? { borderWidth: 2, borderColor: colors.primary } : undefined}
                 >
                   <View style={{ gap: spacing.xs }}>
                     <AppText variant="numeral">{formatQty(locale, pack.credits, prefs)}</AppText>
@@ -152,15 +157,15 @@ export default function BuyCreditsScreen() {
             })}
           </Bento>
 
-          {selectedPack ? (
+          {ctaPack ? (
             <Button
               title={t('mobile.credits.buyCta', {
-                credits: formatQty(locale, selectedPack.credits, prefs),
+                credits: formatQty(locale, ctaPack.credits, prefs),
               })}
               icon="wallet"
-              loading={busyProduct === selectedPack.productId}
+              loading={busyProduct !== null}
               disabled={busyProduct !== null}
-              onPress={() => void onBuy(selectedPack.productId)}
+              onPress={() => void onBuy(ctaPack.productId)}
             />
           ) : null}
         </>

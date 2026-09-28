@@ -331,22 +331,38 @@ describe('information architecture (spec §4)', () => {
 
     expect(buyCredits).toContain("import { buyCredits } from '../lib/purchase';");
     expect(buyCredits).toContain('<BalanceTile');
+    expect(buyCredits).toContain('<LowBalanceNotice');
     expect(buyCredits).toContain('accessibilityRole="radio"');
-    expect(buyCredits).toContain('accessibilityState={{ checked: selected }}');
-    expect(buyCredits).toContain('borderWidth: selected ? 2 : undefined');
-    expect(buyCredits).toContain('borderColor: selected ? colors.primary : undefined');
+    expect(buyCredits).toContain(
+      'accessibilityState={{ checked: selected, disabled: busyProduct !== null }}',
+    );
+    expect(buyCredits).toContain('disabled: busyProduct !== null');
+    expect(buyCredits).toMatch(
+      /style=\{selected \? \{ borderWidth: 2, borderColor: colors\.primary \} : undefined\}/,
+    );
+    expect(buyCredits).not.toContain('borderWidth: selected ? 2 : undefined');
+    expect(buyCredits).not.toContain('borderColor: selected ? colors.primary : undefined');
   });
 
-  it('shares the credits balance tile and renders usage in grouped rows (spec §9.7)', () => {
+  it('shares the credits balance tile and renders the balance breakdown (spec §9.7)', () => {
     const buyCredits = read('screens', 'BuyCreditsScreen.tsx');
     const aiUsage = read('app', 'ai-usage.tsx');
 
     expect(buyCredits).toContain("from '../features/credits/BalanceTile'");
     expect(aiUsage).toContain("from '../features/credits/BalanceTile'");
+    expect(buyCredits).toContain("from '../features/credits/LowBalanceNotice'");
+    expect(aiUsage).toContain("from '../features/credits/LowBalanceNotice'");
     expect(aiUsage).toContain('<BalanceTile');
+    expect(aiUsage).toContain('<LowBalanceNotice');
     expect(aiUsage).toContain('<ListGroup');
-    expect(aiUsage).toContain('<ListRow');
+    expect(aiUsage.match(/<ListRow/g) ?? []).toHaveLength(2);
+    expect(aiUsage).toContain("title={t('mobile.credits.free')}");
+    expect(aiUsage).toContain("title={t('mobile.credits.paid')}");
+    expect(aiUsage).toContain("t('mobile.credits.resets'");
     expect(aiUsage).toContain("router.push('/buy-credits')");
+    expect(aiUsage).not.toContain('useAiUsage');
+    expect(aiUsage).not.toContain('spentUsd');
+    expect(aiUsage).not.toContain('usage-summary');
   });
 
   it('keeps sticky footer and toast geometry above the floating tab bar', () => {
