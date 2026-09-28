@@ -2,6 +2,7 @@ import { Switch, View } from 'react-native';
 import { AppText } from './AppText';
 import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
+import { useLocale } from '../lib/locale';
 
 export interface ToggleRowProps {
   label: string;
@@ -15,10 +16,11 @@ export interface ToggleRowProps {
 /** Labelled switch row used across Settings. */
 export function ToggleRow({ label, hint, value, onValueChange, grouped }: ToggleRowProps) {
   const { colors } = useTheme();
+  const { dir } = useLocale();
   return (
     <View
       style={[
-        { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+        { flexDirection: 'row', alignItems: hint ? 'flex-start' : 'center', gap: spacing.md },
         grouped
           ? { minHeight: 56, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }
           : null,
@@ -38,6 +40,7 @@ export function ToggleRow({ label, hint, value, onValueChange, grouped }: Toggle
         accessibilityLabel={label}
         trackColor={{ true: colors.primary, false: colors.switchTrackOff }}
         ios_backgroundColor={colors.switchTrackOff}
+        style={dir === 'rtl' ? { transform: [{ scaleX: -1 }] } : undefined}
       />
     </View>
   );

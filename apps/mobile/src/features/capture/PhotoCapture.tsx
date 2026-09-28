@@ -664,10 +664,11 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
 
   const trailing =
     flow === 'result' ? (
-      <Button
-        title={t('mobile.capture.retake')}
-        variant="media"
-        fullWidth={false}
+      <RoundButton
+        icon="sync"
+        size={40}
+        tone="media"
+        accessibilityLabel={t('mobile.capture.retake')}
         onPress={retake}
       />
     ) : cameraGranted ? (

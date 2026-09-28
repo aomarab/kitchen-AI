@@ -21,13 +21,14 @@ import {
   SectionLabel,
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
+import { formatQty } from '../../lib/format';
 import { useReminderSettings, useUpdateReminderSettings } from '../../hooks/reminders';
 import { BREAK_CADENCES, clampHydrationGoal, clampQuietHour } from '../../lib/reminders';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 export default function Reminders() {
-  const { t } = useFormat();
+  const { t, locale, prefs } = useFormat();
   const { colors } = useTheme();
   const router = useRouter();
   const query = useReminderSettings();
@@ -48,7 +49,10 @@ export default function Reminders() {
   const s = query.data;
   const cadenceOptions = BREAK_CADENCES.map((c) => ({
     value: String(c),
-    label: t('mobile.reminders.cadenceEvery', { minutes: c }),
+    label: t('mobile.reminders.cadenceShort', { minutes: c }).replace(
+      String(c),
+      formatQty(locale, c, prefs),
+    ),
   }));
 
   // Exhaustive on ReminderType: a new nudge type in the contract fails to
