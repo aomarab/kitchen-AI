@@ -11,10 +11,19 @@ export interface AuthLayoutProps {
   title: string;
   titleAccent?: string;
   subtitle: string;
+  leading?: ReactNode;
   children: ReactNode;
+  footer?: ReactNode;
 }
 
-export function AuthLayout({ title, titleAccent, subtitle, children }: AuthLayoutProps) {
+export function AuthLayout({
+  title,
+  titleAccent,
+  subtitle,
+  leading,
+  children,
+  footer,
+}: AuthLayoutProps) {
   const { t } = useLocale();
   const router = useRouter();
   const canGoBack = router.canGoBack();
@@ -23,12 +32,12 @@ export function AuthLayout({ title, titleAccent, subtitle, children }: AuthLayou
     <Screen
       scroll
       edges={['top', 'bottom']}
-      contentStyle={{ gap: spacing.gutter, paddingTop: spacing.gutter }}
+      contentStyle={{ flexGrow: 1, gap: spacing.xl, paddingTop: spacing.gutter }}
     >
       {canGoBack ? (
         <IconButton
           accessibilityLabel={t('common.back')}
-          icon="back"
+          icon="chevL"
           directional
           tone="plain"
           onPress={() => router.back()}
@@ -36,13 +45,15 @@ export function AuthLayout({ title, titleAccent, subtitle, children }: AuthLayou
         />
       ) : null}
 
+      {leading}
+
       <View style={{ gap: spacing.sm }}>
-        <AppText variant="hero" accessibilityRole="header">
+        <AppText variant="display" accessibilityRole="header">
           {title}
           {titleAccent ? (
             <>
               {' '}
-              <AppText variant="hero" color="primaryText">
+              <AppText variant="display" color="primaryText">
                 {titleAccent}
               </AppText>
             </>
@@ -54,6 +65,12 @@ export function AuthLayout({ title, titleAccent, subtitle, children }: AuthLayou
       </View>
 
       <View style={{ gap: spacing.md }}>{children}</View>
+      {footer ? (
+        <>
+          <View style={{ flexGrow: 1 }} />
+          <View style={{ gap: spacing.sm }}>{footer}</View>
+        </>
+      ) : null}
     </Screen>
   );
 }

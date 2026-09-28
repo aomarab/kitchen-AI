@@ -689,8 +689,7 @@ export const mobileAr: MobileMessages = {
       headline: 'مطبخك،',
       headlineAccent: 'مرتب بأناقة.',
       subtitle: 'التقط صورة — ماما تعدّ الأصناف، وتضع تواريخها، وتحولها إلى عشاء.',
-      collageLabel:
-        'مسح للمطبخ: طماطم وجزر معدودة، ستة أصناف رُصدت، طازجة لخمسة أيام أخرى، وسلطة لعشاء الليلة.',
+      collageLabel: 'مسح للمطبخ: طماطم معدودة واثنا عشر صنفاً رُصدت.',
       collage: {
         tomatoes: 'طماطم',
         carrots: 'جزر',

@@ -609,32 +609,41 @@ describe('information architecture (spec §4)', () => {
     }
   });
 
-  it('keeps Welcome on the Apricot Bento screen contract', () => {
+  it('keeps Welcome on the Coral full-bleed photo screen contract', () => {
     const welcome = read('app', '(auth)', 'welcome.tsx');
 
     expect(welcome).toContain('welcome-produce.jpg');
-    expect(welcome).toContain('welcome-salad.jpg');
+    expect(welcome).toContain('padded={false}');
+    expect(welcome).toContain("edges={['bottom', 'left', 'right']}");
+    expect(welcome).toContain('<StatusBar style="light"');
     expect(welcome).toContain("t('mobile.welcome.collageLabel')");
-    expect(welcome).toContain("t('auth.signIn')");
+    expect(welcome).toContain("t('common.appName')");
+    expect(welcome).toContain("t('mobile.welcome.haveAccount')");
+    expect(welcome).not.toContain('haveAccountShort');
+    expect(welcome).not.toContain('SegmentedControl');
     expect(welcome).not.toContain('surfaceInverse');
-    expect(welcome).not.toContain('snapTitle');
     expect(welcome).not.toContain('tagline');
-    expect(welcome).toContain('const WELCOME_SECTION_GAP = spacing.sm;');
-    expect(welcome).toContain('style={{ gap: 0 }}');
+    expect(welcome).toContain('const WELCOME_BODY_GAP = spacing.xl;');
     expect(welcome).toContain('style={{ flexGrow: 1 }}');
-    expect(welcome).not.toContain('minHeight: spacing.md');
+    expect(welcome).toContain('variant="hero"');
+    expect(welcome).toContain('variant="ghost"');
 
     for (const key of [
+      'common.appName',
       'mobile.welcome.headline',
       'mobile.welcome.headlineAccent',
       'mobile.welcome.subtitle',
+      'mobile.welcome.snapTitle',
+      'mobile.welcome.snapBody',
+      'mobile.welcome.planTitle',
+      'mobile.welcome.planBody',
+      'mobile.welcome.wasteTitle',
+      'mobile.welcome.wasteBody',
       'mobile.welcome.collageLabel',
       'mobile.welcome.collage.tomatoes',
-      'mobile.welcome.collage.carrots',
       'mobile.welcome.collage.itemsSpotted',
-      'mobile.welcome.collage.freshFor',
-      'mobile.welcome.collage.tonight',
-      'mobile.welcome.haveAccountShort',
+      'mobile.welcome.getStarted',
+      'mobile.welcome.haveAccount',
     ]) {
       expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
       expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
@@ -647,20 +656,30 @@ describe('information architecture (spec §4)', () => {
     }
 
     const collage = read('features', 'welcome', 'WelcomeCollage.tsx');
-    expect(collage).toContain('function FloatingLeafCircle');
+    expect(collage).toContain('ImageBackground');
+    expect(collage).toContain('WELCOME_HERO_PHOTO_HEIGHT');
+    expect(collage).toContain('function DetectionCorners');
+    expect(collage).toContain('variant="numeralSmall"');
     expect(collage).toContain("position: 'absolute'");
-    expect(collage).not.toContain('leading={<LeafCircle />}');
+    expect(collage).not.toContain('<Bento');
+    expect(collage).not.toContain('<Tile');
+    expect(collage).not.toContain('OrbMascot');
+    expect(collage).not.toContain('tint=');
+    expect(collage).not.toContain('colors.accent');
   });
 
-  it('keeps Auth on the Apricot Bento screen contract', () => {
+  it('keeps Auth on the Coral welcome and household contracts', () => {
     const layout = read('components', 'AuthLayout.tsx');
     expect(layout).not.toContain('surfaceInverse');
     expect(layout).not.toContain('<OrbMascot');
     expect(layout).toContain('paddingTop: spacing.gutter');
     expect(layout).toContain('<IconButton');
     expect(layout).toContain('tone="plain"');
-    expect(layout).toContain('variant="hero"');
+    expect(layout).toContain('icon="chevL"');
+    expect(layout).toContain('variant="display"');
     expect(layout).toContain('titleAccent');
+    expect(layout).toContain('leading?: ReactNode');
+    expect(layout).toContain('footer?: ReactNode');
     expect(layout).toContain("edges={['top', 'bottom']}");
 
     const signIn = read('app', '(auth)', 'sign-in.tsx');
@@ -669,19 +688,21 @@ describe('information architecture (spec §4)', () => {
     expect(signIn).toContain("t('mobile.auth.welcomeSubtitle')");
 
     const signUp = read('app', '(auth)', 'sign-up.tsx');
-    expect(signUp).toContain("t('mobile.auth.signUpTitle2')");
-    expect(signUp).toContain("t('mobile.auth.signUpAccent')");
+    expect(signUp).toContain("t('mobile.auth.signUpTitle')");
+    expect(signUp).not.toContain("t('mobile.auth.signUpTitle2')");
+    expect(signUp).not.toContain("t('mobile.auth.signUpAccent')");
 
     const onboarding = read('app', '(auth)', 'onboarding.tsx');
-    expect(onboarding).not.toContain('SegmentedControl');
-    expect(onboarding).toContain('accessibilityRole="radiogroup"');
-    expect(onboarding).toContain('accessibilityRole="radio"');
-    expect(onboarding).toContain('accessibilityState={{ checked: selected }}');
+    expect(onboarding).toContain('<SegmentedControl<Mode>');
+    expect(onboarding).not.toContain('<Chip');
     expect(onboarding).toContain("t('mobile.auth.onboardTitle2')");
     expect(onboarding).toContain("t('mobile.auth.onboardAccent')");
     expect(onboarding).toContain("t('mobile.auth.continue')");
+    expect(onboarding).toContain('leading={<HouseholdMark />}');
+    expect(onboarding).toContain('footer={');
 
     const switchLink = read('components', 'AuthSwitchLink.tsx');
+    expect(switchLink).toContain('usePressFeedback');
     expect(switchLink).toContain('variant="caption" muted');
     expect(switchLink).toContain('color="primaryText"');
     expect(switchLink).toContain('minHeight: 44');
@@ -691,6 +712,7 @@ describe('information architecture (spec §4)', () => {
     for (const key of [
       'mobile.auth.signInTitle',
       'mobile.auth.signInAccent',
+      'mobile.auth.signUpTitle',
       'mobile.auth.signUpTitle2',
       'mobile.auth.signUpAccent',
       'mobile.auth.onboardTitle2',

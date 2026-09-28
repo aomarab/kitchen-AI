@@ -550,8 +550,7 @@ export const mobileEn = {
       headline: 'Your kitchen,',
       headlineAccent: 'beautifully sorted.',
       subtitle: 'Snap a photo — Mama counts it, dates it and turns it into dinner.',
-      collageLabel:
-        'A kitchen scan: tomatoes and carrots counted, six items spotted, fresh for five more days, and a salad for tonight.',
+      collageLabel: 'A kitchen scan: tomatoes counted and twelve items spotted.',
       collage: {
         tomatoes: 'Tomatoes',
         carrots: 'Carrots',

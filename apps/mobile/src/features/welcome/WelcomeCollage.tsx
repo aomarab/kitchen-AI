@@ -1,88 +1,42 @@
-import { View, type ImageSourcePropType, type ViewStyle } from 'react-native';
-import { AppText, Bento, BentoColumn, Icon, OrbMascot, Tile } from '../../components';
-import { BENTO_GUTTER } from '../../components/tile-layout';
+import { ImageBackground, View, type ImageSourcePropType, type ViewStyle } from 'react-native';
+import { AppText } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
-import { formatMinutes, formatQty } from '../../lib/format';
-import { radius, spacing } from '../../theme';
+import { formatQty } from '../../lib/format';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
-const PRODUCE_TILE_HEIGHT = 250;
-const STACKED_TILE_HEIGHT = (PRODUCE_TILE_HEIGHT - BENTO_GUTTER) / 2;
-const LOWER_TILE_HEIGHT = 130;
+const WELCOME_HERO_PHOTO_HEIGHT = 264;
+const DETECTION_SIZE = 104;
+const DETECTION_CORNER = 18;
+const DETECTION_STROKE = 3;
 
 interface WelcomeCollageProps {
   produceImage: ImageSourcePropType;
-  saladImage: ImageSourcePropType;
   accessibilityLabel: string;
 }
 
-type ChipPosition = 'topEnd' | 'bottomStart';
-
-function chipPosition(position: ChipPosition): ViewStyle {
-  if (position === 'topEnd') {
-    return { position: 'absolute', top: spacing.md, end: spacing.md };
-  }
-  return { position: 'absolute', bottom: spacing.md, start: spacing.md };
+function cornerStyle(corner: 'topStart' | 'topEnd' | 'bottomStart' | 'bottomEnd'): ViewStyle {
+  const vertical = corner.startsWith('top') ? { top: 0 } : { bottom: 0 };
+  const horizontal = corner.endsWith('Start') ? { start: 0 } : { end: 0 };
+  const verticalBorder = corner.startsWith('top')
+    ? { borderTopWidth: DETECTION_STROKE }
+    : { borderBottomWidth: DETECTION_STROKE };
+  const horizontalBorder = corner.endsWith('Start')
+    ? { borderStartWidth: DETECTION_STROKE }
+    : { borderEndWidth: DETECTION_STROKE };
+  return {
+    position: 'absolute',
+    width: DETECTION_CORNER,
+    height: DETECTION_CORNER,
+    ...vertical,
+    ...horizontal,
+    ...verticalBorder,
+    ...horizontalBorder,
+  };
 }
 
-function splitDotLabel(value: string): { label: string; detail?: string } {
-  const [label, detail] = value.split(' · ');
-  return detail ? { label: label ?? value, detail } : { label: value };
-}
-
-function PhotoChip({
-  label,
-  detail,
-  icon,
-  position,
-}: {
-  label: string;
-  detail?: string;
-  icon?: 'clock';
-  position: ChipPosition;
-}) {
+function DetectionCorners() {
   const { colors } = useTheme();
-  return (
-    <View
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
-      pointerEvents="none"
-      style={[
-        {
-          minHeight: 32,
-          borderRadius: radius.pill,
-          paddingHorizontal: spacing.md,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
-          backgroundColor: colors.surface,
-        },
-        chipPosition(position),
-      ]}
-    >
-      {icon ? (
-        <Icon name={icon} size={15} color={colors.primary} />
-      ) : (
-        <View
-          style={{
-            width: 7,
-            height: 7,
-            borderRadius: 4,
-            backgroundColor: colors.primary,
-          }}
-        />
-      )}
-      <AppText variant="label">{label}</AppText>
-      {detail ? (
-        <AppText variant="caption" muted>
-          {detail}
-        </AppText>
-      ) : null}
-    </View>
-  );
-}
-
-function CenteredOrb() {
   return (
     <View
       accessible={false}
@@ -90,139 +44,89 @@ function CenteredOrb() {
       pointerEvents="none"
       style={{
         position: 'absolute',
-        top: 0,
-        bottom: 0,
-        start: 0,
-        end: 0,
-        alignItems: 'center',
-        justifyContent: 'center',
+        top: 118,
+        end: spacing.xl,
+        width: DETECTION_SIZE,
+        height: DETECTION_SIZE,
       }}
     >
-      <OrbMascot size={64} state="idle" />
+      {(['topStart', 'topEnd', 'bottomStart', 'bottomEnd'] as const).map((corner) => (
+        <View key={corner} style={[cornerStyle(corner), { borderColor: colors.primary }]} />
+      ))}
     </View>
   );
 }
 
-function LeafCircle() {
+function TomatoTag({ count }: { count: string }) {
+  const { t } = useFormat();
   const { colors } = useTheme();
   return (
     <View
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
       style={{
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: 'center',
+        position: 'absolute',
+        top: 92,
+        end: 96,
+        minHeight: 24,
         justifyContent: 'center',
+        paddingHorizontal: spacing.sm,
+        backgroundColor: colors.primary,
+      }}
+    >
+      <AppText variant="eyebrow" style={{ color: colors.onFill }}>
+        {t('mobile.welcome.collage.tomatoes')} · {count}
+      </AppText>
+    </View>
+  );
+}
+
+function ItemsSpotted({ count }: { count: string }) {
+  const { t } = useFormat();
+  const { colors } = useTheme();
+  return (
+    <View
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        bottom: spacing.gutter,
+        start: spacing.gutter,
+        minHeight: 48,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.md,
         backgroundColor: colors.surface,
       }}
     >
-      <Icon name="leaf" size={22} color={colors.accent} />
+      <AppText variant="numeralSmall">{count}</AppText>
+      <AppText variant="caption" muted>
+        {t('mobile.welcome.collage.itemsSpotted')}
+      </AppText>
     </View>
   );
 }
 
-function FloatingLeafCircle() {
-  return (
-    <View
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
-      pointerEvents="none"
-      style={{
-        position: 'absolute',
-        top: spacing.lg,
-        start: spacing.lg,
-      }}
-    >
-      <LeafCircle />
-    </View>
-  );
-}
-
-export function WelcomeCollage({
-  produceImage,
-  saladImage,
-  accessibilityLabel,
-}: WelcomeCollageProps) {
-  const { t, locale, prefs } = useFormat();
-  const countSix = formatQty(locale, 6, prefs);
-  const countFour = formatQty(locale, 4, prefs);
-  const freshDays = formatQty(locale, 5, prefs);
-  const tonight = splitDotLabel(
-    t('mobile.welcome.collage.tonight', { minutes: formatMinutes(locale, 20, prefs) }),
-  );
+export function WelcomeCollage({ produceImage, accessibilityLabel }: WelcomeCollageProps) {
+  const { locale, prefs } = useFormat();
+  const tomatoCount = formatQty(locale, 6, prefs);
+  const itemCount = formatQty(locale, 12, prefs);
 
   return (
     <View accessible accessibilityLabel={accessibilityLabel}>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Bento>
-          <Tile
-            span={1}
-            weight={3}
-            tint="photo"
-            image={produceImage}
-            scrim={false}
-            height={PRODUCE_TILE_HEIGHT}
-            accessibilityLabel={accessibilityLabel}
-          >
-            <PhotoChip
-              label={t('mobile.welcome.collage.tomatoes')}
-              detail={countSix}
-              position="topEnd"
-            />
-            <PhotoChip
-              label={t('mobile.welcome.collage.carrots')}
-              detail={countFour}
-              position="bottomStart"
-            />
-          </Tile>
-
-          <BentoColumn span={1} weight={2}>
-            <Tile
-              tint="apricot"
-              height={STACKED_TILE_HEIGHT}
-              accessibilityLabel={accessibilityLabel}
-            >
-              <CenteredOrb />
-            </Tile>
-            <Tile
-              tint="butter"
-              height={STACKED_TILE_HEIGHT}
-              count={countSix}
-              caption={t('mobile.welcome.collage.itemsSpotted')}
-              accessibilityLabel={accessibilityLabel}
-            />
-          </BentoColumn>
-
-          <Tile
-            span={1}
-            weight={2}
-            tint="sage"
-            height={LOWER_TILE_HEIGHT}
-            accessibilityLabel={accessibilityLabel}
-          >
-            <FloatingLeafCircle />
-            <AppText variant="bodyStrong">
-              {t('mobile.welcome.collage.freshFor', { days: freshDays })}
-            </AppText>
-          </Tile>
-
-          <Tile
-            span={1}
-            weight={3}
-            tint="photo"
-            image={saladImage}
-            scrim={false}
-            height={LOWER_TILE_HEIGHT}
-            accessibilityLabel={accessibilityLabel}
-          >
-            <PhotoChip
-              icon="clock"
-              label={tonight.label}
-              detail={tonight.detail}
-              position="bottomStart"
-            />
-          </Tile>
-        </Bento>
+        <ImageBackground
+          source={produceImage}
+          resizeMode="cover"
+          style={{ height: WELCOME_HERO_PHOTO_HEIGHT, overflow: 'hidden' }}
+        >
+          <DetectionCorners />
+          <TomatoTag count={tomatoCount} />
+          <ItemsSpotted count={itemCount} />
+        </ImageBackground>
       </View>
     </View>
   );
