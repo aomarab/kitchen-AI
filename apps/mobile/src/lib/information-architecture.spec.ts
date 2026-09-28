@@ -286,8 +286,18 @@ describe('information architecture (spec §4)', () => {
 
     expect(recipe).toContain('<RecipeThumb');
     expect(recipe).toContain('height: 360');
-    expect(recipe).toContain('tone="mediaLight"');
+    expect(recipe).toContain('const TOP_BAR_ROW_HEIGHT = 44');
+    expect(recipe).toContain('const TOP_BAR_FADE_MS = 160');
+    expect(recipe).toContain('recipeTopBarBacked');
+    expect(recipe).toContain('useReduceMotion');
+    expect(recipe).toContain('Animated.timing(barOpacity');
+    expect(recipe).toContain('useNativeDriver: true');
+    expect(recipe).toContain('pointerEvents="none"');
+    expect(recipe).toContain('StyleSheet.hairlineWidth');
+    expect(recipe).toContain("tone={barBacked ? 'surface' : 'mediaLight'}");
     expect(recipe).toContain('showLightStatusBar');
+    expect(recipe).toContain('!barBacked');
+    expect(recipe).not.toContain('heroUnderStatus');
     expect(recipe).toContain('onImageLoad');
     expect(recipe).toContain('onScroll={handleRecipeScroll}');
     expect(recipe).toContain('top: insets.top + spacing.md');

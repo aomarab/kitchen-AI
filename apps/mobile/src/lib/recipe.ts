@@ -17,6 +17,12 @@ export interface StepIngredient {
   unit: Unit;
 }
 
+export interface RecipeTopBarBackingMetrics {
+  heroHeight: number;
+  sheetOverlap: number;
+  barHeight: number;
+}
+
 const MAX_SERVINGS_PARAM = 24;
 const WORD_CHAR = 'A-Za-z0-9';
 const ARABIC_RE = /[\u0600-\u06FF]/;
@@ -58,6 +64,14 @@ export function parseServingsParam(value: unknown): number | null {
   const parsed = Number(trimmed);
   if (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > MAX_SERVINGS_PARAM) return null;
   return parsed;
+}
+
+export function recipeTopBarBacked(
+  offsetY: number,
+  { heroHeight, sheetOverlap, barHeight }: RecipeTopBarBackingMetrics,
+): boolean {
+  const threshold = heroHeight - sheetOverlap - barHeight;
+  return offsetY >= threshold;
 }
 
 export function stepIngredients<T extends StepIngredient>(

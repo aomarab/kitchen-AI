@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import {
+  Animated,
+  StyleSheet,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,9 +32,14 @@ import {
   type IconName,
 } from '../../../components';
 import { useFormat } from '../../../hooks/useFormat';
+import { useReduceMotion } from '../../../hooks/motion';
 import { useRecipe, useMarkCooked } from '../../../hooks/recipe';
 import { ingredientName, formatMeasure, formatMinutes, formatQty } from '../../../lib/format';
-import { recipeStockCount, scaleQuantityForServings } from '../../../lib/recipe';
+import {
+  recipeStockCount,
+  recipeTopBarBacked,
+  scaleQuantityForServings,
+} from '../../../lib/recipe';
 import { radius, spacing } from '../../../theme';
 import { useTheme } from '../../../theme/useTheme';
 
@@ -36,6 +47,8 @@ const SHEET_OVERLAP = 28;
 const MAX_SERVINGS = 12;
 const HERO_HEIGHT = 360;
 const STAT_TILE_HEIGHT = 124;
+const TOP_BAR_ROW_HEIGHT = 44;
+const TOP_BAR_FADE_MS = 160;
 
 type RecipeSegment = 'ingredients' | 'steps';
 
@@ -55,6 +68,7 @@ export default function RecipeDetail() {
   const isFocused = useIsFocused();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
+  const reduceMotion = useReduceMotion();
   const recipe = useRecipe(id ?? null, locale);
   const markCooked = useMarkCooked(id ?? '');
   const [confirm, setConfirm] = useState(false);
@@ -62,17 +76,31 @@ export default function RecipeDetail() {
   const [segment, setSegment] = useState<RecipeSegment>('ingredients');
   const [servings, setServings] = useState<number | null>(null);
   const [heroImageLoaded, setHeroImageLoaded] = useState(false);
-  const [heroUnderStatus, setHeroUnderStatus] = useState(true);
-  const heroUnderStatusRef = useRef(true);
+  const [barBacked, setBarBacked] = useState(false);
+  const barBackedRef = useRef(false);
+  const barOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setServings(null);
     setSegment('ingredients');
     setCooked(false);
     setHeroImageLoaded(false);
-    setHeroUnderStatus(true);
-    heroUnderStatusRef.current = true;
+    setBarBacked(false);
+    barBackedRef.current = false;
   }, [id]);
+
+  useEffect(() => {
+    barOpacity.stopAnimation();
+    if (reduceMotion) {
+      barOpacity.setValue(barBacked ? 1 : 0);
+      return;
+    }
+    Animated.timing(barOpacity, {
+      toValue: barBacked ? 1 : 0,
+      duration: TOP_BAR_FADE_MS,
+      useNativeDriver: true,
+    }).start();
+  }, [barBacked, barOpacity, reduceMotion]);
 
   if (recipe.isLoading) {
     return (
@@ -109,12 +137,17 @@ export default function RecipeDetail() {
     minutes: formatMinutes(locale, totalMinutes, prefs),
   });
   const difficulty = t(DIFFICULTY_KEY[data.difficulty]);
-  const showLightStatusBar = isFocused && heroImageLoaded && heroUnderStatus;
+  const topBarHeight = insets.top + spacing.md + TOP_BAR_ROW_HEIGHT + spacing.sm;
+  const showLightStatusBar = isFocused && heroImageLoaded && !barBacked;
   const handleRecipeScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const nextHeroUnderStatus = event.nativeEvent.contentOffset.y < HERO_HEIGHT - insets.top;
-    if (nextHeroUnderStatus !== heroUnderStatusRef.current) {
-      heroUnderStatusRef.current = nextHeroUnderStatus;
-      setHeroUnderStatus(nextHeroUnderStatus);
+    const nextBarBacked = recipeTopBarBacked(event.nativeEvent.contentOffset.y, {
+      heroHeight: HERO_HEIGHT,
+      sheetOverlap: SHEET_OVERLAP,
+      barHeight: topBarHeight,
+    });
+    if (nextBarBacked !== barBackedRef.current) {
+      barBackedRef.current = nextBarBacked;
+      setBarBacked(nextBarBacked);
     }
   };
   const footer = (
@@ -319,11 +352,33 @@ export default function RecipeDetail() {
           <Button title={t('common.cancel')} variant="ghost" onPress={() => setConfirm(false)} />
         </Sheet>
       </Screen>
-      <View style={{ position: 'absolute', top: insets.top + spacing.md, start: spacing.lg }}>
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          start: 0,
+          end: 0,
+          height: topBarHeight,
+          opacity: barOpacity,
+          backgroundColor: colors.bg,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
+          zIndex: 1,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: insets.top + spacing.md,
+          start: spacing.lg,
+          zIndex: 2,
+        }}
+      >
         <RoundButton
           icon="back"
           directional
-          tone="mediaLight"
+          tone={barBacked ? 'surface' : 'mediaLight'}
           size={40}
           accessibilityLabel={t('common.back')}
           onPress={() => router.back()}

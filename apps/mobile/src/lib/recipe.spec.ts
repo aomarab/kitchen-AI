@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseServingsParam,
   recipeStockCount,
+  recipeTopBarBacked,
   scaleQuantityForServings,
   stepIngredients,
   type StepIngredient,
@@ -57,6 +58,23 @@ describe('parseServingsParam', () => {
     for (const value of [undefined, '', '0', '1.5', '25', '-2', 'abc']) {
       expect(parseServingsParam(value)).toBeNull();
     }
+  });
+});
+
+describe('recipeTopBarBacked', () => {
+  const metrics = { heroHeight: 360, sheetOverlap: 28, barHeight: 100 };
+  const threshold = metrics.heroHeight - metrics.sheetOverlap - metrics.barHeight;
+
+  it('stays transparent while the photo fills the bar area', () => {
+    expect(recipeTopBarBacked(0, metrics)).toBe(false);
+  });
+
+  it('stays transparent until the sheet reaches the backing threshold', () => {
+    expect(recipeTopBarBacked(threshold - 1, metrics)).toBe(false);
+  });
+
+  it('backs the status area at the threshold', () => {
+    expect(recipeTopBarBacked(threshold, metrics)).toBe(true);
   });
 });
 
