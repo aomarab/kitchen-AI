@@ -88,13 +88,21 @@ export function AssistantHeader({
   );
 }
 
-export function DemoBadge({ label, media }: { label: string; media: boolean }) {
+export function DemoBadge({
+  label,
+  media,
+  centered = false,
+}: {
+  label: string;
+  media: boolean;
+  centered?: boolean;
+}) {
   const { tintNamed } = useTheme();
   const tint = tintNamed('apricot');
   return (
     <View
       style={{
-        alignSelf: 'flex-start',
+        alignSelf: centered ? 'center' : 'flex-start',
         marginHorizontal: spacing.lg,
         marginBottom: spacing.sm,
         borderRadius: radius.pill,

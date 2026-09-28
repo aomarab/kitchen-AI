@@ -2,6 +2,8 @@ import { TextInput, View } from 'react-native';
 import { RoundButton } from '../../components';
 import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
+import { useLocale } from '../../lib/locale';
+import { resolveFontFamily, useFontStore } from '../../lib/fonts';
 import { composerAction } from '../../lib/assistant/composer';
 import type { AssistantMode } from './LiveAssistantScreen';
 
@@ -38,6 +40,9 @@ export function Composer({
   onLivePress,
 }: ComposerProps) {
   const { colors } = useTheme();
+  const { dir, locale } = useLocale();
+  const fontsLoaded = useFontStore((state) => state.loaded);
+  const fontFamily = resolveFontFamily(locale, fontsLoaded);
   const action = composerAction({ mode, draft, micMuted });
   const actionLabel =
     action === 'mic' ? micLabel : action === 'micMuted' ? micMutedLabel : sendLabel;
@@ -80,6 +85,9 @@ export function Composer({
           flex: 1,
           minHeight: 44,
           color: colors.text,
+          fontFamily,
+          textAlign: 'auto',
+          writingDirection: dir,
           paddingVertical: 0,
         }}
       />

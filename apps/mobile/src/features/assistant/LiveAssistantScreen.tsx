@@ -16,7 +16,7 @@ import { api } from '../../lib/api';
 import { OpenAiRealtimeAssistantClient } from '../../lib/assistant/openai-realtime';
 import { detectionsToSession } from '../../lib/assistant/detections';
 import { orbStateFor } from '../../lib/assistant/orb-state';
-import { groupTurns, showStarters } from '../../lib/assistant/transcript';
+import { appendTranscriptTurn, groupTurns, showStarters } from '../../lib/assistant/transcript';
 import type {
   AssistantStatus,
   DetectedItem,
@@ -177,7 +177,8 @@ export function LiveAssistantScreen({
           setStatus(event.status);
           if (event.status === 'ended') setSpeaking(false);
         } else if (event.type === 'speaking') setSpeaking(event.speaking);
-        else if (event.type === 'transcript') setTurns((prev) => [...prev, event.turn]);
+        else if (event.type === 'transcript')
+          setTurns((prev) => appendTranscriptTurn(prev, event.turn, { isMock: client.isMock }));
         else if (event.type === 'detections') setDetections(event.items);
       },
     });
@@ -276,7 +277,7 @@ export function LiveAssistantScreen({
   });
   const isLiveSurface = mode === 'live' && !lockMode;
   const demoBadge = isMock ? (
-    <DemoBadge label={t('mobile.assistant.demoBadge')} media={isLiveSurface} />
+    <DemoBadge label={t('mobile.assistant.demoBadge')} media={isLiveSurface} centered={lockMode} />
   ) : null;
 
   return (

@@ -12,6 +12,16 @@ export function groupTurns(turns: readonly TranscriptTurn[]): GroupedTranscriptT
   }));
 }
 
+export function appendTranscriptTurn(
+  turns: TranscriptTurn[],
+  turn: TranscriptTurn,
+  options: { isMock: boolean },
+): TranscriptTurn[] {
+  if (turns.some((existing) => existing.id === turn.id)) return turns;
+  if (options.isMock && turns.length > 0 && turn.id.endsWith('-greeting')) return turns;
+  return [...turns, turn];
+}
+
 export function showStarters(turns: readonly TranscriptTurn[], status: AssistantStatus): boolean {
   return status === 'live' && !turns.some((turn) => turn.role === 'user');
 }

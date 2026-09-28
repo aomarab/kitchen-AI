@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupTurns, showStarters } from './transcript';
+import { appendTranscriptTurn, groupTurns, showStarters } from './transcript';
 import type { TranscriptTurn } from './realtime-port';
 
 describe('groupTurns', () => {
@@ -19,6 +19,51 @@ describe('groupTurns', () => {
       ['u2', false],
       ['a3', true],
     ]);
+  });
+
+  describe('appendTranscriptTurn', () => {
+    it('keeps duplicate ids out of the transcript', () => {
+      const turns: TranscriptTurn[] = [{ id: 'a1', role: 'assistant', text: 'Hi' }];
+
+      expect(
+        appendTranscriptTurn(
+          turns,
+          { id: 'a1', role: 'assistant', text: 'Hi again' },
+          { isMock: true },
+        ),
+      ).toBe(turns);
+    });
+
+    it('drops a restarted mock greeting once the transcript already has turns', () => {
+      const turns: TranscriptTurn[] = [{ id: 'mock-1-greeting', role: 'assistant', text: 'Hi' }];
+
+      expect(
+        appendTranscriptTurn(
+          turns,
+          { id: 'mock-2-greeting', role: 'assistant', text: 'Hi' },
+          { isMock: true },
+        ),
+      ).toBe(turns);
+    });
+
+    it('keeps the first greeting and non-mock turns', () => {
+      expect(
+        appendTranscriptTurn(
+          [],
+          { id: 'mock-1-greeting', role: 'assistant', text: 'Hi' },
+          { isMock: true },
+        ),
+      ).toEqual([{ id: 'mock-1-greeting', role: 'assistant', text: 'Hi' }]);
+
+      const turns: TranscriptTurn[] = [{ id: 'a1', role: 'assistant', text: 'Hi' }];
+      expect(
+        appendTranscriptTurn(
+          turns,
+          { id: 'provider-greeting', role: 'assistant', text: 'Hi again' },
+          { isMock: false },
+        ),
+      ).toHaveLength(2);
+    });
   });
 
   describe('showStarters', () => {

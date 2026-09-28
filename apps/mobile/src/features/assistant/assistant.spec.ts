@@ -51,4 +51,20 @@ describe('assistant screen guards', () => {
 
     expect(source).toContain('useReduceMotion');
   });
+
+  it('keeps the composer text input on the shared locale-aware field pattern', () => {
+    const source = read('features', 'assistant', 'Composer.tsx');
+
+    expect(source).toContain('resolveFontFamily');
+    expect(source).toContain("textAlign: 'auto'");
+    expect(source).toContain('writingDirection: dir');
+  });
+
+  it('centres the locked voice demo badge with the panel content', () => {
+    const header = read('features', 'assistant', 'AssistantHeader.tsx');
+    const screen = read('features', 'assistant', 'LiveAssistantScreen.tsx');
+
+    expect(header).toContain("alignSelf: centered ? 'center' : 'flex-start'");
+    expect(screen).toContain('centered={lockMode}');
+  });
 });

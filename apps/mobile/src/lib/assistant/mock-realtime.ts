@@ -93,6 +93,8 @@ const REPLIES: Record<
   },
 };
 
+let nextMockSessionId = 0;
+
 /** Maps a message to one of the canned replies by obvious keyword intent. */
 function replyFor(locale: Locale, text: string): string {
   const table = REPLIES[locale];
@@ -122,6 +124,7 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
   private locale: Locale = 'en';
   /** Monotonic turn id source, so every reply gets a unique key. */
   private idSeq = 0;
+  private sessionId = 0;
 
   constructor(private readonly options: MockRealtimeOptions = {}) {}
 
@@ -132,6 +135,8 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
     this.emit = onEvent;
     this.speaking = false;
     this.locale = locale;
+    this.sessionId = ++nextMockSessionId;
+    this.idSeq = 0;
 
     const connectMs = this.options.connectMs ?? 400;
     const stepMs = this.options.stepMs ?? 1400;
@@ -160,7 +165,10 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
           { at: connectMs, event: { type: 'status', status: 'live' } },
           {
             at: connectMs + stepMs,
-            event: { type: 'transcript', turn: { id: 'u1', role: 'user', text: script.user } },
+            event: {
+              type: 'transcript',
+              turn: { id: `mock-${this.sessionId}-script-user`, role: 'user', text: script.user },
+            },
           },
           {
             at: connectMs + stepMs * 2,
@@ -171,7 +179,11 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
             at: connectMs + stepMs * 3,
             event: {
               type: 'transcript',
-              turn: { id: 'a1', role: 'assistant', text: script.assistant },
+              turn: {
+                id: `mock-${this.sessionId}-script-assistant`,
+                role: 'assistant',
+                text: script.assistant,
+              },
             },
           },
           { at: connectMs + stepMs * 4, event: { type: 'speaking', speaking: false } },
@@ -183,7 +195,11 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
             at: connectMs + stepMs * 1.5,
             event: {
               type: 'transcript',
-              turn: { id: 'a1', role: 'assistant', text: REPLIES[locale].greet },
+              turn: {
+                id: `mock-${this.sessionId}-greeting`,
+                role: 'assistant',
+                text: REPLIES[locale].greet,
+              },
             },
           },
           { at: connectMs + stepMs * 2.5, event: { type: 'speaking', speaking: false } },
@@ -219,7 +235,7 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
     const stepMs = this.options.stepMs ?? 1400;
     emit({
       type: 'transcript',
-      turn: { id: `u${++this.idSeq}`, role: 'user', text: trimmed },
+      turn: { id: `mock-${this.sessionId}-u-${++this.idSeq}`, role: 'user', text: trimmed },
     });
     const reply = replyFor(this.locale, trimmed);
     this.timers.push(
@@ -232,7 +248,11 @@ export class MockRealtimeAssistantClient implements RealtimeAssistantClient {
       setTimeout(() => {
         emit({
           type: 'transcript',
-          turn: { id: `a${++this.idSeq}`, role: 'assistant', text: reply },
+          turn: {
+            id: `mock-${this.sessionId}-a-${++this.idSeq}`,
+            role: 'assistant',
+            text: reply,
+          },
         });
       }, stepMs * 0.6),
     );
