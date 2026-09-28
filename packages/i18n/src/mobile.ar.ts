@@ -774,6 +774,7 @@ export const mobileAr: MobileMessages = {
       getMore: 'احصل على رصيد إضافي',
       needMore: 'تحتاج إلى {needed} رصيد إضافي.',
       costNotice: 'تستهلك هذه العملية {cost} رصيد.',
+      balanceLabel: 'الرصيد',
     },
     job: {
       buildingPlan: 'جارٍ بناء خطتك…',

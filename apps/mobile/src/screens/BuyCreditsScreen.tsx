@@ -9,18 +9,20 @@ import {
   AppText,
   Button,
   Card,
-  CreditBalance,
   LoadingState,
   ErrorState,
   Icon,
+  Bento,
+  Tile,
 } from '../components';
+import { BalanceTile } from '../features/credits/BalanceTile';
 import { useFormat } from '../hooks/useFormat';
 import { useCredits, usePackPrices } from '../hooks/credits';
 import { qk } from '../hooks/keys';
 import { buyCredits } from '../lib/purchase';
 import { canAfford, creditsShort, displayPrice } from '../lib/credits';
 import { formatQty, formatUsd } from '../lib/format';
-import { radius, spacing } from '../theme';
+import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 /** Read the optional `action` route param — the priced action that sent the user here. */
@@ -47,6 +49,7 @@ export default function BuyCreditsScreen() {
   const credits = useCredits();
   const packPrices = usePackPrices();
   const [busyProduct, setBusyProduct] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState(CREDIT_PACKS[0]?.productId ?? null);
   const [notice, setNotice] = useState<'credited' | 'pending' | 'failed' | null>(null);
 
   const onBuy = async (productId: string) => {
@@ -72,6 +75,8 @@ export default function BuyCreditsScreen() {
   };
 
   const balance = credits.data;
+  const selectedPack =
+    CREDIT_PACKS.find((pack) => pack.productId === selectedProductId) ?? CREDIT_PACKS[0] ?? null;
   const shortfall =
     balance && action && !canAfford(balance, action) ? creditsShort(balance, action) : 0;
 
@@ -86,7 +91,7 @@ export default function BuyCreditsScreen() {
         <ErrorState error={credits.error} onRetry={() => void credits.refetch()} />
       ) : (
         <>
-          <CreditBalance balance={balance} />
+          <BalanceTile balance={balance} />
 
           {shortfall > 0 ? (
             <Card
@@ -112,48 +117,52 @@ export default function BuyCreditsScreen() {
             </Card>
           ) : null}
 
-          <View style={{ gap: spacing.md }}>
-            {CREDIT_PACKS.map((pack) => (
-              <Card key={pack.productId} style={{ gap: spacing.md }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                  <View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: radius.md,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: colors.primarySoft,
-                    }}
-                  >
-                    <Icon name="sparkles" size={22} color={colors.primaryText} />
-                  </View>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <AppText variant="heading">
-                      {t('mobile.credits.packCredits', {
-                        credits: formatQty(locale, pack.credits, prefs),
-                      })}
-                    </AppText>
+          <Bento>
+            {CREDIT_PACKS.map((pack) => {
+              const selected = selectedPack?.productId === pack.productId;
+              const creditsLabel = t('mobile.credits.packCredits', {
+                credits: formatQty(locale, pack.credits, prefs),
+              });
+              const price = displayPrice(
+                packPrices.data?.[pack.productId] ?? null,
+                formatUsd(locale, pack.priceUsd, prefs),
+              );
+              return (
+                <Tile
+                  key={pack.productId}
+                  span={2}
+                  icon="sparkles"
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={`${creditsLabel}, ${price}`}
+                  onPress={() => setSelectedProductId(pack.productId)}
+                  style={{
+                    borderWidth: selected ? 2 : undefined,
+                    borderColor: selected ? colors.primary : undefined,
+                  }}
+                >
+                  <View style={{ gap: spacing.xs }}>
+                    <AppText variant="numeral">{formatQty(locale, pack.credits, prefs)}</AppText>
                     <AppText variant="caption" muted>
-                      {displayPrice(
-                        packPrices.data?.[pack.productId] ?? null,
-                        formatUsd(locale, pack.priceUsd, prefs),
-                      )}
+                      {price}
                     </AppText>
                   </View>
-                </View>
-                <Button
-                  title={t('mobile.credits.buyCta', {
-                    credits: formatQty(locale, pack.credits, prefs),
-                  })}
-                  icon="wallet"
-                  loading={busyProduct === pack.productId}
-                  disabled={busyProduct !== null}
-                  onPress={() => void onBuy(pack.productId)}
-                />
-              </Card>
-            ))}
-          </View>
+                </Tile>
+              );
+            })}
+          </Bento>
+
+          {selectedPack ? (
+            <Button
+              title={t('mobile.credits.buyCta', {
+                credits: formatQty(locale, selectedPack.credits, prefs),
+              })}
+              icon="wallet"
+              loading={busyProduct === selectedPack.productId}
+              disabled={busyProduct !== null}
+              onPress={() => void onBuy(selectedPack.productId)}
+            />
+          ) : null}
         </>
       )}
     </Screen>

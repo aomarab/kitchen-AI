@@ -640,6 +640,7 @@ export const mobileEn = {
       getMore: 'Get more credits',
       needMore: 'You need {needed} more credits.',
       costNotice: 'This uses {cost} credits.',
+      balanceLabel: 'Balance',
     },
     job: {
       buildingPlan: 'Building your plan…',

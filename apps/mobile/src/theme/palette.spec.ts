@@ -104,6 +104,13 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     },
   );
 
+  it('the selected credit pack edge separates from a plain tile', () => {
+    expect(
+      contrast(colors.primary, tintNamed(tints, 'plain').bg),
+      'primary selected edge on plain tile',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
   it('switch tracks separate from their card and native thumb', () => {
     expect(
       contrast(colors.primary, colors.surface),

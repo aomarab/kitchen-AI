@@ -326,6 +326,29 @@ describe('information architecture (spec §4)', () => {
     }
   });
 
+  it('keeps the credits purchase route on the store purchase path (spec §9.7)', () => {
+    const buyCredits = read('screens', 'BuyCreditsScreen.tsx');
+
+    expect(buyCredits).toContain("import { buyCredits } from '../lib/purchase';");
+    expect(buyCredits).toContain('<BalanceTile');
+    expect(buyCredits).toContain('accessibilityRole="radio"');
+    expect(buyCredits).toContain('accessibilityState={{ checked: selected }}');
+    expect(buyCredits).toContain('borderWidth: selected ? 2 : undefined');
+    expect(buyCredits).toContain('borderColor: selected ? colors.primary : undefined');
+  });
+
+  it('shares the credits balance tile and renders usage in grouped rows (spec §9.7)', () => {
+    const buyCredits = read('screens', 'BuyCreditsScreen.tsx');
+    const aiUsage = read('app', 'ai-usage.tsx');
+
+    expect(buyCredits).toContain("from '../features/credits/BalanceTile'");
+    expect(aiUsage).toContain("from '../features/credits/BalanceTile'");
+    expect(aiUsage).toContain('<BalanceTile');
+    expect(aiUsage).toContain('<ListGroup');
+    expect(aiUsage).toContain('<ListRow');
+    expect(aiUsage).toContain("router.push('/buy-credits')");
+  });
+
   it('keeps sticky footer and toast geometry above the floating tab bar', () => {
     const screen = read('components', 'Screen.tsx');
     const toast = read('components', 'Toast.tsx');
