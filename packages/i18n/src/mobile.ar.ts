@@ -640,6 +640,19 @@ export const mobileAr: MobileMessages = {
       wasteBody: 'تنبيه هادئ قبل أن ينتهي تاريخ أي صنف.',
       getStarted: 'ابدأ الآن',
       haveAccount: 'لدي حساب بالفعل',
+      headline: 'مطبخك،',
+      headlineAccent: 'مرتب بأناقة.',
+      subtitle: 'التقط صورة — ماما تعدّ الأصناف، وتضع تواريخها، وتحولها إلى عشاء.',
+      collageLabel:
+        'مسح للمطبخ: طماطم وجزر معدودة، ستة أصناف رُصدت، طازجة لخمسة أيام أخرى، وسلطة لعشاء الليلة.',
+      collage: {
+        tomatoes: 'طماطم',
+        carrots: 'جزر',
+        itemsSpotted: 'أصناف رُصدت',
+        freshFor: 'طازج لمدة {days} أيام أخرى',
+        tonight: 'الليلة · {minutes} دقيقة',
+      },
+      haveAccountShort: 'لدي حساب',
     },
     auth: {
       welcomeTitle: 'مرحبًا بعودتك',

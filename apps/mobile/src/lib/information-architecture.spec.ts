@@ -5,6 +5,7 @@ import { isMessageKey, translate } from '@kitchen/i18n';
 
 const SRC = join(__dirname, '..');
 const APP = join(SRC, 'app');
+const MOBILE = join(SRC, '..');
 const read = (...parts: string[]) => readFileSync(join(SRC, ...parts), 'utf8');
 
 function sourceFiles(dir: string): string[] {
@@ -206,5 +207,39 @@ describe('information architecture (spec §4)', () => {
     expect(home).toMatch(
       /tint="apricot"[\s\S]*?height=\{220\}[\s\S]*?accessibilityLabel=\{t\('mobile\.home\.tonightEmpty'\)\}/,
     );
+  });
+
+  it('keeps Welcome on the Apricot Bento screen contract', () => {
+    const welcome = read('app', '(auth)', 'welcome.tsx');
+
+    expect(welcome).toContain('welcome-produce.jpg');
+    expect(welcome).toContain('welcome-salad.jpg');
+    expect(welcome).toContain("t('mobile.welcome.collageLabel')");
+    expect(welcome).toContain("t('auth.signIn')");
+    expect(welcome).not.toContain('surfaceInverse');
+    expect(welcome).not.toContain('snapTitle');
+    expect(welcome).not.toContain('tagline');
+
+    for (const key of [
+      'mobile.welcome.headline',
+      'mobile.welcome.headlineAccent',
+      'mobile.welcome.subtitle',
+      'mobile.welcome.collageLabel',
+      'mobile.welcome.collage.tomatoes',
+      'mobile.welcome.collage.carrots',
+      'mobile.welcome.collage.itemsSpotted',
+      'mobile.welcome.collage.freshFor',
+      'mobile.welcome.collage.tonight',
+      'mobile.welcome.haveAccountShort',
+    ]) {
+      expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
+      expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
+    }
+
+    for (const file of ['welcome-produce.jpg', 'welcome-salad.jpg']) {
+      const path = join(MOBILE, 'assets', 'images', file);
+      expect(existsSync(path), `${file} is missing`).toBe(true);
+      expect(statSync(path).size, `${file} is larger than 160 KiB`).toBeLessThanOrEqual(160 * 1024);
+    }
   });
 });

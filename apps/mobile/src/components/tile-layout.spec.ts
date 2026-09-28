@@ -49,4 +49,24 @@ describe('bento grid (spec §6.7)', () => {
     expect(source).toContain('flexBasis: 0');
     expect(source).toContain('minWidth: 0');
   });
+
+  it('lets a packed row opt into uneven cell weights without changing the default', () => {
+    const source = readFileSync(join(__dirname, 'Tile.tsx'), 'utf8');
+
+    expect(source).toContain('weight?: number;');
+    expect(source).toContain('const flex = items[index]?.props.weight ?? 1;');
+    expect(source).toContain('style={{ flex, flexBasis: 0, minWidth: 0 }}');
+    expect(source).toContain(
+      'row.filler ? <View style={{ flex: 1, flexBasis: 0, minWidth: 0 }} />',
+    );
+  });
+
+  it('keeps photo scrims by default while allowing an explicit opt-out', () => {
+    const source = readFileSync(join(__dirname, 'Tile.tsx'), 'utf8');
+
+    expect(source).toContain('scrim?: boolean;');
+    expect(source).toContain('scrim = true');
+    expect(source).toContain('scrim ? (');
+    expect(source).toContain('<LinearGradient {...scrimGradient(scrimToken)}');
+  });
 });

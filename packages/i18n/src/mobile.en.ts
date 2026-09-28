@@ -516,6 +516,19 @@ export const mobileEn = {
       wasteBody: 'A quiet nudge before anything passes its date.',
       getStarted: 'Get started',
       haveAccount: 'I already have an account',
+      headline: 'Your kitchen,',
+      headlineAccent: 'beautifully sorted.',
+      subtitle: 'Snap a photo — Mama counts it, dates it and turns it into dinner.',
+      collageLabel:
+        'A kitchen scan: tomatoes and carrots counted, six items spotted, fresh for five more days, and a salad for tonight.',
+      collage: {
+        tomatoes: 'Tomatoes',
+        carrots: 'Carrots',
+        itemsSpotted: 'items spotted',
+        freshFor: 'Fresh for {days} more days',
+        tonight: 'Tonight · {minutes} min',
+      },
+      haveAccountShort: 'I have an account',
     },
     auth: {
       welcomeTitle: 'Welcome back',

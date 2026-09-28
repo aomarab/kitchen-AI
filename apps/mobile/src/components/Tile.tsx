@@ -31,9 +31,13 @@ export type TileTint = TintName | 'photo';
 export interface TileProps {
   /** Read by `Bento`: a whole row, or half of one. */
   span?: TileSpan;
+  /** Read by `Bento`: relative width within a packed row. Defaults to 1. */
+  weight?: number;
   tint?: TileTint;
   /** The photo under the scrim. Only drawn when `tint` is `'photo'`. */
   image?: ImageSourcePropType;
+  /** Photo tiles keep their legibility scrim unless a caller deliberately opts out. */
+  scrim?: boolean;
   onPress?: () => void;
   /** The whole sentence a screen reader hears, e.g. "32 items at home". */
   accessibilityLabel: string;
@@ -68,6 +72,7 @@ const InBento = createContext(false);
 export function Tile({
   tint = 'plain',
   image,
+  scrim = true,
   onPress,
   accessibilityLabel,
   accessibilityState,
@@ -82,7 +87,7 @@ export function Tile({
   style,
   testID,
 }: TileProps) {
-  const { colors, gradientHero, isDark, shadow, scrim, tintNamed } = useTheme();
+  const { colors, gradientHero, isDark, shadow, scrim: scrimToken, tintNamed } = useTheme();
   const inBento = useContext(InBento);
   const photo = tint === 'photo';
   const fill = photo ? colors.surfaceInverse : tintNamed(tint).bg;
@@ -118,7 +123,9 @@ export function Tile({
             style={StyleSheet.absoluteFill}
             accessibilityIgnoresInvertColors
           />
-          <LinearGradient {...scrimGradient(scrim)} style={StyleSheet.absoluteFill} />
+          {scrim ? (
+            <LinearGradient {...scrimGradient(scrimToken)} style={StyleSheet.absoluteFill} />
+          ) : null}
         </>
       ) : null}
       {photo && !image ? (
@@ -225,6 +232,7 @@ export interface BentoProps {
 export function Bento({ children, onRowLayout }: BentoProps) {
   const items = Children.toArray(children).filter(isValidElement) as ReactElement<{
     span?: TileSpan;
+    weight?: number;
   }>[];
   const rows = bentoRows(items.map((item) => item.props.span ?? 1));
   return (
@@ -236,11 +244,14 @@ export function Bento({ children, onRowLayout }: BentoProps) {
             onLayout={(event) => onRowLayout?.(row.indices, event.nativeEvent.layout.y)}
             style={{ flexDirection: 'row', gap: BENTO_GUTTER }}
           >
-            {row.indices.map((index) => (
-              <View key={items[index]?.key ?? index} style={{ flex: 1, flexBasis: 0, minWidth: 0 }}>
-                {items[index]}
-              </View>
-            ))}
+            {row.indices.map((index) => {
+              const flex = items[index]?.props.weight ?? 1;
+              return (
+                <View key={items[index]?.key ?? index} style={{ flex, flexBasis: 0, minWidth: 0 }}>
+                  {items[index]}
+                </View>
+              );
+            })}
             {row.filler ? <View style={{ flex: 1, flexBasis: 0, minWidth: 0 }} /> : null}
           </View>
         ))}
@@ -253,6 +264,8 @@ export interface BentoColumnProps {
   children: ReactNode;
   /** Read by `Bento`. A column is half a row unless told otherwise. */
   span?: TileSpan;
+  /** Read by `Bento`: relative width within a packed row. Defaults to 1. */
+  weight?: number;
 }
 
 /** Stacks tiles in one half of a row; they split its height evenly. */

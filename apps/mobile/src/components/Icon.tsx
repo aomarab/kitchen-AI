@@ -34,6 +34,7 @@ export const IONICONS = {
   warning: 'warning-outline',
   info: 'information-circle-outline',
   flame: 'flame-outline',
+  leaf: 'leaf-outline',
   star: 'star',
   starOutline: 'star-outline',
   basket: 'basket-outline',
