@@ -1,8 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { ingredientCategorySchema } from '@kitchen/contracts';
+import { ingredientCategorySchema, type IngredientCategory } from '@kitchen/contracts';
 import { ILLUSTRATION_PATHS } from '../components/glyphs/illustration-paths';
+import type { IllustrationName } from '../components/glyphs/illustration-paths';
 import { allIconKeys } from './food-icon';
-import { FOOD_CATEGORY_ILLUSTRATION, FOOD_ILLUSTRATION } from './food-illustration';
+import {
+  FOOD_CATEGORY_ILLUSTRATION,
+  FOOD_ILLUSTRATION,
+  foodIllustration,
+} from './food-illustration';
+
+const SPEC_CATEGORY_ILLUSTRATION = {
+  vegetable: 'carrot',
+  fruit: 'carrot',
+  meat: 'chicken',
+  poultry: 'chicken',
+  seafood: 'chicken',
+  dairy: 'milk',
+  egg: 'egg',
+  grain: 'bread',
+  legume: 'plate',
+  pasta: 'bread',
+  bread: 'bread',
+  spice: 'spice',
+  herb: 'herb',
+  condiment: 'plate',
+  oil: 'oil',
+  sweetener: 'plate',
+  nut: 'plate',
+  beverage: 'glass',
+  frozen: 'freezer',
+  canned: 'plate',
+  baking: 'bread',
+  other: 'plate',
+} satisfies Record<IngredientCategory, IllustrationName>;
 
 describe('food illustration mapping', () => {
   it('covers every food icon key with an existing J illustration', () => {
@@ -23,6 +53,23 @@ describe('food illustration mapping', () => {
       const illustration = FOOD_CATEGORY_ILLUSTRATION[category];
       expect(illustrations.has(illustration), `${category} → ${illustration}`).toBe(true);
     }
+  });
+
+  it('uses the spec category drawing when the item name has no rule match', () => {
+    for (const category of ingredientCategorySchema.options) {
+      expect(
+        foodIllustration({
+          nameEn: 'Unmatched packaged item 402',
+          category,
+        }),
+        category,
+      ).toBe(SPEC_CATEGORY_ILLUSTRATION[category]);
+    }
+  });
+
+  it('uses exact drawings when the item name matches a rule', () => {
+    expect(foodIllustration({ nameEn: 'Whole milk', category: 'grain' })).toBe('milk');
+    expect(foodIllustration({ nameEn: 'Fresh tomato', category: 'other' })).toBe('tomato');
   });
 
   it('uses exact drawings when J has one', () => {

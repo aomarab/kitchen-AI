@@ -1,6 +1,6 @@
 import type { IngredientCategory } from '@kitchen/contracts';
 import type { IllustrationName } from '../components/glyphs/illustration-paths';
-import type { FoodIconKey } from './food-icon';
+import { matchedFoodIconKey, type FoodIconKey } from './food-icon';
 
 export const FOOD_CATEGORY_ILLUSTRATION = {
   vegetable: 'carrot',
@@ -81,3 +81,15 @@ export const FOOD_ILLUSTRATION = {
   water: 'glass',
   watermelon: 'carrot',
 } satisfies Record<FoodIconKey, IllustrationName>;
+
+export function foodIllustration(item: {
+  label?: string | null;
+  nameEn?: string | null;
+  nameAr?: string | null;
+  category: IngredientCategory;
+}): IllustrationName {
+  const matchedKey = matchedFoodIconKey(item);
+  return matchedKey === null
+    ? FOOD_CATEGORY_ILLUSTRATION[item.category]
+    : FOOD_ILLUSTRATION[matchedKey];
+}

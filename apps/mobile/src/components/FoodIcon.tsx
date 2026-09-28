@@ -1,7 +1,6 @@
 import { View } from 'react-native';
 import type { IngredientCategory } from '@kitchen/contracts';
-import { FOOD_ILLUSTRATION } from '../lib/food-illustration';
-import { foodIconKey } from '../lib/food-icon';
+import { foodIllustration } from '../lib/food-illustration';
 import { Illustration } from './Illustration';
 import { radius } from '../theme';
 import { useTheme } from '../theme/useTheme';
@@ -25,7 +24,7 @@ interface FoodIconProps {
  */
 export function FoodIcon({ item, size = 40 }: FoodIconProps) {
   const { colors } = useTheme();
-  const illustration = FOOD_ILLUSTRATION[foodIconKey(item)];
+  const illustration = foodIllustration(item);
   return (
     <View
       accessible={false}

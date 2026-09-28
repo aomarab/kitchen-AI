@@ -1,9 +1,9 @@
 /*
 Generated from the J · Coral Figma file (2qQOglGHfyF3H3h0kxsQYZ, page 108:2).
 Do not hand-edit.
+*/
 
-Lucide ISC license notice:
-
+/*
 ISC License
 
 Copyright (c) 2026 Lucide Icons and Contributors

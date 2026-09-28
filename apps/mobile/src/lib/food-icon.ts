@@ -88,11 +88,17 @@ const RULES: readonly IconRule[] = [
 
   { key: 'cheese', match: ['cheese', 'labneh', 'جبن', 'جبنة', 'لبنة'] },
   { key: 'butter', match: ['butter', 'ghee', 'زبدة', 'سمن'] },
-  { key: 'milk', match: ['yogurt', 'yoghurt', 'milk', 'cream', 'laban', 'حليب', 'لبن', 'زبادي', 'قشطة', 'كريمة'] },
+  {
+    key: 'milk',
+    match: ['yogurt', 'yoghurt', 'milk', 'cream', 'laban', 'حليب', 'لبن', 'زبادي', 'قشطة', 'كريمة'],
+  },
 
   { key: 'egg', match: ['egg', 'بيض', 'بيضة'] },
   { key: 'chicken', match: ['chicken', 'turkey', 'poultry', 'دجاج', 'فراخ', 'ديك'] },
-  { key: 'meat', match: ['beef', 'lamb', 'mutton', 'steak', 'mince', 'meat', 'لحم', 'لحمة', 'غنم', 'بقر'] },
+  {
+    key: 'meat',
+    match: ['beef', 'lamb', 'mutton', 'steak', 'mince', 'meat', 'لحم', 'لحمة', 'غنم', 'بقر'],
+  },
   { key: 'shrimp', match: ['shrimp', 'prawn', 'جمبري', 'روبيان'] },
   { key: 'fish', match: ['fish', 'tuna', 'salmon', 'سمك', 'تونة', 'سلمون'] },
 
@@ -115,17 +121,62 @@ const RULES: readonly IconRule[] = [
   { key: 'apple', match: ['apple', 'pear', 'fig', 'date', 'تفاح', 'كمثرى', 'تين', 'تمر', 'رطب'] },
 
   { key: 'bread', match: ['bread', 'toast', 'khubz', 'pita', 'خبز', 'توست', 'صمون'] },
-  { key: 'cereal', match: ['cereal', 'corn flakes', 'cornflakes', 'oat', 'granola', 'كورن فليكس', 'شوفان', 'حبوب'] },
+  {
+    key: 'cereal',
+    match: ['cereal', 'corn flakes', 'cornflakes', 'oat', 'granola', 'كورن فليكس', 'شوفان', 'حبوب'],
+  },
   { key: 'rice', match: ['rice', 'bulgur', 'freekeh', 'رز', 'أرز', 'برغل', 'فريكة'] },
-  { key: 'pasta', match: ['pasta', 'spaghetti', 'noodle', 'macaroni', 'معكرونة', 'مكرونة', 'شعيرية'] },
-  { key: 'flour', match: ['flour', 'yeast', 'baking powder', 'starch', 'دقيق', 'طحين', 'خميرة', 'نشا'] },
+  {
+    key: 'pasta',
+    match: ['pasta', 'spaghetti', 'noodle', 'macaroni', 'معكرونة', 'مكرونة', 'شعيرية'],
+  },
+  {
+    key: 'flour',
+    match: ['flour', 'yeast', 'baking powder', 'starch', 'دقيق', 'طحين', 'خميرة', 'نشا'],
+  },
 
-  { key: 'beans', match: ['bean', 'lentil', 'chickpea', 'hummus', 'pea', 'فول', 'عدس', 'حمص', 'بازيلا'] },
-  { key: 'nuts', match: ['nut', 'almond', 'cashew', 'pistachio', 'peanut', 'مكسرات', 'لوز', 'كاجو', 'فستق', 'فول سوداني'] },
+  {
+    key: 'beans',
+    match: ['bean', 'lentil', 'chickpea', 'hummus', 'pea', 'فول', 'عدس', 'حمص', 'بازيلا'],
+  },
+  {
+    key: 'nuts',
+    match: [
+      'nut',
+      'almond',
+      'cashew',
+      'pistachio',
+      'peanut',
+      'مكسرات',
+      'لوز',
+      'كاجو',
+      'فستق',
+      'فول سوداني',
+    ],
+  },
 
   { key: 'oliveoil', match: ['oil', 'olive', 'tahini', 'زيت', 'زيتون', 'طحينة'] },
-  { key: 'salt', match: ['salt', 'spice', 'cumin', 'pepper corn', 'masala', 'ملح', 'بهار', 'كمون', 'توابل'] },
-  { key: 'herbs', match: ['parsley', 'coriander', 'mint', 'thyme', 'oregano', 'basil', 'herb', 'بقدونس', 'كزبرة', 'نعناع', 'زعتر', 'ريحان'] },
+  {
+    key: 'salt',
+    match: ['salt', 'spice', 'cumin', 'pepper corn', 'masala', 'ملح', 'بهار', 'كمون', 'توابل'],
+  },
+  {
+    key: 'herbs',
+    match: [
+      'parsley',
+      'coriander',
+      'mint',
+      'thyme',
+      'oregano',
+      'basil',
+      'herb',
+      'بقدونس',
+      'كزبرة',
+      'نعناع',
+      'زعتر',
+      'ريحان',
+    ],
+  },
   { key: 'honey', match: ['honey', 'syrup', 'molasses', 'sugar', 'عسل', 'دبس', 'سكر', 'شيرة'] },
 
   { key: 'canned', match: ['canned', 'tin ', 'paste', 'معلب', 'معجون'] },
@@ -183,15 +234,22 @@ export function foodIconKey(item: {
   nameAr?: string | null;
   category: IngredientCategory;
 }): FoodIconKey {
-  const haystack = normalize(
-    [item.label, item.nameEn, item.nameAr].filter(Boolean).join(' '),
-  );
+  return matchedFoodIconKey(item) ?? CATEGORY_FALLBACK[item.category];
+}
+
+export function matchedFoodIconKey(item: {
+  label?: string | null;
+  nameEn?: string | null;
+  nameAr?: string | null;
+  category: IngredientCategory;
+}): FoodIconKey | null {
+  const haystack = normalize([item.label, item.nameEn, item.nameAr].filter(Boolean).join(' '));
   if (haystack) {
     for (const rule of RULES) {
       if (rule.match.some((fragment) => haystack.includes(normalize(fragment)))) return rule.key;
     }
   }
-  return CATEGORY_FALLBACK[item.category];
+  return null;
 }
 
 /** Every key a rule or fallback can produce — the asset map must cover all of them. */
