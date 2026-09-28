@@ -97,6 +97,42 @@ describe('bento grid (spec §8)', () => {
     ]);
   });
 
+  it('shares measured tile row width by weight without fillers', () => {
+    const [row] = bentoRowLayout([1, 1], 'tiles', 350, [3, 2]);
+
+    expect(row?.fillerSpan).toBe(0);
+    expect(row?.fillerWidth).toBe(0);
+    expect(row?.cells[0]?.width).toBeCloseTo(200.4);
+    expect(row?.cells[1]?.width).toBeCloseTo(133.6);
+  });
+
+  it('keeps tile fillers span-sized while weighted cells use the remaining width', () => {
+    const [row] = bentoRowLayout([1], 'tiles', 350, [3]);
+
+    expect(row?.fillerSpan).toBe(1);
+    expect(row?.fillerWidth).toBe(167);
+    expect(row?.cells[0]?.width).toBe(167);
+  });
+
+  it('shares measured quick-action row width by weight without fillers', () => {
+    const [row] = bentoRowLayout([1, 1, 1], 'quickActions', 350, [1, 2, 1]);
+
+    expect(row?.fillerSpan).toBe(0);
+    expect(row?.fillerWidth).toBe(0);
+    expect(row?.cells[0]?.width).toBeCloseTo(82.5);
+    expect(row?.cells[1]?.width).toBeCloseTo(165);
+    expect(row?.cells[2]?.width).toBeCloseTo(82.5);
+  });
+
+  it('keeps quick-action fillers span-sized while weighted cells share the remaining width', () => {
+    const [row] = bentoRowLayout([1, 1], 'quickActions', 350, [3, 1]);
+
+    expect(row?.fillerSpan).toBe(1);
+    expect(row?.fillerWidth).toBe(110);
+    expect(row?.cells[0]?.width).toBeCloseTo(165);
+    expect(row?.cells[1]?.width).toBeCloseTo(55);
+  });
+
   it('lays out nothing for no tiles', () => {
     expect(bentoRows([])).toEqual([]);
   });
@@ -122,8 +158,10 @@ describe('bento grid (spec §8)', () => {
 
     expect(source).toContain('weight?: number;');
     expect(source).toContain('bentoRowLayout(');
+    expect(source).toContain('items.map((item) => item.props.weight)');
     expect(source).toContain('cell.width');
     expect(source).toContain('row.fillerWidth');
+    expect(source).toContain('flex: weight ?? span');
     expect(source).not.toContain('columns - row.indices.length');
   });
 

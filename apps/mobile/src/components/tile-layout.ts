@@ -50,6 +50,10 @@ function normalizedSpan(span: TileSpan | number, columns: number): number {
   return Math.min(Math.max(1, Math.trunc(span)), columns);
 }
 
+function normalizedWeight(weight: number | undefined): number {
+  return typeof weight === 'number' && Number.isFinite(weight) && weight > 0 ? weight : 1;
+}
+
 function spanRows(
   spans: readonly TileSpan[],
   columns: number,
@@ -97,17 +101,36 @@ export function bentoRowLayout(
   spans: readonly TileSpan[],
   variant: BentoVariant = 'tiles',
   containerWidth = 0,
+  weights: readonly (number | undefined)[] = [],
 ): BentoLayoutRow[] {
   const columns = bentoColumns(variant);
+  const gap = bentoGap(variant);
   return spanRows(spans, columns).map((row) => {
     const fillerSpan = Math.max(0, columns - row.used);
+    const fillerWidth = fillerSpan > 0 ? bentoCellWidth(containerWidth, fillerSpan, variant) : 0;
+    const hasWeights = row.cells.some((cell) => weights[cell.index] !== undefined);
+    const weightedAvailableWidth = Math.max(
+      0,
+      containerWidth -
+        fillerWidth -
+        gap * Math.max(0, row.cells.length + (fillerSpan > 0 ? 1 : 0) - 1),
+    );
+    const rowWeight = row.cells.reduce(
+      (total, cell) => total + normalizedWeight(weights[cell.index]),
+      0,
+    );
     return {
-      cells: row.cells.map((cell) => ({
-        ...cell,
-        width: bentoCellWidth(containerWidth, cell.span, variant),
-      })),
+      cells: row.cells.map((cell) => {
+        const width = hasWeights
+          ? (weightedAvailableWidth * normalizedWeight(weights[cell.index])) / rowWeight
+          : bentoCellWidth(containerWidth, cell.span, variant);
+        return {
+          ...cell,
+          width,
+        };
+      }),
       fillerSpan,
-      fillerWidth: fillerSpan > 0 ? bentoCellWidth(containerWidth, fillerSpan, variant) : 0,
+      fillerWidth,
     };
   });
 }

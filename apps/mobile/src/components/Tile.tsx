@@ -273,6 +273,7 @@ export function Bento({ children, variant = 'tiles', onRowLayout }: BentoProps) 
     items.map((item) => item.props.span ?? 1),
     variant,
     containerWidth,
+    items.map((item) => item.props.weight),
   );
   const handleLayout = (width: number) => {
     setContainerWidth((current) => (current === width ? current : width));
