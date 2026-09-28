@@ -16,13 +16,23 @@ import {
   LoadingState,
   ErrorState,
   EmptyState,
+  type IconName,
 } from '../components';
+import type { RoundButtonTone } from '../components/RoundButton';
 import { useFormat } from '../hooks/useFormat';
 import { useCreateTimer, useDeleteTimer, useTimers, useUpdateTimer } from '../hooks/timers';
 import { hasRunningTimer, sortTimers, useTimerTick } from '../lib/timers';
 import { spacing } from '../theme';
 
 const PRESET_MINUTES = [1, 3, 5, 10, 20, 45] as const;
+
+interface TimerControlItem {
+  name: string;
+  label: string;
+  icon: IconName;
+  tone: RoundButtonTone;
+  onPress: () => void;
+}
 
 export default function Timers() {
   const { t } = useFormat();
@@ -99,21 +109,63 @@ function TimerCard({
       ? t('mobile.timers.paused')
       : t('mobile.timers.remainingLabel');
 
-  const controls = (
-    <TimerControls
-      status={timer.status}
-      busy={busy}
-      onExtend={() => onAction({ action: 'extend', seconds: 60 })}
-      onPause={() => onAction({ action: 'pause' })}
-      onResume={() => onAction({ action: 'resume' })}
-      onCancel={() => onAction({ action: 'stop' })}
-      onRemove={onRemove}
-    />
-  );
+  const timerControls: TimerControlItem[] = [
+    {
+      name: 'extend',
+      label: t('mobile.timers.addMinute'),
+      icon: 'plus',
+      tone: 'primary',
+      onPress: () => onAction({ action: 'extend', seconds: 60 }),
+    },
+    ...(timer.status === 'running'
+      ? ([
+          {
+            name: 'pause',
+            label: t('mobile.timers.pause'),
+            icon: 'timerPause',
+            tone: 'surface',
+            onPress: () => onAction({ action: 'pause' }),
+          },
+        ] satisfies TimerControlItem[])
+      : []),
+    ...(timer.status === 'paused'
+      ? ([
+          {
+            name: 'resume',
+            label: t('mobile.timers.resume'),
+            icon: 'play',
+            tone: 'primary',
+            onPress: () => onAction({ action: 'resume' }),
+          },
+        ] satisfies TimerControlItem[])
+      : []),
+    timer.status === 'done'
+      ? {
+          name: 'remove',
+          label: t('mobile.timers.remove'),
+          icon: 'trash',
+          tone: 'surface',
+          onPress: onRemove,
+        }
+      : {
+          name: 'cancel',
+          label: t('mobile.timers.cancel'),
+          icon: 'close',
+          tone: 'surface',
+          onPress: () => onAction({ action: 'stop' }),
+        },
+  ];
+  const timerActions = busy
+    ? undefined
+    : timerControls.map(({ name, label, onPress }) => ({ name, label, onPress }));
 
   if (timer.status === 'running') {
     return (
-      <Tile tint="butter" accessibilityLabel={`${timer.label}, ${remaining}`}>
+      <Tile
+        tint="butter"
+        accessibilityLabel={`${timer.label}, ${remaining}`}
+        actions={timerActions}
+      >
         <View style={{ gap: spacing.md }}>
           <View style={{ gap: spacing.xs }}>
             <AppText variant="heading">{timer.label}</AppText>
@@ -122,7 +174,7 @@ function TimerCard({
               {statusLabel}
             </AppText>
           </View>
-          {controls}
+          <TimerControls controls={timerControls} busy={busy} />
         </View>
       </Tile>
     );
@@ -147,31 +199,19 @@ function TimerCard({
           </View>
           <AppText variant="numeral">{remaining}</AppText>
         </View>
-        {controls}
+        <TimerControls controls={timerControls} busy={busy} />
       </View>
     </Card>
   );
 }
 
 function TimerControls({
-  status,
+  controls,
   busy,
-  onExtend,
-  onPause,
-  onResume,
-  onCancel,
-  onRemove,
 }: {
-  status: CookingTimer['status'];
+  controls: readonly TimerControlItem[];
   busy: boolean;
-  onExtend: () => void;
-  onPause: () => void;
-  onResume: () => void;
-  onCancel: () => void;
-  onRemove: () => void;
 }) {
-  const { t } = useFormat();
-
   return (
     <View
       style={{
@@ -181,48 +221,16 @@ function TimerControls({
         gap: spacing.sm,
       }}
     >
-      <RoundButton
-        icon="plus"
-        tone="primary"
-        accessibilityLabel={t('mobile.timers.addMinute')}
-        disabled={busy}
-        onPress={onExtend}
-      />
-      {status === 'running' ? (
+      {controls.map((control) => (
         <RoundButton
-          icon="pause"
-          tone="surface"
-          accessibilityLabel={t('mobile.timers.pause')}
+          key={control.name}
+          icon={control.icon}
+          tone={control.tone}
+          accessibilityLabel={control.label}
           disabled={busy}
-          onPress={onPause}
+          onPress={control.onPress}
         />
-      ) : null}
-      {status === 'paused' ? (
-        <RoundButton
-          icon="play"
-          tone="primary"
-          accessibilityLabel={t('mobile.timers.resume')}
-          disabled={busy}
-          onPress={onResume}
-        />
-      ) : null}
-      {status === 'done' ? (
-        <RoundButton
-          icon="trash"
-          tone="surface"
-          accessibilityLabel={t('mobile.timers.remove')}
-          disabled={busy}
-          onPress={onRemove}
-        />
-      ) : (
-        <RoundButton
-          icon="close"
-          tone="surface"
-          accessibilityLabel={t('mobile.timers.cancel')}
-          disabled={busy}
-          onPress={onCancel}
-        />
-      )}
+      ))}
     </View>
   );
 }

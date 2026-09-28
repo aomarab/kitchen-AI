@@ -96,17 +96,47 @@ export default function KitchenScreen() {
   const planLines = wellnessPlanLines(settings, t);
   const timer = featuredTimer(timers, tick);
   const isLandscape = kioskOrientation(width, height) === 'landscape';
+  const planLabel = t('mobile.screen.planLabel');
+  const heroEyebrow = hasAnyNudge(settings) ? planLabel : t('mobile.screen.planIdleLabel');
+  const nudgeMessage = nudge ? t(nudge.messageKey as 'reminders.break.body') : null;
+  const heroMessage =
+    nudgeMessage ?? (planLines.length > 0 ? planLines.join(', ') : t('mobile.screen.planIdle'));
   const householdName =
     householdsQuery.data?.find((household) => household.id === activeHouseholdId)?.name ??
     t('mobile.screen.title');
+
+  const heroText = (
+    <View
+      accessible
+      accessibilityLabel={`${planLabel}, ${heroMessage}`}
+      style={{ gap: spacing.sm }}
+    >
+      <AppText variant="label" style={{ color: colors.textInverseMuted }}>
+        {heroEyebrow}
+      </AppText>
+      {nudgeMessage ? (
+        <AppText variant="title" style={{ color: colors.textInverse }}>
+          {nudgeMessage}
+        </AppText>
+      ) : planLines.length > 0 ? (
+        planLines.map((line) => (
+          <AppText key={line} variant="heading" style={{ color: colors.textInverse }}>
+            {line}
+          </AppText>
+        ))
+      ) : (
+        <AppText variant="body" style={{ color: colors.textInverseMuted }}>
+          {heroMessage}
+        </AppText>
+      )}
+    </View>
+  );
 
   const hero = (
     <LinearGradient
       colors={gradientHero as unknown as readonly [string, string, ...string[]]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      accessible
-      accessibilityLabel={t('mobile.screen.planLabel')}
       style={{
         flex: isLandscape ? 1.4 : undefined,
         gap: spacing.lg,
@@ -116,15 +146,9 @@ export default function KitchenScreen() {
         justifyContent: 'center',
       }}
     >
-      <AppText variant="label" style={{ color: colors.textInverseMuted }}>
-        {hasAnyNudge(settings) ? t('mobile.screen.planLabel') : t('mobile.screen.planIdleLabel')}
-      </AppText>
-
       {nudge ? (
         <View style={{ gap: spacing.lg, alignItems: 'flex-start' }}>
-          <AppText variant="title" style={{ color: colors.textInverse }}>
-            {t(nudge.messageKey as 'reminders.break.body')}
-          </AppText>
+          {heroText}
           <Button
             title={t('mobile.screen.nudgeAcknowledge')}
             variant="media"
@@ -133,18 +157,10 @@ export default function KitchenScreen() {
           />
         </View>
       ) : planLines.length > 0 ? (
-        <View style={{ gap: spacing.sm }}>
-          {planLines.map((line) => (
-            <AppText key={line} variant="heading" style={{ color: colors.textInverse }}>
-              {line}
-            </AppText>
-          ))}
-        </View>
+        heroText
       ) : (
         <View style={{ gap: spacing.lg, alignItems: 'flex-start' }}>
-          <AppText variant="body" style={{ color: colors.textInverseMuted }}>
-            {t('mobile.screen.planIdle')}
-          </AppText>
+          {heroText}
           <Button
             title={t('mobile.screen.planIdleCta')}
             variant="media"

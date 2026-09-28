@@ -67,6 +67,7 @@ export const IONICONS = {
   stretch: 'body-outline',
   sunrise: 'sunny-outline',
   pause: 'cafe-outline',
+  timerPause: 'pause',
   screen: 'tablet-landscape-outline',
 } satisfies Record<string, IoniconName>;
 

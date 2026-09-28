@@ -628,19 +628,34 @@ describe('information architecture (spec §4)', () => {
 
   it('keeps Timers on butter tiles with tabular numeral countdowns (spec §9.7)', () => {
     const timers = read('app', 'timers.tsx');
+    const runningTile = timers.match(/<Tile[\s\S]*?tint="butter"[\s\S]*?<\/Tile>/)?.[0] ?? '';
+    const timerControls =
+      timers.match(/function TimerControls[\s\S]*?function NewTimerForm/)?.[0] ?? '';
 
     expect(timers, 'Running timers must use the shared Tile primitive').toContain('<Tile');
     expect(timers, 'Running timers should use the butter tint').toContain('tint="butter"');
+    expect(
+      runningTile,
+      'The running timer Tile is one accessibility element, so its visible controls must be exposed through Tile actions.',
+    ).toContain('actions={timerActions}');
     expect(timers, 'Countdowns must render through the numeral typography variant').toContain(
       'variant="numeral"',
     );
     expect(timers, 'Timer controls must stay as individually focusable RoundButtons').toContain(
       '<RoundButton',
     );
+    expect(
+      timerControls,
+      'TimerControls must not use Icon name "pause", which is the wellness coffee-break glyph.',
+    ).not.toContain('icon="pause"');
   });
 
   it('keeps the smart screen hero on the ember gradient (spec §9.7)', () => {
     const screen = read('app', 'screen.tsx');
+    const heroOpening = screen.slice(
+      screen.indexOf('<LinearGradient'),
+      screen.indexOf('>', screen.indexOf('<LinearGradient')) + 1,
+    );
 
     expect(screen, 'Smart screen must render the hero with the ember gradient').toMatch(
       /<LinearGradient[\s\S]*?gradientHero/,
@@ -649,8 +664,12 @@ describe('information architecture (spec §4)', () => {
       screen,
       'The smart screen hero must no longer paint a flat inverse surface',
     ).not.toContain('backgroundColor: colors.surfaceInverse');
-    expect(screen, "The hero's accessibility label must stay in place").toContain(
-      "accessibilityLabel={t('mobile.screen.planLabel')}",
+    expect(
+      heroOpening,
+      'The hero container must not be accessible, or its nested buttons can be hidden from assistive tech.',
+    ).not.toContain('accessible');
+    expect(screen, "The hero's accessibility label must stay on its text group").toContain(
+      'accessibilityLabel={`${planLabel}, ${heroMessage}`}',
     );
   });
 });
