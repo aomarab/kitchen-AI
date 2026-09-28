@@ -36,8 +36,8 @@ export function ToggleRow({ label, hint, value, onValueChange, grouped }: Toggle
         value={value}
         onValueChange={onValueChange}
         accessibilityLabel={label}
-        trackColor={{ true: colors.primary, false: colors.border }}
-        thumbColor={colors.surface}
+        trackColor={{ true: colors.primary, false: colors.switchTrackOff }}
+        ios_backgroundColor={colors.switchTrackOff}
       />
     </View>
   );

@@ -33,6 +33,7 @@ export interface PaletteColors {
   readonly primaryText: string;
   readonly primaryPressed: string;
   readonly primarySoft: string;
+  readonly switchTrackOff: string;
   readonly onFill: string;
   readonly onDanger: string;
   readonly onSuccess: string;
@@ -126,6 +127,7 @@ const apricotLight: Palette = {
     primaryPressed: '#E95424',
     primaryText: '#B83D0C',
     primarySoft: '#FFE9E0',
+    switchTrackOff: '#7A6A60',
     onFill: '#2A1A12',
     onDanger: '#FFFFFF',
     onSuccess: '#FFFFFF',
@@ -166,6 +168,7 @@ const apricotDark: Palette = {
     primaryPressed: '#FF8660',
     primaryText: '#FF9A73',
     primarySoft: '#3B2218',
+    switchTrackOff: '#8A7A70',
     onFill: '#2A1A12',
     onDanger: '#2A1A12',
     onSuccess: '#2A1A12',

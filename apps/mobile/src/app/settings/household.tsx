@@ -79,12 +79,11 @@ export default function Household() {
           {t('household.inviteCode')}
         </AppText>
         <AppText variant="title">{household.inviteCode}</AppText>
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ gap: spacing.sm }}>
           <Button
             title={t('household.shareInvite')}
             variant="secondary"
             onPress={() => void Share.share({ message: household.inviteCode })}
-            style={{ flex: 1 }}
           />
           <Button
             title={t('plans.regenerate')}
@@ -92,7 +91,6 @@ export default function Household() {
             icon="sync"
             loading={rotate.isPending}
             onPress={() => rotate.mutate()}
-            style={{ flex: 1 }}
           />
         </View>
       </Card>

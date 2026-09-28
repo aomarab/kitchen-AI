@@ -155,6 +155,29 @@ describe('information architecture (spec §4)', () => {
     expect(deleteAccount, 'Delete account must keep the destructive CTA tone').toContain(
       'variant="danger"',
     );
+
+    const toggleRow = read('components', 'ToggleRow.tsx');
+    expect(
+      toggleRow,
+      'ToggleRow should let the platform draw a consistent native thumb',
+    ).not.toContain('thumbColor');
+    expect(toggleRow, 'ToggleRow must paint the iOS off-state gutter').toContain(
+      'ios_backgroundColor={colors.switchTrackOff}',
+    );
+
+    const household = read('app', 'settings', 'household.tsx');
+    const inviteActions =
+      household.match(/t\('household\.shareInvite'\)[\s\S]*?t\('plans\.regenerate'\)/)?.[0] ?? '';
+    expect(inviteActions, 'Household invite actions should render in order').toContain(
+      "t('plans.regenerate')",
+    );
+    expect(inviteActions, 'Household invite actions must stack, not share one row').not.toContain(
+      "flexDirection: 'row'",
+    );
+    expect(
+      inviteActions,
+      'Household invite buttons must be full-width, not half-width',
+    ).not.toContain('flex: 1');
   });
 
   it('keeps inline tab controls named and inside safe areas (spec §12)', () => {

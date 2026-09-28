@@ -9,6 +9,7 @@ import {
 
 const AA_TEXT = 4.5;
 const AA_NON_TEXT = 3;
+const NATIVE_SWITCH_THUMB = '#FFFFFF';
 
 /** Every surface a text colour can land on, in whichever mode is under test. */
 const SURFACES = ['bg', 'surface', 'surfaceAlt'] as const;
@@ -102,6 +103,21 @@ describe.each(ALL)('%s palette', (_name, palette) => {
       );
     },
   );
+
+  it('switch tracks separate from their card and native thumb', () => {
+    expect(
+      contrast(colors.primary, colors.surface),
+      'on switch track on surface',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(
+      contrast(colors.switchTrackOff, colors.surface),
+      'off switch track on surface',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(
+      contrast(colors.switchTrackOff, NATIVE_SWITCH_THUMB),
+      'off switch track under native white thumb',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
 
   it.each(STATUSES)('%s reads on its own soft chip', (status) => {
     const soft = `${status}Soft` as const;

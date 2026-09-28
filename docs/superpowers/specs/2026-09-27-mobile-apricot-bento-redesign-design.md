@@ -246,6 +246,7 @@ members:
 
 - `colors.onDanger`, the label on a `danger` fill
 - `colors.onSuccess`, the tick/label on a `success` fill
+- `colors.switchTrackOff`, the off-state track for native switches
 - `scrim`, a structured gradient object defined in §6.4
 
 `onFill` now labels `primary` and `primaryPressed` only, because a coral fill takes an ink label
@@ -265,6 +266,7 @@ while the light danger fill takes white.
 | `primaryPressed` | `#E95424`             | Pressed coral                                                                       |
 | `primaryText`    | `#B83D0C`             | Headline keyword, links, active tab                                                 |
 | `primarySoft`    | `#FFE9E0`             | Apricot soft fill                                                                   |
+| `switchTrackOff` | `#7A6A60`             | Native switch off track                                                             |
 | `onFill`         | `#2A1A12`             | Label on `primary` / `primaryPressed`                                               |
 | `onDanger`       | `#FFFFFF`             | **New.** Label on `danger`                                                          |
 | `onSuccess`      | `#FFFFFF`             | **New.** Tick/label on `success`                                                    |
@@ -296,7 +298,8 @@ Warm, never neutral grey. The page is roasted-cocoa dark and the coral keeps the
 | `primaryPressed` | `#FF8660`         | `warn`        | `#F2B45E` |
 | `primaryText`    | `#FF9A73`         | `warnSoft`    | `#35260F` |
 | `primarySoft`    | `#3B2218`         | `danger`      | `#FF8A78` |
-| `overlay`        | `rgba(0,0,0,0.6)` | `dangerSoft`  | `#3D1C16` |
+| `switchTrackOff` | `#8A7A70`         | `dangerSoft`  | `#3D1C16` |
+| `overlay`        | `rgba(0,0,0,0.6)` |               |           |
 
 `shadowColor #000000`, `shadowScale 1.8`. In dark mode, cards and tiles also carry a 1px `border`
 edge, the rule `palettes.ts` already documents.
@@ -382,6 +385,7 @@ These values must hold. They are computed with WCAG 2.x relative luminance and a
 | `onDanger` on danger                        | 4.5 | 5.60                      | 7.30                      |
 | `onSuccess` on success                      | 3.0 | 5.79                      | 9.11                      |
 | primary / pressed / danger fill on surface  | 3.0 | 3.39 / 3.65 / 5.60        | 6.10 / 7.26 / 7.53        |
+| switch track off on surface / native thumb  | 3.0 | 5.17 / 5.17               | 4.19 / 4.12               |
 | success / warn / danger on own soft         | 4.5 | 4.63 / 4.65 / 4.64        | 8.37 / 7.99 / 6.66        |
 | status as a border on bg and surface        | 3.0 | ≥ 4.84                    | ≥ 7.53                    |
 | tint fg on tint (plain/butter/sage/apricot) | 4.5 | 5.66 / 6.16 / 5.24 / 4.85 | 8.32 / 9.24 / 8.77 / 7.09 |
