@@ -199,6 +199,8 @@ describe('information architecture (spec §4)', () => {
     expect(screen).toContain('tabBar && !hasFooter');
     expect(screen).toContain('onFooterLayout');
     expect(screen).toContain('setToastFooterOffset(event.nativeEvent.layout.height)');
+    expect(screen).toContain('<Animated.ScrollView');
+    expect(screen).toContain('ReturnType<typeof Animated.event>');
     expect(toast).toContain('footerOffset > 0 ? footerOffset : clearance');
   });
 
@@ -287,11 +289,14 @@ describe('information architecture (spec §4)', () => {
     expect(recipe).toContain('<RecipeThumb');
     expect(recipe).toContain('height: 360');
     expect(recipe).toContain('const TOP_BAR_ROW_HEIGHT = 44');
-    expect(recipe).toContain('const TOP_BAR_FADE_MS = 160');
     expect(recipe).toContain('recipeTopBarBacked');
-    expect(recipe).toContain('useReduceMotion');
-    expect(recipe).toContain('Animated.timing(barOpacity');
+    expect(recipe).toContain('recipeTopBarFadeRange');
+    expect(recipe).toContain('const scrollY = useRef(new Animated.Value(0)).current;');
+    expect(recipe).toContain('scrollY.interpolate');
+    expect(recipe).toContain('inputRange: [topBarFade.start, topBarFade.end]');
+    expect(recipe).toContain('Animated.event');
     expect(recipe).toContain('useNativeDriver: true');
+    expect(recipe).toContain('listener: handleRecipeScroll');
     expect(recipe).toContain('pointerEvents="none"');
     expect(recipe).toContain('StyleSheet.hairlineWidth');
     expect(recipe).toContain("tone={barBacked ? 'surface' : 'mediaLight'}");
@@ -299,9 +304,11 @@ describe('information architecture (spec §4)', () => {
     expect(recipe).toContain('!barBacked');
     expect(recipe).not.toContain('heroUnderStatus');
     expect(recipe).toContain('onImageLoad');
-    expect(recipe).toContain('onScroll={handleRecipeScroll}');
+    expect(recipe).toContain('onScroll={handleAnimatedRecipeScroll}');
     expect(recipe).toContain('top: insets.top + spacing.md');
     expect(recipe).toContain('<StatusBar style="light" />');
+    expect(recipe).not.toContain('Animated.timing');
+    expect(recipe).not.toContain('TOP_BAR_FADE_MS');
     expect(recipe).toContain('recipeStockCount');
     expect(recipe).toContain('scaleQuantityForServings');
     expect(recipe).toContain('<SegmentedControl');

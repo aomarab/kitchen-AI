@@ -32,12 +32,12 @@ import {
   type IconName,
 } from '../../../components';
 import { useFormat } from '../../../hooks/useFormat';
-import { useReduceMotion } from '../../../hooks/motion';
 import { useRecipe, useMarkCooked } from '../../../hooks/recipe';
 import { ingredientName, formatMeasure, formatMinutes, formatQty } from '../../../lib/format';
 import {
   recipeStockCount,
   recipeTopBarBacked,
+  recipeTopBarFadeRange,
   scaleQuantityForServings,
 } from '../../../lib/recipe';
 import { radius, spacing } from '../../../theme';
@@ -48,7 +48,6 @@ const MAX_SERVINGS = 12;
 const HERO_HEIGHT = 360;
 const STAT_TILE_HEIGHT = 124;
 const TOP_BAR_ROW_HEIGHT = 44;
-const TOP_BAR_FADE_MS = 160;
 
 type RecipeSegment = 'ingredients' | 'steps';
 
@@ -68,7 +67,6 @@ export default function RecipeDetail() {
   const isFocused = useIsFocused();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
-  const reduceMotion = useReduceMotion();
   const recipe = useRecipe(id ?? null, locale);
   const markCooked = useMarkCooked(id ?? '');
   const [confirm, setConfirm] = useState(false);
@@ -78,7 +76,7 @@ export default function RecipeDetail() {
   const [heroImageLoaded, setHeroImageLoaded] = useState(false);
   const [barBacked, setBarBacked] = useState(false);
   const barBackedRef = useRef(false);
-  const barOpacity = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setServings(null);
@@ -87,20 +85,8 @@ export default function RecipeDetail() {
     setHeroImageLoaded(false);
     setBarBacked(false);
     barBackedRef.current = false;
-  }, [id]);
-
-  useEffect(() => {
-    barOpacity.stopAnimation();
-    if (reduceMotion) {
-      barOpacity.setValue(barBacked ? 1 : 0);
-      return;
-    }
-    Animated.timing(barOpacity, {
-      toValue: barBacked ? 1 : 0,
-      duration: TOP_BAR_FADE_MS,
-      useNativeDriver: true,
-    }).start();
-  }, [barBacked, barOpacity, reduceMotion]);
+    scrollY.setValue(0);
+  }, [id, scrollY]);
 
   if (recipe.isLoading) {
     return (
@@ -138,18 +124,29 @@ export default function RecipeDetail() {
   });
   const difficulty = t(DIFFICULTY_KEY[data.difficulty]);
   const topBarHeight = insets.top + spacing.md + TOP_BAR_ROW_HEIGHT + spacing.sm;
+  const topBarFade = recipeTopBarFadeRange({
+    heroHeight: HERO_HEIGHT,
+    sheetOverlap: SHEET_OVERLAP,
+    barHeight: topBarHeight,
+    fadeDistance: spacing.xl,
+  });
+  const barOpacity = scrollY.interpolate({
+    inputRange: [topBarFade.start, topBarFade.end],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
   const showLightStatusBar = isFocused && heroImageLoaded && !barBacked;
   const handleRecipeScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const nextBarBacked = recipeTopBarBacked(event.nativeEvent.contentOffset.y, {
-      heroHeight: HERO_HEIGHT,
-      sheetOverlap: SHEET_OVERLAP,
-      barHeight: topBarHeight,
-    });
+    const nextBarBacked = recipeTopBarBacked(event.nativeEvent.contentOffset.y, topBarFade);
     if (nextBarBacked !== barBackedRef.current) {
       barBackedRef.current = nextBarBacked;
       setBarBacked(nextBarBacked);
     }
   };
+  const handleAnimatedRecipeScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: true, listener: handleRecipeScroll },
+  );
   const footer = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
       <QuantityStepper
@@ -183,7 +180,7 @@ export default function RecipeDetail() {
         padded={false}
         edges={['bottom', 'left', 'right']}
         footer={footer}
-        onScroll={handleRecipeScroll}
+        onScroll={handleAnimatedRecipeScroll}
         scrollEventThrottle={16}
       >
         <View style={{ height: 360, position: 'relative' }}>

@@ -1,9 +1,9 @@
 import { useEffect, type ReactNode } from 'react';
 import {
+  Animated,
   KeyboardAvoidingView,
   type LayoutChangeEvent,
   Platform,
-  ScrollView,
   type ScrollViewProps,
   View,
   useWindowDimensions,
@@ -27,7 +27,7 @@ export interface ScreenProps {
   contentStyle?: ViewStyle;
   refreshing?: boolean;
   onRefresh?: () => void;
-  onScroll?: ScrollViewProps['onScroll'];
+  onScroll?: ScrollViewProps['onScroll'] | ReturnType<typeof Animated.event>;
   scrollEventThrottle?: number;
   footer?: ReactNode;
   /**
@@ -106,7 +106,7 @@ export function Screen({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {scroll ? (
-          <ScrollView
+          <Animated.ScrollView
             contentContainerStyle={[{ flexGrow: 1 }, centering]}
             keyboardShouldPersistTaps="handled"
             onScroll={onScroll}
@@ -118,7 +118,7 @@ export function Screen({
             }
           >
             <View style={[{ flexGrow: 1 }, pad, block, contentStyle]}>{children}</View>
-          </ScrollView>
+          </Animated.ScrollView>
         ) : (
           <View style={[{ flex: 1 }, centering]}>
             <View style={[{ flex: 1 }, pad, block, contentStyle]}>{children}</View>

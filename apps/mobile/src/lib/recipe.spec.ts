@@ -3,6 +3,7 @@ import {
   parseServingsParam,
   recipeStockCount,
   recipeTopBarBacked,
+  recipeTopBarFadeRange,
   scaleQuantityForServings,
   stepIngredients,
   type StepIngredient,
@@ -62,19 +63,35 @@ describe('parseServingsParam', () => {
 });
 
 describe('recipeTopBarBacked', () => {
-  const metrics = { heroHeight: 360, sheetOverlap: 28, barHeight: 100 };
-  const threshold = metrics.heroHeight - metrics.sheetOverlap - metrics.barHeight;
+  const metrics = { heroHeight: 360, sheetOverlap: 28, barHeight: 100, fadeDistance: 24 };
+  const range = recipeTopBarFadeRange(metrics);
+
+  it('ends at the sheet-to-backing threshold', () => {
+    expect(range.end).toBe(metrics.heroHeight - metrics.sheetOverlap - metrics.barHeight);
+  });
+
+  it('starts one spacing-xl before the backing threshold', () => {
+    expect(range.start).toBe(range.end - 24);
+  });
 
   it('stays transparent while the photo fills the bar area', () => {
-    expect(recipeTopBarBacked(0, metrics)).toBe(false);
+    expect(recipeTopBarBacked(0, range)).toBe(false);
   });
 
-  it('stays transparent until the sheet reaches the backing threshold', () => {
-    expect(recipeTopBarBacked(threshold - 1, metrics)).toBe(false);
+  it('keeps the status bar on the photo before the fade starts', () => {
+    expect(recipeTopBarBacked(range.start - 1, range)).toBe(false);
   });
 
-  it('backs the status area at the threshold', () => {
-    expect(recipeTopBarBacked(threshold, metrics)).toBe(true);
+  it('backs the status area when the fade starts', () => {
+    expect(recipeTopBarBacked(range.start, range)).toBe(true);
+  });
+
+  it('is fully opaque at and after the fade end', () => {
+    const opacityAt = (offsetY: number) =>
+      Math.max(0, Math.min(1, (offsetY - range.start) / (range.end - range.start)));
+
+    expect(opacityAt(range.end)).toBe(1);
+    expect(opacityAt(range.end + 50)).toBe(1);
   });
 });
 

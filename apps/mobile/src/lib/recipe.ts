@@ -21,6 +21,12 @@ export interface RecipeTopBarBackingMetrics {
   heroHeight: number;
   sheetOverlap: number;
   barHeight: number;
+  fadeDistance: number;
+}
+
+export interface RecipeTopBarFadeRange {
+  start: number;
+  end: number;
 }
 
 const MAX_SERVINGS_PARAM = 24;
@@ -66,12 +72,18 @@ export function parseServingsParam(value: unknown): number | null {
   return parsed;
 }
 
-export function recipeTopBarBacked(
-  offsetY: number,
-  { heroHeight, sheetOverlap, barHeight }: RecipeTopBarBackingMetrics,
-): boolean {
-  const threshold = heroHeight - sheetOverlap - barHeight;
-  return offsetY >= threshold;
+export function recipeTopBarFadeRange({
+  heroHeight,
+  sheetOverlap,
+  barHeight,
+  fadeDistance,
+}: RecipeTopBarBackingMetrics): RecipeTopBarFadeRange {
+  const end = heroHeight - sheetOverlap - barHeight;
+  return { start: end - fadeDistance, end };
+}
+
+export function recipeTopBarBacked(offsetY: number, range: RecipeTopBarFadeRange): boolean {
+  return offsetY >= range.start;
 }
 
 export function stepIngredients<T extends StepIngredient>(
