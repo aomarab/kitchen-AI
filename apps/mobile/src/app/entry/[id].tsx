@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View } from 'react-native';
 import type { MealSlot } from '@kitchen/contracts';
-import { formatHijriDate, type MessageKey } from '@kitchen/i18n';
+import type { MessageKey } from '@kitchen/i18n';
 import {
   Screen,
   Header,
@@ -20,7 +20,7 @@ import {
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { usePlan, useUpdatePlanEntry, useRegeneratePlanEntry } from '../../hooks/plans';
-import { formatMinutes, formatDateL, formatQty } from '../../lib/format';
+import { formatMinutes, formatDateL, formatQty, hijriCaption } from '../../lib/format';
 import { planEntryStatus } from '../../lib/plan-entry-status';
 import { radius, spacing } from '../../theme';
 
@@ -76,7 +76,7 @@ export default function EntryDetail() {
     month: 'short',
     day: 'numeric',
   });
-  const hijriLabel = showHijri ? formatHijriDate(`${entry.date}T00:00:00`) : null;
+  const hijriLabel = hijriCaption(locale, `${entry.date}T00:00:00`, showHijri);
   const servings = formatQty(locale, entry.servings, prefs);
   const minutes = recipe.prepMinutes + recipe.cookMinutes;
   const minutesLabel = t('recipe.cookTime', {
@@ -142,7 +142,6 @@ export default function EntryDetail() {
           <Tile
             fill="surfaceAlt"
             height={MINI_TILE_HEIGHT}
-            weight={1.4}
             accessibilityLabel={`${slot}, ${dateLabel}${hijriLabel ? `, ${hijriLabel}` : ''}`}
           >
             <View style={{ gap: spacing.sm }}>
@@ -160,6 +159,7 @@ export default function EntryDetail() {
           <Tile
             fill="surfaceAlt"
             height={MINI_TILE_HEIGHT}
+            weight={1.4}
             accessibilityLabel={`${t('mobile.plans.status')} ${statusLabel}`}
           >
             <View style={{ gap: spacing.sm }}>

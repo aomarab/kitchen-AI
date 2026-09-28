@@ -135,6 +135,16 @@ export function formatWeekday(locale: Locale, iso: string | Date): string {
   return formatDateL(locale, iso, { weekday: 'long' });
 }
 
+/** Hijri companion date, only for Arabic readers who opted in. */
+export function hijriCaption(
+  locale: Locale,
+  iso: string | Date,
+  showHijri: boolean,
+): string | null {
+  if (locale !== 'ar' || !showHijri) return null;
+  return formatHijriDate(iso);
+}
+
 /** Gregorian date, plus the Hijri date in Arabic when the user opts in. */
 export function formatDateWithHijri(
   locale: Locale,
@@ -143,10 +153,8 @@ export function formatDateWithHijri(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const gregorian = formatDate(locale, iso, options);
-  if (locale === 'ar' && showHijri) {
-    return `${gregorian} · ${formatHijriDate(iso)}`;
-  }
-  return gregorian;
+  const hijri = hijriCaption(locale, iso, showHijri);
+  return hijri ? `${gregorian} · ${hijri}` : gregorian;
 }
 
 /**

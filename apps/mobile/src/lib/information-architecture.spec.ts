@@ -283,7 +283,28 @@ describe('information architecture (spec §4)', () => {
     expect(entry, 'Entry status title must be a stable label, not badge copy').toContain(
       "t('mobile.plans.status')",
     );
+    const dateTile =
+      entry.match(/<Tile[\s\S]*?accessibilityLabel=\{`\$\{slot\}[\s\S]*?<\/Tile>/)?.[0] ?? '';
+    const statusTile =
+      entry.match(
+        /<Tile[\s\S]*?accessibilityLabel=\{`\$\{t\('mobile\.plans\.status'\)\}[\s\S]*?<\/Tile>/,
+      )?.[0] ?? '';
+    expect(
+      dateTile,
+      'Entry date tile must stay the narrower half because its chip is short',
+    ).not.toContain('weight={1.4}');
+    expect(
+      statusTile,
+      'Entry status tile must be the wider half so long badges stay one line',
+    ).toContain('weight={1.4}');
     expect(entry, 'Entry status must come from the shared helper').toContain('planEntryStatus');
+    expect(entry, 'Entry Hijri caption must share the format eligibility helper').toContain(
+      'hijriCaption(locale',
+    );
+    expect(
+      entry,
+      'Entry must not show Hijri in English by calling formatHijriDate directly',
+    ).not.toContain('formatHijriDate');
     expect(board, 'Plan board status must come from the shared helper').toContain(
       'planEntryStatus',
     );

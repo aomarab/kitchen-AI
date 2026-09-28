@@ -5,7 +5,9 @@ import { errorMessageKey } from '../lib/errors';
 import { unitSchema, storageLocationTypeSchema, type Unit } from '@kitchen/contracts';
 import {
   formatExpiryLabel,
+  formatDateWithHijri,
   formatWeekday,
+  hijriCaption,
   ingredientName,
   itemName,
   localizedName,
@@ -61,6 +63,31 @@ describe('formatWeekday', () => {
   it('formats the weekday through the shared date formatter', () => {
     expect(formatWeekday('en', new Date('2026-09-24T12:00:00'))).toBe('Thursday');
     expect(formatWeekday('ar', new Date('2026-09-24T12:00:00'))).toBe('الخميس');
+  });
+});
+
+describe('hijriCaption', () => {
+  const iso = '2026-09-28T00:00:00';
+
+  it('is null for English even when the Hijri setting is on', () => {
+    expect(hijriCaption('en', iso, true)).toBeNull();
+  });
+
+  it('returns the Hijri companion date for Arabic when the setting is on', () => {
+    expect(hijriCaption('ar', iso, true)).toContain('هـ');
+  });
+
+  it('is null for Arabic when the Hijri setting is off', () => {
+    expect(hijriCaption('ar', iso, false)).toBeNull();
+  });
+
+  it('keeps formatDateWithHijri on the same Hijri eligibility rule', () => {
+    expect(formatDateWithHijri('en', iso, true, { month: 'short', day: 'numeric' })).not.toContain(
+      'هـ',
+    );
+    expect(formatDateWithHijri('ar', iso, true, { month: 'short', day: 'numeric' })).toContain(
+      'هـ',
+    );
   });
 });
 
