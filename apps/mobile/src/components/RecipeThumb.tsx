@@ -23,6 +23,8 @@ export interface RecipeThumbProps {
   title: string;
   accessibilityLabel?: string;
   resizeMode?: ImageResizeMode;
+  onImageLoad?: () => void;
+  onImageError?: () => void;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -32,6 +34,8 @@ export function RecipeThumb({
   title,
   accessibilityLabel,
   resizeMode = 'cover',
+  onImageLoad,
+  onImageError,
   style,
 }: RecipeThumbProps) {
   const { colors } = useTheme();
@@ -54,7 +58,11 @@ export function RecipeThumb({
           resizeMode={resizeMode}
           accessibilityRole="image"
           accessibilityLabel={accessibilityLabel ?? title}
-          onError={() => setImageFailed(true)}
+          onLoad={onImageLoad}
+          onError={() => {
+            setImageFailed(true);
+            onImageError?.();
+          }}
           style={StyleSheet.absoluteFill}
         />
       ) : (

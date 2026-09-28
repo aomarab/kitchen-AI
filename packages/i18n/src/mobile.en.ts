@@ -336,6 +336,12 @@ export const mobileEn = {
       inStockLabel: 'in stock',
       upNext: 'Up next',
       servingsLabel: 'Servings',
+      minutesValue: plural('minutes', {
+        one: '1 min',
+        other: '{minutes} min',
+      }),
+      totalTimeLabel: 'Total time',
+      difficultyLabel: 'Difficulty',
     },
     account: {
       title: 'Account',

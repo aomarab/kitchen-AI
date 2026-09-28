@@ -4,6 +4,7 @@ import {
   type LayoutChangeEvent,
   Platform,
   ScrollView,
+  type ScrollViewProps,
   View,
   useWindowDimensions,
   type ViewStyle,
@@ -26,6 +27,8 @@ export interface ScreenProps {
   contentStyle?: ViewStyle;
   refreshing?: boolean;
   onRefresh?: () => void;
+  onScroll?: ScrollViewProps['onScroll'];
+  scrollEventThrottle?: number;
   footer?: ReactNode;
   /**
    * A tab screen. The floating bar covers the bottom, so the safe area stops
@@ -50,6 +53,8 @@ export function Screen({
   contentStyle,
   refreshing,
   onRefresh,
+  onScroll,
+  scrollEventThrottle,
   footer,
 }: ScreenProps) {
   const { colors } = useTheme();
@@ -104,6 +109,8 @@ export function Screen({
           <ScrollView
             contentContainerStyle={[{ flexGrow: 1 }, centering]}
             keyboardShouldPersistTaps="handled"
+            onScroll={onScroll}
+            scrollEventThrottle={scrollEventThrottle}
             refreshControl={
               onRefresh ? (
                 <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} />

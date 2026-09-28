@@ -415,6 +415,15 @@ export const mobileAr: MobileMessages = {
       inStockLabel: 'متوفر',
       upNext: 'التالي',
       servingsLabel: 'الحصص',
+      minutesValue: plural('minutes', {
+        one: 'دقيقة واحدة',
+        two: 'دقيقتان',
+        few: '{minutes} دقائق',
+        many: '{minutes} دقيقةً',
+        other: '{minutes} دقيقة',
+      }),
+      totalTimeLabel: 'الوقت الكلي',
+      difficultyLabel: 'الصعوبة',
     },
     account: {
       title: 'الحساب',

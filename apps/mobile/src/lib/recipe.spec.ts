@@ -11,6 +11,7 @@ const INGREDIENTS = [
   ingredient('Tomato', 'طماطم', 2, 'piece'),
   ingredient('Olive oil', 'زيت الزيتون', 1, 'tbsp'),
   ingredient('Rice', 'أرز', 200, 'g'),
+  ingredient('Potato', 'بطاطس', 3, 'piece'),
 ] as const;
 
 function ingredient(
@@ -69,12 +70,27 @@ describe('stepIngredients', () => {
 
   it('does not match English names inside unrelated words', () => {
     expect(stepIngredients('Check the price before cooking.', INGREDIENTS, 'en')).toEqual([]);
+    expect(stepIngredients('Boil the water.', [ingredient('Oil', 'زيت', 1, 'tbsp')], 'en')).toEqual(
+      [],
+    );
+  });
+
+  it('matches English plural suffixes from singular ingredient names', () => {
+    expect(stepIngredients('Cut potatoes into wedges.', INGREDIENTS, 'en')).toEqual([
+      INGREDIENTS[3],
+    ]);
   });
 
   it('matches Arabic names by substring', () => {
     expect(stepIngredients('أضيفي زيت الزيتون ثم الأرز.', INGREDIENTS, 'ar')).toEqual([
       INGREDIENTS[1],
       INGREDIENTS[2],
+    ]);
+  });
+
+  it('matches Arabic article and proclitic forms word by word', () => {
+    expect(stepIngredients('سخّني المقلاة بزيت الزيتون.', INGREDIENTS, 'ar')).toEqual([
+      INGREDIENTS[1],
     ]);
   });
 

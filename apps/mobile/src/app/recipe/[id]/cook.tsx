@@ -125,7 +125,7 @@ export default function CookMode() {
             </View>
           </View>
 
-          <ProgressBar step={step} total={steps.length} />
+          <ProgressBar step={step} total={steps.length} progressLabel={progressLabel} />
         </View>
 
         <ScrollView
@@ -230,13 +230,21 @@ export default function CookMode() {
   );
 }
 
-function ProgressBar({ step, total }: { step: number; total: number }) {
+function ProgressBar({
+  step,
+  total,
+  progressLabel,
+}: {
+  step: number;
+  total: number;
+  progressLabel: string;
+}) {
   const { colors } = useTheme();
   return (
     <View
       accessible
       accessibilityRole="progressbar"
-      accessibilityValue={{ min: 1, max: total, now: step + 1 }}
+      accessibilityValue={{ min: 0, max: total, now: step + 1, text: progressLabel }}
       style={{ flexDirection: 'row', direction: 'ltr', gap: spacing.xs }}
     >
       {Array.from({ length: total }).map((_, index) => (
@@ -285,20 +293,19 @@ function StepTimerControl({
     ? formatRemaining(projected.remainingSec)
     : formatRemaining(Math.round(durationMinutes * 60));
   const finished = projected?.status === 'done';
-  const caption = projected
+  const statusCaption = projected
     ? finished
       ? t('mobile.recipe.stepTimerDone')
       : t('mobile.recipe.stepTimerRunning', {
           remaining: formatRemaining(projected.remainingSec),
         })
-    : t('mobile.recipe.startStepTimer', {
-        minutes: formatMinutes(locale, durationMinutes, prefs),
-      });
+    : null;
+  const buttonTitle = t('mobile.recipe.startStepTimer', {
+    minutes: formatMinutes(locale, durationMinutes, prefs),
+  });
 
   return (
     <View
-      accessible
-      accessibilityLabel={caption}
       style={{
         padding: spacing.lg,
         gap: spacing.md,
@@ -311,12 +318,14 @@ function StepTimerControl({
       <AppText variant="numeral" style={{ color: tint.fg }}>
         {countdown}
       </AppText>
-      <AppText variant="caption" style={{ color: colors.textMuted }}>
-        {caption}
-      </AppText>
+      {statusCaption ? (
+        <AppText variant="caption" style={{ color: colors.textMuted }}>
+          {statusCaption}
+        </AppText>
+      ) : null}
       {projected ? null : (
         <Button
-          title={caption}
+          title={buttonTitle}
           icon="clock"
           variant="primary"
           disabled={pending}

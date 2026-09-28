@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +23,7 @@ import {
   ListRow,
   FoodIcon,
   QuantityStepper,
+  type IconName,
 } from '../../../components';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe, useMarkCooked } from '../../../hooks/recipe';
@@ -33,6 +34,8 @@ import { useTheme } from '../../../theme/useTheme';
 
 const SHEET_OVERLAP = 28;
 const MAX_SERVINGS = 12;
+const HERO_HEIGHT = 360;
+const STAT_TILE_HEIGHT = 124;
 
 type RecipeSegment = 'ingredients' | 'steps';
 
@@ -58,11 +61,17 @@ export default function RecipeDetail() {
   const [cooked, setCooked] = useState(false);
   const [segment, setSegment] = useState<RecipeSegment>('ingredients');
   const [servings, setServings] = useState<number | null>(null);
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false);
+  const [heroUnderStatus, setHeroUnderStatus] = useState(true);
+  const heroUnderStatusRef = useRef(true);
 
   useEffect(() => {
     setServings(null);
     setSegment('ingredients');
     setCooked(false);
+    setHeroImageLoaded(false);
+    setHeroUnderStatus(true);
+    heroUnderStatusRef.current = true;
   }, [id]);
 
   if (recipe.isLoading) {
@@ -96,6 +105,18 @@ export default function RecipeDetail() {
     have: formatQty(locale, stock.have, prefs),
     total: formatQty(locale, stock.total, prefs),
   });
+  const totalTimeValue = t('mobile.recipe.minutesValue', {
+    minutes: formatMinutes(locale, totalMinutes, prefs),
+  });
+  const difficulty = t(DIFFICULTY_KEY[data.difficulty]);
+  const showLightStatusBar = isFocused && heroImageLoaded && heroUnderStatus;
+  const handleRecipeScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const nextHeroUnderStatus = event.nativeEvent.contentOffset.y < HERO_HEIGHT - insets.top;
+    if (nextHeroUnderStatus !== heroUnderStatusRef.current) {
+      heroUnderStatusRef.current = nextHeroUnderStatus;
+      setHeroUnderStatus(nextHeroUnderStatus);
+    }
+  };
   const footer = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
       <QuantityStepper
@@ -122,182 +143,193 @@ export default function RecipeDetail() {
   );
 
   return (
-    <Screen scroll padded={false} edges={['bottom', 'left', 'right']} footer={footer}>
-      {isFocused ? <StatusBar style="light" /> : null}
-      <View style={{ height: 360, position: 'relative' }}>
-        <RecipeThumb
-          heroImageUrl={data.heroImageUrl}
-          dishKey={`${data.locale}:${data.title}`}
-          title={data.title}
-          accessibilityLabel={t('mobile.recipe.imageLabel', { title: data.title })}
-          style={{ width: '100%', height: '100%' }}
-        />
-        <View style={{ position: 'absolute', top: insets.top + spacing.md, start: spacing.lg }}>
-          <RoundButton
-            icon="back"
-            directional
-            tone="mediaLight"
-            size={40}
-            accessibilityLabel={t('common.back')}
-            onPress={() => router.back()}
-          />
-        </View>
-      </View>
-
-      <View
-        style={{
-          marginTop: -SHEET_OVERLAP,
-          padding: spacing.lg,
-          gap: spacing.lg,
-          borderTopStartRadius: radius.xl,
-          borderTopEndRadius: radius.xl,
-          backgroundColor: colors.bg,
-        }}
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {showLightStatusBar ? <StatusBar style="light" /> : null}
+      <Screen
+        scroll
+        padded={false}
+        edges={['bottom', 'left', 'right']}
+        footer={footer}
+        onScroll={handleRecipeScroll}
+        scrollEventThrottle={16}
       >
-        <View style={{ gap: spacing.xs }}>
-          <AppText variant="display" accessibilityRole="header">
-            {data.title}
-          </AppText>
-          {meta ? (
-            <AppText variant="caption" muted>
-              {meta}
+        <View style={{ height: 360, position: 'relative' }}>
+          <RecipeThumb
+            heroImageUrl={data.heroImageUrl}
+            dishKey={`${data.locale}:${data.title}`}
+            title={data.title}
+            accessibilityLabel={t('mobile.recipe.imageLabel', { title: data.title })}
+            onImageLoad={() => setHeroImageLoaded(true)}
+            onImageError={() => setHeroImageLoaded(false)}
+            style={{ width: '100%', height: '100%' }}
+          />
+        </View>
+
+        <View
+          style={{
+            marginTop: -SHEET_OVERLAP,
+            padding: spacing.lg,
+            gap: spacing.lg,
+            borderTopStartRadius: radius.xl,
+            borderTopEndRadius: radius.xl,
+            backgroundColor: colors.bg,
+          }}
+        >
+          <View style={{ gap: spacing.xs }}>
+            <AppText variant="display" accessibilityRole="header">
+              {data.title}
             </AppText>
-          ) : null}
-        </View>
+            {meta ? (
+              <AppText variant="caption" muted>
+                {meta}
+              </AppText>
+            ) : null}
+          </View>
 
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <MiniStatTile
-            tint="apricot"
-            icon="clock"
-            value={t('recipe.cookTime', {
-              minutes: formatMinutes(locale, totalMinutes, prefs),
-            })}
-            label={t('recipe.cookTime', {
-              minutes: formatMinutes(locale, totalMinutes, prefs),
-            })}
-          />
-          <MiniStatTile
-            tint="sage"
-            value={stockLine}
-            caption={t('mobile.recipe.inStockLabel')}
-            label={`${stockLine} ${t('mobile.recipe.inStockLabel')}`}
-          />
-          <MiniStatTile
-            tint="butter"
-            value={t(DIFFICULTY_KEY[data.difficulty])}
-            label={t(DIFFICULTY_KEY[data.difficulty])}
-          />
-        </View>
-
-        <SegmentedControl
-          value={segment}
-          onChange={setSegment}
-          options={[
-            { value: 'ingredients', label: t('recipe.ingredients') },
-            { value: 'steps', label: t('recipe.steps') },
-          ]}
-        />
-
-        {segment === 'ingredients' ? (
-          <View style={{ gap: spacing.md }}>
-            <ListGroup>
-              {data.ingredients.map((ri) => (
-                <IngredientRow
-                  key={ri.ingredient.id}
-                  ingredient={ri}
-                  servings={servingCount}
-                  baseServings={data.servings}
-                />
-              ))}
-            </ListGroup>
-            <Button
-              title={t('recipe.markCooked')}
-              variant="secondary"
-              icon="check"
-              onPress={() => setConfirm(true)}
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <MiniStatTile
+              tint="apricot"
+              icon="clock"
+              value={totalTimeValue}
+              caption={t('mobile.recipe.totalTimeLabel')}
+              label={`${totalTimeValue} ${t('mobile.recipe.totalTimeLabel')}`}
+            />
+            <MiniStatTile
+              tint="sage"
+              icon="basket"
+              value={stockLine}
+              caption={t('mobile.recipe.inStockLabel')}
+              label={`${stockLine} ${t('mobile.recipe.inStockLabel')}`}
+            />
+            <MiniStatTile
+              tint="butter"
+              icon="flame"
+              value={difficulty}
+              caption={t('mobile.recipe.difficultyLabel')}
+              label={`${difficulty} ${t('mobile.recipe.difficultyLabel')}`}
             />
           </View>
-        ) : segment === 'steps' ? (
-          <View style={{ gap: spacing.lg }}>
+
+          <SegmentedControl
+            value={segment}
+            onChange={setSegment}
+            options={[
+              { value: 'ingredients', label: t('recipe.ingredients') },
+              { value: 'steps', label: t('recipe.steps') },
+            ]}
+          />
+
+          {segment === 'ingredients' ? (
             <View style={{ gap: spacing.md }}>
-              {data.steps.map((step) => (
-                <View key={step.index} style={{ flexDirection: 'row', gap: spacing.md }}>
-                  <View
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: radius.pill,
-                      backgroundColor: colors.primarySoft,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <AppText
-                      variant="caption"
-                      color="primaryText"
-                      style={{ fontVariant: ['tabular-nums'] }}
+              <ListGroup>
+                {data.ingredients.map((ri) => (
+                  <IngredientRow
+                    key={ri.ingredient.id}
+                    ingredient={ri}
+                    servings={servingCount}
+                    baseServings={data.servings}
+                  />
+                ))}
+              </ListGroup>
+              <Button
+                title={t('recipe.markCooked')}
+                variant="secondary"
+                icon="check"
+                onPress={() => setConfirm(true)}
+              />
+            </View>
+          ) : segment === 'steps' ? (
+            <View style={{ gap: spacing.lg }}>
+              <View style={{ gap: spacing.md }}>
+                {data.steps.map((step) => (
+                  <View key={step.index} style={{ flexDirection: 'row', gap: spacing.md }}>
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: radius.pill,
+                        backgroundColor: colors.primarySoft,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      {formatQty(locale, step.index, prefs)}
-                    </AppText>
+                      <AppText
+                        variant="caption"
+                        color="primaryText"
+                        style={{ fontVariant: ['tabular-nums'] }}
+                      >
+                        {formatQty(locale, step.index, prefs)}
+                      </AppText>
+                    </View>
+                    <AppText style={{ flex: 1 }}>{step.text}</AppText>
                   </View>
-                  <AppText style={{ flex: 1 }}>{step.text}</AppText>
-                </View>
-              ))}
+                ))}
+              </View>
+
+              <View style={{ gap: spacing.sm }}>
+                <AppText variant="heading">{t('recipe.videos')}</AppText>
+                {data.videos.length === 0 ? (
+                  <AppText muted variant="caption">
+                    {t('recipe.noVideos')}
+                  </AppText>
+                ) : (
+                  data.videos.map((video) => (
+                    <View key={video.youtubeId} style={{ gap: spacing.xs }}>
+                      <YoutubePlayer
+                        youtubeId={video.youtubeId}
+                        thumbnailUrl={video.thumbnailUrl}
+                        playLabel={t('mobile.recipe.watchOnYoutube')}
+                        errorLabel={t('mobile.recipe.videoUnavailable')}
+                        openLabel={t('mobile.recipe.openInYoutube')}
+                      />
+                      <AppText variant="bodyStrong" numberOfLines={2}>
+                        {video.title}
+                      </AppText>
+                      <AppText variant="caption" muted>
+                        {video.channel}
+                      </AppText>
+                    </View>
+                  ))
+                )}
+              </View>
             </View>
+          ) : null}
 
-            <View style={{ gap: spacing.sm }}>
-              <AppText variant="heading">{t('recipe.videos')}</AppText>
-              {data.videos.length === 0 ? (
-                <AppText muted variant="caption">
-                  {t('recipe.noVideos')}
-                </AppText>
-              ) : (
-                data.videos.map((video) => (
-                  <View key={video.youtubeId} style={{ gap: spacing.xs }}>
-                    <YoutubePlayer
-                      youtubeId={video.youtubeId}
-                      thumbnailUrl={video.thumbnailUrl}
-                      playLabel={t('mobile.recipe.watchOnYoutube')}
-                      errorLabel={t('mobile.recipe.videoUnavailable')}
-                      openLabel={t('mobile.recipe.openInYoutube')}
-                    />
-                    <AppText variant="bodyStrong" numberOfLines={2}>
-                      {video.title}
-                    </AppText>
-                    <AppText variant="caption" muted>
-                      {video.channel}
-                    </AppText>
-                  </View>
-                ))
-              )}
-            </View>
-          </View>
-        ) : null}
+          {cooked ? <Badge tone="success" label={t('recipe.cookedDone')} /> : null}
+        </View>
 
-        {cooked ? <Badge tone="success" label={t('recipe.cookedDone')} /> : null}
-      </View>
-
-      <Sheet visible={confirm} onClose={() => setConfirm(false)} title={t('recipe.markCooked')}>
-        <AppText muted>{t('recipe.cookedConfirm')}</AppText>
-        <Button
-          title={t('recipe.markCooked')}
-          icon="check"
-          loading={markCooked.isPending}
-          onPress={() =>
-            markCooked.mutate(
-              { deductInventory: true, servings: servingCount },
-              {
-                onSuccess: () => {
-                  setConfirm(false);
-                  setCooked(true);
+        <Sheet visible={confirm} onClose={() => setConfirm(false)} title={t('recipe.markCooked')}>
+          <AppText muted>{t('recipe.cookedConfirm')}</AppText>
+          <Button
+            title={t('recipe.markCooked')}
+            icon="check"
+            loading={markCooked.isPending}
+            onPress={() =>
+              markCooked.mutate(
+                { deductInventory: true, servings: servingCount },
+                {
+                  onSuccess: () => {
+                    setConfirm(false);
+                    setCooked(true);
+                  },
                 },
-              },
-            )
-          }
+              )
+            }
+          />
+          <Button title={t('common.cancel')} variant="ghost" onPress={() => setConfirm(false)} />
+        </Sheet>
+      </Screen>
+      <View style={{ position: 'absolute', top: insets.top + spacing.md, start: spacing.lg }}>
+        <RoundButton
+          icon="back"
+          directional
+          tone="mediaLight"
+          size={40}
+          accessibilityLabel={t('common.back')}
+          onPress={() => router.back()}
         />
-        <Button title={t('common.cancel')} variant="ghost" onPress={() => setConfirm(false)} />
-      </Sheet>
-    </Screen>
+      </View>
+    </View>
   );
 }
 
@@ -309,22 +341,26 @@ function MiniStatTile({
   label,
 }: {
   tint: 'apricot' | 'sage' | 'butter';
-  icon?: 'clock';
+  icon: IconName;
   value: string;
-  caption?: string;
+  caption: string;
   label: string;
 }) {
   return (
     <View style={{ flex: 1, minWidth: 0 }}>
-      <Tile tint={tint} height={88} icon={icon} accessibilityLabel={label}>
-        <AppText variant="bodyStrong" numberOfLines={1}>
-          {value}
-        </AppText>
-        {caption ? (
-          <AppText variant="caption" muted numberOfLines={1}>
+      <Tile
+        tint={tint}
+        height={STAT_TILE_HEIGHT}
+        icon={icon}
+        accessibilityLabel={label}
+        style={{ flex: 1 }}
+      >
+        <View style={{ gap: spacing.xs }}>
+          <AppText variant="bodyStrong">{value}</AppText>
+          <AppText variant="caption" muted>
             {caption}
           </AppText>
-        ) : null}
+        </View>
       </Tile>
     </View>
   );

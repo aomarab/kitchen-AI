@@ -20,6 +20,7 @@ export interface StepIngredient {
 const MAX_SERVINGS_PARAM = 24;
 const WORD_CHAR = 'A-Za-z0-9';
 const ARABIC_RE = /[\u0600-\u06FF]/;
+const ARABIC_DIACRITICS_RE = /[\u064b-\u0652\u0670]/g;
 
 export function recipeStockCount(ingredients: readonly StockCountIngredient[]): {
   have: number;
@@ -79,15 +80,33 @@ export function stepIngredients<T extends StepIngredient>(
 }
 
 function containsIngredientName(text: string, name: string): boolean {
-  const needle = name.trim();
-  if (!needle) return false;
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return false;
 
-  if (ARABIC_RE.test(needle)) {
-    return text.includes(needle);
+  if (words.some((word) => ARABIC_RE.test(word))) {
+    const haystack = normalizeArabic(text);
+    return words.every((word) => {
+      const needle = stripArabicArticle(normalizeArabic(word));
+      return needle.length > 0 && haystack.includes(needle);
+    });
   }
 
-  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').toLowerCase();
   const haystack = text.toLowerCase();
-  const pattern = new RegExp(`(^|[^${WORD_CHAR}])${escaped}(?=$|[^${WORD_CHAR}])`);
-  return pattern.test(haystack);
+  return words.every((word) => {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').toLowerCase();
+    const pattern = new RegExp(`(^|[^${WORD_CHAR}])${escaped}(?:e?s)?(?=$|[^${WORD_CHAR}])`);
+    return pattern.test(haystack);
+  });
+}
+
+function normalizeArabic(value: string): string {
+  return value
+    .replace(ARABIC_DIACRITICS_RE, '')
+    .replace(/[\u0623\u0625\u0622]/g, '\u0627')
+    .replace(/\u0649/g, '\u064a')
+    .replace(/\u0629/g, '\u0647');
+}
+
+function stripArabicArticle(value: string): string {
+  return value.startsWith('ال') ? value.slice(2) : value;
 }
