@@ -4,6 +4,7 @@ import { ApiError } from '@kitchen/api-client';
 import { errorMessageKey } from '../lib/errors';
 import { unitSchema, storageLocationTypeSchema, type Unit } from '@kitchen/contracts';
 import {
+  formatDaysLeft,
   formatExpiryLabel,
   formatDateWithHijri,
   formatWeekday,
@@ -56,6 +57,38 @@ describe('formatExpiryLabel', () => {
     const ar = createTranslator('ar');
     const label = formatExpiryLabel(ar, 'ar', '2026-07-29', { easternNumerals: true }, NOW);
     expect(label).toContain('٣');
+  });
+});
+
+describe('formatDaysLeft', () => {
+  const en = createTranslator('en');
+  const ar = createTranslator('ar');
+
+  it('is null without a date', () => {
+    expect(formatDaysLeft(en, 'en', null, {}, NOW)).toBeNull();
+    expect(formatDaysLeft(ar, 'ar', null, {}, NOW)).toBeNull();
+  });
+
+  it('renders expired and today through the short kitchen copy', () => {
+    expect(formatDaysLeft(en, 'en', '2026-07-24', {}, NOW)).toBe('Expired');
+    expect(formatDaysLeft(en, 'en', '2026-07-26', {}, NOW)).toBe('Today');
+    expect(formatDaysLeft(ar, 'ar', '2026-07-24', {}, NOW)).toBe('منتهي الصلاحية');
+    expect(formatDaysLeft(ar, 'ar', '2026-07-26', {}, NOW)).toBe('اليوم');
+  });
+
+  it('renders compact English day counts', () => {
+    expect(formatDaysLeft(en, 'en', '2026-07-27', {}, NOW)).toBe('1 day left');
+    expect(formatDaysLeft(en, 'en', '2026-07-28', {}, NOW)).toBe('2 days left');
+    expect(formatDaysLeft(en, 'en', '2026-07-31', {}, NOW)).toBe('5 days left');
+    expect(formatDaysLeft(en, 'en', '2026-08-10', {}, NOW)).toBe('15 days left');
+  });
+
+  it('renders compact Arabic day counts with requested numerals', () => {
+    const prefs = { easternNumerals: true };
+    expect(formatDaysLeft(ar, 'ar', '2026-07-27', prefs, NOW)).toBe('يوم واحد');
+    expect(formatDaysLeft(ar, 'ar', '2026-07-28', prefs, NOW)).toBe('يومان');
+    expect(formatDaysLeft(ar, 'ar', '2026-07-31', prefs, NOW)).toBe('٥ أيام');
+    expect(formatDaysLeft(ar, 'ar', '2026-08-10', prefs, NOW)).toBe('١٥ يومًا');
   });
 });
 

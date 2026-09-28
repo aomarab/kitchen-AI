@@ -317,6 +317,14 @@ export const mobileAr: MobileMessages = {
         other: '{count} غرض تنتهي صلاحيته قريباً',
       }),
       useFirst: 'استخدمها أولاً',
+      daysLeft: plural('days', {
+        one: 'يوم واحد',
+        two: 'يومان',
+        few: '{days} أيام',
+        many: '{days} يومًا',
+        other: '{days} يوم',
+      }),
+      leftToday: 'اليوم',
       justAdded: 'أضيفت حديثاً',
       allItems: 'كل الأصناف',
     },
@@ -490,6 +498,7 @@ export const mobileAr: MobileMessages = {
       notifyPlanningHint: 'فقط حين لا تكون هناك وجبات مخططة للغد.',
       notifyTimers: 'مؤقتات الطبخ',
       notifyTimersHint: 'ينبّهك لحظة انتهاء المؤقت، حتى لو كان التطبيق مغلقًا.',
+      newInviteCode: 'رمز دعوة جديد',
       leadTime: 'نبّهني قبل',
       leadDays: plural('count', {
         zero: 'بـ {count} يوم',
@@ -564,6 +573,7 @@ export const mobileAr: MobileMessages = {
       planningBody: 'اختر وجبات الغد ما دامت المكونات متوفرة.',
       timerTitle: 'انتهى المؤقت',
       timerBody: 'انتهى {label}.',
+      timeSelected: 'محدّد',
     },
     places: {
       title: 'أماكن المطبخ',
@@ -636,6 +646,13 @@ export const mobileAr: MobileMessages = {
         few: 'كل {minutes} دقائق',
         many: 'كل {minutes} دقيقةً',
         other: 'كل {minutes} دقيقة',
+      }),
+      cadenceShort: plural('minutes', {
+        one: '{minutes} د',
+        two: '{minutes} د',
+        few: '{minutes} د',
+        many: '{minutes} د',
+        other: '{minutes} د',
       }),
       hydrationGoalTitle: 'هدف الماء اليومي',
       hydrationGoalValue: plural('count', {

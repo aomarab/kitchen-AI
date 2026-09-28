@@ -175,6 +175,28 @@ export function formatExpiryLabel(
   return t('inventory.expiresIn', { days: formatQty(locale, days, prefs) });
 }
 
+/**
+ * Compact visible expiry status for tight bento mini items. Accessibility keeps
+ * the fuller `formatExpiryLabel` sentence, while the screen uses the short
+ * kitchen-owned copy.
+ */
+export function formatDaysLeft(
+  t: Translator,
+  locale: Locale,
+  expiresAt: string | null,
+  prefs: NumeralPrefs = {},
+  now: Date = new Date(),
+): string | null {
+  const days = daysUntilExpiry(expiresAt, now);
+  if (days === null) return null;
+  if (days < 0) return t('inventory.expired');
+  if (days === 0) return t('mobile.kitchen.leftToday');
+  return t('mobile.kitchen.daysLeft', { days }).replace(
+    String(days),
+    formatQty(locale, days, prefs),
+  );
+}
+
 /** Minutes as a compact localised numeral, for prep/cook badges. */
 export function formatMinutes(locale: Locale, minutes: number, prefs: NumeralPrefs = {}): string {
   return formatQty(locale, minutes, prefs);

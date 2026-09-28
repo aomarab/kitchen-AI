@@ -2,7 +2,9 @@ import {
   Children,
   createContext,
   isValidElement,
+  useEffect,
   useContext,
+  useState,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -102,6 +104,9 @@ export function Tile({
   const { colors, gradientHero, isDark, shadow, scrim: scrimToken, tintNamed } = useTheme();
   const inBento = useContext(InBento);
   const photo = tint === 'photo';
+  const [imageFailed, setImageFailed] = useState(false);
+  const hasPhotoImage = photo && image && !imageFailed;
+  const showPhotoFallback = photo && (!image || imageFailed);
   const fill = photo
     ? colors.surfaceInverse
     : fillMode === 'surfaceAlt'
@@ -114,6 +119,10 @@ export function Tile({
         actions.find((action) => action.name === event.nativeEvent.actionName)?.onPress();
       }
     : undefined;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
 
   const container: ViewStyle = {
     minHeight: 120,
@@ -131,7 +140,7 @@ export function Tile({
 
   const body = (
     <>
-      {photo && image ? (
+      {hasPhotoImage ? (
         <>
           <View pointerEvents="none" style={StyleSheet.absoluteFill}>
             <Image
@@ -139,6 +148,7 @@ export function Tile({
               resizeMode="cover"
               style={photoImageStyle}
               accessibilityIgnoresInvertColors
+              onError={() => setImageFailed(true)}
             />
           </View>
           {scrim ? (
@@ -146,7 +156,7 @@ export function Tile({
           ) : null}
         </>
       ) : null}
-      {photo && !image ? (
+      {showPhotoFallback ? (
         <LinearGradient
           colors={gradientHero as unknown as readonly [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}

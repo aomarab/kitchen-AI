@@ -247,6 +247,8 @@ export const mobileEn = {
         other: '{count} expiring soon',
       }),
       useFirst: 'Use these first',
+      daysLeft: plural('days', { one: '1 day left', other: '{days} days left' }),
+      leftToday: 'Today',
       justAdded: 'Just added',
       allItems: 'All items',
     },
@@ -409,6 +411,7 @@ export const mobileEn = {
       notifyPlanningHint: 'Only when tomorrow has no meals planned yet.',
       notifyTimers: 'Cooking timers',
       notifyTimersHint: 'Alerts you the moment a timer ends, even if the app is closed.',
+      newInviteCode: 'New invite code',
       leadTime: 'Warn me',
       leadDays: plural('count', {
         one: '1 day ahead',
@@ -456,6 +459,7 @@ export const mobileEn = {
       planningBody: 'Pick tomorrow’s meals while you still have the ingredients.',
       timerTitle: 'Timer finished',
       timerBody: '{label} is done.',
+      timeSelected: 'Selected',
     },
     places: {
       title: 'Kitchen places',
@@ -516,6 +520,7 @@ export const mobileEn = {
       cadenceTitle: 'Break frequency',
       stretchCadenceTitle: 'Stretch frequency',
       cadenceEvery: plural('minutes', { one: 'Every minute', other: 'Every {minutes} min' }),
+      cadenceShort: plural('minutes', { one: '1 min', other: '{minutes} min' }),
       hydrationGoalTitle: 'Daily water goal',
       hydrationGoalValue: plural('count', { one: '{count} cup', other: '{count} cups' }),
       quietHoursTitle: 'Quiet hours',

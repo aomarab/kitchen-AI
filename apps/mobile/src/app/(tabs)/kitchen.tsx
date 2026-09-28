@@ -37,6 +37,7 @@ import { useInventory, useInventorySnapshot, useLocations } from '../../hooks/in
 import { expiryStatus, type ExpiryStatus } from '../../lib/expiry';
 import {
   formatExpiryLabel,
+  formatDaysLeft,
   formatMeasure,
   formatQty,
   itemName,
@@ -183,10 +184,8 @@ function MiniItemCard({
     >
       <FoodIcon item={foodIconItem(item)} size={40} />
       <View style={{ gap: 2 }}>
-        <AppText variant="bodyStrong" numberOfLines={2}>
-          {name}
-        </AppText>
-        <AppText variant="caption" color={detailColor} muted={!detailColor} numberOfLines={1}>
+        <AppText variant="bodyStrong">{name}</AppText>
+        <AppText variant="caption" color={detailColor} muted={!detailColor}>
           {detail}
         </AppText>
       </View>
@@ -370,7 +369,11 @@ export default function Kitchen() {
 
   const miniGrid = (
     items: readonly InventoryItem[],
-    detailFor: (item: InventoryItem) => { text: string; color?: ColorToken },
+    detailFor: (item: InventoryItem) => {
+      text: string;
+      color?: ColorToken;
+      accessibilityText?: string;
+    },
   ) => (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
       {items.map((item) => {
@@ -383,7 +386,7 @@ export default function Kitchen() {
             name={name}
             detail={detail.text}
             detailColor={detail.color}
-            accessibilityLabel={`${name}, ${detail.text}`}
+            accessibilityLabel={`${name}, ${detail.accessibilityText ?? detail.text}`}
             onPress={() => router.push(`/item/${item.id}`)}
           />
         );
@@ -420,13 +423,11 @@ export default function Kitchen() {
       {places.length > 0 ? (
         <Bento>
           {places[0] ? renderPlaceTile(places[0], 0, false) : null}
-          {places[1] || places[2] ? (
+          {places.length > 1 ? (
             <BentoColumn>
-              {places[1] ? renderPlaceTile(places[1], 1, true) : null}
-              {places[2] ? renderPlaceTile(places[2], 2, true) : null}
+              {places.slice(1).map((place, index) => renderPlaceTile(place, index + 1, true))}
             </BentoColumn>
           ) : null}
-          {places.slice(3).map((place, index) => renderPlaceTile(place, index + 3, true))}
         </Bento>
       ) : null}
 
@@ -440,7 +441,8 @@ export default function Kitchen() {
           {miniGrid(useFirstItems, (item) => {
             const status = expiryStatus(item.expiresAt, now);
             return {
-              text: formatExpiryLabel(t, locale, item.expiresAt, prefs, now) ?? '',
+              text: formatDaysLeft(t, locale, item.expiresAt, prefs, now) ?? '',
+              accessibilityText: formatExpiryLabel(t, locale, item.expiresAt, prefs, now) ?? '',
               color: expiryTextColor(status),
             };
           })}

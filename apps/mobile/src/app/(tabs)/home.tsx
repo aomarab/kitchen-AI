@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { InventoryItem } from '@kitchen/contracts';
 import type { MessageKey, Translator } from '@kitchen/i18n';
@@ -25,6 +25,7 @@ import { useRecipe } from '../../hooks/recipe';
 import { expiryStatus, todayISODate } from '../../lib/expiry';
 import {
   formatExpiryLabel,
+  formatDaysLeft,
   formatMinutes,
   formatQty,
   formatWeekday,
@@ -374,41 +375,44 @@ export default function Home() {
               {t('mobile.home.expiringNone')}
             </AppText>
           ) : (
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: spacing.sm }}
+            >
               {expiringPreview.map((item) => {
                 const name = itemName(locale, item);
-                const label = formatExpiryLabel(t, locale, item.expiresAt, prefs);
+                const label = formatDaysLeft(t, locale, item.expiresAt, prefs);
                 const tone = expiryToneColor(item);
                 return (
-                  <View
-                    key={item.id}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      borderRadius: radius.pill,
-                      paddingVertical: spacing.sm,
-                      paddingHorizontal: spacing.sm,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: spacing.sm,
-                      backgroundColor: colors.surfaceAlt,
-                    }}
-                  >
-                    <FoodIcon item={miniItemIcon(item)} size={32} />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <AppText variant="label" numberOfLines={1}>
-                        {name}
-                      </AppText>
-                      {label ? (
-                        <AppText variant="caption" color={tone} numberOfLines={1}>
-                          {label}
-                        </AppText>
-                      ) : null}
+                  <View key={item.id}>
+                    <View
+                      style={{
+                        minWidth: 156,
+                        maxWidth: 220,
+                        borderRadius: radius.pill,
+                        paddingVertical: spacing.sm,
+                        paddingHorizontal: spacing.sm,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: spacing.sm,
+                        backgroundColor: colors.surfaceAlt,
+                      }}
+                    >
+                      <FoodIcon item={miniItemIcon(item)} size={32} />
+                      <View style={{ flex: 1 }}>
+                        <AppText variant="label">{name}</AppText>
+                        {label ? (
+                          <AppText variant="caption" color={tone}>
+                            {label}
+                          </AppText>
+                        ) : null}
+                      </View>
                     </View>
                   </View>
                 );
               })}
-            </View>
+            </ScrollView>
           )}
         </Tile>
 

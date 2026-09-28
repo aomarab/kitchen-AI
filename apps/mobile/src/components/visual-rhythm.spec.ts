@@ -117,8 +117,13 @@ describe('G1 primitive extensions', () => {
     expect(source).toContain('accessibilityActions');
     expect(source).toContain('onAccessibilityAction');
     expect(source).toContain("fillMode === 'surfaceAlt'");
-    expect(source).toContain('photo && !image');
+    expect(source).toContain('imageFailed');
+    expect(source).toContain('onError={() => setImageFailed(true)}');
+    expect(source).toContain('showPhotoFallback');
+    expect(source).toMatch(/showPhotoFallback\s*=\s*photo && \(!image \|\| imageFailed\)/);
     expect(source).toContain('gradientHero');
+    const fallbackBlock = source.match(/\{showPhotoFallback \? \([\s\S]*?\) : null\}/)?.[0] ?? '';
+    expect(fallbackBlock).not.toContain('scrimGradient');
   });
 
   it('renders TabHeader accent text as primaryText in the same display line', () => {
