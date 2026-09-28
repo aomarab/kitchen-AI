@@ -156,9 +156,12 @@ describe('formatMeasure', () => {
   it('uses kitchen fraction glyphs for counted and word units', () => {
     expect(formatMeasure(en, 'en', 2.5, 'piece')).toBe('2½ pc');
     expect(formatMeasure(en, 'en', 1.25, 'bunch')).toBe('1¼ bunches');
+    expect(formatMeasure(ar, 'ar', 2.5, 'piece')).toBe('\u20662½\u2069 قطعة');
+    expect(formatMeasure(ar, 'ar', 1.25, 'bunch')).toBe('\u20661¼\u2069 حزمة');
   });
 
   it('pluralises English word units by count', () => {
+    expect(formatMeasure(en, 'en', 2, 'piece')).toBe('2 pc');
     expect(formatMeasure(en, 'en', 5, 'clove')).toBe('5 cloves');
     expect(formatMeasure(en, 'en', 1, 'clove')).toBe('1 clove');
   });
@@ -174,8 +177,25 @@ describe('formatMeasure', () => {
     expect(formatMeasure(ar, 'ar', 11, 'clove')).toBe('11 فصًا');
   });
 
+  it('uses native Arabic CLDR forms for pieces', () => {
+    expect(formatMeasure(ar, 'ar', 1, 'piece')).toBe('قطعة واحدة');
+    expect(formatMeasure(ar, 'ar', 2, 'piece')).toBe('قطعتان');
+    expect(formatMeasure(ar, 'ar', 3, 'piece')).toBe('3 قطع');
+    expect(formatMeasure(ar, 'ar', 11, 'piece')).toBe('11 قطعة');
+    expect(formatMeasure(ar, 'ar', 100, 'piece')).toBe('100 قطعة');
+    expect(formatMeasure(ar, 'ar', 2.5, 'piece')).toBe('\u20662½\u2069 قطعة');
+  });
+
   it('keeps Arabic numeral preferences when rendering fractions', () => {
-    expect(formatMeasure(ar, 'ar', 1.25, 'bunch', { easternNumerals: true })).toBe('١¼ حزمة');
+    expect(formatMeasure(ar, 'ar', 1.25, 'bunch', { easternNumerals: true })).toBe(
+      '\u2066١¼\u2069 حزمة',
+    );
+  });
+
+  it('does not add isolate marks to Arabic quantities without fraction glyphs', () => {
+    expect(formatMeasure(ar, 'ar', 3, 'piece')).toBe('3 قطع');
+    expect(formatMeasure(ar, 'ar', 1.2, 'piece')).toBe('1.2 قطعة');
+    expect(formatMeasure(ar, 'ar', 1.5, 'kg')).toBe('1.5 كجم');
   });
 });
 

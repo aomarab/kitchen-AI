@@ -104,7 +104,11 @@ function signedDelta(
   unit: Unit,
 ): string {
   const sign = delta > 0 ? '+' : delta < 0 ? '−' : '';
-  return `${sign}${formatMeasure(t, locale, Math.abs(delta), unit, prefs)}`;
+  const measure = formatMeasure(t, locale, Math.abs(delta), unit, prefs);
+  if (sign && locale === 'ar' && measure.startsWith('\u2066')) {
+    return `\u2066${sign}${measure.slice('\u2066'.length)}`;
+  }
+  return `${sign}${measure}`;
 }
 
 export default function ItemDetail() {

@@ -80,7 +80,10 @@ const WORD_MEASURE_UNITS = new Set<Unit>([
   'pinch',
 ]);
 
+const LOCALIZED_MEASURE_UNITS = new Set<Unit>(['piece', ...WORD_MEASURE_UNITS]);
 const FRACTIONAL_MEASURE_UNITS = new Set<Unit>(['piece', ...WORD_MEASURE_UNITS]);
+const LRI = '\u2066';
+const PDI = '\u2069';
 
 const KITCHEN_FRACTIONS: readonly (readonly [number, string])[] = [
   [1 / 4, '¼'],
@@ -104,7 +107,8 @@ function formatKitchenQuantity(locale: Locale, value: number, prefs: NumeralPref
   if (!match) return formatQty(locale, value, prefs);
 
   const wholeText = whole > 0 ? formatQty(locale, whole, prefs) : '';
-  return `${sign}${wholeText}${match[1]}`;
+  const rendered = `${sign}${wholeText}${match[1]}`;
+  return locale === 'ar' ? `${LRI}${rendered}${PDI}` : rendered;
 }
 
 /**
@@ -161,7 +165,7 @@ export function formatMeasure(
   const quantity = FRACTIONAL_MEASURE_UNITS.has(unit)
     ? formatKitchenQuantity(locale, value, prefs)
     : formatQty(locale, value, prefs);
-  if (WORD_MEASURE_UNITS.has(unit)) {
+  if (LOCALIZED_MEASURE_UNITS.has(unit)) {
     const pluralCount = Math.abs(value - Math.round(value)) <= 0.01 ? Math.round(value) : value;
     return t(`mobile.measureUnits.${unit}` as MessageKey, { count: pluralCount, quantity });
   }

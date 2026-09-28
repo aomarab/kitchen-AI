@@ -56,7 +56,7 @@ describe('formatShoppingListForShare', () => {
   });
 
   it('formats Arabic names and unit words', () => {
-    expect(formatShoppingListForShare(items, 'ar', measure('ar'))).toBe('ليمون 3 قطعة\nحليب 2 لتر');
+    expect(formatShoppingListForShare(items, 'ar', measure('ar'))).toBe('ليمون 3 قطع\nحليب 2 لتر');
   });
 
   it('returns an empty message when everything is purchased', () => {

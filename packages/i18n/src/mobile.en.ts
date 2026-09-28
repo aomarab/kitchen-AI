@@ -822,6 +822,7 @@ export const mobileEn = {
       bottle: plural('count', { one: '{quantity} bottle', other: '{quantity} bottles' }),
       cup: plural('count', { one: '{quantity} cup', other: '{quantity} cups' }),
       pinch: plural('count', { one: '{quantity} pinch', other: '{quantity} pinches' }),
+      piece: plural('count', { one: '{quantity} pc', other: '{quantity} pc' }),
     },
   },
 };

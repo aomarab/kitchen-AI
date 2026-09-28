@@ -1038,6 +1038,14 @@ export const mobileAr: MobileMessages = {
         many: '{quantity} رشةً',
         other: '{quantity} رشة',
       }),
+      piece: plural('count', {
+        zero: '{quantity} قطع',
+        one: 'قطعة واحدة',
+        two: 'قطعتان',
+        few: '{quantity} قطع',
+        many: '{quantity} قطعة',
+        other: '{quantity} قطعة',
+      }),
     },
   },
 };
