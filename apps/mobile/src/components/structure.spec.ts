@@ -167,6 +167,26 @@ describe('Coral structure source guards', () => {
     expect(auth).not.toContain('<OrbMascot');
     expect(auth).toContain('paddingTop: spacing.gutter');
   });
+
+  it('keeps AuthLayout leading and footer slots optional and ordered for C5', () => {
+    const auth = read('AuthLayout.tsx');
+    expect(auth).toContain('leading?: ReactNode;');
+    expect(auth).toContain('footer?: ReactNode;');
+
+    const backIndex = auth.indexOf('canGoBack ? (');
+    const leadingIndex = auth.indexOf('{leading}');
+    const titleIndex = auth.indexOf('<View style={{ gap: spacing.sm }}>');
+    expect(backIndex).toBeGreaterThanOrEqual(0);
+    expect(leadingIndex).toBeGreaterThan(backIndex);
+    expect(titleIndex).toBeGreaterThan(leadingIndex);
+
+    const footerGateIndex = auth.indexOf('footer ? (');
+    const spacerIndex = auth.indexOf('<View style={{ flexGrow: 1 }} />');
+    const footerContentIndex = auth.indexOf('<View style={{ gap: spacing.sm }}>{footer}</View>');
+    expect(footerGateIndex).toBeGreaterThanOrEqual(0);
+    expect(spacerIndex).toBeGreaterThan(footerGateIndex);
+    expect(footerContentIndex).toBeGreaterThan(spacerIndex);
+  });
 });
 
 describe('Coral bento grid maths', () => {

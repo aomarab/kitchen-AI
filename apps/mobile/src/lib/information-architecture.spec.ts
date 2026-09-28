@@ -616,7 +616,7 @@ describe('information architecture (spec §4)', () => {
     expect(welcome).toContain('padded={false}');
     expect(welcome).toContain("edges={['bottom', 'left', 'right']}");
     expect(welcome).toContain('<StatusBar style="light"');
-    expect(welcome).toContain("t('mobile.welcome.collageLabel')");
+    expect(welcome).toContain("t('mobile.welcome.photoLabel')");
     expect(welcome).toContain("t('common.appName')");
     expect(welcome).toContain("t('mobile.welcome.haveAccount')");
     expect(welcome).toContain('const LOCALES = [');
@@ -644,7 +644,7 @@ describe('information architecture (spec §4)', () => {
       'mobile.welcome.planBody',
       'mobile.welcome.wasteTitle',
       'mobile.welcome.wasteBody',
-      'mobile.welcome.collageLabel',
+      'mobile.welcome.photoLabel',
       'mobile.welcome.collage.tomatoes',
       'mobile.welcome.collage.itemsSpotted',
       'mobile.welcome.getStarted',
@@ -655,7 +655,7 @@ describe('information architecture (spec §4)', () => {
       expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
     }
 
-    for (const file of ['welcome-produce.jpg', 'welcome-salad.jpg']) {
+    for (const file of ['welcome-produce.jpg']) {
       const path = join(MOBILE, 'assets', 'images', file);
       expect(existsSync(path), `${file} is missing`).toBe(true);
       expect(statSync(path).size, `${file} is larger than 160 KiB`).toBeLessThanOrEqual(160 * 1024);

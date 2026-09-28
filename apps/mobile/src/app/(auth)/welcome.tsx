@@ -69,7 +69,7 @@ export default function Welcome() {
   const { t, locale, setLocale } = useFormat();
   const router = useRouter();
   const isFocused = useIsFocused();
-  const collageLabel = t('mobile.welcome.collageLabel');
+  const photoLabel = t('mobile.welcome.photoLabel');
   const localeToggle = LOCALES.find((option) => option.value !== locale) ?? LOCALES[0];
   const localeToggleLabel = t(localeToggle.labelKey);
 
@@ -81,7 +81,7 @@ export default function Welcome() {
       contentStyle={{ flexGrow: 1 }}
     >
       {isFocused ? <StatusBar style="light" /> : null}
-      <WelcomeCollage produceImage={produceImage} accessibilityLabel={collageLabel} />
+      <WelcomeCollage produceImage={produceImage} accessibilityLabel={photoLabel} />
 
       <View style={{ flexGrow: 1, padding: spacing.gutter, gap: WELCOME_BODY_GAP }}>
         <View style={{ gap: spacing.sm }}>
