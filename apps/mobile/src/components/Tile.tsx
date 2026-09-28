@@ -40,6 +40,8 @@ export interface TileProps {
   tint?: TileTint;
   /** Optional override for compact tiles nested inside a larger card. */
   fill?: 'tint' | 'surfaceAlt';
+  /** Mini tile sizing for dense grids; keeps Tile behaviour but tightens the box. */
+  compact?: boolean;
   /** The photo under the scrim. Only drawn when `tint` is `'photo'`. */
   image?: ImageSourcePropType;
   /** Photo tiles keep their legibility scrim unless a caller deliberately opts out. */
@@ -84,6 +86,7 @@ const photoImageStyle: ImageStyle = {
 export function Tile({
   tint = 'plain',
   fill: fillMode = 'tint',
+  compact = false,
   image,
   scrim = true,
   onPress,
@@ -125,10 +128,10 @@ export function Tile({
   }, [image]);
 
   const container: ViewStyle = {
-    minHeight: 120,
-    padding: spacing.lg,
+    minHeight: compact ? 112 : 120,
+    padding: compact ? spacing.md : spacing.lg,
     gap: spacing.sm,
-    borderRadius: radius.xl,
+    borderRadius: compact ? radius.lg : radius.xl,
     borderWidth: photo ? 0 : 1,
     borderColor: isDark ? colors.border : fill,
     backgroundColor: fill,

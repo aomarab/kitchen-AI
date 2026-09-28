@@ -14,17 +14,6 @@ function sourceFiles(dir: string): string[] {
     if (statSync(path).isDirectory()) return sourceFiles(path);
     return /\.tsx?$/.test(name) && !/\.spec\.tsx?$/.test(name) ? [path] : [];
   });
-
-  it('keeps capture result retake in the fixed trailing icon slot', () => {
-    const capture = read('features', 'capture', 'PhotoCapture.tsx');
-    const resultTrailing =
-      capture.match(/flow === 'result' \? \([\s\S]*?\) : cameraGranted/)?.[0] ?? '';
-
-    expect(resultTrailing).toContain('<RoundButton');
-    expect(resultTrailing).toContain("accessibilityLabel={t('mobile.capture.retake')}");
-    expect(resultTrailing).not.toContain('<Button');
-    expect(resultTrailing).not.toContain("title={t('mobile.capture.retake')}");
-  });
 }
 
 /** Every row "More" held (spec §4.2). None of them may be dropped by the move. */
@@ -449,6 +438,15 @@ describe('information architecture (spec §4)', () => {
 
     const miniItemCard =
       kitchen.match(/function MiniItemCard[\s\S]*?function SectionHeading/)?.[0] ?? '';
+    expect(miniItemCard, 'Kitchen mini item cards must be thin Tile wrappers').toContain('<Tile');
+    expect(
+      miniItemCard,
+      'Kitchen mini item cards must not render hand-styled Pressable cards',
+    ).not.toContain('<Pressable');
+    expect(
+      miniItemCard,
+      'Kitchen mini item cards must preserve the three-across width on Tile',
+    ).toContain('style={{ width: MINI_CARD_WIDTH }}');
     expect(miniItemCard, 'Kitchen mini item names and status must not truncate').not.toContain(
       'numberOfLines',
     );
@@ -731,5 +729,16 @@ describe('information architecture (spec §4)', () => {
     expect(screen, "The hero's accessibility label must stay on its text group").toContain(
       'accessibilityLabel={`${heroEyebrow}, ${heroMessage}`}',
     );
+  });
+
+  it('keeps capture result retake in the fixed trailing icon slot', () => {
+    const capture = read('features', 'capture', 'PhotoCapture.tsx');
+    const resultTrailing =
+      capture.match(/flow === 'result' \? \([\s\S]*?\) : cameraGranted/)?.[0] ?? '';
+
+    expect(resultTrailing).toContain('<RoundButton');
+    expect(resultTrailing).toContain("accessibilityLabel={t('mobile.capture.retake')}");
+    expect(resultTrailing).not.toContain('<Button');
+    expect(resultTrailing).not.toContain("title={t('mobile.capture.retake')}");
   });
 });

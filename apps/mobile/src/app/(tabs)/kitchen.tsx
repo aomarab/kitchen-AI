@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  ScrollView,
-  View,
-  type LayoutChangeEvent,
-  type TextInput,
-} from 'react-native';
+import { FlatList, ScrollView, View, type LayoutChangeEvent, type TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { InventoryItem, StorageLocation, StorageLocationType } from '@kitchen/contracts';
 import {
@@ -56,7 +49,7 @@ import {
   useFirst,
   type KitchenSort,
 } from '../../lib/kitchen';
-import { hitSlop, radius, spacing, type ColorToken } from '../../theme';
+import { spacing, type ColorToken } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 import { useTabBarClearance } from '../../components/TabBar';
 
@@ -159,28 +152,13 @@ function MiniItemCard({
   accessibilityLabel: string;
   onPress: () => void;
 }) {
-  const { colors, isDark, shadow } = useTheme();
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Tile
+      tint="plain"
+      compact
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      hitSlop={hitSlop}
-      style={({ pressed }) => [
-        {
-          width: MINI_CARD_WIDTH,
-          minHeight: 112,
-          borderRadius: radius.lg,
-          borderWidth: 1,
-          borderColor: isDark ? colors.border : colors.surface,
-          backgroundColor: colors.surface,
-          padding: spacing.md,
-          gap: spacing.sm,
-          opacity: pressed ? 0.92 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-        },
-        isDark ? null : shadow.card,
-      ]}
+      style={{ width: MINI_CARD_WIDTH }}
     >
       <FoodIcon item={foodIconItem(item)} size={40} />
       <View style={{ gap: 2 }}>
@@ -189,7 +167,7 @@ function MiniItemCard({
           {detail}
         </AppText>
       </View>
-    </Pressable>
+    </Tile>
   );
 }
 

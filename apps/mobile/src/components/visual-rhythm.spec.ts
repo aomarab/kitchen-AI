@@ -112,6 +112,10 @@ describe('G1 primitive extensions', () => {
     const source = read('./Tile.tsx');
     expect(source).toContain('leading?: ReactNode');
     expect(source).toContain("fill?: 'tint' | 'surfaceAlt'");
+    expect(source).toContain('compact?: boolean');
+    expect(source).toContain('minHeight: compact ? 112 : 120');
+    expect(source).toContain('padding: compact ? spacing.md : spacing.lg');
+    expect(source).toContain('borderRadius: compact ? radius.lg : radius.xl');
     expect(source).toContain('accessibilityRole?: AccessibilityRole');
     expect(source).toContain('accessibilityState?: AccessibilityState');
     expect(source).toContain('accessibilityActions');
