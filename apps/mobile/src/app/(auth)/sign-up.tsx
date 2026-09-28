@@ -20,7 +20,11 @@ export default function SignUp() {
     signUp.mutate({ displayName, email, password, locale }, { onSuccess: goHome });
 
   return (
-    <AuthLayout title={t('mobile.auth.signUpTitle')} subtitle={t('mobile.auth.signUpSubtitle')}>
+    <AuthLayout
+      title={t('mobile.auth.signUpTitle2')}
+      titleAccent={t('mobile.auth.signUpAccent')}
+      subtitle={t('mobile.auth.signUpSubtitle')}
+    >
       <View style={{ gap: spacing.md }}>
         <Field
           label={t('auth.displayName')}

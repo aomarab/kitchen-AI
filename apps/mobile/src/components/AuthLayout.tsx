@@ -1,26 +1,25 @@
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { View } from 'react-native';
 import { Screen } from './Screen';
 import { AppText } from './AppText';
-import { DirectionalIcon } from './DirectionalIcon';
+import { OrbMascot } from './OrbMascot';
+import { RoundButton } from './RoundButton';
 import { useLocale } from '../lib/locale';
-import { hitSlop, radius, spacing } from '../theme';
-import { useTheme } from '../theme/useTheme';
+import { spacing } from '../theme';
 
 export interface AuthLayoutProps {
   title: string;
+  titleAccent?: string;
   subtitle: string;
   children: ReactNode;
 }
 
 /**
- * The auth chrome: a navy band carrying the page title, with the form sheet
- * riding over it. Matches the web `(auth)` layout so the two platforms read as
- * one product. Only the top edge is inset — the sheet runs to the bottom.
+ * The auth chrome: a themed page with Mama, a hero title and keyboard-aware
+ * scrolling around the form.
  */
-export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
-  const { colors } = useTheme();
+export function AuthLayout({ title, titleAccent, subtitle, children }: AuthLayoutProps) {
   const { t } = useLocale();
   const router = useRouter();
   // Only when there is somewhere to return to. These screens are also the
@@ -29,42 +28,38 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
   const canGoBack = router.canGoBack();
 
   return (
-    <Screen
-      scroll
-      padded={false}
-      edges={['top']}
-      style={{ backgroundColor: colors.surfaceInverse }}
-    >
-      <View style={{ padding: spacing.lg, gap: spacing.xs }}>
-        {canGoBack ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.back')}
-            hitSlop={hitSlop}
-            onPress={() => router.back()}
-            style={{ alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' }}
-          >
-            <DirectionalIcon name="back" size={26} color={colors.textInverse} />
-          </Pressable>
-        ) : null}
-        <AppText variant="display" color="textInverse">
-          {title}
-        </AppText>
-        <AppText color="textInverseMuted">{subtitle}</AppText>
-      </View>
+    <Screen scroll edges={['top', 'bottom']} contentStyle={{ gap: spacing.md }}>
+      {canGoBack ? (
+        <RoundButton
+          accessibilityLabel={t('common.back')}
+          icon="back"
+          directional
+          size={40}
+          tone="surface"
+          onPress={() => router.back()}
+          style={{ alignSelf: 'flex-start' }}
+        />
+      ) : null}
 
-      <View
-        style={{
-          flexGrow: 1,
-          backgroundColor: colors.bg,
-          borderTopStartRadius: radius.lg,
-          borderTopEndRadius: radius.lg,
-          padding: spacing.lg,
-          gap: spacing.md,
-        }}
-      >
-        {children}
-      </View>
+      <OrbMascot size={72} state="idle" accessible={false} style={{ alignSelf: 'flex-start' }} />
+
+      <AppText variant="hero" accessibilityRole="header">
+        {title}
+        {titleAccent ? (
+          <>
+            {' '}
+            <AppText variant="hero" color="primaryText">
+              {titleAccent}
+            </AppText>
+          </>
+        ) : null}
+      </AppText>
+
+      <AppText variant="body" muted>
+        {subtitle}
+      </AppText>
+
+      <View style={{ gap: spacing.md }}>{children}</View>
     </Screen>
   );
 }

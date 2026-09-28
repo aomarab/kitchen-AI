@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { Pressable, type AccessibilityState, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  type AccessibilityRole,
+  type AccessibilityState,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { AppText } from './AppText';
 import { chipTone, type ChipTone, type ChipVariant } from './control-tones';
 import { hitSlop, radius, spacing } from '../theme';
@@ -11,6 +17,7 @@ export interface ChipProps {
   label: string;
   selected?: boolean;
   onPress?: () => void;
+  accessibilityRole?: AccessibilityRole;
   accessibilityLabel?: string;
   accessibilityState?: AccessibilityState;
   /** `tag` is the small location label inside a tile (spec §8.4). */
@@ -25,6 +32,7 @@ export function Chip({
   label,
   selected = false,
   onPress,
+  accessibilityRole,
   accessibilityLabel,
   accessibilityState,
   variant = 'pill',
@@ -38,7 +46,7 @@ export function Chip({
 
   return (
     <Pressable
-      accessibilityRole={onPress ? 'button' : 'text'}
+      accessibilityRole={accessibilityRole ?? (onPress ? 'button' : 'text')}
       accessibilityState={accessibilityState ?? (onPress ? { selected } : undefined)}
       accessibilityLabel={accessibilityLabel ?? label}
       disabled={!onPress}

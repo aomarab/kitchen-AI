@@ -569,6 +569,13 @@ export const mobileEn = {
       onboardSubtitle: 'Create a new household or join one with a 6-character invite code.',
       createTab: 'Create',
       joinTab: 'Join',
+      signInTitle: 'Welcome',
+      signInAccent: 'back.',
+      signUpTitle2: 'Create your',
+      signUpAccent: 'account.',
+      onboardTitle2: 'Set up your',
+      onboardAccent: 'household.',
+      continue: 'Continue',
     },
     sync: {
       offlineBanner: 'Offline — changes are saved and will sync automatically.',

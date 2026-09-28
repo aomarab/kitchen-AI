@@ -1,4 +1,4 @@
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppText } from './AppText';
 import { useFormat } from '../hooks/useFormat';
@@ -9,6 +9,13 @@ const DESTINATIONS = {
   '/sign-in': 'mobile.auth.haveAccount',
   '/sign-up': 'mobile.auth.noAccount',
 } as const;
+
+function splitSwitchText(text: string): { caption: string; link: string } {
+  const match = /[?؟]/.exec(text);
+  if (!match) return { caption: '', link: text };
+  const splitAt = match.index + match[0].length;
+  return { caption: text.slice(0, splitAt), link: text.slice(splitAt).trim() };
+}
 
 export interface AuthSwitchLinkProps {
   to: keyof typeof DESTINATIONS;
@@ -29,17 +36,40 @@ export interface AuthSwitchLinkProps {
 export function AuthSwitchLink({ to }: AuthSwitchLinkProps) {
   const { t } = useFormat();
   const router = useRouter();
+  const text = t(DESTINATIONS[to]);
+  const { caption, link } = splitSwitchText(text);
 
   return (
     <Pressable
       accessibilityRole="link"
+      accessibilityLabel={text}
       hitSlop={hitSlop}
       onPress={() => router.replace(to)}
-      style={{ minHeight: 44, justifyContent: 'center', paddingVertical: spacing.sm }}
+      style={({ pressed }) => ({
+        minHeight: 44,
+        justifyContent: 'center',
+        opacity: pressed ? 0.85 : 1,
+      })}
     >
-      <AppText variant="label" center color="primary">
-        {t(DESTINATIONS[to])}
-      </AppText>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xs,
+          paddingVertical: spacing.sm,
+        }}
+      >
+        {caption ? (
+          <AppText variant="caption" muted>
+            {caption}
+          </AppText>
+        ) : null}
+        <AppText variant="label" color="primaryText">
+          {link}
+        </AppText>
+      </View>
     </Pressable>
   );
 }

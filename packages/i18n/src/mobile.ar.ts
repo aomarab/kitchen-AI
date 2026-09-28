@@ -696,6 +696,13 @@ export const mobileAr: MobileMessages = {
       onboardSubtitle: 'أنشئ أسرة جديدة أو انضم إلى واحدة برمز دعوة من 6 أحرف.',
       createTab: 'إنشاء',
       joinTab: 'انضمام',
+      signInTitle: 'مرحبًا',
+      signInAccent: 'بعودتك.',
+      signUpTitle2: 'أنشئ',
+      signUpAccent: 'حسابك.',
+      onboardTitle2: 'جهّز',
+      onboardAccent: 'بيتك.',
+      continue: 'متابعة',
     },
     sync: {
       offlineBanner: 'غير متصل — تُحفظ التغييرات وستتم مزامنتها تلقائياً.',

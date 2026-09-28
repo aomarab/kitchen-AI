@@ -1,5 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Animated,
+  Easing,
+  Image,
+  View,
+  type StyleProp,
+  type ViewProps,
+  type ViewStyle,
+} from 'react-native';
 import { useIsFocused } from 'expo-router';
 import orb from '../../assets/mama/orb.png';
 import { useAppActive, useReduceMotion } from '../hooks/motion';
@@ -12,6 +20,7 @@ export interface OrbMascotProps {
   /** The orb's diameter, 28 to 120. */
   size?: number;
   state?: OrbState;
+  accessible?: ViewProps['accessible'];
   style?: StyleProp<ViewStyle>;
 }
 
@@ -24,7 +33,7 @@ const ease = Easing.inOut(Easing.sin);
  * seen: never under Reduce Motion, off screen, or with the app in the
  * background.
  */
-export function OrbMascot({ size = 38, state = 'idle', style }: OrbMascotProps) {
+export function OrbMascot({ size = 38, state = 'idle', accessible, style }: OrbMascotProps) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const focused = useIsFocused();
@@ -97,6 +106,7 @@ export function OrbMascot({ size = 38, state = 'idle', style }: OrbMascotProps) 
 
   return (
     <View
+      accessible={accessible}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       pointerEvents="none"

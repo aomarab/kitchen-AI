@@ -451,4 +451,54 @@ describe('information architecture (spec §4)', () => {
     expect(collage).toContain("position: 'absolute'");
     expect(collage).not.toContain('leading={<LeafCircle />}');
   });
+
+  it('keeps Auth on the Apricot Bento screen contract', () => {
+    const layout = read('components', 'AuthLayout.tsx');
+    expect(layout).not.toContain('surfaceInverse');
+    expect(layout).toContain('<OrbMascot');
+    expect(layout).toContain('size={72}');
+    expect(layout).toContain('state="idle"');
+    expect(layout).toContain('accessible={false}');
+    expect(layout).toContain('variant="hero"');
+    expect(layout).toContain('titleAccent');
+    expect(layout).toContain("edges={['top', 'bottom']}");
+
+    const signIn = read('app', '(auth)', 'sign-in.tsx');
+    expect(signIn).toContain("t('mobile.auth.signInTitle')");
+    expect(signIn).toContain("t('mobile.auth.signInAccent')");
+    expect(signIn).toContain("t('mobile.auth.welcomeSubtitle')");
+
+    const signUp = read('app', '(auth)', 'sign-up.tsx');
+    expect(signUp).toContain("t('mobile.auth.signUpTitle2')");
+    expect(signUp).toContain("t('mobile.auth.signUpAccent')");
+
+    const onboarding = read('app', '(auth)', 'onboarding.tsx');
+    expect(onboarding).not.toContain('SegmentedControl');
+    expect(onboarding).toContain('accessibilityRole="radiogroup"');
+    expect(onboarding).toContain('accessibilityRole="radio"');
+    expect(onboarding).toContain('accessibilityState={{ checked: selected }}');
+    expect(onboarding).toContain("t('mobile.auth.onboardTitle2')");
+    expect(onboarding).toContain("t('mobile.auth.onboardAccent')");
+    expect(onboarding).toContain("t('mobile.auth.continue')");
+
+    const switchLink = read('components', 'AuthSwitchLink.tsx');
+    expect(switchLink).toContain('variant="caption" muted');
+    expect(switchLink).toContain('color="primaryText"');
+    expect(switchLink).toContain('minHeight: 44');
+  });
+
+  it('adds the G11 auth labels in both languages', () => {
+    for (const key of [
+      'mobile.auth.signInTitle',
+      'mobile.auth.signInAccent',
+      'mobile.auth.signUpTitle2',
+      'mobile.auth.signUpAccent',
+      'mobile.auth.onboardTitle2',
+      'mobile.auth.onboardAccent',
+      'mobile.auth.continue',
+    ]) {
+      expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
+      expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
+    }
+  });
 });

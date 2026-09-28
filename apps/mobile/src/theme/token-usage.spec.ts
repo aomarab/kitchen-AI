@@ -99,6 +99,12 @@ describe('mobile source sweep', () => {
           '(Android asks for 48dp). Small targets are a rejection risk and a ' +
           'real barrier for anyone with a motor impairment.',
       ).toBeGreaterThanOrEqual(44);
+      if (file === 'Field.tsx') {
+        expect(
+          Number(match![1]),
+          'Auth fields must use the 56pt spec §9.7 box',
+        ).toBeGreaterThanOrEqual(56);
+      }
     }
   });
 
