@@ -38,12 +38,27 @@ describe('mobile source sweep', () => {
    */
   const TOUCH_TARGETS: Record<string, { path: string; pattern: RegExp }> = {
     'Button.tsx': { path: 'components/Button.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Checkbox.tsx': { path: 'components/Checkbox.tsx', pattern: /height:\s*(\d+)/ },
     'Fab.tsx': { path: 'components/Fab.tsx', pattern: /height:\s*(\d+)/ },
-    'Field.tsx': { path: 'components/Field.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Field.tsx': {
+      path: 'components/Field.tsx',
+      pattern: /minHeight:\s*multiline \? 132 : (\d+)/,
+    },
     'Header.tsx': { path: 'components/Header.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'QuantityStepper.tsx': { path: 'components/QuantityStepper.tsx', pattern: /height:\s*(\d+)/ },
+    'IconButton.tsx': {
+      path: 'components/IconButton.tsx',
+      pattern: /ICON_BUTTON_TARGET_SIZE\s*=\s*(\d+)/,
+    },
+    'QuantityStepper.tsx': {
+      path: 'components/QuantityStepper.tsx',
+      pattern: /STEPPER_TARGET_SIZE\s*=\s*(\d+)/,
+    },
     // The visual circle is 36-40pt; the Pressable around it is what is measured.
-    'RoundButton.tsx': { path: 'components/RoundButton.tsx', pattern: /height:\s*(\d+)/ },
+    'RoundButton.tsx': {
+      path: 'components/RoundButton.tsx',
+      pattern: /ROUND_BUTTON_TARGET_SIZE\s*=\s*(\d+)/,
+    },
+    'SearchField.tsx': { path: 'components/SearchField.tsx', pattern: /minHeight:\s*(\d+)/ },
     'SegmentedControl.tsx': {
       path: 'components/SegmentedControl.tsx',
       pattern: /minHeight:\s*(\d+)/,
@@ -51,6 +66,7 @@ describe('mobile source sweep', () => {
     'StarRating.tsx': { path: 'components/StarRating.tsx', pattern: /minHeight:\s*(\d+)/ },
     'TabBar.tsx': { path: 'components/TabBar.tsx', pattern: /minHeight:\s*(\d+)/ },
     'Tile.tsx': { path: 'components/Tile.tsx', pattern: /COMPACT_TILE_MIN_HEIGHT\s*=\s*(\d+)/ },
+    'Toggle.tsx': { path: 'components/Toggle.tsx', pattern: /height:\s*(\d+)/ },
     'ToggleRow.tsx': { path: 'components/ToggleRow.tsx', pattern: /minHeight:\s*(\d+)/ },
     'BalanceTile.tsx': {
       path: 'features/credits/BalanceTile.tsx',
@@ -78,7 +94,7 @@ describe('mobile source sweep', () => {
     },
     'ShoppingCheckbox.tsx': {
       path: 'features/shop/ShoppingCheckbox.tsx',
-      pattern: /height:\s*(\d+)/,
+      pattern: /SHOPPING_CHECKBOX_TARGET_SIZE\s*=\s*(\d+)/,
     },
     'ShoppingRow.tsx': {
       path: 'features/shop/ShoppingRow.tsx',
@@ -110,8 +126,8 @@ describe('mobile source sweep', () => {
       if (file === 'Field.tsx') {
         expect(
           Number(match![1]),
-          'Auth fields must use the 56pt spec §9.7 box',
-        ).toBeGreaterThanOrEqual(56);
+          'J fields must use at least the 48pt spec §8 box',
+        ).toBeGreaterThanOrEqual(48);
       }
     }
   });

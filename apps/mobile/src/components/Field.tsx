@@ -2,7 +2,7 @@ import { forwardRef, useState } from 'react';
 import { TextInput, View, type TextInputProps } from 'react-native';
 import { AppText } from './AppText';
 import { fieldBorder } from './field-tones';
-import { radius, spacing } from '../theme';
+import { maxFontScaleFor, radius, typography } from '../theme';
 import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 import { resolveFontFamily, useFontStore } from '../lib/fonts';
@@ -15,56 +15,79 @@ export interface FieldProps extends TextInputProps {
 
 /** Labelled text input with error/hint slots. Aligns text to the writing edge. */
 export const Field = forwardRef<TextInput, FieldProps>(function Field(
-  { label, error, hint, style, onFocus, onBlur, ...rest },
+  { label, error, hint, style, onFocus, onBlur, maxLength, multiline, editable, value, ...rest },
   ref,
 ) {
   const { colors } = useTheme();
   const { dir, locale } = useLocale();
   const fontsLoaded = useFontStore((state) => state.loaded);
-  const fontFamily = resolveFontFamily(locale, fontsLoaded);
+  const bodyType = typography(locale).body;
+  const fontFamily = resolveFontFamily(locale, fontsLoaded, bodyType.fontWeight, 'body');
   const [focused, setFocused] = useState(false);
   const border = fieldBorder({ focused, error });
-  const horizontalPadding = spacing.lg - (border.width - 1);
+  const disabled = editable === false;
+  const horizontalPadding = 14 - (border.width - 1);
+  const countLabel =
+    multiline && typeof maxLength === 'number'
+      ? `${String(value ?? rest.defaultValue ?? '').length}/${maxLength}`
+      : null;
+
   return (
-    <View style={{ gap: spacing.xs }}>
-      {label ? (
-        <AppText variant="label" muted>
-          {label}
-        </AppText>
-      ) : null}
-      <TextInput
-        ref={ref}
-        placeholderTextColor={colors.textMuted}
-        onFocus={(event) => {
-          setFocused(true);
-          onFocus?.(event);
-        }}
-        onBlur={(event) => {
-          setFocused(false);
-          onBlur?.(event);
-        }}
+    <View style={{ gap: 6 }}>
+      {label ? <AppText variant="label">{label}</AppText> : null}
+      <View
         style={[
           {
-            minHeight: 56,
+            minHeight: multiline ? 132 : 48,
             borderWidth: border.width,
             borderColor: colors[border.colorToken],
-            borderRadius: radius.md,
-            paddingHorizontal: horizontalPadding,
-            backgroundColor: colors.surface,
-            color: colors.text,
-            fontSize: 16,
-            fontFamily,
-            // Same reasoning as AppText: iOS resolves `textAlign: 'auto'` from
-            // the writing direction, whereas an explicit 'left'/'right' is
-            // absolute on iOS but mirrored on Android — which put the caret on
-            // opposite sides of the same field across the two platforms.
-            textAlign: 'auto',
-            writingDirection: dir,
+            borderRadius: radius.none,
+            paddingHorizontal: multiline ? 14 : horizontalPadding,
+            paddingVertical: multiline ? 14 : 0,
+            backgroundColor: disabled ? colors.surfaceAlt : colors.bg,
+            justifyContent: multiline ? 'flex-start' : 'center',
           },
-          style,
         ]}
-        {...rest}
-      />
+      >
+        <TextInput
+          ref={ref}
+          placeholderTextColor={colors.textMuted}
+          editable={editable}
+          value={value}
+          maxLength={maxLength}
+          multiline={multiline}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          maxFontSizeMultiplier={maxFontScaleFor('body')}
+          style={[
+            {
+              flex: multiline ? 1 : undefined,
+              minHeight: multiline ? undefined : 44,
+              padding: 0,
+              color: disabled ? colors.textMuted : colors.text,
+              fontSize: bodyType.fontSize,
+              letterSpacing: bodyType.letterSpacing,
+              fontFamily,
+              textAlign: 'auto',
+              textAlignVertical: multiline ? 'top' : 'center',
+              writingDirection: dir,
+            },
+            style,
+          ]}
+          {...rest}
+        />
+        {countLabel ? (
+          <AppText variant="small" muted style={{ alignSelf: 'flex-end' }}>
+            {countLabel}
+          </AppText>
+        ) : null}
+      </View>
       {error ? (
         <AppText variant="caption" color="danger">
           {error}

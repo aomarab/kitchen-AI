@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { BUTTON_VARIANTS, ROUND_BUTTON_TONES, buttonTone, roundButtonTone } from './button-tones';
+import {
+  BUTTON_VARIANTS,
+  ICON_BUTTON_TONES,
+  ROUND_BUTTON_TONES,
+  buttonTone,
+  iconButtonTone,
+  resolveButtonVariant,
+  resolveRoundButtonTone,
+  roundButtonTone,
+} from './button-tones';
 import { palettes, type ThemeMode } from '../theme/palettes';
 import { contrast } from '../theme/contrast';
 
@@ -10,10 +19,8 @@ describe.each(['light', 'dark'] as ThemeMode[])('button tones, coral %s', (mode)
   const { colors } = palettes.coral[mode];
 
   it('offers exactly the Coral bridge variants', () => {
-    // The three *Inverse variants are gone for good: cook mode follows the
-    // theme, and anything on a photo or the camera uses `media`.
     expect([...BUTTON_VARIANTS].sort()).toEqual(
-      ['danger', 'ghost', 'media', 'primary', 'secondary', 'soft'].sort(),
+      ['danger', 'destructive', 'ghost', 'inverse', 'media', 'primary', 'secondary', 'soft'].sort(),
     );
   });
 
@@ -21,9 +28,10 @@ describe.each(['light', 'dark'] as ThemeMode[])('button tones, coral %s', (mode)
     '%s carries a readable label on its fill, pressed or not',
     (variant) => {
       const tone = buttonTone(colors, variant);
-      expect(contrast(tone.label, tone.fill), `${variant} label`).toBeGreaterThanOrEqual(AA_TEXT);
+      const ground = tone.fill === 'transparent' ? colors.bg : tone.fill;
+      expect(contrast(tone.label, ground), `${variant} label`).toBeGreaterThanOrEqual(AA_TEXT);
       expect(
-        contrast(tone.label, tone.pressedFill),
+        contrast(tone.label, tone.pressedFill === 'transparent' ? colors.bg : tone.pressedFill),
         `${variant} label, pressed`,
       ).toBeGreaterThanOrEqual(AA_TEXT);
     },
@@ -35,19 +43,70 @@ describe.each(['light', 'dark'] as ThemeMode[])('button tones, coral %s', (mode)
     expect(contrast(label, colors.surface), 'ghost on surface').toBeGreaterThanOrEqual(AA_TEXT);
   });
 
-  it('media buttons separate from the dark surface they sit on', () => {
-    const { fill } = buttonTone(colors, 'media');
-    expect(contrast(fill, colors.surfaceInverse)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  it('danger-toned ghosts use the danger text token without a fill', () => {
+    const tone = buttonTone(colors, 'ghost', { tone: 'danger' });
+    expect(tone.fill).toBe('transparent');
+    expect(tone.border).toBe('transparent');
+    expect(tone.label).toBe(colors.danger);
+    expect(contrast(tone.label, colors.bg)).toBeGreaterThanOrEqual(AA_TEXT);
   });
 
-  it('labels the coral and danger fills with their own readable tokens', () => {
+  it('labels the coral and destructive fills with their own readable tokens', () => {
     expect(buttonTone(colors, 'primary').label).toBe(colors.onFill);
-    expect(buttonTone(colors, 'danger').label).toBe(colors.onDanger);
+    expect(buttonTone(colors, 'destructive').label).toBe(colors.onDanger);
+  });
+
+  it('paints disabled buttons as a tokenised disabled state, not opacity-only', () => {
+    const tone = buttonTone(colors, 'primary', { disabled: true });
+    expect(tone).toMatchObject({
+      fill: colors.surfaceAlt,
+      pressedFill: colors.surfaceAlt,
+      label: colors.textMuted,
+      border: colors.surfaceAlt,
+    });
+    expect(contrast(tone.label, tone.fill), 'disabled label').toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it('maps deprecated button variants to J variants', () => {
+    expect(resolveButtonVariant('soft')).toBe('secondary');
+    expect(resolveButtonVariant('danger')).toBe('destructive');
+    expect(resolveButtonVariant('media')).toBe('inverse');
   });
 
   it.each(ROUND_BUTTON_TONES)('the %s round button carries a readable glyph', (name) => {
-    // Held to the text bar, not 3:1: the avatar's glyph is a letter.
     const tone = roundButtonTone(colors, name);
-    expect(contrast(tone.glyph, tone.fill), name).toBeGreaterThanOrEqual(AA_TEXT);
+    const ground =
+      tone.fill === 'transparent'
+        ? colors.bg
+        : tone.fill.startsWith('rgba')
+          ? colors.surfaceInverse
+          : tone.fill;
+    expect(contrast(tone.glyph, ground), name).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it('maps deprecated round button tones to J icon button tones', () => {
+    expect(resolveRoundButtonTone('sunk')).toBe('surface');
+    expect(resolveRoundButtonTone('primary')).toBe('coral');
+    expect(resolveRoundButtonTone('soft')).toBe('surface');
+    expect(resolveRoundButtonTone('mediaLight')).toBe('media');
+  });
+
+  it.each(ICON_BUTTON_TONES)('%s icon buttons carry a readable glyph', (name) => {
+    const tone = iconButtonTone(colors, name);
+    const ground =
+      tone.fill === 'transparent'
+        ? colors.bg
+        : tone.fill.startsWith('rgba')
+          ? colors.surfaceInverse
+          : tone.fill;
+    expect(contrast(tone.glyph, ground), name).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    if (tone.border !== 'transparent') {
+      expect(contrast(tone.border, colors.bg), `${name} edge`).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    }
+  });
+
+  it('uses the media overlay token for media icon buttons', () => {
+    expect(iconButtonTone(colors, 'media').fill).toBe(colors.mediaButton);
+    expect(iconButtonTone(colors, 'media').glyph).toBe(colors.textInverse);
   });
 });

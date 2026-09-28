@@ -1,20 +1,36 @@
 import type { PaletteColors } from '../theme/palettes';
 
 /**
- * The Apricot button variants (spec §8.5). Kept free of React Native so the
- * palette guards can check every fill and label pair without a renderer, the
- * same way `recipe-thumb-tones.ts` does for the placeholder.
+ * Coral button tones (spec §8). Kept free of React Native so the palette
+ * guards can check every fill and label pair without a renderer, the same way
+ * `recipe-thumb-tones.ts` does for the placeholder.
  */
 export const BUTTON_VARIANTS = [
   'primary',
   'secondary',
-  'soft',
   'ghost',
+  'destructive',
+  'inverse',
+  /** @deprecated J: removed in C16 */
+  'soft',
+  /** @deprecated J: removed in C16 */
   'danger',
+  /** @deprecated J: removed in C16 */
   'media',
 ] as const;
 
 export type ButtonVariant = (typeof BUTTON_VARIANTS)[number];
+export type ButtonToneName = 'default' | 'danger';
+export type JButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive' | 'inverse';
+
+export const DEPRECATED_BUTTON_VARIANT_ALIASES = {
+  /** @deprecated J: removed in C16 */
+  soft: 'secondary',
+  /** @deprecated J: removed in C16 */
+  danger: 'destructive',
+  /** @deprecated J: removed in C16 */
+  media: 'inverse',
+} as const satisfies Record<Exclude<ButtonVariant, JButtonVariant>, JButtonVariant>;
 
 export interface ButtonTone {
   fill: string;
@@ -22,113 +38,178 @@ export interface ButtonTone {
   label: string;
   /** The 1px edge. Equal to the fill wherever the fill is the edge. */
   border: string;
+  borderWidth: 0 | 1 | 1.5;
 }
 
-export function buttonTone(colors: PaletteColors, variant: ButtonVariant): ButtonTone {
-  switch (variant) {
+export interface ButtonToneOptions {
+  tone?: ButtonToneName;
+  disabled?: boolean;
+}
+
+export function resolveButtonVariant(variant: ButtonVariant): JButtonVariant {
+  return (
+    DEPRECATED_BUTTON_VARIANT_ALIASES[variant as keyof typeof DEPRECATED_BUTTON_VARIANT_ALIASES] ??
+    variant
+  );
+}
+
+export function buttonTone(
+  colors: PaletteColors,
+  variant: ButtonVariant,
+  { tone = 'default', disabled = false }: ButtonToneOptions = {},
+): ButtonTone {
+  if (disabled) {
+    return {
+      fill: colors.surfaceAlt,
+      pressedFill: colors.surfaceAlt,
+      label: colors.textMuted,
+      border: colors.surfaceAlt,
+      borderWidth: 0,
+    };
+  }
+
+  if (variant === 'media') {
+    return {
+      fill: colors.textInverse,
+      pressedFill: colors.textInverse,
+      label: colors.onPrimaryInverse,
+      border: colors.textInverse,
+      borderWidth: 0,
+    };
+  }
+
+  const resolved = resolveButtonVariant(variant);
+  switch (resolved) {
     case 'primary':
-      // Coral takes an ink label in both modes: white on it is 2.83:1 (§3).
       return {
         fill: colors.primary,
         pressedFill: colors.primaryPressed,
         label: colors.onFill,
         border: colors.primary,
+        borderWidth: 0,
       };
     case 'secondary':
       return {
-        fill: colors.surface,
-        pressedFill: colors.surface,
-        label: colors.text,
-        border: colors.border,
-      };
-    case 'soft':
-      return {
-        fill: colors.primarySoft,
-        pressedFill: colors.primarySoft,
+        fill: 'transparent',
+        pressedFill: 'transparent',
         label: colors.primaryText,
-        border: colors.primarySoft,
+        border: colors.primary,
+        borderWidth: 1.5,
       };
     case 'ghost':
       return {
         fill: 'transparent',
         pressedFill: 'transparent',
-        label: colors.primaryText,
+        label: tone === 'danger' ? colors.danger : colors.text,
         border: 'transparent',
+        borderWidth: 0,
       };
-    case 'danger':
-      // Not `onFill`: the light-mode red takes white, so the destructive fill
-      // carries its own label token.
+    case 'destructive':
       return {
         fill: colors.danger,
         pressedFill: colors.danger,
         label: colors.onDanger,
         border: colors.danger,
+        borderWidth: 0,
       };
-    case 'media':
-      // On the camera, the still and photos, which are dark in every mode.
+    case 'inverse':
       return {
-        fill: colors.textInverse,
-        pressedFill: colors.textInverse,
-        label: colors.onPrimaryInverse,
-        border: colors.textInverse,
+        fill: colors.inverse,
+        pressedFill: colors.inverse,
+        label: colors.onInverse,
+        border: colors.inverse,
+        borderWidth: 0,
       };
   }
 }
 
 /**
- * The fills a `RoundButton` circle takes (spec §14, "Small controls"): back
- * and close on the page, the same inside a card or sheet, the brand action,
- * the avatar, and controls over the camera or a photo.
+ * `IconButton` is the J name for the square icon primitive. `RoundButton`
+ * keeps accepting its old tones as aliases until C16.
  */
-export const ROUND_BUTTON_TONES = [
+export const ICON_BUTTON_TONES = [
+  'plain',
   'surface',
-  'sunk',
-  'primary',
-  'soft',
+  'outline',
+  'coral',
+  'inverse',
   'media',
+] as const;
+
+export type IconButtonTone = (typeof ICON_BUTTON_TONES)[number];
+
+export const ROUND_BUTTON_TONES = [
+  ...ICON_BUTTON_TONES,
+  /** @deprecated J: removed in C16 */
+  'sunk',
+  /** @deprecated J: removed in C16 */
+  'primary',
+  /** @deprecated J: removed in C16 */
+  'soft',
+  /** @deprecated J: removed in C16 */
   'mediaLight',
 ] as const;
 
 export type RoundButtonTone = (typeof ROUND_BUTTON_TONES)[number];
 
+export const DEPRECATED_ROUND_BUTTON_TONE_ALIASES = {
+  /** @deprecated J: removed in C16 */
+  sunk: 'surface',
+  /** @deprecated J: removed in C16 */
+  primary: 'coral',
+  /** @deprecated J: removed in C16 */
+  soft: 'surface',
+  /** @deprecated J: removed in C16 */
+  mediaLight: 'media',
+} as const satisfies Record<Exclude<RoundButtonTone, IconButtonTone>, IconButtonTone>;
+
 export interface RoundButtonColors {
   fill: string;
   glyph: string;
   border: string;
+  borderWidth: 0 | 1;
 }
 
-export function roundButtonTone(
-  colors: PaletteColors,
-  tone: RoundButtonTone,
-  isDark = false,
-): RoundButtonColors {
+export function resolveRoundButtonTone(tone: RoundButtonTone): IconButtonTone {
+  return (
+    DEPRECATED_ROUND_BUTTON_TONE_ALIASES[
+      tone as keyof typeof DEPRECATED_ROUND_BUTTON_TONE_ALIASES
+    ] ?? tone
+  );
+}
+
+export function iconButtonTone(colors: PaletteColors, tone: IconButtonTone): RoundButtonColors {
   switch (tone) {
+    case 'plain':
+      return { fill: 'transparent', glyph: colors.text, border: 'transparent', borderWidth: 0 };
     case 'surface':
-      // White on the cream page separates by its shadow in light mode. Dark
-      // mode has no visible shadow, so the edge is drawn instead.
       return {
-        fill: colors.surface,
+        fill: colors.surfaceAlt,
         glyph: colors.text,
-        border: isDark ? colors.border : colors.surface,
+        border: 'transparent',
+        borderWidth: 0,
       };
-    case 'sunk':
-      // Inside a card or a sheet, where a `surface` circle would vanish.
-      return { fill: colors.surfaceAlt, glyph: colors.text, border: colors.surfaceAlt };
-    case 'primary':
-      return { fill: colors.primary, glyph: colors.onFill, border: colors.primary };
-    case 'soft':
-      return { fill: colors.primarySoft, glyph: colors.primaryText, border: colors.primarySoft };
+    case 'outline':
+      return { fill: colors.bg, glyph: colors.text, border: colors.control, borderWidth: 1 };
+    case 'coral':
+      return { fill: colors.primary, glyph: colors.onFill, border: colors.primary, borderWidth: 0 };
+    case 'inverse':
+      return {
+        fill: colors.inverse,
+        glyph: colors.onInverse,
+        border: colors.inverse,
+        borderWidth: 0,
+      };
     case 'media':
       return {
-        fill: colors.surfaceInverseAlt,
+        fill: colors.mediaButton,
         glyph: colors.textInverse,
-        border: colors.borderInverse,
-      };
-    case 'mediaLight':
-      return {
-        fill: colors.textInverse,
-        glyph: colors.onPrimaryInverse,
-        border: colors.textInverse,
+        border: 'transparent',
+        borderWidth: 0,
       };
   }
+}
+
+export function roundButtonTone(colors: PaletteColors, tone: RoundButtonTone): RoundButtonColors {
+  return iconButtonTone(colors, resolveRoundButtonTone(tone));
 }

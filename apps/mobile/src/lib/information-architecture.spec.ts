@@ -157,18 +157,16 @@ describe('information architecture (spec §4)', () => {
     );
 
     const toggleRow = read('components', 'ToggleRow.tsx');
-    expect(
-      toggleRow,
-      'ToggleRow should let the platform draw a consistent native thumb',
-    ).not.toContain('thumbColor');
-    expect(toggleRow, 'ToggleRow must paint the iOS off-state gutter').toContain(
-      'ios_backgroundColor={colors.switchTrackOff}',
+    expect(toggleRow, 'ToggleRow should use the J square Toggle primitive').toContain('<Toggle');
+    expect(toggleRow, 'ToggleRow should not wrap the native Switch after C3').not.toContain(
+      '<Switch',
     );
     expect(toggleRow, 'ToggleRow must center a lone label but top-align label+hint rows').toContain(
       "alignItems: hint ? 'flex-start' : 'center'",
     );
-    expect(toggleRow, 'Switch thumb must mirror under the app RTL direction').toContain(
-      "dir === 'rtl' ? { transform: [{ scaleX: -1 }] } : undefined",
+    const toggle = read('components', 'Toggle.tsx');
+    expect(toggle, 'Toggle knob motion must mirror under the app RTL direction').toContain(
+      "dir === 'rtl' ? -TOGGLE_TRAVEL : TOGGLE_TRAVEL",
     );
 
     const household = read('app', 'settings', 'household.tsx');
@@ -190,13 +188,17 @@ describe('information architecture (spec §4)', () => {
 
   it('keeps inline tab controls named and inside safe areas (spec §12)', () => {
     const checkboxFile = read('features', 'shop', 'ShoppingCheckbox.tsx');
-    expect(checkboxFile, 'shopping checkbox Pressable is missing').toContain(
+    expect(checkboxFile, 'shopping checkbox should delegate to the J Checkbox primitive').toContain(
+      '<Checkbox',
+    );
+    const checkbox = read('components', 'Checkbox.tsx');
+    expect(checkbox, 'shopping checkbox Pressable is missing').toContain(
       'accessibilityRole="checkbox"',
     );
-    expect(checkboxFile, 'shopping checkbox touch target width is below 44pt').toMatch(
+    expect(checkbox, 'shopping checkbox touch target width is below 44pt').toMatch(
       /(?:minWidth|width):\s*44/,
     );
-    expect(checkboxFile, 'shopping checkbox touch target height is below 44pt').toMatch(
+    expect(checkbox, 'shopping checkbox touch target height is below 44pt').toMatch(
       /(?:minHeight|height):\s*44/,
     );
     expect(checkboxFile, 'shopping checkbox label should be injected by its row').toContain(
@@ -209,17 +211,15 @@ describe('information architecture (spec §4)', () => {
     expect(row, 'purchased shopping rows should be struck through').toContain(
       "textDecorationLine: 'line-through'",
     );
-    expect(
-      checkboxFile,
-      'unchecked shopping checkbox ring must use the accessible token',
-    ).toContain('colors.textMuted');
-    expect(checkboxFile, 'unchecked shopping checkbox ring must be 1.5pt').toContain(
-      'borderWidth: checked ? 1 : 1.5',
+    expect(checkbox, 'unchecked shopping checkbox ring must use the control token').toContain(
+      'colors.control',
     );
-    expect(
-      checkboxFile,
-      'shopping checkbox tick must use the semantic success label token',
-    ).toContain('colors.onSuccess');
+    expect(checkbox, 'unchecked shopping checkbox ring must be 1.5pt').toContain(
+      'borderWidth: checked ? 0 : 1.5',
+    );
+    expect(checkbox, 'shopping checkbox tick must use the onFill label token').toContain(
+      'colors.onFill',
+    );
 
     const kitchen = read('app', '(tabs)', 'kitchen.tsx');
     expect(kitchen).not.toContain("edges={['top']}");

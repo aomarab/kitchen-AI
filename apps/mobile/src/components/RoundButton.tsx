@@ -1,18 +1,11 @@
-import {
-  Pressable,
-  View,
-  type AccessibilityState,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
-import { AppText } from './AppText';
-import { DirectionalIcon } from './DirectionalIcon';
-import { Icon, type IconName } from './Icon';
-import { roundButtonTone, type RoundButtonTone } from './button-tones';
-import { CHROME_MAX_FONT_SCALE } from '../theme';
-import { useTheme } from '../theme/useTheme';
+import type { AccessibilityState, StyleProp, ViewStyle } from 'react-native';
+import { IconButton } from './IconButton';
+import { resolveRoundButtonTone, type RoundButtonTone } from './button-tones';
+import type { IconName } from './Icon';
 
 export type { RoundButtonTone } from './button-tones';
+
+export const ROUND_BUTTON_TARGET_SIZE = 44;
 
 export interface RoundButtonProps {
   accessibilityLabel: string;
@@ -23,7 +16,7 @@ export interface RoundButtonProps {
   /** A short glyph drawn instead of an icon, such as the avatar's initial. */
   label?: string;
   tone?: RoundButtonTone;
-  /** The visible circle. The touch target is 44×44 whatever this is (spec §12). */
+  /** @deprecated J: removed in C16. Size 40 maps to the J 44 visual. */
   size?: 36 | 40 | 44 | 48;
   disabled?: boolean;
   accessibilityState?: AccessibilityState;
@@ -31,11 +24,7 @@ export interface RoundButtonProps {
   testID?: string;
 }
 
-/**
- * Every round control under 44pt: back, close, the recipe controls, search and
- * the avatar. The Pressable is fixed at 44×44 and centres the circle, so a 36pt
- * visual never shrinks the target (spec §14).
- */
+/** @deprecated J: removed in C16. Use `IconButton` directly. */
 export function RoundButton({
   accessibilityLabel,
   onPress,
@@ -43,61 +32,26 @@ export function RoundButton({
   directional = false,
   label,
   tone = 'surface',
-  size = 40,
+  size = 44,
   disabled = false,
   accessibilityState,
   style,
   testID,
 }: RoundButtonProps) {
-  const { colors, isDark, shadow } = useTheme();
-  const { fill, glyph, border } = roundButtonTone(colors, tone, isDark);
-  const Glyph = directional ? DirectionalIcon : Icon;
-  const targetSize = size === 48 ? 48 : 44;
+  const mappedSize = size === 40 ? 44 : size;
   return (
-    <Pressable
-      accessibilityRole="button"
+    <IconButton
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ ...accessibilityState, disabled }}
-      disabled={disabled}
       onPress={onPress}
+      icon={icon}
+      directional={directional}
+      label={label}
+      tone={resolveRoundButtonTone(tone)}
+      size={mappedSize}
+      disabled={disabled}
+      accessibilityState={accessibilityState}
+      style={style}
       testID={testID}
-      style={[
-        { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-        size === 48 ? { width: targetSize, height: targetSize } : null,
-        style,
-      ]}
-    >
-      {({ pressed }) => (
-        <View
-          style={[
-            {
-              width: size,
-              height: size,
-              borderRadius: size / 2,
-              borderWidth: 1,
-              borderColor: border,
-              backgroundColor: fill,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-            },
-            tone === 'surface' && !isDark ? shadow.card : null,
-          ]}
-        >
-          {label ? (
-            <AppText
-              variant="bodyStrong"
-              style={{ color: glyph }}
-              maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
-            >
-              {label}
-            </AppText>
-          ) : icon ? (
-            <Glyph name={icon} size={Math.round(size / 2)} color={glyph} />
-          ) : null}
-        </View>
-      )}
-    </Pressable>
+    />
   );
 }

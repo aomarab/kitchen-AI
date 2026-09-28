@@ -21,14 +21,15 @@ describe('borderless buttons align to the content margin', () => {
     // A ghost button paints neither fill nor border, so `paddingHorizontal`
     // only offsets its label from the margin. On the home screen that put
     // "See all" 16pt inside the right edge of every card beneath it.
-    expect(source).toMatch(/paddingHorizontal:\s*variant === 'ghost'\s*\?\s*0\s*:\s*spacing\.lg/);
+    expect(source).toMatch(/paddingHorizontal:\s*resolvedVariant === 'ghost'\s*\?\s*0\s*:/);
   });
 
   it('keeps the touch target legal without that padding', () => {
     // Losing the padding narrows an inline ghost button, so the height and the
     // slop are what carry it over 44pt. Both must stay.
-    expect(source).toMatch(/minHeight:\s*48/);
+    expect(source).toMatch(/minHeight:\s*44/);
     expect(source).toMatch(/hitSlop=\{hitSlop\}/);
+    expect(source).not.toContain('scale: pressed');
   });
 
   it('lets inline text actions keep their intrinsic width', () => {
@@ -159,10 +160,14 @@ describe('G1 primitive extensions', () => {
     expect(source).toContain('variant="display"');
   });
 
-  it('keeps a 48pt RoundButton target for the Tonight play control', () => {
+  it('keeps a 48pt IconButton target for the Tonight play control through the RoundButton adapter', () => {
+    const iconButton = read('./IconButton.tsx');
+    expect(iconButton).toContain('36 | 44 | 48');
+    expect(iconButton).toContain('const targetSize = size === 48 ? 48 : ICON_BUTTON_TARGET_SIZE');
+
     const source = read('./RoundButton.tsx');
     expect(source).toContain('36 | 40 | 44 | 48');
-    expect(source).toContain('const targetSize = size === 48 ? 48 : 44');
-    expect(source).toContain('size === 48 ? { width: targetSize, height: targetSize } : null');
+    expect(source).toContain('ROUND_BUTTON_TARGET_SIZE = 44');
+    expect(source).toContain('const mappedSize = size === 40 ? 44 : size');
   });
 });

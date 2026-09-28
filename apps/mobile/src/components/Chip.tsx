@@ -7,7 +7,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { AppText } from './AppText';
+import { CountBadge } from './Badge';
 import { chipTone, type ChipTone, type ChipVariant } from './control-tones';
+import { Icon, type IconName } from './Icon';
 import { hitSlop, radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
@@ -23,11 +25,14 @@ export interface ChipProps {
   /** `tag` is the small location label inside a tile (spec §8.4). */
   variant?: ChipVariant;
   tone?: ChipTone;
+  icon?: IconName;
+  count?: number;
+  countAccessibilityLabel?: string;
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
 
-/** A 32pt pill for filters, plan slots and preferences, 56pt to the touch. */
+/** A 36pt square chip that reaches 44pt through theme hitSlop. */
 export function Chip({
   label,
   selected = false,
@@ -37,6 +42,9 @@ export function Chip({
   accessibilityState,
   variant = 'pill',
   tone: toneName = 'default',
+  icon,
+  count,
+  countAccessibilityLabel,
   children,
   style,
 }: ChipProps) {
@@ -54,24 +62,32 @@ export function Chip({
       onPress={onPress}
       style={({ pressed }) => [
         {
-          minHeight: 32,
+          minHeight: 36,
+          flexDirection: 'row',
+          alignItems: 'center',
           justifyContent: 'center',
-          paddingHorizontal: spacing.md,
-          borderRadius: radius.pill,
+          gap: 6,
+          paddingHorizontal: 14,
+          borderRadius: radius.none,
           borderWidth: 1,
           borderColor: tone.border,
           backgroundColor: tone.fill,
           opacity: pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
         tag ? { minHeight: 24, paddingHorizontal: spacing.sm, borderRadius: radius.xs } : null,
         style,
       ]}
     >
       {children ?? (
-        <AppText variant={tag ? 'caption' : 'label'} style={{ color: tone.label }}>
-          {label}
-        </AppText>
+        <>
+          {icon ? <Icon name={icon} size={18} color={tone.label} /> : null}
+          <AppText variant={tag ? 'caption' : 'buttonSmall'} style={{ color: tone.label }}>
+            {label}
+          </AppText>
+          {typeof count === 'number' ? (
+            <CountBadge count={count} accessibilityLabel={countAccessibilityLabel} />
+          ) : null}
+        </>
       )}
     </Pressable>
   );

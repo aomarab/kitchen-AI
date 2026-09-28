@@ -1,7 +1,9 @@
-import { Pressable, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Pressable, View } from 'react-native';
 import { AppText } from './AppText';
 import { segmentTone, segmentTrack, type SegmentTone } from './control-tones';
-import { radius, spacing } from '../theme';
+import { useReduceMotion } from '../hooks/motion';
+import { radius, spacing, type PaletteColors } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 export interface SegmentOption<T extends string> {
@@ -16,60 +18,102 @@ export interface SegmentedControlProps<T extends string> {
   tone?: SegmentTone;
 }
 
-/**
- * Equal segments on a sunk track, with the choice on a raised white thumb
- * (spec §6.7: track `surfaceAlt`, thumb radius `sm`). Labels wrap rather than
- * truncate, so a long Arabic label grows the track instead of losing words.
- */
 export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
   tone = 'default',
 }: SegmentedControlProps<T>) {
-  const { colors, isDark, shadow } = useTheme();
+  const { colors, isDark } = useTheme();
   return (
     <View
       style={{
         flexDirection: 'row',
         minHeight: 44,
-        padding: spacing.xs,
-        borderRadius: radius.sm + spacing.xs,
+        borderWidth: 1,
+        borderColor: tone === 'media' ? colors.borderInverse : colors.control,
+        borderRadius: radius.none,
         backgroundColor: segmentTrack(colors, tone),
+        overflow: 'hidden',
       }}
     >
       {options.map((option) => {
         const selected = option.value === value;
-        const segment = segmentTone(colors, selected, isDark, tone);
         return (
-          <Pressable
+          <SegmentedOptionButton
             key={option.value}
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
-            hitSlop={spacing.xs}
+            label={option.label}
+            selected={selected}
+            colors={colors}
+            isDark={isDark}
+            tone={tone}
             onPress={() => onChange(option.value)}
-            style={({ pressed }) => [
-              {
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: spacing.sm,
-                paddingVertical: spacing.xs,
-                borderRadius: radius.sm,
-                borderWidth: 1,
-                borderColor: segment.border,
-                backgroundColor: segment.fill,
-                opacity: pressed && !selected ? 0.85 : 1,
-              },
-              selected && tone === 'default' && !isDark ? shadow.card : null,
-            ]}
-          >
-            <AppText variant="label" center numberOfLines={2} style={{ color: segment.label }}>
-              {option.label}
-            </AppText>
-          </Pressable>
+          />
         );
       })}
     </View>
+  );
+}
+
+interface SegmentedOptionButtonProps {
+  label: string;
+  selected: boolean;
+  colors: PaletteColors;
+  isDark: boolean;
+  tone: SegmentTone;
+  onPress: () => void;
+}
+
+function SegmentedOptionButton({
+  label,
+  selected,
+  colors,
+  isDark,
+  tone,
+  onPress,
+}: SegmentedOptionButtonProps) {
+  const reduceMotion = useReduceMotion();
+  const selectedOpacity = useRef(new Animated.Value(selected ? 1 : 0)).current;
+  const selectedTone = segmentTone(colors, true, isDark, tone);
+  const labelTone = segmentTone(colors, selected, isDark, tone);
+
+  useEffect(() => {
+    Animated.timing(selectedOpacity, {
+      toValue: selected ? 1 : 0,
+      duration: reduceMotion ? 0 : 120,
+      useNativeDriver: true,
+    }).start();
+  }, [reduceMotion, selected, selectedOpacity]);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        minHeight: 42,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: spacing.sm,
+        opacity: pressed && !selected ? 0.85 : 1,
+      })}
+    >
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          start: 0,
+          end: 0,
+          backgroundColor: selectedTone.fill,
+          opacity: selectedOpacity,
+        }}
+      />
+      <AppText variant="buttonSmall" center numberOfLines={2} style={{ color: labelTone.label }}>
+        {label}
+      </AppText>
+    </Pressable>
   );
 }

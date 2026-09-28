@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 import { stepperTone } from './control-tones';
-import { spacing } from '../theme';
+import { radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 export interface QuantityStepperProps {
@@ -23,10 +23,13 @@ export interface QuantityStepperProps {
   incrementLabel: string;
 }
 
+export const STEPPER_VISUAL_WIDTH = 118;
+export const STEPPER_VISUAL_HEIGHT = 36;
+const STEPPER_TARGET_SIZE = 44;
+
 /**
- * `−` and `+` circles of 32pt, each centred in a 44pt Pressable, around a
- * `bodyStrong` value (spec §8.4). To a screen reader it is one adjustable
- * element: swipe up or down to change it. Row direction mirrors under RTL.
+ * One adjustable element: swipe up or down to change it. Row direction mirrors
+ * under RTL while each 36pt square action keeps a 44pt Pressable.
  */
 export function QuantityStepper({
   value,
@@ -49,26 +52,31 @@ export function QuantityStepper({
   const display = label ?? String(value);
 
   const circle = (action: 'decrement' | 'increment', onPress: () => void, disabled: boolean) => {
-    const tone = stepperTone(colors, action);
+    const tone = stepperTone(colors, action, disabled);
     return (
       <Pressable
         onPress={onPress}
         disabled={disabled}
         accessible={false}
         importantForAccessibility="no"
-        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+        style={{
+          width: STEPPER_TARGET_SIZE,
+          height: STEPPER_TARGET_SIZE,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginVertical: -(STEPPER_TARGET_SIZE - STEPPER_VISUAL_HEIGHT) / 2,
+        }}
       >
         {({ pressed }) => (
           <View
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
+              width: STEPPER_VISUAL_HEIGHT,
+              height: STEPPER_VISUAL_HEIGHT,
+              borderRadius: radius.none,
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: tone.fill,
               opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
             }}
           >
             <Icon name={action === 'increment' ? 'plus' : 'minus'} size={18} color={tone.glyph} />
@@ -98,18 +106,39 @@ export function QuantityStepper({
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
     >
-      {circle('decrement', decrement, atMin)}
-      <View style={{ minWidth: 40, alignItems: 'center' }}>
-        <AppText variant="bodyStrong" center style={{ fontVariant: ['tabular-nums'] }}>
-          {display}
-        </AppText>
-        {unit ? (
-          <AppText variant="caption" muted center>
-            {unit}
-          </AppText>
-        ) : null}
+      <View
+        style={{
+          width: STEPPER_VISUAL_WIDTH,
+          height: STEPPER_TARGET_SIZE,
+          justifyContent: 'center',
+        }}
+      >
+        <View
+          style={{
+            width: STEPPER_VISUAL_WIDTH,
+            height: STEPPER_VISUAL_HEIGHT,
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: colors.control,
+            borderRadius: radius.none,
+            backgroundColor: colors.bg,
+          }}
+        >
+          {circle('decrement', decrement, atMin)}
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <AppText variant="bodyStrong" center style={{ fontVariant: ['tabular-nums'] }}>
+              {display}
+            </AppText>
+            {unit ? (
+              <AppText variant="caption" muted center>
+                {unit}
+              </AppText>
+            ) : null}
+          </View>
+          {circle('increment', increment, atMax)}
+        </View>
       </View>
-      {circle('increment', increment, atMax)}
     </View>
   );
 }

@@ -1,7 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { chipTone, countBadgeTone, segmentTone, segmentTrack, stepperTone } from './control-tones';
+import {
+  checkboxTone,
+  chipTone,
+  countBadgeTone,
+  segmentTone,
+  segmentTrack,
+  starTone,
+  stepperTone,
+  toggleTone,
+} from './control-tones';
 import { hitSlop } from '../theme';
 import { palettes, type ThemeMode } from '../theme/palettes';
 import { contrast } from '../theme/contrast';
@@ -24,14 +33,19 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, coral %s', (mode
     expect(contrast(tag.label, tag.fill), 'tag').toBeGreaterThanOrEqual(AA_TEXT);
   });
 
-  it('a selected chip inverts to the text colour (spec §8.4)', () => {
-    expect(chipTone(colors, 'pill', true)).toMatchObject({ fill: colors.text, label: colors.bg });
+  it('a selected chip uses the Coral action fill with no border', () => {
+    expect(chipTone(colors, 'pill', true)).toMatchObject({
+      fill: colors.primary,
+      label: colors.onFill,
+      border: 'transparent',
+    });
   });
 
-  it('an unselected chip keeps an edge, because a white pill on a white card has no other', () => {
+  it('an unselected chip is white with a visible control edge', () => {
     const tone = chipTone(colors, 'pill', false);
-    expect(tone.fill).toBe(colors.surface);
-    expect(tone.border).not.toBe(tone.fill);
+    expect(tone.fill).toBe(colors.bg);
+    expect(tone.border).toBe(colors.control);
+    expect(contrast(tone.border, tone.fill)).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 
   it('a primary chip uses the brand fill with its ink label', () => {
@@ -46,21 +60,22 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, coral %s', (mode
     expect(contrast(tone.label, tone.fill)).toBeGreaterThanOrEqual(AA_TEXT);
   });
 
-  it('stepper glyphs separate from their circles, and + is the brand action', () => {
+  it('stepper glyphs read inside the single bordered visual box', () => {
     for (const action of ['decrement', 'increment'] as const) {
       const tone = stepperTone(colors, action);
-      expect(contrast(tone.glyph, tone.fill), action).toBeGreaterThanOrEqual(AA_NON_TEXT);
+      expect(tone.fill).toBe('transparent');
+      expect(contrast(tone.glyph, colors.bg), action).toBeGreaterThanOrEqual(AA_TEXT);
     }
-    expect(stepperTone(colors, 'increment').fill).toBe(colors.primary);
-    expect(stepperTone(colors, 'decrement').fill).toBe(colors.surfaceAlt);
   });
 
-  it('segment labels read on the thumb and on the bare track', () => {
+  it('segment labels read on the selected block and on the bare track', () => {
     const on = segmentTone(colors, true);
+    expect(on.fill).toBe(colors.inverse);
+    expect(on.label).toBe(colors.onInverse);
     expect(contrast(on.label, on.fill), 'selected').toBeGreaterThanOrEqual(AA_TEXT);
-    // An unselected segment paints nothing, so its label sits on the track.
     const off = segmentTone(colors, false);
     expect(contrast(off.label, segmentTrack(colors)), 'unselected').toBeGreaterThanOrEqual(AA_TEXT);
+    expect(segmentTrack(colors)).toBe(colors.bg);
   });
 
   it('media segments use inverse camera-surface tokens', () => {
@@ -69,7 +84,7 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, coral %s', (mode
     const selected = segmentTone(colors, true, mode === 'dark', 'media');
     expect(selected).toMatchObject({
       fill: colors.textInverse,
-      label: colors.onPrimaryInverse,
+      label: colors.surfaceInverse,
       border: colors.textInverse,
     });
     expect(contrast(selected.label, selected.fill), 'media selected').toBeGreaterThanOrEqual(
@@ -77,11 +92,43 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, coral %s', (mode
     );
 
     const unselected = segmentTone(colors, false, mode === 'dark', 'media');
-    expect(unselected.label).toBe(colors.textInverseMuted);
+    expect(unselected.label).toBe(colors.textInverse);
     expect(
       contrast(unselected.label, segmentTrack(colors, 'media')),
       'media unselected',
     ).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it('checkbox tones meet the square Coral contract', () => {
+    const off = checkboxTone(colors, false);
+    expect(off).toMatchObject({ fill: colors.bg, border: colors.control, glyph: 'transparent' });
+    expect(contrast(off.border, off.fill), 'off outline').toBeGreaterThanOrEqual(AA_NON_TEXT);
+
+    const on = checkboxTone(colors, true);
+    expect(on).toMatchObject({
+      fill: colors.primary,
+      border: colors.primary,
+      glyph: colors.onFill,
+    });
+    expect(contrast(on.glyph, on.fill), 'on check').toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
+  it('toggle tones use the square control track and Coral on-state', () => {
+    const off = toggleTone(colors, false);
+    expect(off).toMatchObject({ track: colors.control, knob: colors.onFill });
+    expect(contrast(off.knob, off.track), 'off knob').toBeGreaterThanOrEqual(AA_NON_TEXT);
+
+    const on = toggleTone(colors, true);
+    expect(on).toMatchObject({ track: colors.primary, knob: colors.onFill });
+    expect(contrast(on.knob, on.track), 'on knob').toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
+  it('star tones use filled Coral and empty control strokes', () => {
+    expect(starTone(colors, true)).toMatchObject({ glyph: colors.primary, icon: 'star' });
+    expect(starTone(colors, false)).toMatchObject({ glyph: colors.control, icon: 'starOutline' });
+    expect(contrast(starTone(colors, false).glyph, colors.bg), 'empty star').toBeGreaterThanOrEqual(
+      AA_NON_TEXT,
+    );
   });
 });
 
@@ -91,7 +138,7 @@ describe('control touch targets', () => {
     const match = /minHeight:\s*(\d+)/.exec(source);
     expect(match, 'Chip must declare its visual height').not.toBeNull();
     const height = Number(match![1]);
-    expect(height).toBe(32);
+    expect(height).toBe(36);
     expect(source).toMatch(/hitSlop=\{hitSlop\}/);
     expect(height + 2 * hitSlop).toBeGreaterThanOrEqual(44);
   });
@@ -103,13 +150,31 @@ describe('control touch targets', () => {
     expect(source).toMatch(/name: 'decrement'/);
     expect(source).toContain('accessible={false}');
     expect(source).toContain('importantForAccessibility="no"');
+    expect(source).toContain('STEPPER_VISUAL_WIDTH = 118');
+    expect(source).toContain('STEPPER_VISUAL_HEIGHT = 36');
   });
 
-  it('segments extend their slop to the edge of the 44pt track', () => {
-    // The track's inset and each segment's slop are the same token, so a tap
-    // anywhere on the track lands on a segment.
+  it('segments are a 44pt bordered track and cross-fade selection with Reduce Motion support', () => {
     const source = read('./SegmentedControl.tsx');
-    expect(source).toMatch(/padding:\s*spacing\.xs/);
-    expect(source).toMatch(/hitSlop=\{spacing\.xs\}/);
+    expect(source).toMatch(/minHeight:\s*44/);
+    expect(source).toMatch(/borderWidth:\s*1/);
+    expect(source).toContain('useReduceMotion()');
+    expect(source).toContain('duration: reduceMotion ? 0 : 120');
+  });
+
+  it('new square controls expose roles and 44pt pressable targets', () => {
+    const checkbox = read('./Checkbox.tsx');
+    expect(checkbox).toContain('accessibilityRole="checkbox"');
+    expect(checkbox).toMatch(/width:\s*44/);
+    expect(checkbox).toMatch(/height:\s*44/);
+    expect(checkbox).toMatch(/width:\s*22/);
+    expect(checkbox).toMatch(/height:\s*22/);
+
+    const toggle = read('./Toggle.tsx');
+    expect(toggle).toContain('accessibilityRole="switch"');
+    expect(toggle).toMatch(/height:\s*44/);
+    expect(toggle).toMatch(/TRACK_WIDTH = 44/);
+    expect(toggle).toMatch(/TRACK_HEIGHT = 26/);
+    expect(toggle).toContain('duration: reduceMotion ? 0 : 160');
   });
 });
