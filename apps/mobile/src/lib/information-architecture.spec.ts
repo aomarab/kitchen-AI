@@ -625,4 +625,32 @@ describe('information architecture (spec §4)', () => {
       expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
     }
   });
+
+  it('keeps Timers on butter tiles with tabular numeral countdowns (spec §9.7)', () => {
+    const timers = read('app', 'timers.tsx');
+
+    expect(timers, 'Running timers must use the shared Tile primitive').toContain('<Tile');
+    expect(timers, 'Running timers should use the butter tint').toContain('tint="butter"');
+    expect(timers, 'Countdowns must render through the numeral typography variant').toContain(
+      'variant="numeral"',
+    );
+    expect(timers, 'Timer controls must stay as individually focusable RoundButtons').toContain(
+      '<RoundButton',
+    );
+  });
+
+  it('keeps the smart screen hero on the ember gradient (spec §9.7)', () => {
+    const screen = read('app', 'screen.tsx');
+
+    expect(screen, 'Smart screen must render the hero with the ember gradient').toMatch(
+      /<LinearGradient[\s\S]*?gradientHero/,
+    );
+    expect(
+      screen,
+      'The smart screen hero must no longer paint a flat inverse surface',
+    ).not.toContain('backgroundColor: colors.surfaceInverse');
+    expect(screen, "The hero's accessibility label must stay in place").toContain(
+      "accessibilityLabel={t('mobile.screen.planLabel')}",
+    );
+  });
 });

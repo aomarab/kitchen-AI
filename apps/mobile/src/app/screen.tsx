@@ -1,11 +1,12 @@
 import { useEffect, type ReactNode } from 'react';
-import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { ScrollView, View, useWindowDimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useRouter } from 'expo-router';
 import { formatRemaining } from '@kitchen/contracts';
-import { AppText, Button, Icon, LoadingState, ErrorState } from '../components';
+import { AppText, Button, Card, Icon, LoadingState, ErrorState } from '../components';
 import { useFormat } from '../hooks/useFormat';
 import { useHouseholds } from '../hooks/profile';
 import {
@@ -28,6 +29,8 @@ import {
 import { formatDateL } from '../lib/format';
 import { radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
+
+const MINI_CARD_ICON_SIZE = 48;
 
 /**
  * The kitchen kiosk: the phone propped against the backsplash while you cook
@@ -52,7 +55,7 @@ export default function KitchenScreen() {
   useKeepAwake();
   const { t, locale } = useFormat();
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, gradientHero } = useTheme();
   const { width, height } = useWindowDimensions();
 
   const householdsQuery = useHouseholds();
@@ -98,14 +101,18 @@ export default function KitchenScreen() {
     t('mobile.screen.title');
 
   const hero = (
-    <View
+    <LinearGradient
+      colors={gradientHero as unknown as readonly [string, string, ...string[]]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      accessible
       accessibilityLabel={t('mobile.screen.planLabel')}
       style={{
         flex: isLandscape ? 1.4 : undefined,
         gap: spacing.lg,
         padding: spacing.xl,
         borderRadius: radius.xl,
-        backgroundColor: colors.surfaceInverse,
+        overflow: 'hidden',
         justifyContent: 'center',
       }}
     >
@@ -120,6 +127,7 @@ export default function KitchenScreen() {
           </AppText>
           <Button
             title={t('mobile.screen.nudgeAcknowledge')}
+            variant="media"
             disabled={acknowledge.isPending}
             onPress={() => acknowledge.mutate(nudge.id)}
           />
@@ -139,12 +147,12 @@ export default function KitchenScreen() {
           </AppText>
           <Button
             title={t('mobile.screen.planIdleCta')}
-            variant="secondary"
+            variant="media"
             onPress={() => router.push('/settings/reminders')}
           />
         </View>
       )}
-    </View>
+    </LinearGradient>
   );
 
   const cards = (
@@ -218,8 +226,7 @@ function MiniCard({
 }) {
   const { colors } = useTheme();
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Card
       accessibilityLabel={`${label} ${value}`}
       onPress={onPress}
       style={{
@@ -229,29 +236,30 @@ function MiniCard({
         gap: spacing.lg,
         padding: spacing.xl,
         borderRadius: radius.lg,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
       }}
     >
       <View
         style={{
-          width: 48,
-          height: 48,
+          width: MINI_CARD_ICON_SIZE,
+          height: MINI_CARD_ICON_SIZE,
           borderRadius: radius.md,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: tone === 'primary' ? colors.primarySoft : colors.accentSoft,
         }}
       >
-        <Icon name={icon} size={24} color={tone === 'primary' ? colors.primaryText : colors.text} />
+        <Icon
+          name={icon}
+          size={24}
+          color={tone === 'primary' ? colors.primaryText : colors.accent}
+        />
       </View>
       <View style={{ flex: 1, gap: spacing.xs }}>
-        <AppText variant="label" muted numberOfLines={1}>
+        <AppText variant="label" muted>
           {label}
         </AppText>
         <AppText variant="title">{value}</AppText>
       </View>
-    </Pressable>
+    </Card>
   );
 }
