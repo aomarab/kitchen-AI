@@ -70,13 +70,14 @@ describe('bento grid (spec §6.7)', () => {
     expect(source).toContain('<LinearGradient {...scrimGradient(scrimToken)}');
   });
 
-  it('sizes bundled photo sources to the tile instead of their intrinsic dimensions', () => {
+  it('wraps photo images in a full-tile frame so percentages ignore tile padding', () => {
     const source = readFileSync(join(__dirname, 'Tile.tsx'), 'utf8');
 
     expect(source).toContain('const photoImageStyle: ImageStyle = {');
-    expect(source).toContain("position: 'absolute'");
     expect(source).toContain("width: '100%'");
     expect(source).toContain("height: '100%'");
-    expect(source).toContain('style={photoImageStyle}');
+    expect(source).toMatch(
+      /<View pointerEvents="none" style=\{StyleSheet\.absoluteFill\}>\s*<Image[\s\S]*?style=\{photoImageStyle\}/,
+    );
   });
 });

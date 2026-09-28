@@ -66,11 +66,6 @@ export interface TileProps {
 const InBento = createContext(false);
 
 const photoImageStyle: ImageStyle = {
-  position: 'absolute',
-  top: 0,
-  bottom: 0,
-  start: 0,
-  end: 0,
   width: '100%',
   height: '100%',
 };
@@ -128,12 +123,14 @@ export function Tile({
     <>
       {photo && image ? (
         <>
-          <Image
-            source={image}
-            resizeMode="cover"
-            style={photoImageStyle}
-            accessibilityIgnoresInvertColors
-          />
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <Image
+              source={image}
+              resizeMode="cover"
+              style={photoImageStyle}
+              accessibilityIgnoresInvertColors
+            />
+          </View>
           {scrim ? (
             <LinearGradient {...scrimGradient(scrimToken)} style={StyleSheet.absoluteFill} />
           ) : null}
