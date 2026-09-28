@@ -17,6 +17,8 @@ export interface QuantityStepperProps {
   unit?: string;
   /** What is being adjusted, spoken before the value. */
   accessibilityLabel?: string;
+  /** Parent tiles can expose the accessibility actions while keeping these controls visual. */
+  accessible?: boolean;
   decrementLabel: string;
   incrementLabel: string;
 }
@@ -35,6 +37,7 @@ export function QuantityStepper({
   label,
   unit,
   accessibilityLabel,
+  accessible = true,
   decrementLabel,
   incrementLabel,
 }: QuantityStepperProps) {
@@ -51,6 +54,8 @@ export function QuantityStepper({
       <Pressable
         onPress={onPress}
         disabled={disabled}
+        accessible={false}
+        importantForAccessibility="no"
         style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
       >
         {({ pressed }) => (
@@ -75,14 +80,18 @@ export function QuantityStepper({
 
   return (
     <View
-      accessible
-      accessibilityRole="adjustable"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityValue={{ text: unit ? `${display} ${unit}` : display }}
-      accessibilityActions={[
-        { name: 'increment', label: incrementLabel },
-        { name: 'decrement', label: decrementLabel },
-      ]}
+      accessible={accessible}
+      accessibilityRole={accessible ? 'adjustable' : undefined}
+      accessibilityLabel={accessible ? accessibilityLabel : undefined}
+      accessibilityValue={accessible ? { text: unit ? `${display} ${unit}` : display } : undefined}
+      accessibilityActions={
+        accessible
+          ? [
+              { name: 'increment', label: incrementLabel },
+              { name: 'decrement', label: decrementLabel },
+            ]
+          : undefined
+      }
       onAccessibilityAction={(event) => {
         if (event.nativeEvent.actionName === 'increment' && !atMax) increment();
         else if (event.nativeEvent.actionName === 'decrement' && !atMin) decrement();

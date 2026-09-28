@@ -14,6 +14,7 @@ import {
   View,
   type ImageStyle,
   type ImageSourcePropType,
+  type AccessibilityRole,
   type AccessibilityState,
   type StyleProp,
   type ViewStyle,
@@ -35,6 +36,8 @@ export interface TileProps {
   /** Read by `Bento`: relative width within a packed row. Defaults to 1. */
   weight?: number;
   tint?: TileTint;
+  /** Optional override for compact tiles nested inside a larger card. */
+  fill?: 'tint' | 'surfaceAlt';
   /** The photo under the scrim. Only drawn when `tint` is `'photo'`. */
   image?: ImageSourcePropType;
   /** Photo tiles keep their legibility scrim unless a caller deliberately opts out. */
@@ -42,6 +45,7 @@ export interface TileProps {
   onPress?: () => void;
   /** The whole sentence a screen reader hears, e.g. "32 items at home". */
   accessibilityLabel: string;
+  accessibilityRole?: AccessibilityRole;
   /** Selection or other state announced for the one tile element. */
   accessibilityState?: AccessibilityState;
   /** Screen-reader actions for visual controls nested inside the one tile element. */
@@ -77,10 +81,12 @@ const photoImageStyle: ImageStyle = {
  */
 export function Tile({
   tint = 'plain',
+  fill: fillMode = 'tint',
   image,
   scrim = true,
   onPress,
   accessibilityLabel,
+  accessibilityRole,
   accessibilityState,
   actions,
   icon,
@@ -96,7 +102,11 @@ export function Tile({
   const { colors, gradientHero, isDark, shadow, scrim: scrimToken, tintNamed } = useTheme();
   const inBento = useContext(InBento);
   const photo = tint === 'photo';
-  const fill = photo ? colors.surfaceInverse : tintNamed(tint).bg;
+  const fill = photo
+    ? colors.surfaceInverse
+    : fillMode === 'surfaceAlt'
+      ? colors.surfaceAlt
+      : tintNamed(tint).bg;
   const ink = photo ? { color: colors.textInverse } : undefined;
   const accessibilityActions = actions?.map(({ name, label }) => ({ name, label }));
   const onAccessibilityAction = actions
@@ -192,6 +202,7 @@ export function Tile({
     return (
       <View
         accessible
+        accessibilityRole={accessibilityRole}
         accessibilityLabel={accessibilityLabel}
         accessibilityState={accessibilityState}
         accessibilityActions={accessibilityActions}
@@ -205,7 +216,7 @@ export function Tile({
   }
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={accessibilityRole ?? 'button'}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={accessibilityState}
       accessibilityActions={accessibilityActions}

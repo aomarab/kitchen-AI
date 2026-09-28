@@ -98,9 +98,11 @@ describe('control touch targets', () => {
 
   it('the stepper is one adjustable element with increment and decrement actions', () => {
     const source = read('./QuantityStepper.tsx');
-    expect(source).toMatch(/accessibilityRole="adjustable"/);
+    expect(source).toContain("accessibilityRole={accessible ? 'adjustable' : undefined}");
     expect(source).toMatch(/name: 'increment'/);
     expect(source).toMatch(/name: 'decrement'/);
+    expect(source).toContain('accessible={false}');
+    expect(source).toContain('importantForAccessibility="no"');
   });
 
   it('segments extend their slop to the edge of the 44pt track', () => {

@@ -1,13 +1,13 @@
-import { type ReactNode } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, View, type ViewStyle } from 'react-native';
-import type { MealPlanEntry, MealSlot } from '@kitchen/contracts';
-import type { MessageKey } from '@kitchen/i18n';
+import { View } from 'react-native';
+import type { MealSlot } from '@kitchen/contracts';
+import { formatHijriDate, type MessageKey } from '@kitchen/i18n';
 import {
   Screen,
   Header,
   AppText,
   Badge,
+  Bento,
   Button,
   Card,
   Chip,
@@ -16,13 +16,13 @@ import {
   ErrorState,
   EmptyState,
   RecipeThumb,
+  Tile,
 } from '../../components';
-import type { BadgeTone } from '../../components/Badge';
 import { useFormat } from '../../hooks/useFormat';
 import { usePlan, useUpdatePlanEntry, useRegeneratePlanEntry } from '../../hooks/plans';
-import { formatMinutes, formatDateWithHijri, formatQty } from '../../lib/format';
+import { formatMinutes, formatDateL, formatQty } from '../../lib/format';
+import { planEntryStatus } from '../../lib/plan-entry-status';
 import { radius, spacing } from '../../theme';
-import { useTheme } from '../../theme/useTheme';
 
 const SLOT_KEY: Record<MealSlot, MessageKey> = {
   breakfast: 'plans.breakfast',
@@ -31,57 +31,7 @@ const SLOT_KEY: Record<MealSlot, MessageKey> = {
   snack: 'plans.snack',
 };
 
-function entryStatus(entry: MealPlanEntry, t: ReturnType<typeof useFormat>['t']) {
-  if (entry.state === 'cooked') return { tone: 'success' as BadgeTone, label: t('plans.cooked') };
-  if (entry.fullyCovered) return { tone: 'info' as BadgeTone, label: t('plans.fullyCovered') };
-  return { tone: 'warn' as BadgeTone, label: t('plans.regenerate') };
-}
-
-function MiniTile({
-  accessibilityLabel,
-  accessible = true,
-  onPress,
-  children,
-}: {
-  accessibilityLabel: string;
-  accessible?: boolean;
-  onPress?: () => void;
-  children: ReactNode;
-}) {
-  const { colors, isDark, shadow } = useTheme();
-  const base: ViewStyle = {
-    flex: 1,
-    minHeight: 112,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: isDark ? colors.border : colors.surfaceAlt,
-    backgroundColor: colors.surfaceAlt,
-    padding: spacing.md,
-    gap: spacing.sm,
-    justifyContent: 'space-between',
-    ...(isDark ? null : shadow.card),
-  };
-  if (!onPress) {
-    return (
-      <View accessible={accessible} accessibilityLabel={accessibilityLabel} style={base}>
-        {children}
-      </View>
-    );
-  }
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      style={({ pressed }) => [
-        base,
-        { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      {children}
-    </Pressable>
-  );
-}
+const MINI_TILE_HEIGHT = 112;
 
 export default function EntryDetail() {
   const { t, locale, prefs, showHijri } = useFormat();
@@ -120,17 +70,23 @@ export default function EntryDetail() {
 
   const recipe = entry.recipe;
   const slot = t(SLOT_KEY[entry.slot]);
-  const status = entryStatus(entry, t);
-  const dateLabel = formatDateWithHijri(locale, entry.date, showHijri, {
-    weekday: 'short',
+  const status = planEntryStatus(entry);
+  const statusLabel = t(status.labelKey);
+  const dateLabel = formatDateL(locale, entry.date, {
     month: 'short',
     day: 'numeric',
   });
+  const hijriLabel = showHijri ? formatHijriDate(`${entry.date}T00:00:00`) : null;
   const servings = formatQty(locale, entry.servings, prefs);
   const minutes = recipe.prepMinutes + recipe.cookMinutes;
   const minutesLabel = t('recipe.cookTime', {
     minutes: formatMinutes(locale, minutes, prefs),
   });
+  const servingsAccessibility = `${t('mobile.plans.servings')} ${servings}`;
+  const decrementServings = () =>
+    update.mutate({ entryId: entry.id, body: { servings: Math.max(1, entry.servings - 1) } });
+  const incrementServings = () =>
+    update.mutate({ entryId: entry.id, body: { servings: entry.servings + 1 } });
 
   return (
     <Screen scroll>
@@ -153,38 +109,67 @@ export default function EntryDetail() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <MiniTile accessibilityLabel={`${slot}, ${dateLabel}`}>
-            <AppText variant="label" muted>
-              {slot}
-            </AppText>
-            <Chip label={dateLabel} variant="tag" />
-          </MiniTile>
-          <MiniTile
-            accessibilityLabel={`${t('mobile.plans.servings')} ${servings}`}
-            accessible={false}
+        <Bento>
+          <Tile
+            span={2}
+            fill="surfaceAlt"
+            height={MINI_TILE_HEIGHT}
+            accessibilityRole="adjustable"
+            accessibilityLabel={servingsAccessibility}
+            actions={[
+              { name: 'increment', label: t('mobile.common.increase'), onPress: incrementServings },
+              { name: 'decrement', label: t('mobile.common.decrease'), onPress: decrementServings },
+            ]}
           >
-            <AppText variant="label" muted>
-              {t('mobile.plans.servings')}
-            </AppText>
-            <QuantityStepper
-              value={entry.servings}
-              min={1}
-              onChange={(nextServings) =>
-                update.mutate({ entryId: entry.id, body: { servings: nextServings } })
-              }
-              accessibilityLabel={`${t('mobile.plans.servings')} ${servings}`}
-              decrementLabel={t('mobile.common.decrease')}
-              incrementLabel={t('mobile.common.increase')}
-            />
-          </MiniTile>
-          <MiniTile accessibilityLabel={status.label}>
-            <AppText variant="label" muted>
-              {status.label}
-            </AppText>
-            <Badge tone={status.tone} label={status.label} />
-          </MiniTile>
-        </View>
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="label" muted>
+                {t('mobile.plans.servings')}
+              </AppText>
+              <QuantityStepper
+                value={entry.servings}
+                min={1}
+                onChange={(nextServings) =>
+                  update.mutate({ entryId: entry.id, body: { servings: nextServings } })
+                }
+                label={servings}
+                accessibilityLabel={servingsAccessibility}
+                accessible={false}
+                decrementLabel={t('mobile.common.decrease')}
+                incrementLabel={t('mobile.common.increase')}
+              />
+            </View>
+          </Tile>
+          <Tile
+            fill="surfaceAlt"
+            height={MINI_TILE_HEIGHT}
+            weight={1.4}
+            accessibilityLabel={`${slot}, ${dateLabel}${hijriLabel ? `, ${hijriLabel}` : ''}`}
+          >
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="label" muted>
+                {slot}
+              </AppText>
+              <Chip label={dateLabel} variant="tag" />
+              {hijriLabel ? (
+                <AppText variant="caption" muted>
+                  {hijriLabel}
+                </AppText>
+              ) : null}
+            </View>
+          </Tile>
+          <Tile
+            fill="surfaceAlt"
+            height={MINI_TILE_HEIGHT}
+            accessibilityLabel={`${t('mobile.plans.status')} ${statusLabel}`}
+          >
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="label" muted>
+                {t('mobile.plans.status')}
+              </AppText>
+              <Badge tone={status.tone} label={statusLabel} />
+            </View>
+          </Tile>
+        </Bento>
       </Card>
 
       <Button

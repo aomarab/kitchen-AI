@@ -275,6 +275,7 @@ export const mobileEn = {
       changeMeal: 'Change meal',
       keepMeal: 'Keep this meal',
       regenerating: 'Finding another meal…',
+      status: 'Status',
     },
     shop: {
       share: 'Share list',

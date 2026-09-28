@@ -349,6 +349,7 @@ export const mobileAr: MobileMessages = {
       changeMeal: 'تغيير الوجبة',
       keepMeal: 'الإبقاء على هذه الوجبة',
       regenerating: 'جارٍ اقتراح وجبة أخرى…',
+      status: 'الحالة',
     },
     shop: {
       share: 'مشاركة القائمة',

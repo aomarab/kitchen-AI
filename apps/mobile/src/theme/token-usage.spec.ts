@@ -82,8 +82,8 @@ describe('mobile source sweep', () => {
     },
     'recipe/[id]/index.tsx': { path: 'app/recipe/[id]/index.tsx', pattern: /height:\s*(\d+)/ },
     'recipe/[id]/cook.tsx': { path: 'app/recipe/[id]/cook.tsx', pattern: /height:\s*(\d+)/ },
-    'item/[id].tsx': { path: 'app/item/[id].tsx', pattern: /minHeight:\s*(\d+)/ },
-    'entry/[id].tsx': { path: 'app/entry/[id].tsx', pattern: /minHeight:\s*(\d+)/ },
+    'item/[id].tsx': { path: 'app/item/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
+    'entry/[id].tsx': { path: 'app/entry/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {

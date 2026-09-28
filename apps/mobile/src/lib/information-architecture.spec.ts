@@ -259,6 +259,34 @@ describe('information architecture (spec §4)', () => {
       item,
       'The variable-length expiry badge belongs in the body, not Header trailing',
     ).not.toMatch(/<Header[\s\S]*?trailing=/);
+    expect(item, 'Item mini tiles must use the shared Bento primitive').toContain('<Bento>');
+    expect(item, 'Item mini tiles must use shared Tile, not a screen-local MiniTile').not.toContain(
+      'MiniTile',
+    );
+    expect(item, 'History loading must use the shared compact LoadingState').toContain(
+      '<LoadingState compact',
+    );
+    expect(item, 'History errors must use the shared compact ErrorState').toMatch(
+      /<ErrorState[\s\S]*?\bcompact\b/,
+    );
+  });
+
+  it('keeps Entry detail on shared Bento tiles and status semantics (spec §9.7)', () => {
+    const entry = read('app', 'entry', '[id].tsx');
+    const board = read('features', 'plans', 'PlanBoard.tsx');
+
+    expect(entry, 'Entry mini tiles must use the shared Bento primitive').toContain('<Bento>');
+    expect(
+      entry,
+      'Entry mini tiles must use shared Tile, not a screen-local MiniTile',
+    ).not.toContain('MiniTile');
+    expect(entry, 'Entry status title must be a stable label, not badge copy').toContain(
+      "t('mobile.plans.status')",
+    );
+    expect(entry, 'Entry status must come from the shared helper').toContain('planEntryStatus');
+    expect(board, 'Plan board status must come from the shared helper').toContain(
+      'planEntryStatus',
+    );
   });
 
   it('adds the G12 item history labels in both languages', () => {
@@ -270,6 +298,7 @@ describe('information architecture (spec §4)', () => {
       'mobile.item.reason.expired',
       'mobile.item.reason.corrected',
       'mobile.item.reason.purchased',
+      'mobile.plans.status',
     ]) {
       expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
       expect(translate('ar', key as never)).not.toBe(translate('en', key as never));

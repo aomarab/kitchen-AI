@@ -1,5 +1,5 @@
-import { type ReactNode, useMemo, useState } from 'react';
-import { Pressable, View, type ViewStyle } from 'react-native';
+import { useMemo, useState } from 'react';
+import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { InventoryEventReason, Unit } from '@kitchen/contracts';
 import type { MessageKey } from '@kitchen/i18n';
@@ -7,6 +7,7 @@ import {
   Screen,
   Header,
   Card,
+  Bento,
   AppText,
   Badge,
   Button,
@@ -16,6 +17,7 @@ import {
   FoodIcon,
   QuantityStepper,
   Sheet,
+  Tile,
   LoadingState,
   ErrorState,
   EmptyState,
@@ -50,6 +52,7 @@ import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 const COMMON_UNITS: Unit[] = ['piece', 'g', 'kg', 'ml', 'l', 'bunch', 'can', 'packet'];
+const MINI_TILE_HEIGHT = 112;
 
 const REASON_KEY: Record<InventoryEventReason, MessageKey> = {
   added: 'mobile.item.reason.added',
@@ -90,52 +93,6 @@ function FoodIconCircle({ item }: { item: Parameters<typeof foodIconItem>[0] }) 
     >
       <FoodIcon item={foodIconItem(item)} size={52} />
     </View>
-  );
-}
-
-function MiniTile({
-  accessibilityLabel,
-  accessible = true,
-  onPress,
-  children,
-}: {
-  accessibilityLabel: string;
-  accessible?: boolean;
-  onPress?: () => void;
-  children: ReactNode;
-}) {
-  const { colors, isDark, shadow } = useTheme();
-  const base: ViewStyle = {
-    flex: 1,
-    minHeight: 112,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: isDark ? colors.border : colors.surfaceAlt,
-    backgroundColor: colors.surfaceAlt,
-    padding: spacing.md,
-    gap: spacing.sm,
-    justifyContent: 'space-between',
-    ...(isDark ? null : shadow.card),
-  };
-  if (!onPress) {
-    return (
-      <View accessible={accessible} accessibilityLabel={accessibilityLabel} style={base}>
-        {children}
-      </View>
-    );
-  }
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      style={({ pressed }) => [
-        base,
-        { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      {children}
-    </Pressable>
   );
 }
 
@@ -225,6 +182,8 @@ export default function ItemDetail() {
     if (delta === 0) return;
     adjust.mutate({ itemId: item.id, delta, unit: item.unit, reason: 'corrected' });
   };
+  const decrementQuantity = () => onAdjust(Math.max(0, item.quantity - 1));
+  const incrementQuantity = () => onAdjust(item.quantity + 1);
 
   const save = () => {
     if (!expiryValid) return;
@@ -276,54 +235,73 @@ export default function ItemDetail() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <MiniTile accessibilityLabel={quantityAccessibility} accessible={false}>
-            <AppText variant="label" muted>
-              {t('inventory.quantity')}
-            </AppText>
-            <QuantityStepper
-              value={item.quantity}
-              onChange={onAdjust}
-              unit={unitLabel(t, item.unit)}
-              accessibilityLabel={quantityAccessibility}
-              decrementLabel={t('mobile.common.decrease')}
-              incrementLabel={t('mobile.common.increase')}
-            />
-          </MiniTile>
-          <MiniTile accessibilityLabel={locationAccessibility} onPress={() => setDetailsOpen(true)}>
-            <AppText variant="label" muted>
-              {t('inventory.location')}
-            </AppText>
-            <Chip label={locationText} variant="tag" />
-          </MiniTile>
-          <MiniTile accessibilityLabel={expiryAccessibility} onPress={() => setDetailsOpen(true)}>
-            <AppText variant="label" muted>
-              {t('inventory.expiryDate')}
-            </AppText>
-            <Badge tone={EXPIRY_TONE[expiryStatus(expiresAt || null)]} label={expiryText} />
-          </MiniTile>
-        </View>
+        <Bento>
+          <Tile
+            span={2}
+            fill="surfaceAlt"
+            height={MINI_TILE_HEIGHT}
+            accessibilityRole="adjustable"
+            accessibilityLabel={quantityAccessibility}
+            actions={[
+              { name: 'increment', label: t('mobile.common.increase'), onPress: incrementQuantity },
+              { name: 'decrement', label: t('mobile.common.decrease'), onPress: decrementQuantity },
+            ]}
+          >
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="label" muted>
+                {t('inventory.quantity')}
+              </AppText>
+              <QuantityStepper
+                value={item.quantity}
+                onChange={onAdjust}
+                label={quantityText}
+                accessibilityLabel={quantityAccessibility}
+                accessible={false}
+                decrementLabel={t('mobile.common.decrease')}
+                incrementLabel={t('mobile.common.increase')}
+              />
+            </View>
+          </Tile>
+          <Tile
+            fill="surfaceAlt"
+            height={MINI_TILE_HEIGHT}
+            accessibilityLabel={locationAccessibility}
+            onPress={() => setDetailsOpen(true)}
+          >
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="label" muted>
+                {t('inventory.location')}
+              </AppText>
+              <Chip label={locationText} variant="tag" />
+            </View>
+          </Tile>
+          <Tile
+            fill="surfaceAlt"
+            height={MINI_TILE_HEIGHT}
+            weight={1.4}
+            accessibilityLabel={expiryAccessibility}
+            onPress={() => setDetailsOpen(true)}
+          >
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="label" muted>
+                {t('inventory.expiryDate')}
+              </AppText>
+              <Badge tone={EXPIRY_TONE[expiryStatus(expiresAt || null)]} label={expiryText} />
+            </View>
+          </Tile>
+        </Bento>
       </Card>
 
       <View style={{ gap: spacing.sm }}>
         <SectionLabel>{t('mobile.item.history')}</SectionLabel>
         {eventsQuery.isLoading ? (
-          <Card style={{ padding: spacing.md }}>
-            <AppText muted>{t('common.loading')}</AppText>
-          </Card>
+          <LoadingState compact />
         ) : eventsQuery.isError ? (
-          <Card style={{ padding: spacing.md, gap: spacing.sm }}>
-            <AppText variant="bodyStrong">{t('mobile.common.error')}</AppText>
-            <AppText variant="caption" muted>
-              {t(errorMessageKey(eventsQuery.error))}
-            </AppText>
-            <Button
-              title={t('common.retry')}
-              variant="secondary"
-              fullWidth={false}
-              onPress={() => void eventsQuery.refetch()}
-            />
-          </Card>
+          <ErrorState
+            compact
+            error={eventsQuery.error}
+            onRetry={() => void eventsQuery.refetch()}
+          />
         ) : history.length === 0 ? (
           <Card style={{ padding: spacing.md }}>
             <AppText muted>{t('mobile.item.historyEmpty')}</AppText>

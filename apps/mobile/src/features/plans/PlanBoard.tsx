@@ -9,6 +9,7 @@ import { RecipeThumb } from '../../components/RecipeThumb';
 import { useFormat } from '../../hooks/useFormat';
 import { todayISODate } from '../../lib/expiry';
 import { formatDateL, formatMinutes } from '../../lib/format';
+import { planEntryStatus } from '../../lib/plan-entry-status';
 import { planWeekDays } from '../../lib/plans';
 import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
@@ -66,21 +67,16 @@ function monthMatrix(anchor: Date): Array<Array<Date | null>> {
   return weeks;
 }
 
-function entryStatus(entry: MealPlanEntry, t: ReturnType<typeof useFormat>['t']) {
-  if (entry.state === 'cooked') return { tone: 'success' as const, label: t('plans.cooked') };
-  if (entry.fullyCovered) return { tone: 'info' as const, label: t('plans.fullyCovered') };
-  return { tone: 'warn' as const, label: t('plans.regenerate') };
-}
-
 function EntryRow({ entry, onPress }: { entry: MealPlanEntry; onPress: () => void }) {
   const { t, locale, prefs } = useFormat();
   const { colors } = useTheme();
   const slot = t(SLOT_KEY[entry.slot]);
   const minutes = entry.recipe.prepMinutes + entry.recipe.cookMinutes;
   const minutesLabel = minuteMessage({ t, locale, prefs, minutes });
-  const status = entryStatus(entry, t);
+  const status = planEntryStatus(entry);
+  const statusLabel = t(status.labelKey);
   const caption = `${slot} · ${minutesLabel}`;
-  const accessibilityLabel = `${slot}, ${entry.recipe.title}, ${minutesLabel}, ${status.label}`;
+  const accessibilityLabel = `${slot}, ${entry.recipe.title}, ${minutesLabel}, ${statusLabel}`;
 
   return (
     <Pressable
@@ -114,7 +110,7 @@ function EntryRow({ entry, onPress }: { entry: MealPlanEntry; onPress: () => voi
           </AppText>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-          <Badge tone={status.tone} label={status.label} />
+          <Badge tone={status.tone} label={statusLabel} />
           <DirectionalIcon name="chevron" size={20} color={colors.textMuted} />
         </View>
       </View>

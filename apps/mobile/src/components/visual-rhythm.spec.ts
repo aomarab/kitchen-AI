@@ -111,9 +111,12 @@ describe('G1 primitive extensions', () => {
   it('lets Tile replace the icon with a leading slot, fall back to ember and expose actions', () => {
     const source = read('./Tile.tsx');
     expect(source).toContain('leading?: ReactNode');
+    expect(source).toContain("fill?: 'tint' | 'surfaceAlt'");
+    expect(source).toContain('accessibilityRole?: AccessibilityRole');
     expect(source).toContain('accessibilityState?: AccessibilityState');
     expect(source).toContain('accessibilityActions');
     expect(source).toContain('onAccessibilityAction');
+    expect(source).toContain("fillMode === 'surfaceAlt'");
     expect(source).toContain('photo && !image');
     expect(source).toContain('gradientHero');
   });
