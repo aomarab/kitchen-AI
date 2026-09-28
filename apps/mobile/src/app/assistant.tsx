@@ -11,7 +11,7 @@ import { LiveAssistantScreen } from '../features/assistant/LiveAssistantScreen';
 export default function AssistantRoute() {
   return (
     <Screen padded={false} edges={[]}>
-      <LiveAssistantScreen />
+      <LiveAssistantScreen initialMode="text" />
     </Screen>
   );
 }

@@ -16,7 +16,7 @@ import { api } from '../../lib/api';
 import { OpenAiRealtimeAssistantClient } from '../../lib/assistant/openai-realtime';
 import { detectionsToSession } from '../../lib/assistant/detections';
 import { orbStateFor } from '../../lib/assistant/orb-state';
-import { groupTurns } from '../../lib/assistant/transcript';
+import { groupTurns, showStarters } from '../../lib/assistant/transcript';
 import type {
   AssistantStatus,
   DetectedItem,
@@ -241,6 +241,7 @@ export function LiveAssistantScreen({
   const lastUser = [...turns].reverse().find((turn) => turn.role === 'user');
   const orbState = orbStateFor({ status, mode, speaking });
   const groupedTurns = groupTurns(turns);
+  const startersVisible = showStarters(turns, status);
   const starterLabels = useMemo(
     () => [
       t('mobile.assistant.starter.tonight'),
@@ -526,18 +527,22 @@ export function LiveAssistantScreen({
                 keyboardShouldPersistTaps="handled"
                 onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
               >
-                {turns.length === 0 && status !== 'connecting' ? (
+                {groupedTurns.map((turn) => (
+                  <Bubble key={turn.id} turn={turn} />
+                ))}
+                {startersVisible ? (
                   <View
-                    style={{ gap: spacing.sm, alignItems: 'flex-start', marginTop: spacing.xl }}
+                    style={{
+                      gap: spacing.sm,
+                      alignItems: 'flex-start',
+                      marginTop: groupedTurns.length > 0 ? spacing.sm : spacing.xl,
+                    }}
                   >
                     {starterLabels.map((label) => (
                       <Chip key={label} label={label} onPress={() => sendMessage(label)} />
                     ))}
                   </View>
                 ) : null}
-                {groupedTurns.map((turn) => (
-                  <Bubble key={turn.id} turn={turn} />
-                ))}
                 {speaking ? (
                   <SpeakingBubble
                     label={t('mobile.assistant.speaking')}

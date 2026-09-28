@@ -85,6 +85,7 @@ export function Composer({
       />
       <RoundButton
         icon={actionIcon}
+        directional={actionIcon === 'send'}
         size={44}
         tone="primary"
         accessibilityLabel={actionLabel}

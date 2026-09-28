@@ -13,6 +13,12 @@ describe('assistant screen guards', () => {
     expect(source).toContain('source="assistant"');
   });
 
+  it('opens the standalone assistant route in text mode', () => {
+    const source = read('app', 'assistant.tsx');
+
+    expect(source).toContain('initialMode="text"');
+  });
+
   it('renders the demo badge from an isMock value outside mode branches', () => {
     const source = read('features', 'assistant', 'LiveAssistantScreen.tsx');
     const badge = source.indexOf('const demoBadge = isMock ?');

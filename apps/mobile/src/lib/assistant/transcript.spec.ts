@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupTurns } from './transcript';
+import { groupTurns, showStarters } from './transcript';
 import type { TranscriptTurn } from './realtime-port';
 
 describe('groupTurns', () => {
@@ -19,6 +19,34 @@ describe('groupTurns', () => {
       ['u2', false],
       ['a3', true],
     ]);
+  });
+
+  describe('showStarters', () => {
+    it('hides while an empty transcript is connecting', () => {
+      expect(showStarters([], 'connecting')).toBe(false);
+    });
+
+    it('shows after an assistant-only greeting while live', () => {
+      expect(showStarters([{ id: 'a1', role: 'assistant', text: 'Hi, I can help.' }], 'live')).toBe(
+        true,
+      );
+    });
+
+    it('hides after any user turn exists', () => {
+      expect(
+        showStarters(
+          [
+            { id: 'a1', role: 'assistant', text: 'Hi, I can help.' },
+            { id: 'u1', role: 'user', text: 'What can I cook?' },
+          ],
+          'live',
+        ),
+      ).toBe(false);
+    });
+
+    it('stays visible after an ended assistant-only session', () => {
+      expect(showStarters([{ id: 'a1', role: 'assistant', text: 'Hi.' }], 'ended')).toBe(true);
+    });
   });
 
   it('does not mutate the transcript objects passed in', () => {
