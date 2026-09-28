@@ -366,6 +366,15 @@ export const mobileAr: MobileMessages = {
       namePlaceholder: 'ما تسمّيه في بيتكم',
       nameHint: 'هذا الاسم يظهر لأفراد منزلك فقط.',
       resetName: 'استخدم اسم الفهرس',
+      history: 'السجل',
+      historyEmpty: 'لا توجد تغييرات بعد.',
+      reason: {
+        added: 'أُضيف',
+        consumed: 'استُخدم',
+        expired: 'انتهت صلاحيته',
+        corrected: 'تم التصحيح',
+        purchased: 'تم الشراء',
+      },
     },
     productReview: {
       title: 'قيّم هذا المنتج',

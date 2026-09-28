@@ -241,6 +241,41 @@ describe('information architecture (spec §4)', () => {
     );
   });
 
+  it('keeps Item detail on the append-only event-ledger contract (spec §9.7)', () => {
+    const item = read('app', 'item', '[id].tsx');
+
+    expect(item, 'Item detail must read household event history').toContain('useInventoryEvents');
+    expect(item, 'Item detail must filter history through the pure helper').toContain(
+      'itemHistory(eventsQuery.data ?? [], item.id)',
+    );
+    expect(item, 'Quantity changes must keep using the append-only event hook').toContain(
+      'useAdjustQuantity',
+    );
+    expect(
+      item,
+      'The quantity stepper must still write corrected deltas to useAdjustQuantity, not updateInventoryItem',
+    ).toContain("adjust.mutate({ itemId: item.id, delta, unit: item.unit, reason: 'corrected' })");
+    expect(
+      item,
+      'The variable-length expiry badge belongs in the body, not Header trailing',
+    ).not.toMatch(/<Header[\s\S]*?trailing=/);
+  });
+
+  it('adds the G12 item history labels in both languages', () => {
+    for (const key of [
+      'mobile.item.history',
+      'mobile.item.historyEmpty',
+      'mobile.item.reason.added',
+      'mobile.item.reason.consumed',
+      'mobile.item.reason.expired',
+      'mobile.item.reason.corrected',
+      'mobile.item.reason.purchased',
+    ]) {
+      expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
+      expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
+    }
+  });
+
   it('keeps sticky footer and toast geometry above the floating tab bar', () => {
     const screen = read('components', 'Screen.tsx');
     const toast = read('components', 'Toast.tsx');

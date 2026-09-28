@@ -292,6 +292,15 @@ export const mobileEn = {
       namePlaceholder: 'What you call it',
       nameHint: 'Only your household sees this name.',
       resetName: 'Use catalog name',
+      history: 'History',
+      historyEmpty: 'No changes yet.',
+      reason: {
+        added: 'Added',
+        consumed: 'Used',
+        expired: 'Expired',
+        corrected: 'Corrected',
+        purchased: 'Purchased',
+      },
     },
     productReview: {
       title: 'Rate this product',

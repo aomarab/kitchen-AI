@@ -1,6 +1,7 @@
+import { type ReactNode } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { View } from 'react-native';
-import type { MealSlot } from '@kitchen/contracts';
+import { Pressable, View, type ViewStyle } from 'react-native';
+import type { MealPlanEntry, MealSlot } from '@kitchen/contracts';
 import type { MessageKey } from '@kitchen/i18n';
 import {
   Screen,
@@ -9,6 +10,7 @@ import {
   Badge,
   Button,
   Card,
+  Chip,
   QuantityStepper,
   LoadingState,
   ErrorState,
@@ -18,8 +20,9 @@ import {
 import type { BadgeTone } from '../../components/Badge';
 import { useFormat } from '../../hooks/useFormat';
 import { usePlan, useUpdatePlanEntry, useRegeneratePlanEntry } from '../../hooks/plans';
-import { formatMinutes, formatDateWithHijri } from '../../lib/format';
+import { formatMinutes, formatDateWithHijri, formatQty } from '../../lib/format';
 import { radius, spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 const SLOT_KEY: Record<MealSlot, MessageKey> = {
   breakfast: 'plans.breakfast',
@@ -28,11 +31,57 @@ const SLOT_KEY: Record<MealSlot, MessageKey> = {
   snack: 'plans.snack',
 };
 
-const STATE_TONE: Record<string, BadgeTone> = {
-  planned: 'info',
-  cooked: 'success',
-  skipped: 'neutral',
-};
+function entryStatus(entry: MealPlanEntry, t: ReturnType<typeof useFormat>['t']) {
+  if (entry.state === 'cooked') return { tone: 'success' as BadgeTone, label: t('plans.cooked') };
+  if (entry.fullyCovered) return { tone: 'info' as BadgeTone, label: t('plans.fullyCovered') };
+  return { tone: 'warn' as BadgeTone, label: t('plans.regenerate') };
+}
+
+function MiniTile({
+  accessibilityLabel,
+  accessible = true,
+  onPress,
+  children,
+}: {
+  accessibilityLabel: string;
+  accessible?: boolean;
+  onPress?: () => void;
+  children: ReactNode;
+}) {
+  const { colors, isDark, shadow } = useTheme();
+  const base: ViewStyle = {
+    flex: 1,
+    minHeight: 112,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: isDark ? colors.border : colors.surfaceAlt,
+    backgroundColor: colors.surfaceAlt,
+    padding: spacing.md,
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+    ...(isDark ? null : shadow.card),
+  };
+  if (!onPress) {
+    return (
+      <View accessible={accessible} accessibilityLabel={accessibilityLabel} style={base}>
+        {children}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [
+        base,
+        { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+      ]}
+    >
+      {children}
+    </Pressable>
+  );
+}
 
 export default function EntryDetail() {
   const { t, locale, prefs, showHijri } = useFormat();
@@ -70,48 +119,73 @@ export default function EntryDetail() {
   }
 
   const recipe = entry.recipe;
+  const slot = t(SLOT_KEY[entry.slot]);
+  const status = entryStatus(entry, t);
+  const dateLabel = formatDateWithHijri(locale, entry.date, showHijri, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  const servings = formatQty(locale, entry.servings, prefs);
+  const minutes = recipe.prepMinutes + recipe.cookMinutes;
+  const minutesLabel = t('recipe.cookTime', {
+    minutes: formatMinutes(locale, minutes, prefs),
+  });
 
   return (
     <Screen scroll>
       <Header title={t('mobile.plans.entryTitle')} onBack={() => router.back()} />
 
-      <Card style={{ gap: spacing.sm }}>
-        <AppText variant="heading">{recipe.title}</AppText>
-        <RecipeThumb
-          heroImageUrl={recipe.heroImageUrl}
-          dishKey={`${recipe.locale}:${recipe.title}`}
-          title={recipe.title}
-          accessibilityLabel={t('mobile.recipe.imageLabel', { title: recipe.title })}
-          style={{ width: '100%', height: 160, borderRadius: radius.md }}
-        />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <Badge label={t(SLOT_KEY[entry.slot])} />
-          <Badge
-            tone={STATE_TONE[entry.state] ?? 'neutral'}
-            label={t(`plans.${entry.state}` as MessageKey)}
+      <Card style={{ gap: spacing.lg, borderRadius: radius.xl }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <RecipeThumb
+            heroImageUrl={recipe.heroImageUrl}
+            dishKey={`${recipe.locale}:${recipe.title}`}
+            title={recipe.title}
+            accessibilityLabel={t('mobile.recipe.imageLabel', { title: recipe.title })}
+            style={{ width: 64, height: 64, borderRadius: radius.md }}
           />
-          {entry.fullyCovered ? <Badge tone="success" label={t('plans.fullyCovered')} /> : null}
+          <View style={{ flex: 1 }}>
+            <AppText variant="display">{recipe.title}</AppText>
+            <AppText variant="caption" muted>
+              {minutesLabel}
+            </AppText>
+          </View>
         </View>
-        <AppText variant="caption" muted>
-          {formatDateWithHijri(locale, entry.date, showHijri)}
-          {'  ·  '}
-          {t('recipe.cookTime', { minutes: formatMinutes(locale, recipe.cookMinutes, prefs) })}
-        </AppText>
-      </Card>
 
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('recipe.servings', { count: entry.servings })}
-        </AppText>
-        <QuantityStepper
-          value={entry.servings}
-          min={1}
-          onChange={(servings) => update.mutate({ entryId: entry.id, body: { servings } })}
-          accessibilityLabel={t('mobile.plans.servings')}
-          decrementLabel={t('mobile.common.decrease')}
-          incrementLabel={t('mobile.common.increase')}
-        />
-      </View>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <MiniTile accessibilityLabel={`${slot}, ${dateLabel}`}>
+            <AppText variant="label" muted>
+              {slot}
+            </AppText>
+            <Chip label={dateLabel} variant="tag" />
+          </MiniTile>
+          <MiniTile
+            accessibilityLabel={`${t('mobile.plans.servings')} ${servings}`}
+            accessible={false}
+          >
+            <AppText variant="label" muted>
+              {t('mobile.plans.servings')}
+            </AppText>
+            <QuantityStepper
+              value={entry.servings}
+              min={1}
+              onChange={(nextServings) =>
+                update.mutate({ entryId: entry.id, body: { servings: nextServings } })
+              }
+              accessibilityLabel={`${t('mobile.plans.servings')} ${servings}`}
+              decrementLabel={t('mobile.common.decrease')}
+              incrementLabel={t('mobile.common.increase')}
+            />
+          </MiniTile>
+          <MiniTile accessibilityLabel={status.label}>
+            <AppText variant="label" muted>
+              {status.label}
+            </AppText>
+            <Badge tone={status.tone} label={status.label} />
+          </MiniTile>
+        </View>
+      </Card>
 
       <Button
         title={t('mobile.home.viewRecipe')}
@@ -143,7 +217,7 @@ export default function EntryDetail() {
         />
         <Button
           title={t('plans.skipped')}
-          variant="ghost"
+          variant="secondary"
           onPress={() => update.mutate({ entryId: entry.id, body: { state: 'skipped' } })}
           style={{ flex: 1 }}
         />
