@@ -295,6 +295,9 @@ describe('information architecture (spec §4)', () => {
     expect(recipe).toContain('scrollY.interpolate');
     expect(recipe).toContain('inputRange: [topBarFade.start, topBarFade.end]');
     expect(recipe).toContain('Animated.event');
+    expect(recipe).toMatch(
+      /const handleAnimatedRecipeScroll = useMemo\(\s*\(\) =>\s*Animated\.event\(/,
+    );
     expect(recipe).toContain('useNativeDriver: true');
     expect(recipe).toContain('listener: handleRecipeScroll');
     expect(recipe).toContain('pointerEvents="none"');
