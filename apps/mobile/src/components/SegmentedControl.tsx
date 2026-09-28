@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 import { AppText } from './AppText';
 import { segmentTone, segmentTrack, type SegmentTone } from './control-tones';
+import { usePressFeedback } from './press-feedback';
 import { useReduceMotion } from '../hooks/motion';
 import { radius, spacing, type PaletteColors } from '../theme';
 import { useTheme } from '../theme/useTheme';
@@ -31,7 +32,7 @@ export function SegmentedControl<T extends string>({
         flexDirection: 'row',
         minHeight: 44,
         borderWidth: 1,
-        borderColor: tone === 'media' ? colors.borderInverse : colors.control,
+        borderColor: tone === 'media' ? colors.borderInverse : colors.border,
         borderRadius: radius.none,
         backgroundColor: segmentTrack(colors, tone),
         overflow: 'hidden',
@@ -74,6 +75,7 @@ function SegmentedOptionButton({
 }: SegmentedOptionButtonProps) {
   const reduceMotion = useReduceMotion();
   const selectedOpacity = useRef(new Animated.Value(selected ? 1 : 0)).current;
+  const pressFeedback = usePressFeedback();
   const selectedTone = segmentTone(colors, true, isDark, tone);
   const labelTone = segmentTone(colors, selected, isDark, tone);
 
@@ -90,14 +92,14 @@ function SegmentedOptionButton({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={({ pressed }) => ({
+      {...pressFeedback.pressHandlers}
+      style={{
         flex: 1,
         minHeight: 42,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: spacing.sm,
-        opacity: pressed && !selected ? 0.85 : 1,
-      })}
+      }}
     >
       <Animated.View
         pointerEvents="none"
@@ -111,9 +113,11 @@ function SegmentedOptionButton({
           opacity: selectedOpacity,
         }}
       />
-      <AppText variant="buttonSmall" center numberOfLines={2} style={{ color: labelTone.label }}>
-        {label}
-      </AppText>
+      <Animated.View style={!selected ? pressFeedback.animatedStyle : undefined}>
+        <AppText variant="buttonSmall" center numberOfLines={2} style={{ color: labelTone.label }}>
+          {label}
+        </AppText>
+      </Animated.View>
     </Pressable>
   );
 }

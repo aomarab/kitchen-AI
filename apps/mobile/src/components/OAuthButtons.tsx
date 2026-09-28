@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, View } from 'react-native';
 import type { OAuthProvider } from '@kitchen/contracts';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
+import { usePressFeedback } from './press-feedback';
 import { useFormat } from '../hooks/useFormat';
 import { useOAuthSignIn } from '../hooks/auth';
 import { errorMessageKey } from '../lib/errors';
@@ -94,6 +95,7 @@ function SocialButton({ provider, title, loading, disabled, onPress }: SocialBut
   const fill = apple ? colors.inverse : colors.bg;
   const label = apple ? colors.onInverse : colors.text;
   const border = apple ? colors.inverse : colors.border;
+  const pressFeedback = usePressFeedback();
 
   return (
     <Pressable
@@ -102,29 +104,38 @@ function SocialButton({ provider, title, loading, disabled, onPress }: SocialBut
       accessibilityState={{ disabled, busy: loading }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({
+      {...pressFeedback.pressHandlers}
+      style={{
         minHeight: 44,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        borderRadius: radius.none,
-        borderWidth: 1,
-        borderColor: border,
-        backgroundColor: fill,
-        opacity: disabled && !loading ? 0.5 : pressed ? 0.85 : 1,
-      })}
+      }}
     >
-      {loading ? (
-        <ActivityIndicator color={label} />
-      ) : (
-        <>
-          <Icon name={provider} size={18} color={label} />
-          <AppText variant="buttonSmall" style={{ color: label }}>
-            {title}
-          </AppText>
-        </>
-      )}
+      <Animated.View
+        style={[
+          {
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            borderRadius: radius.none,
+            borderWidth: 1,
+            borderColor: border,
+            backgroundColor: fill,
+          },
+          disabled && !loading ? { opacity: 0.5 } : pressFeedback.animatedStyle,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={label} />
+        ) : (
+          <>
+            <Icon name={provider} size={18} color={label} />
+            <AppText variant="buttonSmall" style={{ color: label }}>
+              {title}
+            </AppText>
+          </>
+        )}
+      </Animated.View>
     </Pressable>
   );
 }

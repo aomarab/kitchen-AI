@@ -1,7 +1,7 @@
 import { forwardRef, useState } from 'react';
 import { TextInput, View, type TextInputProps } from 'react-native';
 import { AppText } from './AppText';
-import { fieldBorder } from './field-tones';
+import { fieldBorder, textareaCountLabel } from './field-tones';
 import { maxFontScaleFor, radius, typography } from '../theme';
 import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
@@ -15,7 +15,21 @@ export interface FieldProps extends TextInputProps {
 
 /** Labelled text input with error/hint slots. Aligns text to the writing edge. */
 export const Field = forwardRef<TextInput, FieldProps>(function Field(
-  { label, error, hint, style, onFocus, onBlur, maxLength, multiline, editable, value, ...rest },
+  {
+    label,
+    error,
+    hint,
+    style,
+    onFocus,
+    onBlur,
+    onChangeText,
+    maxLength,
+    multiline,
+    editable,
+    value,
+    defaultValue,
+    ...rest
+  },
   ref,
 ) {
   const { colors } = useTheme();
@@ -24,13 +38,12 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
   const bodyType = typography(locale).body;
   const fontFamily = resolveFontFamily(locale, fontsLoaded, bodyType.fontWeight, 'body');
   const [focused, setFocused] = useState(false);
+  const [draftText, setDraftText] = useState(() => String(defaultValue ?? ''));
   const border = fieldBorder({ focused, error });
   const disabled = editable === false;
   const horizontalPadding = 14 - (border.width - 1);
-  const countLabel =
-    multiline && typeof maxLength === 'number'
-      ? `${String(value ?? rest.defaultValue ?? '').length}/${maxLength}`
-      : null;
+  const countText = value ?? draftText;
+  const countLabel = textareaCountLabel({ multiline, maxLength, text: countText });
 
   return (
     <View style={{ gap: 6 }}>
@@ -54,8 +67,13 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           placeholderTextColor={colors.textMuted}
           editable={editable}
           value={value}
+          defaultValue={defaultValue}
           maxLength={maxLength}
           multiline={multiline}
+          onChangeText={(text) => {
+            setDraftText(text);
+            onChangeText?.(text);
+          }}
           onFocus={(event) => {
             setFocused(true);
             onFocus?.(event);

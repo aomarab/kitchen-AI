@@ -33,7 +33,7 @@ export function chipTone(
     return { fill: colors.surface, label: colors.textMuted, border: colors.surface };
   }
   if (selected) return { fill: colors.primary, label: colors.onFill, border: 'transparent' };
-  return { fill: colors.bg, label: colors.text, border: colors.control };
+  return { fill: colors.bg, label: colors.text, border: colors.border };
 }
 
 export function countBadgeTone(colors: PaletteColors): { fill: string; label: string } {

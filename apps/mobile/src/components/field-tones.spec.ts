@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { fieldBorder } from './field-tones';
+import { fieldBorder, textareaCountLabel } from './field-tones';
 
 const read = (relative: string) => readFileSync(join(__dirname, relative), 'utf8');
 
@@ -31,7 +31,9 @@ describe('field border tones', () => {
 
     it('shows the textarea count only when the caller passes maxLength', () => {
       const source = read('./Field.tsx');
-      expect(source).toContain('multiline && typeof maxLength ===');
+      expect(source).toContain('textareaCountLabel({ multiline, maxLength, text: countText })');
+      expect(source).toContain('setDraftText(text)');
+      expect(source).toContain('onChangeText?.(text)');
       expect(source).toContain('{countLabel ? (');
       expect(source).not.toContain('FEEDBACK_MESSAGE_MAX');
     });
@@ -51,5 +53,17 @@ describe('field border tones', () => {
       width: 1.5,
       colorToken: 'danger',
     });
+  });
+});
+
+describe('textarea count labels', () => {
+  it('is hidden unless the field is multiline and maxLength is provided', () => {
+    expect(textareaCountLabel({ multiline: false, maxLength: 10, text: 'abc' })).toBeNull();
+    expect(textareaCountLabel({ multiline: true, text: 'abc' })).toBeNull();
+  });
+
+  it('counts the current text length for controlled and uncontrolled fields', () => {
+    expect(textareaCountLabel({ multiline: true, maxLength: 10, text: 'abc' })).toBe('3/10');
+    expect(textareaCountLabel({ multiline: true, maxLength: 10, text: 'abcdef' })).toBe('6/10');
   });
 });

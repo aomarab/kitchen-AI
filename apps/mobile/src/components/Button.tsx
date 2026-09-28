@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, type ViewStyle } from 'react-native';
 import { AppText } from './AppText';
 import {
   buttonTone,
@@ -8,6 +8,7 @@ import {
 } from './button-tones';
 import { DirectionalIcon } from './DirectionalIcon';
 import { Icon, type IconName } from './Icon';
+import { usePressFeedback } from './press-feedback';
 import { hitSlop, radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
@@ -58,6 +59,14 @@ export function Button({
   const labelVariant = compact ? 'buttonSmall' : 'button';
   const firstIcon = leadingIcon ?? icon;
   const lastIcon = trailingIcon;
+  const pressFeedback = usePressFeedback();
+  const animatedFill =
+    tone.pressedFill === tone.fill
+      ? tone.fill
+      : pressFeedback.progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [tone.fill, tone.pressedFill],
+        });
   return (
     <Pressable
       accessibilityRole="button"
@@ -66,6 +75,7 @@ export function Button({
       disabled={isDisabled}
       onPress={onPress}
       hitSlop={hitSlop}
+      {...pressFeedback.pressHandlers}
       style={[
         {
           minHeight: 44,
@@ -76,9 +86,9 @@ export function Button({
         style,
       ]}
     >
-      {({ pressed }) => (
-        <View
-          style={{
+      <Animated.View
+        style={[
+          {
             minHeight: height,
             flexDirection: 'row',
             alignItems: 'center',
@@ -86,28 +96,28 @@ export function Button({
             gap: spacing.sm,
             paddingHorizontal: resolvedVariant === 'ghost' ? 0 : compact ? 14 : 20,
             borderRadius: radius.none,
-            backgroundColor: pressed ? tone.pressedFill : tone.fill,
+            backgroundColor: animatedFill,
             borderWidth: tone.borderWidth,
             borderColor: tone.border,
-            opacity: !isDisabled && pressed && tone.pressedFill === tone.fill ? 0.85 : 1,
             alignSelf: fullWidth ? 'stretch' : 'flex-start',
             flexShrink: 0,
-          }}
-        >
-          {loading ? (
-            <ActivityIndicator color={tone.label} />
-          ) : (
-            <>
-              {firstIcon ? <Icon name={firstIcon} size={18} color={tone.label} /> : null}
-              <AppText variant={labelVariant} style={{ color: tone.label, flexShrink: 0 }}>
-                {title}
-              </AppText>
-              {lastIcon ? <Icon name={lastIcon} size={18} color={tone.label} /> : null}
-              {arrow ? <DirectionalIcon name="arrowForward" size={18} color={tone.label} /> : null}
-            </>
-          )}
-        </View>
-      )}
+          },
+          !isDisabled && tone.pressedFill === tone.fill ? pressFeedback.animatedStyle : null,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={tone.label} />
+        ) : (
+          <>
+            {firstIcon ? <Icon name={firstIcon} size={18} color={tone.label} /> : null}
+            <AppText variant={labelVariant} style={{ color: tone.label, flexShrink: 0 }}>
+              {title}
+            </AppText>
+            {lastIcon ? <Icon name={lastIcon} size={18} color={tone.label} /> : null}
+            {arrow ? <DirectionalIcon name="arrowForward" size={18} color={tone.label} /> : null}
+          </>
+        )}
+      </Animated.View>
     </Pressable>
   );
 }

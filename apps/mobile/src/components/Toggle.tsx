@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { toggleTone } from './control-tones';
+import { usePressFeedback } from './press-feedback';
 import { radius } from '../theme';
 import { useReduceMotion } from '../hooks/motion';
 import { useLocale } from '../lib/locale';
@@ -34,6 +35,7 @@ export function Toggle({
   const reduceMotion = useReduceMotion();
   const progress = useRef(new Animated.Value(value ? 1 : 0)).current;
   const tone = toggleTone(colors, value);
+  const pressFeedback = usePressFeedback();
 
   useEffect(() => {
     Animated.timing(progress, {
@@ -55,6 +57,7 @@ export function Toggle({
       accessibilityState={{ checked: value, disabled }}
       disabled={disabled}
       onPress={() => onValueChange(!value)}
+      {...pressFeedback.pressHandlers}
       testID={testID}
       style={[
         {
@@ -65,30 +68,30 @@ export function Toggle({
         style,
       ]}
     >
-      {({ pressed }) => (
-        <Animated.View
-          style={{
+      <Animated.View
+        style={[
+          {
             width: TRACK_WIDTH,
             height: TRACK_HEIGHT,
             borderRadius: radius.none,
             backgroundColor: tone.track,
-            opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
+          },
+          disabled ? { opacity: 0.5 } : pressFeedback.animatedStyle,
+        ]}
+      >
+        <Animated.View
+          style={{
+            position: 'absolute',
+            start: TRACK_INSET,
+            top: TRACK_INSET,
+            width: KNOB_SIZE,
+            height: KNOB_SIZE,
+            borderRadius: radius.none,
+            backgroundColor: tone.knob,
+            transform: [{ translateX }],
           }}
-        >
-          <Animated.View
-            style={{
-              position: 'absolute',
-              start: TRACK_INSET,
-              top: TRACK_INSET,
-              width: KNOB_SIZE,
-              height: KNOB_SIZE,
-              borderRadius: radius.none,
-              backgroundColor: tone.knob,
-              transform: [{ translateX }],
-            }}
-          />
-        </Animated.View>
-      )}
+        />
+      </Animated.View>
     </Pressable>
   );
 }

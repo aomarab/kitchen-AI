@@ -1,6 +1,7 @@
-import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { checkboxTone } from './control-tones';
 import { Icon } from './Icon';
+import { usePressFeedback } from './press-feedback';
 import { radius } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
@@ -25,6 +26,7 @@ export function Checkbox({
   const tone = checkboxTone(colors, checked);
   const borderColor = checked ? tone.border : colors.control;
   const glyphColor = checked ? colors.onFill : tone.glyph;
+  const pressFeedback = usePressFeedback();
 
   return (
     <Pressable
@@ -33,32 +35,35 @@ export function Checkbox({
       accessibilityState={{ checked, disabled }}
       disabled={disabled}
       onPress={onPress}
+      {...pressFeedback.pressHandlers}
       testID={testID}
-      style={({ pressed }) => [
+      style={[
         {
           width: 44,
           height: 44,
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
         },
         style,
       ]}
     >
-      <View
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: radius.none,
-          borderWidth: checked ? 0 : 1.5,
-          borderColor,
-          backgroundColor: tone.fill,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+      <Animated.View
+        style={[
+          {
+            width: 22,
+            height: 22,
+            borderRadius: radius.none,
+            borderWidth: checked ? 0 : 1.5,
+            borderColor,
+            backgroundColor: tone.fill,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          disabled ? { opacity: 0.5 } : pressFeedback.animatedStyle,
+        ]}
       >
         {checked ? <Icon name="check" size={16} color={glyphColor} /> : null}
-      </View>
+      </Animated.View>
     </Pressable>
   );
 }

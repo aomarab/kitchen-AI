@@ -1,6 +1,6 @@
 import {
+  Animated,
   Pressable,
-  View,
   type AccessibilityState,
   type StyleProp,
   type ViewStyle,
@@ -9,6 +9,7 @@ import { AppText } from './AppText';
 import { DirectionalIcon } from './DirectionalIcon';
 import { Icon, type IconName } from './Icon';
 import { iconButtonTone, type IconButtonTone } from './button-tones';
+import { usePressFeedback } from './press-feedback';
 import { CHROME_MAX_FONT_SCALE, radius } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
@@ -51,6 +52,7 @@ export function IconButton({
   const targetSize = size === 48 ? 48 : ICON_BUTTON_TARGET_SIZE;
   const visualSize = size === 36 ? 36 : size === 48 ? 48 : 44;
   const iconSize = size === 36 ? 18 : size === 48 ? 24 : 22;
+  const pressFeedback = usePressFeedback();
 
   return (
     <Pressable
@@ -59,6 +61,7 @@ export function IconButton({
       accessibilityState={{ ...accessibilityState, disabled }}
       disabled={disabled}
       onPress={onPress}
+      {...pressFeedback.pressHandlers}
       testID={testID}
       style={[
         {
@@ -70,9 +73,9 @@ export function IconButton({
         style,
       ]}
     >
-      {({ pressed }) => (
-        <View
-          style={{
+      <Animated.View
+        style={[
+          {
             width: visualSize,
             height: visualSize,
             borderRadius: radius.none,
@@ -81,22 +84,22 @@ export function IconButton({
             backgroundColor: fill,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
-          }}
-        >
-          {label ? (
-            <AppText
-              variant="bodyStrong"
-              style={{ color: glyph }}
-              maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
-            >
-              {label}
-            </AppText>
-          ) : icon ? (
-            <Glyph name={icon} size={iconSize} color={glyph} />
-          ) : null}
-        </View>
-      )}
+          },
+          disabled ? { opacity: 0.5 } : pressFeedback.animatedStyle,
+        ]}
+      >
+        {label ? (
+          <AppText
+            variant="bodyStrong"
+            style={{ color: glyph }}
+            maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+          >
+            {label}
+          </AppText>
+        ) : icon ? (
+          <Glyph name={icon} size={iconSize} color={glyph} />
+        ) : null}
+      </Animated.View>
     </Pressable>
   );
 }

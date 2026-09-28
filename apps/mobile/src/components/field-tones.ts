@@ -17,3 +17,18 @@ export function fieldBorder({ focused, error }: FieldBorderState): FieldBorderTo
   if (focused) return { width: 1.5, colorToken: 'text' };
   return { width: 1, colorToken: 'border' };
 }
+
+export interface TextareaCountState {
+  multiline?: boolean;
+  maxLength?: number;
+  text: string;
+}
+
+export function textareaCountLabel({
+  multiline,
+  maxLength,
+  text,
+}: TextareaCountState): string | null {
+  if (!multiline || typeof maxLength !== 'number') return null;
+  return `${text.length}/${maxLength}`;
+}

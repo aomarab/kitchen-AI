@@ -41,11 +41,10 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, coral %s', (mode
     });
   });
 
-  it('an unselected chip is white with a visible control edge', () => {
+  it('an unselected chip is white with the J hairline border token', () => {
     const tone = chipTone(colors, 'pill', false);
     expect(tone.fill).toBe(colors.bg);
-    expect(tone.border).toBe(colors.control);
-    expect(contrast(tone.border, tone.fill)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(tone.border).toBe(colors.border);
   });
 
   it('a primary chip uses the brand fill with its ink label', () => {
@@ -158,8 +157,18 @@ describe('control touch targets', () => {
     const source = read('./SegmentedControl.tsx');
     expect(source).toMatch(/minHeight:\s*44/);
     expect(source).toMatch(/borderWidth:\s*1/);
+    expect(source).toContain("tone === 'media' ? colors.borderInverse : colors.border");
     expect(source).toContain('useReduceMotion()');
     expect(source).toContain('duration: reduceMotion ? 0 : 120');
+  });
+
+  it('chips and steppers use the J border token for hairlines', () => {
+    const chipToneSource = read('./control-tones.ts');
+    expect(chipToneSource).toContain('border: colors.border');
+
+    const stepper = read('./QuantityStepper.tsx');
+    expect(stepper).toContain('borderColor: colors.border');
+    expect(stepper).not.toContain('borderColor: colors.control');
   });
 
   it('new square controls expose roles and 44pt pressable targets', () => {
