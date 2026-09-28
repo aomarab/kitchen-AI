@@ -80,7 +80,14 @@ export function buttonTone(colors: PaletteColors, variant: ButtonVariant): Butto
  * and close on the page, the same inside a card or sheet, the brand action,
  * the avatar, and controls over the camera or a photo.
  */
-export const ROUND_BUTTON_TONES = ['surface', 'sunk', 'primary', 'soft', 'media'] as const;
+export const ROUND_BUTTON_TONES = [
+  'surface',
+  'sunk',
+  'primary',
+  'soft',
+  'media',
+  'mediaLight',
+] as const;
 
 export type RoundButtonTone = (typeof ROUND_BUTTON_TONES)[number];
 
@@ -116,6 +123,12 @@ export function roundButtonTone(
         fill: colors.surfaceInverseAlt,
         glyph: colors.textInverse,
         border: colors.borderInverse,
+      };
+    case 'mediaLight':
+      return {
+        fill: colors.textInverse,
+        glyph: colors.onPrimaryInverse,
+        border: colors.textInverse,
       };
   }
 }

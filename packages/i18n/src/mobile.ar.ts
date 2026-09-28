@@ -411,6 +411,10 @@ export const mobileAr: MobileMessages = {
       videoUnavailable: 'لا يمكن تشغيل هذا الفيديو الآن.',
       openInYoutube: 'افتح في يوتيوب',
       imageLabel: 'صورة لوصفة {title}',
+      inStockOf: '{have} من {total}',
+      inStockLabel: 'متوفر',
+      upNext: 'التالي',
+      servingsLabel: 'الحصص',
     },
     account: {
       title: 'الحساب',

@@ -79,6 +79,8 @@ describe('mobile source sweep', () => {
       path: 'features/shop/ShoppingRow.tsx',
       pattern: /minHeight:\s*(\d+)/,
     },
+    'recipe/[id]/index.tsx': { path: 'app/recipe/[id]/index.tsx', pattern: /height:\s*(\d+)/ },
+    'recipe/[id]/cook.tsx': { path: 'app/recipe/[id]/cook.tsx', pattern: /height:\s*(\d+)/ },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {

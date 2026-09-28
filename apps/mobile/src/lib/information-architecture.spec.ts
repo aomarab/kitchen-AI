@@ -281,6 +281,48 @@ describe('information architecture (spec §4)', () => {
     );
   });
 
+  it('keeps Recipe on the G9 screen contract', () => {
+    const recipe = read('app', 'recipe', '[id]', 'index.tsx');
+
+    expect(recipe).toContain('<RecipeThumb');
+    expect(recipe).toContain('height: 360');
+    expect(recipe).toContain('tone="mediaLight"');
+    expect(recipe).toContain('<StatusBar style="light" />');
+    expect(recipe).toContain('recipeStockCount');
+    expect(recipe).toContain('scaleQuantityForServings');
+    expect(recipe).toContain('<SegmentedControl');
+    expect(recipe).toContain("segment === 'steps'");
+    expect(recipe).toContain('<YoutubePlayer');
+    expect(recipe).not.toMatch(/heart/i);
+  });
+
+  it('keeps Cook on the G9 screen contract', () => {
+    const cook = read('app', 'recipe', '[id]', 'cook.tsx');
+
+    expect(cook).toContain('useKeepAwake()');
+    expect(cook).toContain("direction: 'ltr'");
+    expect(cook).toContain('accessibilityRole="progressbar"');
+    expect(cook).toContain('<OrbMascot');
+    expect(cook).toContain('stepIngredients(');
+    expect(cook).toContain('parseServingsParam');
+    expect(cook).toContain('projectTimer(existing, now)');
+    expect(cook).toContain('initialMode="voice"');
+    expect(cook).toContain('lockMode');
+    expect(cook).toContain("backgroundColor: 'transparent'");
+  });
+
+  it('adds the G9 recipe labels in both languages', () => {
+    for (const key of [
+      'mobile.recipe.inStockOf',
+      'mobile.recipe.inStockLabel',
+      'mobile.recipe.upNext',
+      'mobile.recipe.servingsLabel',
+    ]) {
+      expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
+      expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
+    }
+  });
+
   it('keeps Welcome on the Apricot Bento screen contract', () => {
     const welcome = read('app', '(auth)', 'welcome.tsx');
 

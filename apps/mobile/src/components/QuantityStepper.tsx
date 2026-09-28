@@ -10,6 +10,7 @@ export interface QuantityStepperProps {
   onChange: (value: number) => void;
   step?: number;
   min?: number;
+  max?: number;
   /** Replaces the bare number, e.g. "8 cups". */
   label?: string;
   /** Shown as a caption under the value, e.g. "kg". */
@@ -30,6 +31,7 @@ export function QuantityStepper({
   onChange,
   step = 1,
   min = 0,
+  max,
   label,
   unit,
   accessibilityLabel,
@@ -38,8 +40,9 @@ export function QuantityStepper({
 }: QuantityStepperProps) {
   const { colors } = useTheme();
   const decrement = () => onChange(Math.max(min, value - step));
-  const increment = () => onChange(value + step);
+  const increment = () => onChange(max === undefined ? value + step : Math.min(max, value + step));
   const atMin = value <= min;
+  const atMax = max !== undefined && value >= max;
   const display = label ?? String(value);
 
   const circle = (action: 'decrement' | 'increment', onPress: () => void, disabled: boolean) => {
@@ -81,7 +84,7 @@ export function QuantityStepper({
         { name: 'decrement', label: decrementLabel },
       ]}
       onAccessibilityAction={(event) => {
-        if (event.nativeEvent.actionName === 'increment') increment();
+        if (event.nativeEvent.actionName === 'increment' && !atMax) increment();
         else if (event.nativeEvent.actionName === 'decrement' && !atMin) decrement();
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
@@ -97,7 +100,7 @@ export function QuantityStepper({
           </AppText>
         ) : null}
       </View>
-      {circle('increment', increment, false)}
+      {circle('increment', increment, atMax)}
     </View>
   );
 }

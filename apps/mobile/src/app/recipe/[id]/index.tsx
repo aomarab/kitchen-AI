@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { Difficulty } from '@kitchen/contracts';
+import { StatusBar } from 'expo-status-bar';
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { Difficulty, RecipeIngredient } from '@kitchen/contracts';
+import type { MessageKey } from '@kitchen/i18n';
 import {
   Screen,
   Header,
@@ -13,12 +16,25 @@ import {
   ErrorState,
   RecipeThumb,
   YoutubePlayer,
+  RoundButton,
+  Tile,
+  SegmentedControl,
+  ListGroup,
+  ListRow,
+  FoodIcon,
+  QuantityStepper,
 } from '../../../components';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe, useMarkCooked } from '../../../hooks/recipe';
-import { ingredientName, formatMeasure, formatMinutes } from '../../../lib/format';
+import { ingredientName, formatMeasure, formatMinutes, formatQty } from '../../../lib/format';
+import { recipeStockCount, scaleQuantityForServings } from '../../../lib/recipe';
 import { radius, spacing } from '../../../theme';
 import { useTheme } from '../../../theme/useTheme';
+
+const SHEET_OVERLAP = 28;
+const MAX_SERVINGS = 12;
+
+type RecipeSegment = 'ingredients' | 'steps';
 
 const DIFFICULTY_KEY: Record<
   Difficulty,
@@ -32,12 +48,22 @@ const DIFFICULTY_KEY: Record<
 export default function RecipeDetail() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
   const recipe = useRecipe(id ?? null, locale);
   const markCooked = useMarkCooked(id ?? '');
   const [confirm, setConfirm] = useState(false);
   const [cooked, setCooked] = useState(false);
+  const [segment, setSegment] = useState<RecipeSegment>('ingredients');
+  const [servings, setServings] = useState<number | null>(null);
+
+  useEffect(() => {
+    setServings(null);
+    setSegment('ingredients');
+    setCooked(false);
+  }, [id]);
 
   if (recipe.isLoading) {
     return (
@@ -57,129 +83,198 @@ export default function RecipeDetail() {
   }
 
   const data = recipe.data;
+  const servingCount = servings ?? data.servings;
+  const stock = recipeStockCount(data.ingredients);
+  const totalMinutes = data.prepMinutes + data.cookMinutes;
+  const meta = [
+    t('recipe.servings', { count: data.servings }),
+    data.cuisine ? t(`mobile.cuisines.${data.cuisine}` as MessageKey) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const stockLine = t('mobile.recipe.inStockOf', {
+    have: formatQty(locale, stock.have, prefs),
+    total: formatQty(locale, stock.total, prefs),
+  });
+  const footer = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+      <QuantityStepper
+        value={servingCount}
+        min={1}
+        max={MAX_SERVINGS}
+        onChange={setServings}
+        label={formatQty(locale, servingCount, prefs)}
+        unit={t('mobile.recipe.servingsLabel')}
+        accessibilityLabel={t('mobile.recipe.servingsLabel')}
+        decrementLabel={t('mobile.common.decrease')}
+        incrementLabel={t('mobile.common.increase')}
+      />
+      <Button
+        title={t('mobile.recipe.startCooking')}
+        icon="play"
+        style={{ flex: 1 }}
+        onPress={() => {
+          const query = servingCount === data.servings ? '' : `?servings=${servingCount}`;
+          router.push(`/recipe/${data.id}/cook${query}`);
+        }}
+      />
+    </View>
+  );
 
   return (
-    <Screen scroll padded={false}>
-      {/* Title and back sit above the photo: the picture only means something
-          once you know which dish it is, and burying the back affordance under
-          a 220px image made leaving the screen a scroll away. */}
-      <View
-        style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md }}
-      >
-        <Header title={data.title} onBack={() => router.back()} />
+    <Screen scroll padded={false} edges={['bottom', 'left', 'right']} footer={footer}>
+      {isFocused ? <StatusBar style="light" /> : null}
+      <View style={{ height: 360, position: 'relative' }}>
+        <RecipeThumb
+          heroImageUrl={data.heroImageUrl}
+          dishKey={`${data.locale}:${data.title}`}
+          title={data.title}
+          accessibilityLabel={t('mobile.recipe.imageLabel', { title: data.title })}
+          style={{ width: '100%', height: '100%' }}
+        />
+        <View style={{ position: 'absolute', top: insets.top + spacing.md, start: spacing.lg }}>
+          <RoundButton
+            icon="back"
+            directional
+            tone="mediaLight"
+            size={40}
+            accessibilityLabel={t('common.back')}
+            onPress={() => router.back()}
+          />
+        </View>
       </View>
 
-      <RecipeThumb
-        heroImageUrl={data.heroImageUrl}
-        dishKey={`${data.locale}:${data.title}`}
-        title={data.title}
-        accessibilityLabel={t('mobile.recipe.imageLabel', { title: data.title })}
-        style={{ width: '100%', height: 220 }}
-      />
-
-      <View style={{ padding: spacing.lg, gap: spacing.md }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          <Badge
-            label={t('recipe.prepTime', {
-              minutes: formatMinutes(locale, data.prepMinutes, prefs),
-            })}
-          />
-          <Badge
-            label={t('recipe.cookTime', {
-              minutes: formatMinutes(locale, data.cookMinutes, prefs),
-            })}
-          />
-          <Badge label={t('recipe.servings', { count: data.servings })} />
-          <Badge tone="info" label={t(DIFFICULTY_KEY[data.difficulty])} />
+      <View
+        style={{
+          marginTop: -SHEET_OVERLAP,
+          padding: spacing.lg,
+          gap: spacing.lg,
+          borderTopStartRadius: radius.xl,
+          borderTopEndRadius: radius.xl,
+          backgroundColor: colors.bg,
+        }}
+      >
+        <View style={{ gap: spacing.xs }}>
+          <AppText variant="display" accessibilityRole="header">
+            {data.title}
+          </AppText>
+          {meta ? (
+            <AppText variant="caption" muted>
+              {meta}
+            </AppText>
+          ) : null}
         </View>
+
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <MiniStatTile
+            tint="apricot"
+            icon="clock"
+            value={t('recipe.cookTime', {
+              minutes: formatMinutes(locale, totalMinutes, prefs),
+            })}
+            label={t('recipe.cookTime', {
+              minutes: formatMinutes(locale, totalMinutes, prefs),
+            })}
+          />
+          <MiniStatTile
+            tint="sage"
+            value={stockLine}
+            caption={t('mobile.recipe.inStockLabel')}
+            label={`${stockLine} ${t('mobile.recipe.inStockLabel')}`}
+          />
+          <MiniStatTile
+            tint="butter"
+            value={t(DIFFICULTY_KEY[data.difficulty])}
+            label={t(DIFFICULTY_KEY[data.difficulty])}
+          />
+        </View>
+
+        <SegmentedControl
+          value={segment}
+          onChange={setSegment}
+          options={[
+            { value: 'ingredients', label: t('recipe.ingredients') },
+            { value: 'steps', label: t('recipe.steps') },
+          ]}
+        />
+
+        {segment === 'ingredients' ? (
+          <View style={{ gap: spacing.md }}>
+            <ListGroup>
+              {data.ingredients.map((ri) => (
+                <IngredientRow
+                  key={ri.ingredient.id}
+                  ingredient={ri}
+                  servings={servingCount}
+                  baseServings={data.servings}
+                />
+              ))}
+            </ListGroup>
+            <Button
+              title={t('recipe.markCooked')}
+              variant="secondary"
+              icon="check"
+              onPress={() => setConfirm(true)}
+            />
+          </View>
+        ) : segment === 'steps' ? (
+          <View style={{ gap: spacing.lg }}>
+            <View style={{ gap: spacing.md }}>
+              {data.steps.map((step) => (
+                <View key={step.index} style={{ flexDirection: 'row', gap: spacing.md }}>
+                  <View
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: radius.pill,
+                      backgroundColor: colors.primarySoft,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <AppText
+                      variant="caption"
+                      color="primaryText"
+                      style={{ fontVariant: ['tabular-nums'] }}
+                    >
+                      {formatQty(locale, step.index, prefs)}
+                    </AppText>
+                  </View>
+                  <AppText style={{ flex: 1 }}>{step.text}</AppText>
+                </View>
+              ))}
+            </View>
+
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="heading">{t('recipe.videos')}</AppText>
+              {data.videos.length === 0 ? (
+                <AppText muted variant="caption">
+                  {t('recipe.noVideos')}
+                </AppText>
+              ) : (
+                data.videos.map((video) => (
+                  <View key={video.youtubeId} style={{ gap: spacing.xs }}>
+                    <YoutubePlayer
+                      youtubeId={video.youtubeId}
+                      thumbnailUrl={video.thumbnailUrl}
+                      playLabel={t('mobile.recipe.watchOnYoutube')}
+                      errorLabel={t('mobile.recipe.videoUnavailable')}
+                      openLabel={t('mobile.recipe.openInYoutube')}
+                    />
+                    <AppText variant="bodyStrong" numberOfLines={2}>
+                      {video.title}
+                    </AppText>
+                    <AppText variant="caption" muted>
+                      {video.channel}
+                    </AppText>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        ) : null}
 
         {cooked ? <Badge tone="success" label={t('recipe.cookedDone')} /> : null}
-
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="heading">{t('recipe.ingredients')}</AppText>
-          {data.ingredients.map((ri) => (
-            <View
-              key={ri.ingredient.id}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}
-            >
-              <AppText style={{ flex: 1 }}>
-                {ingredientName(locale, ri.ingredient)}
-                {ri.optional ? ` · ${t('recipe.optional')}` : ''}
-              </AppText>
-              <AppText variant="caption" muted>
-                {formatMeasure(t, locale, ri.quantity, ri.unit, prefs)}
-              </AppText>
-              <Badge
-                tone={ri.inStock ? 'success' : 'warn'}
-                label={ri.inStock ? t('recipe.inStock') : t('recipe.notInStock')}
-              />
-            </View>
-          ))}
-        </View>
-
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="heading">{t('recipe.steps')}</AppText>
-          {data.steps.map((step) => (
-            <View key={step.index} style={{ flexDirection: 'row', gap: spacing.md }}>
-              <View
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: radius.pill,
-                  backgroundColor: colors.primarySoft,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <AppText variant="caption" color="primaryText">
-                  {formatMinutes(locale, step.index, prefs)}
-                </AppText>
-              </View>
-              <AppText style={{ flex: 1 }}>{step.text}</AppText>
-            </View>
-          ))}
-        </View>
-
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="heading">{t('recipe.videos')}</AppText>
-          {data.videos.length === 0 ? (
-            <AppText muted variant="caption">
-              {t('recipe.noVideos')}
-            </AppText>
-          ) : (
-            data.videos.map((video) => (
-              <View key={video.youtubeId} style={{ gap: spacing.xs }}>
-                <YoutubePlayer
-                  youtubeId={video.youtubeId}
-                  thumbnailUrl={video.thumbnailUrl}
-                  playLabel={t('mobile.recipe.watchOnYoutube')}
-                  errorLabel={t('mobile.recipe.videoUnavailable')}
-                  openLabel={t('mobile.recipe.openInYoutube')}
-                />
-                <AppText variant="bodyStrong" numberOfLines={2}>
-                  {video.title}
-                </AppText>
-                <AppText variant="caption" muted>
-                  {video.channel}
-                </AppText>
-              </View>
-            ))
-          )}
-        </View>
-
-        <View style={{ gap: spacing.sm }}>
-          <Button
-            title={t('mobile.recipe.startCooking')}
-            icon="flame"
-            onPress={() => router.push(`/recipe/${data.id}/cook`)}
-          />
-          <Button
-            title={t('recipe.markCooked')}
-            variant="secondary"
-            icon="check"
-            onPress={() => setConfirm(true)}
-          />
-        </View>
       </View>
 
       <Sheet visible={confirm} onClose={() => setConfirm(false)} title={t('recipe.markCooked')}>
@@ -190,7 +285,7 @@ export default function RecipeDetail() {
           loading={markCooked.isPending}
           onPress={() =>
             markCooked.mutate(
-              { deductInventory: true, servings: data.servings },
+              { deductInventory: true, servings: servingCount },
               {
                 onSuccess: () => {
                   setConfirm(false);
@@ -203,5 +298,70 @@ export default function RecipeDetail() {
         <Button title={t('common.cancel')} variant="ghost" onPress={() => setConfirm(false)} />
       </Sheet>
     </Screen>
+  );
+}
+
+function MiniStatTile({
+  tint,
+  icon,
+  value,
+  caption,
+  label,
+}: {
+  tint: 'apricot' | 'sage' | 'butter';
+  icon?: 'clock';
+  value: string;
+  caption?: string;
+  label: string;
+}) {
+  return (
+    <View style={{ flex: 1, minWidth: 0 }}>
+      <Tile tint={tint} height={88} icon={icon} accessibilityLabel={label}>
+        <AppText variant="bodyStrong" numberOfLines={1}>
+          {value}
+        </AppText>
+        {caption ? (
+          <AppText variant="caption" muted numberOfLines={1}>
+            {caption}
+          </AppText>
+        ) : null}
+      </Tile>
+    </View>
+  );
+}
+
+function IngredientRow({
+  ingredient,
+  servings,
+  baseServings,
+}: {
+  ingredient: RecipeIngredient;
+  servings: number;
+  baseServings: number;
+}) {
+  const { t, locale, prefs } = useFormat();
+  const scaledQuantity = scaleQuantityForServings(ingredient.quantity, baseServings, servings);
+  const name = ingredientName(locale, ingredient.ingredient);
+  return (
+    <ListRow
+      grouped
+      leading={
+        <FoodIcon
+          item={{
+            category: ingredient.ingredient.category,
+            nameEn: ingredient.ingredient.canonicalNameEn,
+            nameAr: ingredient.ingredient.canonicalNameAr,
+          }}
+        />
+      }
+      title={`${name}${ingredient.optional ? ` · ${t('recipe.optional')}` : ''}`}
+      subtitle={formatMeasure(t, locale, scaledQuantity, ingredient.unit, prefs)}
+      trailing={
+        <Badge
+          tone={ingredient.inStock ? 'success' : 'warn'}
+          label={ingredient.inStock ? t('recipe.inStock') : t('recipe.notInStock')}
+        />
+      }
+    />
   );
 }

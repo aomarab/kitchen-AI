@@ -332,6 +332,10 @@ export const mobileEn = {
       videoUnavailable: 'This video cannot be played right now.',
       openInYoutube: 'Open in YouTube',
       imageLabel: 'Recipe image for {title}',
+      inStockOf: '{have} of {total}',
+      inStockLabel: 'in stock',
+      upNext: 'Up next',
+      servingsLabel: 'Servings',
     },
     account: {
       title: 'Account',

@@ -192,6 +192,14 @@ describe.each(ALL)('%s palette', (_name, palette) => {
       contrast(colors.onPrimaryInverse, colors.primaryInverse),
       'primaryInverse label',
     ).toBeGreaterThanOrEqual(AA_TEXT);
+    expect(
+      contrast(colors.textInverse, colors.surfaceInverse),
+      'light round button fill on media',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(
+      contrast(colors.onPrimaryInverse, colors.textInverse),
+      'light round button glyph',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
   });
 
   /**
