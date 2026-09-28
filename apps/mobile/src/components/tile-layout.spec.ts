@@ -63,16 +63,16 @@ describe('bento grid (spec §8)', () => {
     expect(bentoRowLayout([2, 1, 1], 'quickActions', 350)).toEqual([
       {
         cells: [
-          { index: 0, span: 2, width: 230 },
-          { index: 1, span: 1, width: 110 },
+          { index: 0, span: 2, layout: { width: 230 } },
+          { index: 1, span: 1, layout: { width: 110 } },
         ],
         fillerSpan: 0,
-        fillerWidth: 0,
+        fillers: [],
       },
       {
-        cells: [{ index: 2, span: 1, width: 110 }],
+        cells: [{ index: 2, span: 1, layout: { width: 110 } }],
         fillerSpan: 2,
-        fillerWidth: 230,
+        fillers: [{ width: 230 }],
       },
     ]);
   });
@@ -80,57 +80,57 @@ describe('bento grid (spec §8)', () => {
   it('computes span-aware tile cell and filler widths', () => {
     expect(bentoRowLayout([1, 2, 1], 'tiles', 350)).toEqual([
       {
-        cells: [{ index: 0, span: 1, width: 167 }],
+        cells: [{ index: 0, span: 1, layout: { width: 167 } }],
         fillerSpan: 1,
-        fillerWidth: 167,
+        fillers: [{ width: 167 }],
       },
       {
-        cells: [{ index: 1, span: 2, width: 350 }],
+        cells: [{ index: 1, span: 2, layout: { width: 350 } }],
         fillerSpan: 0,
-        fillerWidth: 0,
+        fillers: [],
       },
       {
-        cells: [{ index: 2, span: 1, width: 167 }],
+        cells: [{ index: 2, span: 1, layout: { width: 167 } }],
         fillerSpan: 1,
-        fillerWidth: 167,
+        fillers: [{ width: 167 }],
       },
     ]);
   });
 
-  it('shares measured tile row width by weight without fillers', () => {
+  it('uses base flex semantics for weighted tile rows without fillers', () => {
     const [row] = bentoRowLayout([1, 1], 'tiles', 350, [3, 2]);
 
     expect(row?.fillerSpan).toBe(0);
-    expect(row?.fillerWidth).toBe(0);
-    expect(row?.cells[0]?.width).toBeCloseTo(200.4);
-    expect(row?.cells[1]?.width).toBeCloseTo(133.6);
+    expect(row?.fillers).toEqual([]);
+    expect(row?.cells[0]).toEqual({ index: 0, span: 1, layout: { flex: 3 } });
+    expect(row?.cells[1]).toEqual({ index: 1, span: 1, layout: { flex: 2 } });
   });
 
-  it('keeps tile fillers span-sized while weighted cells use the remaining width', () => {
-    const [row] = bentoRowLayout([1], 'tiles', 350, [3]);
+  it('uses base flex semantics for a single weighted tile plus filler', () => {
+    const [row] = bentoRowLayout([1], 'tiles', 350, [1.4]);
 
     expect(row?.fillerSpan).toBe(1);
-    expect(row?.fillerWidth).toBe(167);
-    expect(row?.cells[0]?.width).toBe(167);
+    expect(row?.cells[0]).toEqual({ index: 0, span: 1, layout: { flex: 1.4 } });
+    expect(row?.fillers).toEqual([{ flex: 1 }]);
   });
 
-  it('shares measured quick-action row width by weight without fillers', () => {
+  it('uses base flex semantics for weighted quick-action rows without fillers', () => {
     const [row] = bentoRowLayout([1, 1, 1], 'quickActions', 350, [1, 2, 1]);
 
     expect(row?.fillerSpan).toBe(0);
-    expect(row?.fillerWidth).toBe(0);
-    expect(row?.cells[0]?.width).toBeCloseTo(82.5);
-    expect(row?.cells[1]?.width).toBeCloseTo(165);
-    expect(row?.cells[2]?.width).toBeCloseTo(82.5);
+    expect(row?.fillers).toEqual([]);
+    expect(row?.cells[0]).toEqual({ index: 0, span: 1, layout: { flex: 1 } });
+    expect(row?.cells[1]).toEqual({ index: 1, span: 1, layout: { flex: 2 } });
+    expect(row?.cells[2]).toEqual({ index: 2, span: 1, layout: { flex: 1 } });
   });
 
-  it('keeps quick-action fillers span-sized while weighted cells share the remaining width', () => {
-    const [row] = bentoRowLayout([1, 1], 'quickActions', 350, [3, 1]);
+  it('uses span fallback for unweighted cells inside a weighted quick-action row', () => {
+    const [row] = bentoRowLayout([2, 1], 'quickActions', 350, [undefined, 1]);
 
-    expect(row?.fillerSpan).toBe(1);
-    expect(row?.fillerWidth).toBe(110);
-    expect(row?.cells[0]?.width).toBeCloseTo(165);
-    expect(row?.cells[1]?.width).toBeCloseTo(55);
+    expect(row?.fillerSpan).toBe(0);
+    expect(row?.fillers).toEqual([]);
+    expect(row?.cells[0]).toEqual({ index: 0, span: 2, layout: { flex: 2 } });
+    expect(row?.cells[1]).toEqual({ index: 1, span: 1, layout: { flex: 1 } });
   });
 
   it('lays out nothing for no tiles', () => {
@@ -159,9 +159,9 @@ describe('bento grid (spec §8)', () => {
     expect(source).toContain('weight?: number;');
     expect(source).toContain('bentoRowLayout(');
     expect(source).toContain('items.map((item) => item.props.weight)');
-    expect(source).toContain('cell.width');
-    expect(source).toContain('row.fillerWidth');
-    expect(source).toContain('flex: weight ?? span');
+    expect(source).toContain('style={bentoLayoutStyle(cell.layout)}');
+    expect(source).toContain('row.fillers.map((filler, index)');
+    expect(source).toContain('style={bentoLayoutStyle(filler)}');
     expect(source).not.toContain('columns - row.indices.length');
   });
 

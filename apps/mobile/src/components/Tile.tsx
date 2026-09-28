@@ -32,6 +32,7 @@ import {
   BENTO_GUTTER,
   bentoGap,
   bentoRowLayout,
+  type BentoLayoutDescriptor,
   type BentoVariant,
   type TileSpan,
 } from './tile-layout';
@@ -85,6 +86,11 @@ const photoImageStyle: ImageStyle = { width: '100%', height: '100%' };
 const PLACE_TILE_MIN_HEIGHT = 158;
 const QUICK_ACTION_MIN_HEIGHT = 80;
 const COMPACT_TILE_MIN_HEIGHT = 80;
+
+function bentoLayoutStyle(layout: BentoLayoutDescriptor): ViewStyle {
+  if ('width' in layout) return { width: layout.width, minWidth: 0 };
+  return { flex: layout.flex, flexBasis: 0, minWidth: 0 };
+}
 
 function tileMinHeight(variant: TileVariant | undefined, compact: boolean): number {
   if (variant === 'quickAction') return QUICK_ACTION_MIN_HEIGHT;
@@ -278,10 +284,6 @@ export function Bento({ children, variant = 'tiles', onRowLayout }: BentoProps) 
   const handleLayout = (width: number) => {
     setContainerWidth((current) => (current === width ? current : width));
   };
-  const cellStyle = (width: number, span: number, weight?: number): ViewStyle =>
-    containerWidth > 0
-      ? { width, minWidth: 0 }
-      : { flex: weight ?? span, flexBasis: 0, minWidth: 0 };
 
   return (
     <InBento.Provider value>
@@ -297,17 +299,14 @@ export function Bento({ children, variant = 'tiles', onRowLayout }: BentoProps) 
               {row.cells.map((cell) => {
                 const item = items[cell.index];
                 return (
-                  <View
-                    key={item?.key ?? cell.index}
-                    style={cellStyle(cell.width, cell.span, item?.props.weight)}
-                  >
+                  <View key={item?.key ?? cell.index} style={bentoLayoutStyle(cell.layout)}>
                     {item}
                   </View>
                 );
               })}
-              {row.fillerSpan > 0 ? (
-                <View key="filler" style={cellStyle(row.fillerWidth, row.fillerSpan)} />
-              ) : null}
+              {row.fillers.map((filler, index) => (
+                <View key={`filler-${index}`} style={bentoLayoutStyle(filler)} />
+              ))}
             </View>
           );
         })}
