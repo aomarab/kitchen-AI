@@ -68,8 +68,17 @@ export const mobileEn = {
         one: '{cooked} of 1 meal cooked this week',
         other: '{cooked} of {total} meals cooked this week',
       }),
+      weekRemaining: plural('count', {
+        one: '1 to go',
+        other: '{count} to go',
+      }),
+      openPlan: 'Open plan',
       noPlanTitle: 'No plan yet',
       noPlanBody: 'Generate a plan from what you already have.',
+      planCreditCost: plural('count', {
+        one: '1 credit',
+        other: '{count} credits',
+      }),
       quickAdd: 'Quick add',
       seeAll: 'See all',
       statItems: 'In your kitchen',

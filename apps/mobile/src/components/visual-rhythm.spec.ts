@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { spacing } from '../theme';
-import { palettes } from '../theme/palettes';
 
 /**
  * Source-level guards for three layout defects that were measured off a device
@@ -12,7 +11,6 @@ import { palettes } from '../theme/palettes';
  */
 
 const read = (relative: string) => readFileSync(join(__dirname, relative), 'utf8');
-const colors = palettes.coral.light.colors;
 
 describe('borderless buttons align to the content margin', () => {
   const source = read('./Button.tsx');
@@ -125,12 +123,11 @@ describe('screen rhythm', () => {
 describe('home screen palette', () => {
   const source = read('../app/(tabs)/home.tsx');
 
-  it('paints the sage plan tile progress in the brand colour, not the herb accent', () => {
+  it('renders the Home week progress through the shared Coral progress primitive', () => {
     expect(source).not.toMatch(/backgroundColor:\s*colors\.accent/);
-    expect(source).toMatch(/backgroundColor:\s*colors\.primary/);
-    // Guards the premise: accent really is a different hue, so painting this
-    // progress bar with it would strand one herb-green metric on a coral screen.
-    expect(colors.accent).not.toBe(colors.primary);
+    expect(source).not.toContain('WeekProgressBar');
+    expect(source).toContain('<Progress');
+    expect(source).toContain('<WeekStrip');
   });
 
   it('does not mark the Home action tiles with a drill-down chevron', () => {

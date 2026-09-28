@@ -45,6 +45,10 @@ describe('mobile source sweep', () => {
       pattern: /minHeight:\s*multiline \? 132 : (\d+)/,
     },
     'Header.tsx': { path: 'components/Header.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'home.tsx': {
+      path: 'app/(tabs)/home.tsx',
+      pattern: /ASSISTANT_SEARCH_TARGET_HEIGHT\s*=\s*(\d+)/,
+    },
     'IconButton.tsx': {
       path: 'components/IconButton.tsx',
       pattern: /ICON_BUTTON_TARGET_SIZE\s*=\s*(\d+)/,
@@ -109,6 +113,10 @@ describe('mobile source sweep', () => {
     'entry/[id].tsx': { path: 'app/entry/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
     'screen.tsx': { path: 'app/screen.tsx', pattern: /MINI_CARD_ICON_SIZE\s*=\s*(\d+)/ },
     'wellness.tsx': { path: 'app/wellness.tsx', pattern: /NUDGE_ICON_SIZE\s*=\s*(\d+)/ },
+    'WeekStrip.tsx': {
+      path: 'features/home/WeekStrip.tsx',
+      pattern: /DAY_CELL_HEIGHT\s*=\s*(\d+)/,
+    },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {

@@ -467,12 +467,25 @@ describe('information architecture (spec §4)', () => {
     ).toContain('accessibilityText: formatExpiryLabel(t, locale, item.expiresAt, prefs, now)');
   });
 
-  it('keeps the redesigned Home tab inside the G1 screen scope', () => {
+  it('keeps Home on the Coral dashboard contract', () => {
     const home = read('app', '(tabs)', 'home.tsx');
 
-    expect(home).not.toContain('bell');
+    expect(home).toContain('padded={false}');
+    expect(home).toContain('<TabHeader');
+    expect(home).toContain('icon="bell"');
+    expect(home).toContain("router.push('/settings/notifications')");
+    expect(home).toContain('function AssistantSearchButton');
+    expect(home).toContain('usePressFeedback()');
+    expect(home).toContain("router.push('/assistant')");
+    expect(home).not.toContain('<SearchField');
+    expect(home).not.toContain('<OrbMascot');
+    expect(home).not.toContain('<RoundButton');
+    expect(home).not.toContain('tint=');
+    expect(home).not.toContain('tintNamed');
+    expect(home).not.toContain('radius.pill');
+    expect(home).not.toContain('pressed ?');
+    expect(home).not.toContain('transform: [{ scale');
     expect(home).not.toContain('StatTiles');
-    expect(home).not.toContain('KitchenGlance');
     expect(existsSync(join(SRC, 'features', 'home', 'StatTiles.tsx'))).toBe(false);
     expect(existsSync(join(SRC, 'features', 'home', 'KitchenGlance.tsx'))).toBe(false);
 
@@ -483,41 +496,82 @@ describe('information architecture (spec §4)', () => {
       '/assistant',
       '/buy-credits',
       '/capture?method=receipt',
+      '/capture?method=manual',
       '/generate-plan',
       '/plans',
     ]) {
       expect(home, `Home no longer routes to ${route}`).toContain(route);
     }
 
-    const useSoonTile =
-      home.match(/accessibilityLabel=\{useSoonAccessibilityLabel\}[\s\S]*?<\/Tile>/)?.[0] ?? '';
-    expect(useSoonTile, 'Home use-soon row must scroll instead of squeezing mini items').toContain(
-      '<ScrollView',
+    const tonightCard =
+      home.match(/function TonightRecipeCard[\s\S]*?function NoPlanCard/)?.[0] ?? '';
+    expect(tonightCard, 'Tonight recipe must keep the recipe detail route').toContain(
+      'router.push(`/recipe/${entry.recipe.id}`)',
+    );
+    expect(tonightCard, 'Tonight recipe must keep cook-mode navigation').toContain(
+      'router.push(`/recipe/${entry.recipe.id}/cook`)',
+    );
+    expect(tonightCard, 'Tonight recipe must use the J full-bleed recipe photo').toContain(
+      'size={196}',
+    );
+    expect(tonightCard, 'Tonight recipe actions must be compact J buttons').toContain('size="S"');
+
+    const noPlanCard = home.match(/function NoPlanCard[\s\S]*?function QuickActions/)?.[0] ?? '';
+    expect(noPlanCard, 'No-plan state must use the J calendar EmptyState').toContain(
+      'illustration="calendar"',
+    );
+    expect(noPlanCard, 'No-plan action must be a compact primary action').toContain('size="S"');
+    expect(noPlanCard, 'No-plan card must show the plan-generation credit cost').toContain(
+      "costOf('plan.daily')",
+    );
+
+    const useSoonSection =
+      home.match(/function UseSoonSection[\s\S]*?function WeekSection/)?.[0] ?? '';
+    expect(
+      useSoonSection,
+      'Home use-soon rows must be J item rows, not a squeezed scroller',
+    ).not.toContain('<ScrollView');
+    expect(useSoonSection, 'Home use-soon rows keep the direction remount guard').toContain(
+      'key={`use-soon-${dir}`}',
     );
     expect(
-      useSoonTile,
-      'Home use-soon scroller must remount when direction changes so live en→ar switches do not keep the old physical offset.',
-    ).toContain('key={`use-soon-${dir}`}');
-    expect(useSoonTile, 'Home use-soon visible statuses must use short days-left copy').toContain(
-      'formatDaysLeft(t, locale, item.expiresAt, prefs)',
+      useSoonSection,
+      'Home use-soon visible statuses must use short days-left copy',
+    ).toContain('formatDaysLeft(t, locale, item.expiresAt, prefs)');
+    expect(
+      useSoonSection,
+      'Home use-soon item rows must show food art at the J row size',
+    ).toContain('size={56}');
+    expect(useSoonSection, 'Home use-soon metadata must keep quantity and location').toContain(
+      'formatMeasure(t, locale, item.quantity, item.unit, prefs)',
     );
-    expect(useSoonTile, 'Home use-soon mini item names and status must not truncate').not.toContain(
-      'numberOfLines',
+    expect(useSoonSection, 'Home use-soon rows must use worded status badges').toContain('<Badge');
+
+    const weekSection = home.match(/function WeekSection[\s\S]*?function PlaceTile/)?.[0] ?? '';
+    expect(weekSection, 'Home week block must be the J Progress plus day strip').toContain(
+      '<Progress',
+    );
+    expect(weekSection, 'Home week block must render the owned WeekStrip').toContain('<WeekStrip');
+
+    const glanceSection =
+      home.match(/function PlaceTile[\s\S]*?export default function Home/)?.[0] ?? '';
+    expect(glanceSection, 'Home glance must rank real household places').toContain('rankPlaces');
+    expect(glanceSection, 'Home glance must render J place tiles').toContain('variant="place"');
+    expect(glanceSection, 'Home glance must keep the full kitchen route').toContain(
+      "router.push('/kitchen')",
     );
   });
 
-  it('mirrors only the Home arrow affordance, not the media play glyph', () => {
+  it('keeps the Home cook action as a recipe action, not a mirrored direction glyph', () => {
     const home = read('app', '(tabs)', 'home.tsx');
-    expect(home).toContain('<RoundButton');
-    expect(home).toContain('icon="play"');
+    expect(home).toContain('router.push(`/recipe/${entry.recipe.id}/cook`)');
     expect(home).not.toContain('<DirectionalIcon name="play"');
-    expect(home).toContain('<DirectionalIcon name="arrowForward"');
   });
 
-  it('keeps the empty Tonight tile at the populated Tonight height', () => {
+  it('keeps the empty Tonight state at the populated Tonight card height', () => {
     const home = read('app', '(tabs)', 'home.tsx');
     expect(home).toMatch(
-      /tint="apricot"[\s\S]*?height=\{220\}[\s\S]*?accessibilityLabel=\{t\('mobile\.home\.tonightEmpty'\)\}/,
+      /NO_PLAN_CARD_MIN_HEIGHT\s*=\s*270[\s\S]*?function NoPlanCard[\s\S]*?minHeight:\s*NO_PLAN_CARD_MIN_HEIGHT/,
     );
   });
 
