@@ -2,6 +2,13 @@ import type { AuthStatus } from '../stores/auth';
 
 /** Where the entry gate sends the user, or `null` while the session hydrates. */
 export type EntryRoute = '/welcome' | '/onboarding' | '/home';
+export type SignInRoute = '/sign-in';
+
+export interface StackResetRouter {
+  canDismiss?: () => boolean;
+  dismissAll?: () => void;
+  replace: (href: SignInRoute) => void;
+}
 
 /**
  * The entry gate's decision, kept out of the screen so it can be tested. The
@@ -45,4 +52,16 @@ export function shouldRedirectSignedOut(
   if (segments.length === 0) return false;
   if (segments[0] === '(auth)') return false;
   return true;
+}
+
+/**
+ * Make sign-in the only screen in the stack after a session ends.
+ *
+ * A plain replace leaves the previous app stack underneath, so AuthLayout sees
+ * `canGoBack()` and renders a Back button that immediately bounces back to
+ * sign-in. Expo Router 57 gives us `dismissAll()` for the stack clear.
+ */
+export function resetToSignIn(router: StackResetRouter): void {
+  if (router.canDismiss?.()) router.dismissAll?.();
+  router.replace('/sign-in');
 }

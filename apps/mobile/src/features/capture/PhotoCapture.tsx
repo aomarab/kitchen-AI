@@ -285,6 +285,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
       name,
       quantity,
       lowConfidence: isLowConfidence(item.confidence),
+      locale,
       t,
     });
   };

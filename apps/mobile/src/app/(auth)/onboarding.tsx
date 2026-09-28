@@ -5,6 +5,7 @@ import { AuthLayout, AppText, Field, Button, Chip } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useCreateHousehold, useJoinHousehold } from '../../hooks/auth';
 import { useAuthStore } from '../../stores/auth';
+import { resetToSignIn } from '../../lib/entry-route';
 import { errorMessageKey } from '../../lib/errors';
 import { spacing } from '../../theme';
 
@@ -88,7 +89,7 @@ export default function Onboarding() {
         title={t('auth.signOut')}
         variant="ghost"
         onPress={() => {
-          void signOut().then(() => router.replace('/sign-in'));
+          void signOut().then(() => resetToSignIn(router));
         }}
         style={{ marginTop: spacing.lg }}
       />

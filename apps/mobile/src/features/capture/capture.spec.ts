@@ -112,6 +112,15 @@ describe('capture screen source contract (G3b)', () => {
       /<StatusBar style="light" \/>\s*<View style=\{\{ flex: 1 \}\}>\{children\}<\/View>/,
     );
   });
+
+  it('skips the shutter press scale when Reduce Motion is enabled', () => {
+    const source = read('features', 'capture', 'Shutter.tsx');
+    const animatePress = source.match(/const animatePress[\s\S]*?Animated\.timing/)?.[0] ?? '';
+
+    expect(source).toContain('useReduceMotion()');
+    expect(animatePress).toContain('if (reduceMotion)');
+    expect(animatePress).toContain('pressScale.setValue(1)');
+  });
 });
 
 describe('review screen source contract (G4)', () => {
@@ -144,6 +153,15 @@ describe('review screen source contract (G4)', () => {
 
     expect(source).toContain('trailing={');
     expect(source).toContain("t('mobile.review.retake')");
+  });
+
+  it('respects Reduce Motion when focus-scrolling to a reviewed item', () => {
+    const source = read('app', 'capture', 'review.tsx');
+    const scrollCall = source.match(/scrollRef\.current\?\.scrollTo\([\s\S]*?\);/)?.[0] ?? '';
+
+    expect(source).toContain('useReduceMotion()');
+    expect(scrollCall).toContain('animated: !reduceMotion');
+    expect(scrollCall).not.toContain('animated: true');
   });
 
   it('drops the old review hint and exposes a sticky-footer split', () => {

@@ -186,7 +186,7 @@ function miniItemIcon(item: InventoryItem) {
 
 export default function Home() {
   const { colors } = useTheme();
-  const { t, locale, prefs } = useFormat();
+  const { t, locale, dir, prefs } = useFormat();
   const router = useRouter();
   const plansQuery = usePlans();
   const expiringQuery = useInventory({ expiringWithinDays: 3, sort: 'expiry' });
@@ -376,6 +376,7 @@ export default function Home() {
             </AppText>
           ) : (
             <ScrollView
+              key={`use-soon-${dir}`}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ gap: spacing.sm }}

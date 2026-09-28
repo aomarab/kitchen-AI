@@ -293,13 +293,17 @@ function StepTimerControl({
     ? formatRemaining(projected.remainingSec)
     : formatRemaining(Math.round(durationMinutes * 60));
   const finished = projected?.status === 'done';
+  const runningAnnouncement = projected
+    ? t('mobile.recipe.stepTimerRunning', {
+        remaining: formatRemaining(projected.remainingSec),
+      })
+    : undefined;
   const statusCaption = projected
     ? finished
       ? t('mobile.recipe.stepTimerDone')
-      : t('mobile.recipe.stepTimerRunning', {
-          remaining: formatRemaining(projected.remainingSec),
-        })
+      : t('mobile.recipe.stepTimerRunningStatus')
     : null;
+  const statusAccessibilityLabel = finished ? (statusCaption ?? undefined) : runningAnnouncement;
   const buttonTitle = t('mobile.recipe.startStepTimer', {
     minutes: formatMinutes(locale, durationMinutes, prefs),
   });
@@ -319,7 +323,11 @@ function StepTimerControl({
         {countdown}
       </AppText>
       {statusCaption ? (
-        <AppText variant="caption" style={{ color: colors.textMuted }}>
+        <AppText
+          variant="caption"
+          accessibilityLabel={statusAccessibilityLabel}
+          style={{ color: colors.textMuted }}
+        >
           {statusCaption}
         </AppText>
       ) : null}

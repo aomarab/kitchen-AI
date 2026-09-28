@@ -70,6 +70,7 @@ export function Button({
           // Filled pills also give a little under the finger; a bare link only dims.
           transform: [{ scale: pressed && variant !== 'ghost' ? 0.98 : 1 }],
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
+          flexShrink: 0,
         },
         // The one action a screen asks for is the tallest thing on it (spec §8.5).
         variant === 'primary' ? { minHeight: 56 } : null,
@@ -79,9 +80,11 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={tone.label} />
       ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 }}
+        >
           {icon ? <Icon name={icon} size={18} color={tone.label} /> : null}
-          <AppText variant="button" style={{ color: tone.label }}>
+          <AppText variant="button" style={{ color: tone.label, flexShrink: 0 }}>
             {title}
           </AppText>
           {arrow ? <DirectionalIcon name="arrowForward" size={18} color={tone.label} /> : null}

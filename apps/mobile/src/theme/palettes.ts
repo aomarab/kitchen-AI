@@ -83,6 +83,9 @@ export interface Palette {
 
 export type ThemeMode = 'light' | 'dark';
 
+/** Native iOS switch thumb colour, used only for contrast maths in palette tests. */
+export const NATIVE_SWITCH_THUMB = '#FFFFFF';
+
 /** Constant across light and dark: media surfaces are always dark. */
 const MEDIA = {
   surfaceInverse: '#1A120E',

@@ -1,5 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { entryRoute, shouldRedirectSignedOut } from './entry-route';
+import { entryRoute, resetToSignIn, shouldRedirectSignedOut } from './entry-route';
+
+const SRC = join(__dirname, '..');
+const read = (...parts: string[]) => readFileSync(join(SRC, ...parts), 'utf8');
 
 describe('the entry gate', () => {
   it('renders nothing while the session is still hydrating', () => {
@@ -50,5 +55,42 @@ describe('the mid-session signed-out redirect', () => {
     expect(shouldRedirectSignedOut(false, 'signedOut', ['(tabs)', 'home'])).toBe(false);
     expect(shouldRedirectSignedOut(true, 'loading', ['(tabs)', 'home'])).toBe(false);
     expect(shouldRedirectSignedOut(true, 'signedIn', ['(tabs)', 'home'])).toBe(false);
+  });
+});
+
+describe('sign-in stack reset', () => {
+  it('dismisses the existing stack before replacing with sign-in', () => {
+    const calls: string[] = [];
+    resetToSignIn({
+      canDismiss: () => true,
+      dismissAll: () => calls.push('dismissAll'),
+      replace: (href) => calls.push(`replace:${href}`),
+    });
+
+    expect(calls).toEqual(['dismissAll', 'replace:/sign-in']);
+  });
+
+  it('does not dismiss when the current auth path is intentionally backable', () => {
+    const calls: string[] = [];
+    resetToSignIn({
+      canDismiss: () => false,
+      dismissAll: () => calls.push('dismissAll'),
+      replace: (href) => calls.push(`replace:${href}`),
+    });
+
+    expect(calls).toEqual(['replace:/sign-in']);
+  });
+
+  it('routes every session-end sign-in jump through the shared stack reset', () => {
+    const layout = read('app', '_layout.tsx');
+    const account = read('app', 'account.tsx');
+    const onboarding = read('app', '(auth)', 'onboarding.tsx');
+
+    expect(layout).toContain('resetToSignIn(router)');
+    expect(account).toContain('resetToSignIn(router)');
+    expect(onboarding).toContain('resetToSignIn(router)');
+    expect(layout).not.toContain("router.replace('/sign-in')");
+    expect(account).not.toContain("router.replace('/sign-in')");
+    expect(onboarding).not.toContain("router.replace('/sign-in')");
   });
 });

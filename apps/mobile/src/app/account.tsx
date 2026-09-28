@@ -6,6 +6,7 @@ import type { IconName } from '../components';
 import { useCredits } from '../hooks/credits';
 import { useFormat } from '../hooks/useFormat';
 import { totalCredits } from '../lib/credits';
+import { resetToSignIn } from '../lib/entry-route';
 import { formatQty } from '../lib/format';
 import { useAuthStore } from '../stores/auth';
 import { spacing } from '../theme';
@@ -73,7 +74,7 @@ export default function Account() {
           title={t('mobile.more.signOut')}
           variant="ghost"
           onPress={() => {
-            void signOut().then(() => router.replace('/sign-in'));
+            void signOut().then(() => resetToSignIn(router));
           }}
         />
         <AppText variant="caption" muted center>

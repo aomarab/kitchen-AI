@@ -15,6 +15,7 @@ describe('buildArPinLabel', () => {
         name: 'Vine tomatoes',
         quantity: '6 pc',
         lowConfidence: false,
+        locale: 'en',
         t,
       }),
     ).toEqual({
@@ -30,12 +31,29 @@ describe('buildArPinLabel', () => {
         name: 'Olive oil',
         quantity: '1 bottle',
         lowConfidence: true,
+        locale: 'en',
         t,
       }),
     ).toEqual({
       text: 'Olive oil?',
       accessibilityLabel: 'Olive oil, not sure',
       width: estimateChipWidth('Olive oil?'),
+    });
+  });
+
+  it('uses native Arabic punctuation for unsure Arabic labels', () => {
+    expect(
+      buildArPinLabel({
+        name: 'بقدونس',
+        quantity: 'حزمة واحدة',
+        lowConfidence: true,
+        locale: 'ar',
+        t,
+      }),
+    ).toEqual({
+      text: 'بقدونس؟',
+      accessibilityLabel: 'بقدونس, not sure',
+      width: estimateChipWidth('بقدونس؟'),
     });
   });
 });

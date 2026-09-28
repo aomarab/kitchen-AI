@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveThemeMode, tintIn, tintNamed } from './index';
-import { palettes, type Palette, type ThemeMode } from './palettes';
+import { NATIVE_SWITCH_THUMB, palettes, type Palette, type ThemeMode } from './palettes';
 import { contrast } from './contrast';
 import {
   RECIPE_THUMB_TONE_FOREGROUNDS,
@@ -9,7 +9,6 @@ import {
 
 const AA_TEXT = 4.5;
 const AA_NON_TEXT = 3;
-const NATIVE_SWITCH_THUMB = '#FFFFFF';
 
 /** Every surface a text colour can land on, in whichever mode is under test. */
 const SURFACES = ['bg', 'surface', 'surfaceAlt'] as const;

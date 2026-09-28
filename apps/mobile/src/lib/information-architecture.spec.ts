@@ -486,6 +486,10 @@ describe('information architecture (spec §4)', () => {
     expect(useSoonTile, 'Home use-soon row must scroll instead of squeezing mini items').toContain(
       '<ScrollView',
     );
+    expect(
+      useSoonTile,
+      'Home use-soon scroller must remount when direction changes so live en→ar switches do not keep the old physical offset.',
+    ).toContain('key={`use-soon-${dir}`}');
     expect(useSoonTile, 'Home use-soon visible statuses must use short days-left copy').toContain(
       'formatDaysLeft(t, locale, item.expiresAt, prefs)',
     );
@@ -570,6 +574,15 @@ describe('information architecture (spec §4)', () => {
     expect(timerControl).toContain('<Button');
     expect(timerControl).not.toMatch(/\n\s+accessible\b/);
     expect(timerControl).not.toContain('accessibilityLabel={caption}');
+    expect(
+      timerControl,
+      'The visible running-timer caption is status only; the large numeral carries the countdown.',
+    ).toContain("t('mobile.recipe.stepTimerRunningStatus')");
+    expect(
+      timerControl,
+      'The screen-reader label must keep the legacy countdown-inclusive running timer wording.',
+    ).toContain("t('mobile.recipe.stepTimerRunning'");
+    expect(timerControl).toContain('accessibilityLabel={statusAccessibilityLabel}');
   });
 
   it('adds the G9 recipe labels in both languages', () => {
@@ -581,6 +594,7 @@ describe('information architecture (spec §4)', () => {
       'mobile.recipe.minutesValue',
       'mobile.recipe.totalTimeLabel',
       'mobile.recipe.difficultyLabel',
+      'mobile.recipe.stepTimerRunningStatus',
     ]) {
       expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
       expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
@@ -700,6 +714,14 @@ describe('information architecture (spec §4)', () => {
       timers,
       'The timer pause control must not use Icon name "pause", which is the wellness coffee-break glyph.',
     ).not.toMatch(/\bicon\s*(?:=|:)\s*['"]pause['"]/);
+    expect(
+      timers,
+      'The add-minute control must visibly say +1 instead of a bare plus glyph.',
+    ).toContain("visibleLabel: '+1'");
+    expect(
+      timers,
+      'The add-minute label must remain the accessible label even though the visible affordance is compact.',
+    ).toContain('accessibilityLabel={control.label}');
   });
 
   it('keeps the smart screen hero on the shared ember Card (spec §9.7)', () => {

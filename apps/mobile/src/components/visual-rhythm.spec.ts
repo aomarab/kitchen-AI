@@ -30,17 +30,32 @@ describe('borderless buttons align to the content margin', () => {
     expect(source).toMatch(/minHeight:\s*48/);
     expect(source).toMatch(/hitSlop=\{hitSlop\}/);
   });
+
+  it('lets inline text actions keep their intrinsic width', () => {
+    expect(source).toContain('flexShrink: 0');
+  });
 });
 
 describe('pushed-screen header', () => {
   const source = read('./Header.tsx');
 
-  it('centres a bodyStrong title between two equal sides', () => {
-    // Spec §8.6. Equal flex on both sides is what keeps the title optically
-    // centred when only one side (usually back) is occupied.
+  it('centres a bodyStrong title over intrinsic-width side controls', () => {
+    // The title must stay screen-centred, but the Review trailing "Retake" text
+    // action needs its intrinsic width in Arabic instead of one cramped flex
+    // share. The wider side becomes symmetric padding around the centred title.
     expect(source).toMatch(/variant="bodyStrong"/);
     expect(source).not.toMatch(/variant="title"/);
-    expect(source.match(/flex:\s*1\b/g) ?? []).toHaveLength(2);
+    expect(source).toContain("position: 'absolute'");
+    expect(source).toContain('start: 0');
+    expect(source).toContain('end: 0');
+    expect(source).toContain('const sideInset = Math.max(sideWidths.start, sideWidths.end, 44)');
+    expect(source).toContain('paddingHorizontal: sideInset + spacing.sm');
+    expect(source).toContain("onLayout={measureSide('end')}");
+
+    const trailingSlot =
+      source.match(/<View onLayout=\{measureSide\('end'\)\}[\s\S]*?\{trailing\}<\/View>/)?.[0] ??
+      '';
+    expect(trailingSlot).not.toMatch(/flex:\s*1\b/);
   });
 
   it('backs out through a 44pt round button that mirrors in RTL', () => {

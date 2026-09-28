@@ -34,6 +34,10 @@ export function Shutter({
   const previousCount = useRef(count);
 
   const animatePress = (toValue: number) => {
+    if (reduceMotion) {
+      pressScale.setValue(1);
+      return;
+    }
     Animated.timing(pressScale, {
       toValue,
       duration: 90,

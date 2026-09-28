@@ -29,7 +29,8 @@ const PRESET_MINUTES = [1, 3, 5, 10, 20, 45] as const;
 interface TimerControlItem {
   name: string;
   label: string;
-  icon: IconName;
+  icon?: IconName;
+  visibleLabel?: string;
   tone: RoundButtonTone;
   onPress: () => void;
 }
@@ -113,7 +114,7 @@ function TimerCard({
     {
       name: 'extend',
       label: t('mobile.timers.addMinute'),
-      icon: 'plus',
+      visibleLabel: '+1',
       tone: 'primary',
       onPress: () => onAction({ action: 'extend', seconds: 60 }),
     },
@@ -224,9 +225,10 @@ function TimerControls({
       {controls.map((control) => (
         <RoundButton
           key={control.name}
-          icon={control.icon}
           tone={control.tone}
           accessibilityLabel={control.label}
+          label={control.visibleLabel}
+          icon={control.icon}
           disabled={busy}
           onPress={control.onPress}
         />

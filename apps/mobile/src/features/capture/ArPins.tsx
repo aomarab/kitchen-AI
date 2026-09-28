@@ -177,6 +177,7 @@ export function ArPins({ items, frame, onPress }: ArPinsProps) {
           name,
           quantity,
           lowConfidence: isLowConfidence(item.confidence),
+          locale,
           t,
         }),
       );

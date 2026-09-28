@@ -7,6 +7,7 @@ import {
   formatDaysLeft,
   formatExpiryLabel,
   formatDateWithHijri,
+  formatMeasure,
   formatWeekday,
   hijriCaption,
   ingredientName,
@@ -145,6 +146,36 @@ describe('unit labels', () => {
       expect(unitLabel(ar, unit), unit).not.toBe(`units.${unit}`);
       expect(unitLabel(ar, unit), unit).not.toBe(unitLabel(en, unit));
     }
+  });
+});
+
+describe('formatMeasure', () => {
+  const en = createTranslator('en');
+  const ar = createTranslator('ar');
+
+  it('uses kitchen fraction glyphs for counted and word units', () => {
+    expect(formatMeasure(en, 'en', 2.5, 'piece')).toBe('2½ pc');
+    expect(formatMeasure(en, 'en', 1.25, 'bunch')).toBe('1¼ bunches');
+  });
+
+  it('pluralises English word units by count', () => {
+    expect(formatMeasure(en, 'en', 5, 'clove')).toBe('5 cloves');
+    expect(formatMeasure(en, 'en', 1, 'clove')).toBe('1 clove');
+  });
+
+  it('keeps mass and volume abbreviations decimal', () => {
+    expect(formatMeasure(en, 'en', 1.5, 'kg')).toBe('1.5 kg');
+  });
+
+  it('uses native Arabic CLDR forms for word units', () => {
+    expect(formatMeasure(ar, 'ar', 1, 'clove')).toBe('فص واحد');
+    expect(formatMeasure(ar, 'ar', 2, 'clove')).toBe('فصان');
+    expect(formatMeasure(ar, 'ar', 3, 'clove')).toBe('3 فصوص');
+    expect(formatMeasure(ar, 'ar', 11, 'clove')).toBe('11 فصًا');
+  });
+
+  it('keeps Arabic numeral preferences when rendering fractions', () => {
+    expect(formatMeasure(ar, 'ar', 1.25, 'bunch', { easternNumerals: true })).toBe('١¼ حزمة');
   });
 });
 

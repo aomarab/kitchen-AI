@@ -68,6 +68,45 @@ export function unitLabel(t: Translator, unit: Unit): string {
   return t(`units.${unit}` as MessageKey);
 }
 
+const WORD_MEASURE_UNITS = new Set<Unit>([
+  'bunch',
+  'clove',
+  'slice',
+  'can',
+  'jar',
+  'packet',
+  'bottle',
+  'cup',
+  'pinch',
+]);
+
+const FRACTIONAL_MEASURE_UNITS = new Set<Unit>(['piece', ...WORD_MEASURE_UNITS]);
+
+const KITCHEN_FRACTIONS: readonly (readonly [number, string])[] = [
+  [1 / 4, '¼'],
+  [1 / 3, '⅓'],
+  [1 / 2, '½'],
+  [2 / 3, '⅔'],
+  [3 / 4, '¾'],
+];
+
+function formatKitchenQuantity(locale: Locale, value: number, prefs: NumeralPrefs): string {
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+  const whole = Math.floor(abs);
+  const fraction = abs - whole;
+
+  if (Math.abs(fraction) <= 0.01 || Math.abs(fraction - 1) <= 0.01) {
+    return `${sign}${formatQty(locale, Math.round(abs), prefs)}`;
+  }
+
+  const match = KITCHEN_FRACTIONS.find(([target]) => Math.abs(fraction - target) <= 0.01);
+  if (!match) return formatQty(locale, value, prefs);
+
+  const wholeText = whole > 0 ? formatQty(locale, whole, prefs) : '';
+  return `${sign}${wholeText}${match[1]}`;
+}
+
 /**
  * Names the API seeds a new household with. These are never shown: they exist
  * so the row has something to hold, and the client renders the *type* instead
@@ -119,7 +158,14 @@ export function formatMeasure(
   unit: Unit,
   prefs: NumeralPrefs = {},
 ): string {
-  return `${formatQty(locale, value, prefs)} ${unitLabel(t, unit)}`;
+  const quantity = FRACTIONAL_MEASURE_UNITS.has(unit)
+    ? formatKitchenQuantity(locale, value, prefs)
+    : formatQty(locale, value, prefs);
+  if (WORD_MEASURE_UNITS.has(unit)) {
+    const pluralCount = Math.abs(value - Math.round(value)) <= 0.01 ? Math.round(value) : value;
+    return t(`mobile.measureUnits.${unit}` as MessageKey, { count: pluralCount, quantity });
+  }
+  return `${quantity} ${unitLabel(t, unit)}`;
 }
 
 export function formatDateL(

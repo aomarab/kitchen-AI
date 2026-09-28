@@ -11,6 +11,7 @@ import { Screen, Header, EmptyState, LoadingState, ErrorState, Button } from '..
 import { ReviewFooter, ReviewList, useReviewListState } from '../../features/capture/ReviewList';
 import { useFormat } from '../../hooks/useFormat';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
+import { useReduceMotion } from '../../hooks/motion';
 import { spacing } from '../../theme';
 import { useCaptureStore } from '../../stores/capture';
 import { useToastStore } from '../../stores/toast';
@@ -35,6 +36,7 @@ function ReviewReady({
   const params = useLocalSearchParams<{ focus?: string }>();
   const scrollRef = useRef<ScrollView>(null);
   const scrolledFocus = useRef<string | null>(null);
+  const reduceMotion = useReduceMotion();
   const focus = typeof params.focus === 'string' ? params.focus : undefined;
   const review = useReviewListState({ session, source, locations, onConfirm });
 
@@ -47,10 +49,10 @@ function ReviewReady({
       if (!focus || tempId !== focus || scrolledFocus.current === focus) return;
       scrolledFocus.current = focus;
       requestAnimationFrame(() => {
-        scrollRef.current?.scrollTo({ y: Math.max(0, y - spacing.md), animated: true });
+        scrollRef.current?.scrollTo({ y: Math.max(0, y - spacing.md), animated: !reduceMotion });
       });
     },
-    [focus],
+    [focus, reduceMotion],
   );
 
   return (
