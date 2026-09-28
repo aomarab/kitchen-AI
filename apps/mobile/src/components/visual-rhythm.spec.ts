@@ -59,38 +59,41 @@ describe('pushed-screen header', () => {
     expect(trailingSlot).not.toMatch(/flex:\s*1\b/);
   });
 
-  it('backs out through a 44pt round button that mirrors in RTL', () => {
+  it('backs out through a 44pt IconButton that mirrors in RTL', () => {
     // The old bare 26pt chevron relied on hitSlop for its touch target.
-    expect(source).toMatch(/<RoundButton[^>]*icon="back"[^>]*directional/);
+    expect(source).toMatch(/<IconButton[\s\S]*icon="back"[\s\S]*directional/);
+    expect(source).toContain('tone="plain"');
   });
 });
 
 describe('surfaces', () => {
   it.each(['./Card.tsx', './Tile.tsx'])(
-    '%s lifts by shadow in light mode and by its edge in dark mode',
+    '%s lifts with the J card shadow and cardEdge token',
     (file) => {
-      // Spec §6.7: a dark page makes any shadow invisible, so depth moves to
-      // the border there; in light mode the border matches the fill.
       const source = read(file);
-      expect(source).toMatch(/isDark \? colors\.border/);
+      expect(source).toContain('colors.cardEdge');
       expect(source).toMatch(/shadow\.card/);
     },
   );
 
   it.each(['./Card.tsx', './Tile.tsx'])(
-    '%s dims to 0.92 and scales to 0.98 when pressed',
+    '%s uses the shared 80ms press dimming instead of scale',
     (file) => {
       const source = read(file);
-      expect(source).toMatch(/pressed \? 0\.92/);
-      expect(source).toMatch(/scale: pressed \? 0\.98/);
+      expect(source).toContain('usePressFeedback');
+      expect(source).toContain('pressFeedback.animatedStyle');
+      expect(source).not.toContain('scale: pressed');
+      expect(source).not.toContain('pressed ? 0.92');
     },
   );
 
-  it('a sheet floats on the raised shadow and closes through a sunk round button', () => {
+  it('a sheet floats on the sheet shadow and closes through a plain 44pt icon button', () => {
     const source = read('./Sheet.tsx');
-    expect(source).toMatch(/shadow\.raised/);
-    expect(source).toMatch(/<RoundButton[^>]*tone="sunk"/);
+    expect(source).toMatch(/shadow\.sheet/);
+    expect(source).toMatch(/<IconButton[\s\S]*icon="close"/);
     expect(source).toMatch(/variant="title"/);
+    expect(source).toContain('width: 36');
+    expect(source).toContain('height: 4');
   });
 });
 
@@ -134,16 +137,16 @@ describe('G1 primitive extensions', () => {
     expect(source).toContain('leading?: ReactNode');
     expect(source).toContain("fill?: 'tint' | 'surfaceAlt'");
     expect(source).toContain('compact?: boolean');
-    expect(source).toContain('const TILE_MIN_HEIGHT = 120');
-    expect(source).toContain('const COMPACT_TILE_MIN_HEIGHT = 112');
-    expect(source).toContain('minHeight: compact ? COMPACT_TILE_MIN_HEIGHT : TILE_MIN_HEIGHT');
-    expect(source).toContain('padding: compact ? spacing.md : spacing.lg');
-    expect(source).toContain('borderRadius: compact ? radius.lg : radius.xl');
+    expect(source).toContain('variant?: TileVariant');
+    expect(source).toContain('const PLACE_TILE_MIN_HEIGHT = 158');
+    expect(source).toContain('const QUICK_ACTION_MIN_HEIGHT = 80');
+    expect(source).toContain('function tileMinHeight');
+    expect(source).toContain('padding: quickAction ? spacing.md : spacing.lg');
+    expect(source).toContain("quickAction || fillMode === 'surfaceAlt'");
     expect(source).toContain('accessibilityRole?: AccessibilityRole');
     expect(source).toContain('accessibilityState?: AccessibilityState');
     expect(source).toContain('accessibilityActions');
     expect(source).toContain('onAccessibilityAction');
-    expect(source).toContain("fillMode === 'surfaceAlt'");
     expect(source).toContain('imageFailed');
     expect(source).toContain('onError={() => setImageFailed(true)}');
     expect(source).toContain('showPhotoFallback');

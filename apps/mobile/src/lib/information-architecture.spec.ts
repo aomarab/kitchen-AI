@@ -118,18 +118,23 @@ describe('information architecture (spec §4)', () => {
     expect(generate).toContain('state="looking"');
   });
 
-  it('draws the avatar as a 36pt soft RoundButton that opens Account', () => {
+  it('draws the avatar as a 44pt AccountButton around a 32pt J avatar', () => {
     const button = read('components', 'AccountButton.tsx');
-    expect(button).toContain('<RoundButton');
-    expect(button).toContain('size={36}');
-    expect(button).toContain('tone="soft"');
+    expect(button).toContain('<Pressable');
+    expect(button).toContain('width: 44');
+    expect(button).toContain('height: 44');
+    expect(button).toContain('<Avatar');
+    expect(button).toContain('size={32}');
+    expect(button).toContain('usePressFeedback');
     expect(button).toContain("router.push('/account')");
     expect(button).toContain("t('mobile.account.title')");
   });
 
-  it('lays grouped rows out at 56pt (spec §9.7)', () => {
+  it('lays every flat J row out at 56pt with a rowline', () => {
     const row = read('components', 'ListRow.tsx');
-    expect(row).toMatch(/grouped\s*\?\s*\{[^}]*minHeight:\s*56/);
+    expect(row).toMatch(/minHeight:\s*56/);
+    expect(row).toContain('borderBottomColor: colors.rowline');
+    expect(row).toContain('/** @deprecated J: removed in C16. Rows are flat in every group. */');
   });
 
   it('keeps Account and Settings rows on the grouped G10 contract (spec §9.7)', () => {
@@ -142,7 +147,7 @@ describe('information architecture (spec §4)', () => {
     );
 
     const settings = read('app', 'settings', 'index.tsx');
-    expect(settings, 'Settings navigation groups should use ListGroup cards').toContain(
+    expect(settings, 'Settings navigation groups should use shared ListGroup columns').toContain(
       '<ListGroup',
     );
     const rows = settings.match(/<ListRow[\s\S]*?\/>/g) ?? [];
@@ -161,8 +166,11 @@ describe('information architecture (spec §4)', () => {
     expect(toggleRow, 'ToggleRow should not wrap the native Switch after C3').not.toContain(
       '<Switch',
     );
-    expect(toggleRow, 'ToggleRow must center a lone label but top-align label+hint rows').toContain(
-      "alignItems: hint ? 'flex-start' : 'center'",
+    expect(toggleRow, 'ToggleRow should delegate structure to the flat J ListRow').toContain(
+      '<ListRow',
+    );
+    expect(toggleRow, 'ToggleRow should preserve the 56pt row target').toContain(
+      'TOGGLE_ROW_MIN_HEIGHT = 56',
     );
     const toggle = read('components', 'Toggle.tsx');
     expect(toggle, 'Toggle knob motion must mirror under the app RTL direction').toContain(
@@ -647,10 +655,10 @@ describe('information architecture (spec §4)', () => {
   it('keeps Auth on the Apricot Bento screen contract', () => {
     const layout = read('components', 'AuthLayout.tsx');
     expect(layout).not.toContain('surfaceInverse');
-    expect(layout).toContain('<OrbMascot');
-    expect(layout).toContain('size={72}');
-    expect(layout).toContain('state="idle"');
-    expect(layout).toContain('accessible={false}');
+    expect(layout).not.toContain('<OrbMascot');
+    expect(layout).toContain('paddingTop: spacing.gutter');
+    expect(layout).toContain('<IconButton');
+    expect(layout).toContain('tone="plain"');
     expect(layout).toContain('variant="hero"');
     expect(layout).toContain('titleAccent');
     expect(layout).toContain("edges={['top', 'bottom']}");

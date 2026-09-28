@@ -1,26 +1,30 @@
+import { Animated, Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
-import { RoundButton } from './RoundButton';
+import { Avatar } from './Avatar';
+import { usePressFeedback } from './press-feedback';
 import { useFormat } from '../hooks/useFormat';
-import { initialOf } from '../lib/initial';
 import { useAuthStore } from '../stores/auth';
 
-/**
- * The avatar at the trailing end of every tab header (spec §4.2): a 36pt
- * `soft` circle with the user's initial inside a 44pt target. It is the only
- * way to Account, which holds everything the retired More tab held.
- */
-export function AccountButton() {
+export interface AccountButtonProps {
+  style?: StyleProp<ViewStyle>;
+}
+
+export function AccountButton({ style }: AccountButtonProps) {
   const { t } = useFormat();
   const router = useRouter();
-  const initial = initialOf(useAuthStore((state) => state.user?.displayName));
+  const userName = useAuthStore((state) => state.user?.displayName);
+  const pressFeedback = usePressFeedback();
   return (
-    <RoundButton
-      size={36}
-      tone="soft"
-      label={initial ?? undefined}
-      icon={initial ? undefined : 'user'}
+    <Pressable
+      accessibilityRole="button"
       accessibilityLabel={t('mobile.account.title')}
       onPress={() => router.push('/account')}
-    />
+      {...pressFeedback.pressHandlers}
+      style={[{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, style]}
+    >
+      <Animated.View style={pressFeedback.animatedStyle}>
+        <Avatar name={userName} size={32} />
+      </Animated.View>
+    </Pressable>
   );
 }

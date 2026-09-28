@@ -10,17 +10,23 @@ export interface TabHeaderProps {
   titleAccent?: string;
   /** A small line above the title, as in Home's "Thursday evening". */
   caption?: string;
-  /** One action before the avatar, such as Plan's `+`. */
+  /** One or more 44pt trailing controls before the avatar. */
   action?: ReactNode;
 }
 
-/**
- * The header of a tab screen (spec §8.6): a `display` title, then one optional
- * action and the avatar at the trailing end. Pushed screens use `Header`.
- */
 export function TabHeader({ title, titleAccent, caption, action }: TabHeaderProps) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+    <View
+      style={{
+        minHeight: 64,
+        paddingTop: spacing.sm,
+        paddingHorizontal: spacing.gutter,
+        paddingBottom: spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+      }}
+    >
       <View style={{ flex: 1, gap: 2 }}>
         {caption ? (
           <AppText variant="caption" muted>

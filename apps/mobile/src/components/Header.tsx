@@ -1,25 +1,18 @@
 import { useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { AppText } from './AppText';
-import { RoundButton } from './RoundButton';
+import { IconButton } from './IconButton';
 import { spacing } from '../theme';
 import { useLocale } from '../lib/locale';
 
 export interface HeaderProps {
   title: string;
   onBack?: () => void;
-  /** One trailing control, such as F4's ghost "Retake" or a status badge. */
+  /** One trailing control, such as a ghost action or status badge. */
   trailing?: React.ReactNode;
   subtitle?: string;
 }
 
-/**
- * The pushed-screen header (spec §8.6): back, a screen-centred `bodyStrong`
- * title and an optional trailing control. Side controls keep their intrinsic
- * width while the title gets symmetric padding from the wider side, so text
- * actions do not wrap and the title still sits on the screen centreline. Tab
- * screens use `TabHeader`.
- */
 export function Header({ title, onBack, trailing, subtitle }: HeaderProps) {
   const { t } = useLocale();
   const [sideWidths, setSideWidths] = useState({ start: 44, end: 0 });
@@ -30,7 +23,7 @@ export function Header({ title, onBack, trailing, subtitle }: HeaderProps) {
   };
 
   return (
-    <View style={{ minHeight: 44, justifyContent: 'center' }}>
+    <View style={{ minHeight: 52, justifyContent: 'center' }}>
       <View
         pointerEvents="none"
         style={{
@@ -60,20 +53,21 @@ export function Header({ title, onBack, trailing, subtitle }: HeaderProps) {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: spacing.sm,
-          minHeight: 44,
+          minHeight: 52,
         }}
       >
         <View onLayout={measureSide('start')} style={{ minWidth: 44, alignItems: 'flex-start' }}>
           {onBack ? (
-            <RoundButton
+            <IconButton
               icon="back"
+              tone="plain"
               directional
               accessibilityLabel={t('common.back')}
               onPress={onBack}
             />
           ) : null}
         </View>
-        <View onLayout={measureSide('end')} style={{ alignItems: 'flex-end' }}>
+        <View onLayout={measureSide('end')} style={{ minWidth: 44, alignItems: 'flex-end' }}>
           {trailing}
         </View>
       </View>

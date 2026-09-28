@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import {
+  Animated,
   Pressable,
+  StyleSheet,
   View,
   type AccessibilityRole,
   type AccessibilityState,
@@ -9,40 +11,32 @@ import {
 import { AppText } from './AppText';
 import { DirectionalIcon } from './DirectionalIcon';
 import { Icon, type IconName } from './Icon';
-import { radius, spacing, type ColorToken } from '../theme';
+import { usePressFeedback } from './press-feedback';
+import { spacing, type ColorToken } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 export interface ListRowProps {
   title: string;
   subtitle?: string;
   leading?: ReactNode;
-  /** Drawn in a 36pt `surfaceAlt` circle in the leading slot (spec §9.7). */
   icon?: IconName;
   trailing?: ReactNode;
   /** A short current value, such as a balance, shown muted before the chevron. */
   value?: string;
   onPress?: () => void;
   showChevron?: boolean;
+  checked?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   accessibilityRole?: AccessibilityRole;
   accessibilityState?: AccessibilityState;
-  /**
-   * A row inside a `ListGroup`: the group card owns the fill, edge and corners,
-   * so the row drops its own and grows to 56pt.
-   */
+  /** @deprecated J: removed in C16. Rows are flat in every group. */
   grouped?: boolean;
   /** Tints the title; used for destructive rows. Defaults to the text colour. */
   titleColor?: ColorToken;
   style?: ViewStyle;
 }
 
-/**
- * Standard tappable row. `flexDirection: 'row'` mirrors automatically under RTL,
- * and the trailing chevron flips via <DirectionalIcon>, so a single component
- * works for both directions. Standalone rows carry their own card; `grouped`
- * rows sit inside a `ListGroup`.
- */
 export function ListRow({
   title,
   subtitle,
@@ -52,53 +46,38 @@ export function ListRow({
   value,
   onPress,
   showChevron,
+  checked,
   accessibilityLabel,
   accessibilityHint,
   accessibilityRole,
   accessibilityState,
-  grouped,
   titleColor,
   style,
 }: ListRowProps) {
   const { colors } = useTheme();
-  const content = (
-    <View
+  const pressFeedback = usePressFeedback();
+  const row = (
+    <Animated.View
       style={[
         {
+          minHeight: 56,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: spacing.md,
+          gap: 14,
           paddingVertical: spacing.md,
-          paddingHorizontal: spacing.lg,
+          paddingHorizontal: 0,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.rowline,
+          backgroundColor: colors.bg,
         },
-        grouped
-          ? { minHeight: 56, paddingVertical: spacing.sm }
-          : {
-              backgroundColor: colors.surface,
-              borderRadius: radius.md,
-              borderWidth: 1,
-              borderColor: colors.border,
-            },
+        onPress ? pressFeedback.animatedStyle : null,
         style,
       ]}
     >
-      {icon ? (
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: radius.pill,
-            backgroundColor: colors.surfaceAlt,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon name={icon} size={20} color={colors.text} />
-        </View>
-      ) : null}
+      {icon ? <Icon name={icon} size={22} color={colors.text} /> : null}
       {leading}
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="bodyStrong" color={titleColor}>
+        <AppText variant="body" color={titleColor}>
           {title}
         </AppText>
         {subtitle ? (
@@ -108,15 +87,17 @@ export function ListRow({
         ) : null}
       </View>
       {value ? (
-        <AppText variant="body" muted numberOfLines={1}>
+        <AppText variant="caption" muted numberOfLines={1}>
           {value}
         </AppText>
       ) : null}
       {trailing}
-      {showChevron ? <DirectionalIcon name="chevron" size={20} color={colors.textMuted} /> : null}
-    </View>
+      {checked ? <Icon name="check" size={18} color={colors.primary} /> : null}
+      {showChevron ? <DirectionalIcon name="chevron" size={18} color={colors.control} /> : null}
+    </Animated.View>
   );
-  if (!onPress) return content;
+
+  if (!onPress) return row;
   return (
     <Pressable
       accessibilityRole={accessibilityRole ?? 'button'}
@@ -125,9 +106,9 @@ export function ListRow({
       accessibilityState={accessibilityState}
       accessibilityValue={value ? { text: value } : undefined}
       onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+      {...pressFeedback.pressHandlers}
     >
-      {content}
+      {row}
     </Pressable>
   );
 }

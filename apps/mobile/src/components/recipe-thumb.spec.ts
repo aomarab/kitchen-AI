@@ -72,10 +72,10 @@ describe('recipe thumb accessibility source guards', () => {
     expect(source()).toMatch(/importantForAccessibility="no-hide-descendants"/);
   });
 
-  it('draws the placeholder glyph from the shared icon set, not an emoji', () => {
-    // Emoji render differently on every platform and ignore the theme colour,
-    // so the glyph would neither match the app nor respect its tone pairing.
-    expect(source()).toMatch(/<Icon name="restaurant"/);
+  it('draws the J plate illustration on surfaceAlt, not the legacy tone glyph', () => {
+    expect(source()).toMatch(/<Illustration name="plate"/);
+    expect(source()).toContain('backgroundColor: colors.surfaceAlt');
+    expect(source()).not.toContain('recipe-thumb-tones');
     expect(source()).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 

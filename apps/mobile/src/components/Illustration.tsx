@@ -1,6 +1,7 @@
 import { type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { ILLUSTRATION_PATHS, type IllustrationName } from './glyphs/illustration-paths';
+export type { IllustrationName } from './glyphs/illustration-paths';
 import { illustrationStrokeWidth } from './glyphs/stroke';
 import { useTheme } from '../theme/useTheme';
 

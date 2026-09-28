@@ -67,7 +67,10 @@ describe('mobile source sweep', () => {
     'TabBar.tsx': { path: 'components/TabBar.tsx', pattern: /minHeight:\s*(\d+)/ },
     'Tile.tsx': { path: 'components/Tile.tsx', pattern: /COMPACT_TILE_MIN_HEIGHT\s*=\s*(\d+)/ },
     'Toggle.tsx': { path: 'components/Toggle.tsx', pattern: /height:\s*(\d+)/ },
-    'ToggleRow.tsx': { path: 'components/ToggleRow.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'ToggleRow.tsx': {
+      path: 'components/ToggleRow.tsx',
+      pattern: /TOGGLE_ROW_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
     'BalanceTile.tsx': {
       path: 'features/credits/BalanceTile.tsx',
       pattern: /BALANCE_ORB_SIZE\s*=\s*(\d+)/,

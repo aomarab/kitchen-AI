@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 import { AppText } from './AppText';
+import { Icon } from './Icon';
+import { usePressFeedback } from './press-feedback';
 import { useTabBarClearance } from './TabBar';
 import { useReduceMotion } from '../hooks/motion';
 import { useToastStore } from '../stores/toast';
-import { radius, spacing } from '../theme';
+import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 export function Toast() {
@@ -15,16 +17,13 @@ export function Toast() {
   const reduceMotion = useReduceMotion();
   const { colors, shadow } = useTheme();
   const progress = useRef(new Animated.Value(1)).current;
+  const actionFeedback = usePressFeedback();
 
   useEffect(() => {
     if (!toast) return;
     progress.setValue(reduceMotion ? 1 : 0);
     if (reduceMotion) return;
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: 180,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(progress, { toValue: 1, duration: 180, useNativeDriver: true }).start();
   }, [progress, reduceMotion, toast]);
 
   if (!toast) return null;
@@ -34,6 +33,7 @@ export function Toast() {
     dismiss();
   };
   const bottomOffset = (footerOffset > 0 ? footerOffset : clearance) + spacing.sm;
+  const error = toast.tone === 'error';
 
   return (
     <View
@@ -60,18 +60,19 @@ export function Toast() {
         }}
       >
         <View
+          accessibilityRole="alert"
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            gap: spacing.md,
-            paddingVertical: spacing.sm,
-            paddingHorizontal: spacing.lg,
-            borderRadius: radius.pill,
-            backgroundColor: colors.surfaceInverse,
+            gap: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            backgroundColor: colors.inverse,
             ...shadow.raised,
           }}
         >
-          <AppText variant="bodyStrong" style={{ color: colors.textInverse, flexShrink: 1 }}>
+          <Icon name={error ? 'alert' : 'checkCircle'} size={20} color={colors.onInverse} />
+          <AppText variant="body" style={{ color: colors.onInverse, flexShrink: 1 }}>
             {toast.message}
           </AppText>
           {toast.actionLabel ? (
@@ -79,15 +80,14 @@ export function Toast() {
               accessibilityRole="button"
               accessibilityLabel={toast.actionLabel}
               onPress={runAction}
-              style={({ pressed }) => ({
-                minHeight: 44,
-                justifyContent: 'center',
-                opacity: pressed ? 0.85 : 1,
-              })}
+              {...actionFeedback.pressHandlers}
+              style={{ minHeight: 44, justifyContent: 'center' }}
             >
-              <AppText variant="bodyStrong" style={{ color: colors.primaryInverse }}>
-                {toast.actionLabel}
-              </AppText>
+              <Animated.View style={actionFeedback.animatedStyle}>
+                <AppText variant="buttonSmall" style={{ color: colors.primaryOnInverse }}>
+                  {toast.actionLabel}
+                </AppText>
+              </Animated.View>
             </Pressable>
           ) : null}
         </View>
