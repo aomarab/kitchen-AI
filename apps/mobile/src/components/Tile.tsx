@@ -78,6 +78,9 @@ const photoImageStyle: ImageStyle = {
   height: '100%',
 };
 
+const TILE_MIN_HEIGHT = 120;
+const COMPACT_TILE_MIN_HEIGHT = 112;
+
 /**
  * The bento tile (spec §8.2): radius `xl`, a tint or a photo, and an optional
  * icon, count and caption. It is one accessibility element. Text on a photo
@@ -128,7 +131,7 @@ export function Tile({
   }, [image]);
 
   const container: ViewStyle = {
-    minHeight: compact ? 112 : 120,
+    minHeight: compact ? COMPACT_TILE_MIN_HEIGHT : TILE_MIN_HEIGHT,
     padding: compact ? spacing.md : spacing.lg,
     gap: spacing.sm,
     borderRadius: compact ? radius.lg : radius.xl,

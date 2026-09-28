@@ -113,7 +113,9 @@ describe('G1 primitive extensions', () => {
     expect(source).toContain('leading?: ReactNode');
     expect(source).toContain("fill?: 'tint' | 'surfaceAlt'");
     expect(source).toContain('compact?: boolean');
-    expect(source).toContain('minHeight: compact ? 112 : 120');
+    expect(source).toContain('const TILE_MIN_HEIGHT = 120');
+    expect(source).toContain('const COMPACT_TILE_MIN_HEIGHT = 112');
+    expect(source).toContain('minHeight: compact ? COMPACT_TILE_MIN_HEIGHT : TILE_MIN_HEIGHT');
     expect(source).toContain('padding: compact ? spacing.md : spacing.lg');
     expect(source).toContain('borderRadius: compact ? radius.lg : radius.xl');
     expect(source).toContain('accessibilityRole?: AccessibilityRole');
