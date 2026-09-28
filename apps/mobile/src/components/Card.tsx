@@ -15,6 +15,8 @@ export interface CardProps {
   /** The hero treatment: the ember gradient carrying inverse text. */
   gradient?: boolean;
   style?: ViewStyle;
+  /** Optional inner style for gradient cards whose wrapper must carry layout flex. */
+  contentStyle?: ViewStyle;
 }
 
 const fillFor = (colors: PaletteColors): Record<NonNullable<CardProps['tone']>, string> => ({
@@ -31,6 +33,7 @@ export function Card({
   tint,
   gradient,
   style,
+  contentStyle,
 }: CardProps) {
   const { colors, gradientHero, isDark, shadow } = useTheme();
   const fill = tint ? tint.bg : fillFor(colors)[tone];
@@ -54,7 +57,7 @@ export function Card({
       colors={gradientHero as unknown as readonly [string, string, ...string[]]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={{ borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm }}
+      style={{ borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm, ...contentStyle }}
     >
       {children}
     </LinearGradient>

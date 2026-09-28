@@ -148,7 +148,7 @@ export default function BuyCreditsScreen() {
                 >
                   <View style={{ gap: spacing.xs }}>
                     <AppText variant="numeral">{formatQty(locale, pack.credits, prefs)}</AppText>
-                    <AppText variant="caption" muted>
+                    <AppText variant="caption" muted style={{ writingDirection: 'ltr' }}>
                       {price}
                     </AppText>
                   </View>

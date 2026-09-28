@@ -195,7 +195,7 @@ export function NotificationSettings() {
                 grouped
                 icon="clock"
                 title={hourLabel(hour)}
-                value={reminderHour === hour ? t('mobile.assistant.personaSelected') : undefined}
+                value={reminderHour === hour ? t('mobile.notifications.timeSelected') : undefined}
                 trailing={
                   reminderHour === hour ? (
                     <Icon name="check" size={20} color={colors.primaryText} />

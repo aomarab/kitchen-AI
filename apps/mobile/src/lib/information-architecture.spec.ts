@@ -14,6 +14,17 @@ function sourceFiles(dir: string): string[] {
     if (statSync(path).isDirectory()) return sourceFiles(path);
     return /\.tsx?$/.test(name) && !/\.spec\.tsx?$/.test(name) ? [path] : [];
   });
+
+  it('keeps capture result retake in the fixed trailing icon slot', () => {
+    const capture = read('features', 'capture', 'PhotoCapture.tsx');
+    const resultTrailing =
+      capture.match(/flow === 'result' \? \([\s\S]*?\) : cameraGranted/)?.[0] ?? '';
+
+    expect(resultTrailing).toContain('<RoundButton');
+    expect(resultTrailing).toContain("accessibilityLabel={t('mobile.capture.retake')}");
+    expect(resultTrailing).not.toContain('<Button');
+    expect(resultTrailing).not.toContain("title={t('mobile.capture.retake')}");
+  });
 }
 
 /** Every row "More" held (spec §4.2). None of them may be dropped by the move. */
@@ -164,12 +175,20 @@ describe('information architecture (spec §4)', () => {
     expect(toggleRow, 'ToggleRow must paint the iOS off-state gutter').toContain(
       'ios_backgroundColor={colors.switchTrackOff}',
     );
+    expect(toggleRow, 'ToggleRow must center a lone label but top-align label+hint rows').toContain(
+      "alignItems: hint ? 'flex-start' : 'center'",
+    );
+    expect(toggleRow, 'Switch thumb must mirror under the app RTL direction').toContain(
+      "dir === 'rtl' ? { transform: [{ scaleX: -1 }] } : undefined",
+    );
 
     const household = read('app', 'settings', 'household.tsx');
     const inviteActions =
-      household.match(/t\('household\.shareInvite'\)[\s\S]*?t\('plans\.regenerate'\)/)?.[0] ?? '';
+      household.match(
+        /t\('household\.shareInvite'\)[\s\S]*?t\('mobile\.settings\.newInviteCode'\)/,
+      )?.[0] ?? '';
     expect(inviteActions, 'Household invite actions should render in order').toContain(
-      "t('plans.regenerate')",
+      "t('mobile.settings.newInviteCode')",
     );
     expect(inviteActions, 'Household invite actions must stack, not share one row').not.toContain(
       "flexDirection: 'row'",
@@ -415,6 +434,31 @@ describe('information architecture (spec §4)', () => {
       compactPlaceTile,
       'place tiles grow with Dynamic Type instead of truncating count or label text',
     ).not.toContain('numberOfLines');
+
+    const placeGrid = kitchen.match(/<Bento>[\s\S]*?\{useFirstItems\.length > 0/)?.[0] ?? '';
+    expect(placeGrid, 'Kitchen places must keep the lead tile in column one').toContain(
+      'renderPlaceTile(places[0], 0, false)',
+    );
+    expect(placeGrid, 'Kitchen places must stack every non-lead place in column two').toContain(
+      'places.slice(1).map((place, index) => renderPlaceTile(place, index + 1, true))',
+    );
+    expect(
+      placeGrid,
+      'Kitchen places must not strand places after the stacked column',
+    ).not.toContain('places.slice(3)');
+
+    const miniItemCard =
+      kitchen.match(/function MiniItemCard[\s\S]*?function SectionHeading/)?.[0] ?? '';
+    expect(miniItemCard, 'Kitchen mini item names and status must not truncate').not.toContain(
+      'numberOfLines',
+    );
+    expect(kitchen, 'Kitchen use-first status must use the short visible days-left copy').toContain(
+      'formatDaysLeft(t, locale, item.expiresAt, prefs, now)',
+    );
+    expect(
+      kitchen,
+      'Kitchen use-first accessibility labels must keep the full expiry sentence',
+    ).toContain('accessibilityText: formatExpiryLabel(t, locale, item.expiresAt, prefs, now)');
   });
 
   it('keeps the redesigned Home tab inside the G1 screen scope', () => {
@@ -438,6 +482,18 @@ describe('information architecture (spec §4)', () => {
     ]) {
       expect(home, `Home no longer routes to ${route}`).toContain(route);
     }
+
+    const useSoonTile =
+      home.match(/accessibilityLabel=\{useSoonAccessibilityLabel\}[\s\S]*?<\/Tile>/)?.[0] ?? '';
+    expect(useSoonTile, 'Home use-soon row must scroll instead of squeezing mini items').toContain(
+      '<ScrollView',
+    );
+    expect(useSoonTile, 'Home use-soon visible statuses must use short days-left copy').toContain(
+      'formatDaysLeft(t, locale, item.expiresAt, prefs)',
+    );
+    expect(useSoonTile, 'Home use-soon mini item names and status must not truncate').not.toContain(
+      'numberOfLines',
+    );
   });
 
   it('mirrors only the Home arrow affordance, not the media play glyph', () => {
@@ -648,15 +704,21 @@ describe('information architecture (spec §4)', () => {
     ).not.toMatch(/\bicon\s*(?:=|:)\s*['"]pause['"]/);
   });
 
-  it('keeps the smart screen hero on the ember gradient (spec §9.7)', () => {
+  it('keeps the smart screen hero on the shared ember Card (spec §9.7)', () => {
     const screen = read('app', 'screen.tsx');
     const heroOpening = screen.slice(
-      screen.indexOf('<LinearGradient'),
-      screen.indexOf('>', screen.indexOf('<LinearGradient')) + 1,
+      screen.indexOf('<Card'),
+      screen.indexOf('>', screen.indexOf('<Card')) + 1,
     );
 
-    expect(screen, 'Smart screen must render the hero with the ember gradient').toMatch(
-      /<LinearGradient[\s\S]*?gradientHero/,
+    expect(screen, 'Smart screen must render the hero with the shared gradient Card').toMatch(
+      /<Card[\s\S]*?\bgradient\b/,
+    );
+    expect(screen, 'Smart screen must not draw its own gradient outside Card').not.toContain(
+      '<LinearGradient',
+    );
+    expect(screen, 'Smart screen must not read gradientHero outside Card').not.toContain(
+      'gradientHero',
     );
     expect(
       screen,
@@ -667,7 +729,7 @@ describe('information architecture (spec §4)', () => {
       'The hero container must not be accessible, or its nested buttons can be hidden from assistive tech.',
     ).not.toContain('accessible');
     expect(screen, "The hero's accessibility label must stay on its text group").toContain(
-      'accessibilityLabel={`${planLabel}, ${heroMessage}`}',
+      'accessibilityLabel={`${heroEyebrow}, ${heroMessage}`}',
     );
   });
 });

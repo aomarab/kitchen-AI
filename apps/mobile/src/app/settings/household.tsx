@@ -86,7 +86,7 @@ export default function Household() {
             onPress={() => void Share.share({ message: household.inviteCode })}
           />
           <Button
-            title={t('plans.regenerate')}
+            title={t('mobile.settings.newInviteCode')}
             variant="ghost"
             icon="sync"
             loading={rotate.isPending}

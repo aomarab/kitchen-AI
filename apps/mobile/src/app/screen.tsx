@@ -1,6 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -55,7 +54,7 @@ export default function KitchenScreen() {
   useKeepAwake();
   const { t, locale } = useFormat();
   const router = useRouter();
-  const { colors, gradientHero } = useTheme();
+  const { colors } = useTheme();
   const { width, height } = useWindowDimensions();
 
   const householdsQuery = useHouseholds();
@@ -108,7 +107,7 @@ export default function KitchenScreen() {
   const heroText = (
     <View
       accessible
-      accessibilityLabel={`${planLabel}, ${heroMessage}`}
+      accessibilityLabel={`${heroEyebrow}, ${heroMessage}`}
       style={{ gap: spacing.sm }}
     >
       <AppText variant="label" style={{ color: colors.textInverseMuted }}>
@@ -133,16 +132,17 @@ export default function KitchenScreen() {
   );
 
   const hero = (
-    <LinearGradient
-      colors={gradientHero as unknown as readonly [string, string, ...string[]]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <Card
+      gradient
       style={{
         flex: isLandscape ? 1.4 : undefined,
+        borderRadius: radius.xl,
+      }}
+      contentStyle={{
+        flex: isLandscape ? 1 : undefined,
         gap: spacing.lg,
         padding: spacing.xl,
         borderRadius: radius.xl,
-        overflow: 'hidden',
         justifyContent: 'center',
       }}
     >
@@ -168,7 +168,7 @@ export default function KitchenScreen() {
           />
         </View>
       )}
-    </LinearGradient>
+    </Card>
   );
 
   const cards = (
