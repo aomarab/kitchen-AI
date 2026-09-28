@@ -127,11 +127,15 @@ export default function GeneratePlan() {
       <Header title={t('mobile.plans.generateTitle')} onBack={() => router.back()} />
 
       {running ? (
-        <View style={{ alignItems: 'center', gap: spacing.lg, paddingVertical: spacing.xxl }}>
-          <OrbMascot state="looking" size={96} />
-          <AppText variant="heading" center>
-            {t('mobile.job.buildingPlan')}
-          </AppText>
+        <View style={{ flex: 1, justifyContent: 'space-between', gap: spacing.lg }}>
+          <View
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg }}
+          >
+            <OrbMascot state="looking" size={96} />
+            <AppText variant="heading" center>
+              {t('mobile.job.buildingPlan')}
+            </AppText>
+          </View>
           <Button
             title={t('mobile.plans.generateCta')}
             icon="plans"

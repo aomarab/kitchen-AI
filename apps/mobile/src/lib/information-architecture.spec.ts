@@ -103,6 +103,16 @@ describe('information architecture (spec §4)', () => {
     expect(plans).toContain('<DayChipStrip');
     expect(plans).toContain('<PlanTiles');
 
+    const tiles = read('features', 'plans', 'PlanTiles.tsx');
+    expect(tiles).toContain("'mobile.plans.cookedCaption'");
+    expect(tiles).toContain("'mobile.plans.toBuyCaption'");
+    expect(tiles).not.toContain('name="warning"');
+    expect(tiles).not.toContain('icon="warning"');
+    for (const key of ['mobile.plans.cookedCaption', 'mobile.plans.toBuyCaption']) {
+      expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
+      expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
+    }
+
     const generate = read('app', 'generate-plan.tsx');
     expect(generate).toContain('<OrbMascot');
     expect(generate).toContain('state="looking"');
