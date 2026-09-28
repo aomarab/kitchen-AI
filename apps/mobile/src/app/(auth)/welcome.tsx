@@ -16,6 +16,8 @@ const LOCALES = [
   { value: 'ar', labelKey: 'common.arabic' },
 ] as const;
 
+const WELCOME_SECTION_GAP = spacing.sm;
+
 /**
  * The signed-out landing. It introduces the photo-to-inventory promise before
  * account creation, while keeping language choice and sign-in one tap away.
@@ -28,7 +30,7 @@ export default function Welcome() {
   const signIn = t('auth.signIn');
 
   return (
-    <Screen scroll contentStyle={{ flexGrow: 1, gap: spacing.lg }}>
+    <Screen scroll contentStyle={{ flexGrow: 1, gap: WELCOME_SECTION_GAP }}>
       <View style={{ alignSelf: 'flex-end', width: 168 }}>
         <SegmentedControl
           options={LOCALES.map((option) => ({ value: option.value, label: t(option.labelKey) }))}
@@ -49,7 +51,7 @@ export default function Welcome() {
         accessible
         accessibilityRole="header"
         accessibilityLabel={`${t('mobile.welcome.headline')} ${t('mobile.welcome.headlineAccent')}`}
-        style={{ gap: spacing.xs }}
+        style={{ gap: 0 }}
       >
         <AppText accessible={false} variant="hero">
           {t('mobile.welcome.headline')}
@@ -63,7 +65,7 @@ export default function Welcome() {
         {t('mobile.welcome.subtitle')}
       </AppText>
 
-      <View style={{ flexGrow: 1, minHeight: spacing.md }} />
+      <View style={{ flexGrow: 1 }} />
 
       <View style={{ gap: spacing.sm }}>
         <Button

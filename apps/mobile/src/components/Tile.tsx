@@ -12,6 +12,7 @@ import {
   Pressable,
   StyleSheet,
   View,
+  type ImageStyle,
   type ImageSourcePropType,
   type AccessibilityState,
   type StyleProp,
@@ -63,6 +64,16 @@ export interface TileProps {
 
 /** True inside `Bento`, where a tile shares its row or column by flex. */
 const InBento = createContext(false);
+
+const photoImageStyle: ImageStyle = {
+  position: 'absolute',
+  top: 0,
+  bottom: 0,
+  start: 0,
+  end: 0,
+  width: '100%',
+  height: '100%',
+};
 
 /**
  * The bento tile (spec §8.2): radius `xl`, a tint or a photo, and an optional
@@ -120,7 +131,7 @@ export function Tile({
           <Image
             source={image}
             resizeMode="cover"
-            style={StyleSheet.absoluteFill}
+            style={photoImageStyle}
             accessibilityIgnoresInvertColors
           />
           {scrim ? (

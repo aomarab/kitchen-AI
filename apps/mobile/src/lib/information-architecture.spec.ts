@@ -219,6 +219,10 @@ describe('information architecture (spec §4)', () => {
     expect(welcome).not.toContain('surfaceInverse');
     expect(welcome).not.toContain('snapTitle');
     expect(welcome).not.toContain('tagline');
+    expect(welcome).toContain('const WELCOME_SECTION_GAP = spacing.sm;');
+    expect(welcome).toContain('style={{ gap: 0 }}');
+    expect(welcome).toContain('style={{ flexGrow: 1 }}');
+    expect(welcome).not.toContain('minHeight: spacing.md');
 
     for (const key of [
       'mobile.welcome.headline',
@@ -241,5 +245,10 @@ describe('information architecture (spec §4)', () => {
       expect(existsSync(path), `${file} is missing`).toBe(true);
       expect(statSync(path).size, `${file} is larger than 160 KiB`).toBeLessThanOrEqual(160 * 1024);
     }
+
+    const collage = read('features', 'welcome', 'WelcomeCollage.tsx');
+    expect(collage).toContain('function FloatingLeafCircle');
+    expect(collage).toContain("position: 'absolute'");
+    expect(collage).not.toContain('leading={<LeafCircle />}');
   });
 });

@@ -121,6 +121,23 @@ function LeafCircle() {
   );
 }
 
+function FloatingLeafCircle() {
+  return (
+    <View
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        top: spacing.lg,
+        start: spacing.lg,
+      }}
+    >
+      <LeafCircle />
+    </View>
+  );
+}
+
 export function WelcomeCollage({
   produceImage,
   saladImage,
@@ -181,9 +198,9 @@ export function WelcomeCollage({
             weight={2}
             tint="sage"
             height={LOWER_TILE_HEIGHT}
-            leading={<LeafCircle />}
             accessibilityLabel={accessibilityLabel}
           >
+            <FloatingLeafCircle />
             <AppText variant="bodyStrong">
               {t('mobile.welcome.collage.freshFor', { days: freshDays })}
             </AppText>

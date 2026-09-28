@@ -69,4 +69,14 @@ describe('bento grid (spec §6.7)', () => {
     expect(source).toContain('scrim ? (');
     expect(source).toContain('<LinearGradient {...scrimGradient(scrimToken)}');
   });
+
+  it('sizes bundled photo sources to the tile instead of their intrinsic dimensions', () => {
+    const source = readFileSync(join(__dirname, 'Tile.tsx'), 'utf8');
+
+    expect(source).toContain('const photoImageStyle: ImageStyle = {');
+    expect(source).toContain("position: 'absolute'");
+    expect(source).toContain("width: '100%'");
+    expect(source).toContain("height: '100%'");
+    expect(source).toContain('style={photoImageStyle}');
+  });
 });
