@@ -73,6 +73,10 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     expect(contrast(colors.onDanger, colors.danger), 'danger').toBeGreaterThanOrEqual(AA_TEXT);
   });
 
+  it('today plan chips read on the primary fill', () => {
+    expect(contrast(colors.onFill, colors.primary), 'today chip').toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
   /**
    * F4's question tile inverts with the mode: `text` becomes the fill and `bg`
    * the label. Ink on cream in light, cream on cocoa in dark.

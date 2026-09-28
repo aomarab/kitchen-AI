@@ -9,6 +9,7 @@ import type { PaletteColors } from '../theme/palettes';
 export const CHIP_VARIANTS = ['pill', 'tag'] as const;
 
 export type ChipVariant = (typeof CHIP_VARIANTS)[number];
+export type ChipTone = 'default' | 'primary';
 
 export interface ControlTone {
   fill: string;
@@ -22,7 +23,11 @@ export function chipTone(
   colors: PaletteColors,
   variant: ChipVariant,
   selected: boolean,
+  tone: ChipTone = 'default',
 ): ControlTone {
+  if (tone === 'primary') {
+    return { fill: colors.primary, label: colors.onFill, border: colors.primary };
+  }
   if (variant === 'tag') {
     // The location tag inside a tile, which is never selectable.
     return { fill: colors.surface, label: colors.textMuted, border: colors.surface };

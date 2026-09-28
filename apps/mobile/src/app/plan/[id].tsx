@@ -4,22 +4,21 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Screen,
   Header,
-  AppText,
-  Badge,
   SegmentedControl,
   LoadingState,
   ErrorState,
   EmptyState,
 } from '../../components';
+import { DayChipStrip } from '../../features/plans/DayChipStrip';
 import { PlanBoard, type PlanView } from '../../features/plans/PlanBoard';
+import { PlanTiles } from '../../features/plans/PlanTiles';
 import { useFormat } from '../../hooks/useFormat';
 import { usePlan, usePlanCoverage } from '../../hooks/plans';
 import { todayISODate } from '../../lib/expiry';
-import { formatQty } from '../../lib/format';
 import { spacing } from '../../theme';
 
 export default function PlanDetail() {
-  const { t, locale, prefs } = useFormat();
+  const { t } = useFormat();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const plan = usePlan(id ?? null);
@@ -38,19 +37,13 @@ export default function PlanDetail() {
       ) : plan.data.entries.length === 0 ? (
         <EmptyState icon="plans" title={t('plans.empty')} />
       ) : (
-        <>
-          {coverage.data ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <Badge
-                tone={coverage.data.coverageRatio >= 1 ? 'success' : 'warn'}
-                label={t('plans.coverage')}
-              />
-              <AppText variant="caption" muted>
-                {formatQty(locale, Math.round(coverage.data.coverageRatio * 100), prefs)}%
-              </AppText>
-            </View>
-          ) : null}
-
+        <View style={{ gap: spacing.md }}>
+          <PlanTiles
+            plan={plan.data}
+            coverage={coverage.isSuccess ? coverage.data : undefined}
+            showCoverageCaption
+            onOpenShopping={() => router.push('/shopping')}
+          />
           <SegmentedControl<PlanView>
             value={view}
             onChange={setView}
@@ -61,6 +54,17 @@ export default function PlanDetail() {
             ]}
           />
 
+          {view !== 'month' ? (
+            <DayChipStrip
+              plan={plan.data}
+              selectedDate={selectedDate}
+              onSelectDate={(date) => {
+                setSelectedDate(date);
+                setView('day');
+              }}
+            />
+          ) : null}
+
           <PlanBoard
             plan={plan.data}
             view={view}
@@ -68,7 +72,7 @@ export default function PlanDetail() {
             onSelectDate={setSelectedDate}
             onOpenEntry={(entry) => router.push(`/entry/${entry.id}?planId=${plan.data.id}`)}
           />
-        </>
+        </View>
       )}
     </Screen>
   );

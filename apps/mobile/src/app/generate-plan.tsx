@@ -11,9 +11,8 @@ import {
   Card,
   Chip,
   Field,
-  Icon,
+  OrbMascot,
   QuantityStepper,
-  SegmentedControl,
 } from '../components';
 import { useFormat } from '../hooks/useFormat';
 import { useGeneratePlan } from '../hooks/plans';
@@ -23,8 +22,7 @@ import { canAfford, costOf, creditsShort } from '../lib/credits';
 import { jobErrorKey } from '../lib/errors';
 import { todayISODate } from '../lib/expiry';
 import { formatMinutes, formatQty } from '../lib/format';
-import { radius, spacing } from '../theme';
-import { useTheme } from '../theme/useTheme';
+import { spacing } from '../theme';
 
 /** Each plan scope maps to the billable action it triggers (spec §3). */
 const SCOPE_ACTION: Record<PlanScope, CreditAction> = {
@@ -60,6 +58,12 @@ const SLOT_KEY: Record<MealSlot, MessageKey> = {
   snack: 'plans.snack',
 };
 
+const SCOPE_KEY: Record<PlanScope, MessageKey> = {
+  daily: 'plans.daily',
+  weekly: 'plans.weekly',
+  monthly: 'plans.monthly',
+};
+
 function toggle<T>(set: readonly T[], value: T): T[] {
   return set.includes(value) ? set.filter((v) => v !== value) : [...set, value];
 }
@@ -67,7 +71,6 @@ function toggle<T>(set: readonly T[], value: T): T[] {
 export default function GeneratePlan() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
-  const { colors } = useTheme();
 
   const [scope, setScope] = useState<PlanScope>('weekly');
   const [startsOn, setStartsOn] = useState(todayISODate());
@@ -124,156 +127,137 @@ export default function GeneratePlan() {
       <Header title={t('mobile.plans.generateTitle')} onBack={() => router.back()} />
 
       {running ? (
-        <Card tone="primary" style={{ gap: spacing.sm }}>
-          <AppText variant="bodyStrong">{t('mobile.job.buildingPlan')}</AppText>
-          <View style={{ height: 8, borderRadius: radius.pill, backgroundColor: colors.surface }}>
-            <View
-              style={{
-                height: 8,
-                borderRadius: radius.pill,
-                backgroundColor: colors.primary,
-                // No alignSelf: the root view carries `direction`, so the flex
-                // start edge is already the right edge in Arabic. Setting
-                // flex-end here flipped it a second time and filled from the left.
-                width: `${Math.round((job.data?.progress ?? 0.1) * 100)}%`,
-              }}
-            />
-          </View>
-        </Card>
-      ) : null}
-
-      {failed ? (
-        <Card tone="alt" style={{ gap: spacing.sm }}>
-          <AppText color="danger">
-            {t(jobErrorKey(job.data?.error, 'mobile.job.generationFailed'))}
+        <View style={{ alignItems: 'center', gap: spacing.lg, paddingVertical: spacing.xxl }}>
+          <OrbMascot state="looking" size={96} />
+          <AppText variant="heading" center>
+            {t('mobile.job.buildingPlan')}
           </AppText>
-          <Button title={t('common.retry')} onPress={() => setJobId(null)} />
-        </Card>
-      ) : null}
-
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('mobile.plans.scope')}
-        </AppText>
-        <SegmentedControl<PlanScope>
-          value={scope}
-          onChange={setScope}
-          options={[
-            { value: 'daily', label: t('plans.daily') },
-            { value: 'weekly', label: t('plans.weekly') },
-            { value: 'monthly', label: t('plans.monthly') },
-          ]}
-        />
-      </View>
-
-      <Field
-        label={t('mobile.plans.startDate')}
-        value={startsOn}
-        onChangeText={setStartsOn}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('mobile.plans.servings')}
-        </AppText>
-        <QuantityStepper
-          value={servings}
-          onChange={setServings}
-          min={1}
-          accessibilityLabel={t('mobile.plans.servings')}
-          decrementLabel={t('mobile.common.decrease')}
-          incrementLabel={t('mobile.common.increase')}
-        />
-      </View>
-
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('mobile.plans.slots')}
-        </AppText>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          {SLOTS.map((slot) => (
-            <Chip
-              key={slot}
-              label={t(SLOT_KEY[slot])}
-              selected={slots.includes(slot)}
-              onPress={() => setSlots((prev) => toggle(prev, slot))}
-            />
-          ))}
-        </View>
-      </View>
-
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('mobile.plans.maxCookTime')}
-        </AppText>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          <Chip
-            label={t('mobile.plans.anyCuisine')}
-            selected={maxCook === null}
-            onPress={() => setMaxCook(null)}
+          <Button
+            title={t('mobile.plans.generateCta')}
+            icon="plans"
+            loading
+            disabled
+            onPress={() => undefined}
           />
-          {COOK_TIMES.map((minutes) => (
-            <Chip
-              key={minutes}
-              label={t('mobile.plans.minutesValue', {
-                minutes: formatMinutes(locale, minutes, prefs),
-              })}
-              selected={maxCook === minutes}
-              onPress={() => setMaxCook(minutes)}
-            />
-          ))}
         </View>
-      </View>
-
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('mobile.plans.cuisines')}
-        </AppText>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          {CUISINES.map((cuisine) => (
-            <Chip
-              key={cuisine}
-              label={t(`mobile.cuisines.${cuisine}` as MessageKey)}
-              selected={cuisines.includes(cuisine)}
-              onPress={() => setCuisines((prev) => toggle(prev, cuisine))}
-            />
-          ))}
-        </View>
-      </View>
-
-      {showCost && affordable ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-            paddingHorizontal: spacing.xs,
-          }}
-        >
-          <Icon name="sparkles" size={16} color={colors.textMuted} />
-          <AppText variant="caption" muted>
-            {t('mobile.credits.costNotice', { cost: formatQty(locale, cost, prefs) })}
-          </AppText>
-        </View>
-      ) : null}
-
-      {!affordable ? (
-        <Card tone="alt" style={{ gap: spacing.sm }}>
-          <AppText variant="bodyStrong" accessibilityRole="alert">
-            {t('mobile.credits.needMore', { needed: formatQty(locale, shortfall, prefs) })}
-          </AppText>
-          <Button title={t('mobile.credits.getMore')} icon="wallet" onPress={goBuyCredits} />
-        </Card>
       ) : (
-        <Button
-          title={t('mobile.plans.generateCta')}
-          icon="plans"
-          loading={generate.isPending || running}
-          disabled={running}
-          onPress={() => void submit()}
-        />
+        <>
+          {failed ? (
+            <Card tone="alt" style={{ gap: spacing.sm }}>
+              <AppText color="danger">
+                {t(jobErrorKey(job.data?.error, 'mobile.job.generationFailed'))}
+              </AppText>
+              <Button title={t('common.retry')} onPress={() => setJobId(null)} />
+            </Card>
+          ) : null}
+
+          <Card style={{ gap: spacing.md }}>
+            <AppText variant="heading">{t('mobile.plans.scope')}</AppText>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              {(['daily', 'weekly', 'monthly'] as PlanScope[]).map((value) => (
+                <Chip
+                  key={value}
+                  label={t(SCOPE_KEY[value])}
+                  selected={scope === value}
+                  onPress={() => setScope(value)}
+                />
+              ))}
+            </View>
+          </Card>
+
+          <Card style={{ gap: spacing.md }}>
+            <AppText variant="heading">{t('mobile.plans.startDate')}</AppText>
+            <Field
+              value={startsOn}
+              onChangeText={setStartsOn}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </Card>
+
+          <Card style={{ gap: spacing.md }}>
+            <AppText variant="heading">{t('mobile.plans.servings')}</AppText>
+            <QuantityStepper
+              value={servings}
+              onChange={setServings}
+              min={1}
+              accessibilityLabel={t('mobile.plans.servings')}
+              decrementLabel={t('mobile.common.decrease')}
+              incrementLabel={t('mobile.common.increase')}
+            />
+          </Card>
+
+          <Card style={{ gap: spacing.md }}>
+            <AppText variant="heading">{t('mobile.plans.slots')}</AppText>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              {SLOTS.map((slot) => (
+                <Chip
+                  key={slot}
+                  label={t(SLOT_KEY[slot])}
+                  selected={slots.includes(slot)}
+                  onPress={() => setSlots((prev) => toggle(prev, slot))}
+                />
+              ))}
+            </View>
+          </Card>
+
+          <Card style={{ gap: spacing.md }}>
+            <AppText variant="heading">{t('mobile.plans.maxCookTime')}</AppText>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              <Chip
+                label={t('mobile.plans.anyCuisine')}
+                selected={maxCook === null}
+                onPress={() => setMaxCook(null)}
+              />
+              {COOK_TIMES.map((minutes) => (
+                <Chip
+                  key={minutes}
+                  label={t('mobile.plans.minutesValue', {
+                    minutes: formatMinutes(locale, minutes, prefs),
+                  })}
+                  selected={maxCook === minutes}
+                  onPress={() => setMaxCook(minutes)}
+                />
+              ))}
+            </View>
+          </Card>
+
+          <Card style={{ gap: spacing.md }}>
+            <AppText variant="heading">{t('mobile.plans.cuisines')}</AppText>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              {CUISINES.map((cuisine) => (
+                <Chip
+                  key={cuisine}
+                  label={t(`mobile.cuisines.${cuisine}` as MessageKey)}
+                  selected={cuisines.includes(cuisine)}
+                  onPress={() => setCuisines((prev) => toggle(prev, cuisine))}
+                />
+              ))}
+            </View>
+          </Card>
+
+          {showCost && affordable ? (
+            <AppText variant="caption" muted>
+              {t('mobile.credits.costNotice', { cost: formatQty(locale, cost, prefs) })}
+            </AppText>
+          ) : null}
+
+          {!affordable ? (
+            <Card tone="alt" style={{ gap: spacing.sm }}>
+              <AppText variant="bodyStrong" accessibilityRole="alert">
+                {t('mobile.credits.needMore', { needed: formatQty(locale, shortfall, prefs) })}
+              </AppText>
+              <Button title={t('mobile.credits.getMore')} icon="wallet" onPress={goBuyCredits} />
+            </Card>
+          ) : (
+            <Button
+              title={t('mobile.plans.generateCta')}
+              icon="plans"
+              loading={generate.isPending}
+              onPress={() => void submit()}
+            />
+          )}
+        </>
       )}
     </Screen>
   );

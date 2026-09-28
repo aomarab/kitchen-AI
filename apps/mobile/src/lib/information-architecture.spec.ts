@@ -98,6 +98,16 @@ describe('information architecture (spec §4)', () => {
     expect(read('components', 'TabHeader.tsx')).toContain('<AccountButton');
   });
 
+  it('keeps the Plan surfaces on the G7 Bento contract', () => {
+    const plans = read('app', '(tabs)', 'plans.tsx');
+    expect(plans).toContain('<DayChipStrip');
+    expect(plans).toContain('<PlanTiles');
+
+    const generate = read('app', 'generate-plan.tsx');
+    expect(generate).toContain('<OrbMascot');
+    expect(generate).toContain('state="looking"');
+  });
+
   it('draws the avatar as a 36pt soft RoundButton that opens Account', () => {
     const button = read('components', 'AccountButton.tsx');
     expect(button).toContain('<RoundButton');

@@ -3,9 +3,13 @@ import { Pressable, View } from 'react-native';
 import type { MealPlan, MealPlanEntry, MealSlot } from '@kitchen/contracts';
 import { AppText } from '../../components/AppText';
 import { Badge } from '../../components/Badge';
-import { ListRow } from '../../components/ListRow';
+import { DirectionalIcon } from '../../components/DirectionalIcon';
+import { ListGroup } from '../../components/ListGroup';
+import { RecipeThumb } from '../../components/RecipeThumb';
 import { useFormat } from '../../hooks/useFormat';
-import { formatDateL } from '../../lib/format';
+import { todayISODate } from '../../lib/expiry';
+import { formatDateL, formatMinutes } from '../../lib/format';
+import { planWeekDays } from '../../lib/plans';
 import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
@@ -30,6 +34,23 @@ function bySlot(a: MealPlanEntry, b: MealPlanEntry): number {
   return SLOT_ORDER[a.slot] - SLOT_ORDER[b.slot];
 }
 
+function minuteMessage({
+  t,
+  locale,
+  prefs,
+  minutes,
+}: {
+  t: ReturnType<typeof useFormat>['t'];
+  locale: ReturnType<typeof useFormat>['locale'];
+  prefs: ReturnType<typeof useFormat>['prefs'];
+  minutes: number;
+}): string {
+  return t('mobile.plans.minutesValue', { minutes }).replace(
+    String(minutes),
+    formatMinutes(locale, minutes, prefs),
+  );
+}
+
 function monthMatrix(anchor: Date): Array<Array<Date | null>> {
   const year = anchor.getFullYear();
   const month = anchor.getMonth();
@@ -45,26 +66,87 @@ function monthMatrix(anchor: Date): Array<Array<Date | null>> {
   return weeks;
 }
 
+function entryStatus(entry: MealPlanEntry, t: ReturnType<typeof useFormat>['t']) {
+  if (entry.state === 'cooked') return { tone: 'success' as const, label: t('plans.cooked') };
+  if (entry.fullyCovered) return { tone: 'info' as const, label: t('plans.fullyCovered') };
+  return { tone: 'warn' as const, label: t('plans.regenerate') };
+}
+
 function EntryRow({ entry, onPress }: { entry: MealPlanEntry; onPress: () => void }) {
-  const { t } = useFormat();
+  const { t, locale, prefs } = useFormat();
+  const { colors } = useTheme();
+  const slot = t(SLOT_KEY[entry.slot]);
+  const minutes = entry.recipe.prepMinutes + entry.recipe.cookMinutes;
+  const minutesLabel = minuteMessage({ t, locale, prefs, minutes });
+  const status = entryStatus(entry, t);
+  const caption = `${slot} · ${minutesLabel}`;
+  const accessibilityLabel = `${slot}, ${entry.recipe.title}, ${minutesLabel}, ${status.label}`;
+
   return (
-    <ListRow
-      title={entry.recipe.title}
-      subtitle={t(SLOT_KEY[entry.slot])}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      showChevron
-      trailing={
-        <View style={{ gap: 4, alignItems: 'flex-end' }}>
-          {entry.state === 'cooked' ? (
-            <Badge tone="success" label={t('plans.cooked')} />
-          ) : entry.fullyCovered ? (
-            <Badge tone="info" label={t('plans.fullyCovered')} />
-          ) : (
-            <Badge tone="warn" label={t('plans.regenerate')} />
-          )}
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      <View
+        style={{
+          minHeight: 96,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.lg,
+        }}
+      >
+        <RecipeThumb
+          heroImageUrl={entry.recipe.heroImageUrl}
+          dishKey={entry.recipe.id}
+          title={entry.recipe.title}
+          style={{ width: 64, height: 64, borderRadius: radius.md }}
+        />
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <AppText variant="caption" muted numberOfLines={1}>
+            {caption}
+          </AppText>
+          <AppText variant="bodyStrong" numberOfLines={2}>
+            {entry.recipe.title}
+          </AppText>
         </View>
-      }
-    />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+          <Badge tone={status.tone} label={status.label} />
+          <DirectionalIcon name="chevron" size={20} color={colors.textMuted} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+function DaySection({
+  date,
+  entries,
+  onOpenEntry,
+}: {
+  date: string;
+  entries: readonly MealPlanEntry[];
+  onOpenEntry: (entry: MealPlanEntry) => void;
+}) {
+  const { t, locale } = useFormat();
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <AppText variant="heading">
+        {formatDateL(locale, date, { weekday: 'long', day: 'numeric', month: 'long' })}
+      </AppText>
+      {entries.length === 0 ? (
+        <AppText muted>{t('mobile.home.tonightEmpty')}</AppText>
+      ) : (
+        <ListGroup>
+          {entries.map((entry) => (
+            <EntryRow key={entry.id} entry={entry} onPress={() => onOpenEntry(entry)} />
+          ))}
+        </ListGroup>
+      )}
+    </View>
   );
 }
 
@@ -83,6 +165,7 @@ export interface PlanBoardProps {
 export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry }: PlanBoardProps) {
   const { t, locale } = useFormat();
   const { colors } = useTheme();
+  const today = todayISODate();
 
   const byDate = useMemo(() => {
     const map = new Map<string, MealPlanEntry[]>();
@@ -97,6 +180,11 @@ export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry 
 
   const weeks = useMemo(() => monthMatrix(parseDate(plan.startsOn)), [plan]);
 
+  const selectedWeekDays = useMemo(
+    () => planWeekDays(plan, selectedDate, today),
+    [plan, selectedDate, today],
+  );
+
   const weekdays = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) => ({
@@ -108,36 +196,28 @@ export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry 
 
   if (view === 'day') {
     const entries = byDate.get(selectedDate) ?? [];
-    return (
-      <View style={{ gap: spacing.sm }}>
-        <AppText variant="heading">
-          {formatDateL(locale, selectedDate, { weekday: 'long', day: 'numeric', month: 'long' })}
-        </AppText>
-        {entries.length === 0 ? (
-          <AppText muted>{t('mobile.home.tonightEmpty')}</AppText>
-        ) : (
-          entries.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} onPress={() => onOpenEntry(entry)} />
-          ))
-        )}
-      </View>
-    );
+    return <DaySection date={selectedDate} entries={entries} onOpenEntry={onOpenEntry} />;
   }
 
   if (view === 'week') {
-    const dates = [...byDate.keys()].sort();
+    const sections = selectedWeekDays
+      .map((day) => ({ date: day.date, entries: byDate.get(day.date) ?? [] }))
+      .filter((section) => section.entries.length > 0);
+
     return (
       <View style={{ gap: spacing.md }}>
-        {dates.map((date) => (
-          <View key={date} style={{ gap: spacing.sm }}>
-            <AppText variant="label" muted>
-              {formatDateL(locale, date, { weekday: 'long', day: 'numeric', month: 'short' })}
-            </AppText>
-            {(byDate.get(date) ?? []).map((entry) => (
-              <EntryRow key={entry.id} entry={entry} onPress={() => onOpenEntry(entry)} />
-            ))}
-          </View>
-        ))}
+        {sections.length === 0 ? (
+          <AppText muted>{t('mobile.home.tonightEmpty')}</AppText>
+        ) : (
+          sections.map((section) => (
+            <DaySection
+              key={section.date}
+              date={section.date}
+              entries={section.entries}
+              onOpenEntry={onOpenEntry}
+            />
+          ))
+        )}
       </View>
     );
   }
@@ -162,11 +242,19 @@ export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry 
             ).padStart(2, '0')}`;
             const has = byDate.has(iso);
             const selected = iso === selectedDate;
+            const isToday = iso === today;
+            const label = [
+              formatDateL(locale, iso, { weekday: 'long', day: 'numeric', month: 'long' }),
+              has ? t('mobile.plans.dayPlanned') : null,
+            ]
+              .filter(Boolean)
+              .join(', ');
             return (
               <Pressable
                 key={di}
                 onPress={() => onSelectDate(iso)}
                 accessibilityRole="button"
+                accessibilityLabel={label}
                 accessibilityState={{ selected }}
                 style={{ flex: 1, aspectRatio: 1, alignItems: 'center', justifyContent: 'center' }}
               >
@@ -177,10 +265,18 @@ export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry 
                     borderRadius: radius.pill,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: selected ? colors.primary : 'transparent',
+                    backgroundColor: isToday
+                      ? colors.primary
+                      : selected
+                        ? colors.text
+                        : 'transparent',
+                    borderWidth: selected && !isToday ? 1 : 0,
+                    borderColor: selected && !isToday ? colors.text : 'transparent',
                   }}
                 >
-                  <AppText style={{ color: selected ? colors.onFill : colors.text }}>
+                  <AppText
+                    style={{ color: isToday ? colors.onFill : selected ? colors.bg : colors.text }}
+                  >
                     {formatDateL(locale, iso, { day: 'numeric' })}
                   </AppText>
                 </View>
@@ -190,7 +286,7 @@ export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry 
                       width: 5,
                       height: 5,
                       borderRadius: radius.pill,
-                      backgroundColor: selected ? colors.primary : colors.accent,
+                      backgroundColor: colors.primary,
                     }}
                   />
                 ) : (
