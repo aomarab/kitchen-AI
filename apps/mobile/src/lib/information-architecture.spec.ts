@@ -629,8 +629,6 @@ describe('information architecture (spec §4)', () => {
   it('keeps Timers on butter tiles with tabular numeral countdowns (spec §9.7)', () => {
     const timers = read('app', 'timers.tsx');
     const runningTile = timers.match(/<Tile[\s\S]*?tint="butter"[\s\S]*?<\/Tile>/)?.[0] ?? '';
-    const timerControls =
-      timers.match(/function TimerControls[\s\S]*?function NewTimerForm/)?.[0] ?? '';
 
     expect(timers, 'Running timers must use the shared Tile primitive').toContain('<Tile');
     expect(timers, 'Running timers should use the butter tint').toContain('tint="butter"');
@@ -645,9 +643,9 @@ describe('information architecture (spec §4)', () => {
       '<RoundButton',
     );
     expect(
-      timerControls,
-      'TimerControls must not use Icon name "pause", which is the wellness coffee-break glyph.',
-    ).not.toContain('icon="pause"');
+      timers,
+      'The timer pause control must not use Icon name "pause", which is the wellness coffee-break glyph.',
+    ).not.toMatch(/\bicon\s*(?:=|:)\s*['"]pause['"]/);
   });
 
   it('keeps the smart screen hero on the ember gradient (spec §9.7)', () => {
