@@ -44,8 +44,8 @@ describe('groupTurns', () => {
       ).toBe(false);
     });
 
-    it('stays visible after an ended assistant-only session', () => {
-      expect(showStarters([{ id: 'a1', role: 'assistant', text: 'Hi.' }], 'ended')).toBe(true);
+    it('hides after an ended assistant-only session', () => {
+      expect(showStarters([{ id: 'a1', role: 'assistant', text: 'Hi.' }], 'ended')).toBe(false);
     });
   });
 

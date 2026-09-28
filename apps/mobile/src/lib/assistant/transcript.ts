@@ -13,5 +13,5 @@ export function groupTurns(turns: readonly TranscriptTurn[]): GroupedTranscriptT
 }
 
 export function showStarters(turns: readonly TranscriptTurn[], status: AssistantStatus): boolean {
-  return status !== 'connecting' && !turns.some((turn) => turn.role === 'user');
+  return status === 'live' && !turns.some((turn) => turn.role === 'user');
 }
