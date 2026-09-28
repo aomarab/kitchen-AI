@@ -12,8 +12,10 @@ file to the feature: `2026-07-26-kitchen-ai-design.md` (system baseline),
 `2026-08-10-publishing-compliance-design.md`, `2026-08-11-ai-credits-design.md`,
 `2026-08-11-recipe-media-resolution-design.md`, `2026-08-11-model-routing-design.md` (vision
 vendor + per-model cost), `2026-08-26-kitchen-companion-design.md` (smart screen, reminders,
-timers, live assistant), `2026-09-27-mobile-apricot-bento-redesign-design.md` (mobile UI, which
-supersedes the Slack-inspired spec for `apps/mobile`). Adding a subsystem means adding a spec, not just code.
+timers, live assistant), `2026-09-27-mobile-apricot-bento-redesign-design.md` (mobile IA, vision
+boxes and behaviour, which supersedes the Slack-inspired spec for `apps/mobile`),
+`2026-09-28-mobile-coral-redesign-design.md` (mobile visuals — tokens, type, glyphs, components,
+screens — superseding the Apricot Bento look). Adding a subsystem means adding a spec, not just code.
 
 ## Commands
 
@@ -27,7 +29,7 @@ uses Node 22 and installs with `pnpm install --frozen-lockfile`.
 | `pnpm infra:up` / `infra:down`                | Docker: PostgreSQL 17 + pgvector, Redis, MinIO                                            |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Drizzle migrations + bilingual ingredient catalog (`db:seed -- --dry-run` validates only) |
 | `pnpm db:reset`                               | Drops and rebuilds the local database, then re-seeds                                      |
-| `pnpm format`                                 | Prettier over the **whole** repo — see the warning below                                   |
+| `pnpm format`                                 | Prettier over the **whole** repo — see the warning below                                  |
 
 CI runs `pnpm build`, `pnpm typecheck`, `pnpm lint`, then `pnpm test`. Note CI does **not** check
 formatting, and the tree has never been uniformly Prettier-formatted, so `pnpm format` rewrites
