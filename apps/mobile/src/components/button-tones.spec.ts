@@ -6,10 +6,10 @@ import { contrast } from '../theme/contrast';
 const AA_TEXT = 4.5;
 const AA_NON_TEXT = 3;
 
-describe.each(['light', 'dark'] as ThemeMode[])('button tones, apricot %s', (mode) => {
-  const { colors } = palettes.apricot[mode];
+describe.each(['light', 'dark'] as ThemeMode[])('button tones, coral %s', (mode) => {
+  const { colors } = palettes.coral[mode];
 
-  it('offers exactly the Apricot variants', () => {
+  it('offers exactly the Coral bridge variants', () => {
     // The three *Inverse variants are gone for good: cook mode follows the
     // theme, and anything on a photo or the camera uses `media`.
     expect([...BUTTON_VARIANTS].sort()).toEqual(
@@ -40,8 +40,7 @@ describe.each(['light', 'dark'] as ThemeMode[])('button tones, apricot %s', (mod
     expect(contrast(fill, colors.surfaceInverse)).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 
-  it('labels the coral in ink and the light red in its own token', () => {
-    // A reviewer's shorthand for spec §3: coral is never white-labelled.
+  it('labels the coral and danger fills with their own readable tokens', () => {
     expect(buttonTone(colors, 'primary').label).toBe(colors.onFill);
     expect(buttonTone(colors, 'danger').label).toBe(colors.onDanger);
   });

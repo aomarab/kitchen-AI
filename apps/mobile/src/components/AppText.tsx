@@ -22,7 +22,7 @@ export function AppText({ variant = 'body', color, center, muted, style, ...rest
   const fontsLoaded = useFontStore((state) => state.loaded);
   const token = typography(locale)[variant]!;
   const resolvedColor = color ? colors[color] : muted ? colors.textMuted : colors.text;
-  const fontFamily = resolveFontFamily(locale, fontsLoaded, token.fontWeight);
+  const fontFamily = resolveFontFamily(locale, fontsLoaded, token.fontWeight, variant);
   const base: TextStyle = {
     fontSize: token.fontSize,
     lineHeight: token.lineHeight,
@@ -40,7 +40,7 @@ export function AppText({ variant = 'body', color, center, muted, style, ...rest
     // the way we want and is not subject to that swap. Verified in the
     // simulator; `text-direction.spec.ts` guards it.
     writingDirection: dir,
-    // The weight-specific family (an Outfit or Tajawal cut) already encodes
+    // The weight-specific family (a Tajawal cut or the Outfit numeral face) already encodes
     // the weight; setting fontWeight on top of it makes iOS synthesize a
     // heavier face.
     ...(fontFamily ? null : { fontWeight: token.fontWeight }),

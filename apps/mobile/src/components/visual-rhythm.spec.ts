@@ -12,7 +12,7 @@ import { palettes } from '../theme/palettes';
  */
 
 const read = (relative: string) => readFileSync(join(__dirname, relative), 'utf8');
-const colors = palettes.apricot.light.colors;
+const colors = palettes.coral.light.colors;
 
 describe('borderless buttons align to the content margin', () => {
   const source = read('./Button.tsx');
@@ -101,6 +101,11 @@ describe('screen rhythm', () => {
     expect(match, 'Screen must declare a padded-container gap').not.toBeNull();
     const token = match![1] as keyof typeof spacing;
     expect(spacing[token]).toBeGreaterThanOrEqual(spacing.sm * 2);
+  });
+
+  it('uses the J gutter for padded page insets', () => {
+    expect(source).toContain('padding: spacing.gutter');
+    expect(source).toContain('gap: spacing.gutter');
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveThemeMode, tintIn, tintNamed } from './index';
+import { resolveThemeMode, shadowFor, tintIn, tintNamed } from './index';
 import { NATIVE_SWITCH_THUMB, palettes, type Palette, type ThemeMode } from './palettes';
 import { contrast } from './contrast';
 import {
@@ -116,13 +116,52 @@ describe.each(ALL)('%s palette', (_name, palette) => {
       'on switch track on surface',
     ).toBeGreaterThanOrEqual(AA_NON_TEXT);
     expect(
-      contrast(colors.switchTrackOff, colors.surface),
+      contrast(colors.control, colors.surface),
       'off switch track on surface',
     ).toBeGreaterThanOrEqual(AA_NON_TEXT);
     expect(
-      contrast(colors.switchTrackOff, NATIVE_SWITCH_THUMB),
+      contrast(colors.control, NATIVE_SWITCH_THUMB),
       'off switch track under native white thumb',
     ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
+  it('J foreground tokens clear their minimums', () => {
+    expect(contrast(colors.onFill, colors.primary), 'onFill on primary').toBeGreaterThanOrEqual(
+      AA_TEXT,
+    );
+    expect(
+      contrast(colors.onFill, colors.primaryPressed),
+      'onFill on primaryPressed',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+    expect(contrast(colors.onInverse, colors.inverse), 'onInverse').toBeGreaterThanOrEqual(AA_TEXT);
+    expect(
+      contrast(colors.onInverseMuted, colors.inverse),
+      'onInverseMuted',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+    expect(
+      contrast(colors.primaryOnInverse, colors.inverse),
+      'primaryOnInverse',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+    expect(
+      contrast(colors.textMuted, colors.primarySoft),
+      'textMuted on primarySoft',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+    expect(
+      contrast(colors.primaryText, colors.surfaceAlt),
+      'primaryText on surfaceAlt',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it('J fills and controls separate from their grounds', () => {
+    expect(contrast(colors.control, colors.bg), 'control on bg').toBeGreaterThanOrEqual(
+      AA_NON_TEXT,
+    );
+    expect(contrast(colors.control, colors.surface), 'control on surface').toBeGreaterThanOrEqual(
+      AA_NON_TEXT,
+    );
+    expect(contrast(colors.primary, colors.bg), 'primary on bg').toBeGreaterThanOrEqual(
+      AA_NON_TEXT,
+    );
   });
 
   it.each(STATUSES)('%s reads on its own soft chip', (status) => {
@@ -390,7 +429,7 @@ describe.each(ALL)('%s palette', (_name, palette) => {
    * hue rather than lightness, so a luminance-only rule would wrongly demand
    * they get darker.
    */
-  describe('tints stay distinguishable from the ground', () => {
+  describe('cards and tints stay distinguishable from the ground', () => {
     const MIN_DISTANCE = 12;
 
     function distance(a: string, b: string): number {
@@ -405,25 +444,39 @@ describe.each(ALL)('%s palette', (_name, palette) => {
       );
     });
 
-    /**
-     * The card fill is a surface like any tint, and the one most able to
-     * vanish: in light mode `surface` is white, so any move of the ground
-     * toward white erases the card without changing a single foreground. The
-     * tint loop above cannot see it — `surface` is not a tint — which is
-     * exactly how a white-on-white page would have shipped. Web guards the same
-     * pair as 'card on page'.
-     */
-    it.each([
-      ['surface', colors.surface],
-      ['surfaceAlt', colors.surfaceAlt],
-    ] as const)('%s is visibly separate from bg', (_name, value) => {
-      expect(distance(value, colors.bg)).toBeGreaterThanOrEqual(MIN_DISTANCE);
+    it('a card is visibly separate from the page', () => {
+      const shadow = shadowFor(palette).card;
+      const fillSeparates = distance(colors.surface, colors.bg) >= MIN_DISTANCE;
+      const edgeSeparates =
+        distance(colors.cardEdge, colors.bg) >= MIN_DISTANCE &&
+        distance(colors.cardEdge, colors.surface) >= MIN_DISTANCE;
+      const shadowSeparates = shadow.shadowOpacity >= 0.05;
+      expect(
+        fillSeparates || edgeSeparates || shadowSeparates,
+        'card fill, edge or shadow must keep a card visible',
+      ).toBe(true);
+    });
+
+    it('surfaceAlt remains visibly separate from bg', () => {
+      expect(distance(colors.surfaceAlt, colors.bg)).toBeGreaterThanOrEqual(MIN_DISTANCE);
+    });
+
+    it('border separates from bg', () => {
+      expect(distance(colors.border, colors.bg)).toBeGreaterThanOrEqual(MIN_DISTANCE);
     });
 
     it('rejects a tint that matches the ground', () => {
       expect(distance(colors.bg, colors.bg)).toBe(0);
     });
   });
+});
+
+it('dark mode disables every native shadow', () => {
+  const shadows = shadowFor(palettes.coral.dark);
+  for (const [name, shadow] of Object.entries(shadows)) {
+    expect(shadow.shadowOpacity, `${name} opacity`).toBe(0);
+    expect(shadow.elevation, `${name} elevation`).toBe(0);
+  }
 });
 
 /**
@@ -440,14 +493,16 @@ it('media tokens are identical in light and dark', () => {
     'textInverseMuted',
     'primaryInverse',
     'onPrimaryInverse',
+    'warnInverse',
+    'mediaButton',
   ] as const;
   for (const token of MEDIA) {
-    expect(palettes.apricot.dark.colors[token], token).toBe(palettes.apricot.light.colors[token]);
+    expect(palettes.coral.dark.colors[token], token).toBe(palettes.coral.light.colors[token]);
   }
 });
 
 describe('named tints', () => {
-  const { tints } = palettes.apricot.light;
+  const { tints } = palettes.coral.light;
 
   it.each(['plain', 'butter', 'sage', 'apricot'] as const)('%s exists', (name) => {
     expect(tintNamed(tints, name).name).toBe(name);
@@ -455,7 +510,7 @@ describe('named tints', () => {
 });
 
 describe('tint rotation', () => {
-  const { tints } = palettes.apricot.light;
+  const { tints } = palettes.coral.light;
 
   it('rotates without repeating a neighbour', () => {
     for (let i = 0; i < tints.length * 2; i += 1) {

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { scrimGradient } from './scrim';
 import { palettes, type ThemeMode } from './palettes';
 
-describe.each(['light', 'dark'] as ThemeMode[])('photo scrim gradient, apricot %s', (mode) => {
-  const { scrim } = palettes.apricot[mode];
+describe.each(['light', 'dark'] as ThemeMode[])('photo scrim gradient, coral %s', (mode) => {
+  const { scrim } = palettes.coral[mode];
   const gradient = scrimGradient(scrim);
 
   it('keeps every stop the palette guard measured, in order', () => {

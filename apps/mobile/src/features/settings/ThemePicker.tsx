@@ -10,7 +10,7 @@ const MODES: readonly { value: ThemePreference; key: MessageKey }[] = [
 ];
 
 /**
- * Appearance: System / Light / Dark. There is one palette, Apricot, so the
+ * Appearance: System / Light / Dark. There is one palette, Coral, so the
  * colour-family swatches this used to show are gone; the mode is the only
  * choice left (mobile redesign spec §6.6).
  */

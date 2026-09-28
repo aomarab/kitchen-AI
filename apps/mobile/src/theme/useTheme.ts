@@ -1,6 +1,13 @@
 import { useMemo } from 'react';
 import { useColorScheme, type StyleSheet } from 'react-native';
-import { resolveThemeMode, shadowFor, tintIn, tintNamed, type Shadow } from './index';
+import {
+  resolveThemeMode,
+  shadowFor,
+  themeModeWithOverride,
+  tintIn,
+  tintNamed,
+  type Shadow,
+} from './index';
 import {
   paletteFor,
   type Palette,
@@ -10,6 +17,7 @@ import {
   type ThemeMode,
 } from './palettes';
 import { useSettingsStore } from '../stores/settings';
+import { useThemeModeOverride } from './ThemeModeOverride';
 
 export interface Theme {
   readonly colors: Palette['colors'];
@@ -26,15 +34,14 @@ export interface Theme {
 }
 
 /**
- * The active palette. There is deliberately no provider: the preference already
- * lives in the settings store, and a store subscription re-renders exactly the
- * components that read colours. A context would add a second source of truth
- * for the same value and one more thing to forget to wrap a screen in.
+ * The active palette. The persisted preference lives in the settings store, and
+ * a scoped override can force a subtree without writing that preference.
  */
 export function useTheme(): Theme {
   const preference = useSettingsStore((state) => state.themePreference);
   const system = useColorScheme();
-  const mode: ThemeMode = resolveThemeMode(preference, system);
+  const override = useThemeModeOverride();
+  const mode: ThemeMode = themeModeWithOverride(resolveThemeMode(preference, system), override);
 
   return useMemo(() => {
     const palette = paletteFor(mode);

@@ -10,8 +10,8 @@ const AA_TEXT = 4.5;
 const AA_NON_TEXT = 3;
 const read = (relative: string) => readFileSync(join(__dirname, relative), 'utf8');
 
-describe.each(['light', 'dark'] as ThemeMode[])('control tones, apricot %s', (mode) => {
-  const { colors } = palettes.apricot[mode];
+describe.each(['light', 'dark'] as ThemeMode[])('control tones, coral %s', (mode) => {
+  const { colors } = palettes.coral[mode];
 
   it('chip labels read selected or not, and on a tag', () => {
     for (const selected of [false, true]) {
