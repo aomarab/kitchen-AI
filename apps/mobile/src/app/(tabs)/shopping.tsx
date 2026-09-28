@@ -1,41 +1,185 @@
-import { Pressable, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Share, View } from 'react-native';
+import type { Ingredient, ShoppingListItem } from '@kitchen/contracts';
 import {
+  AppText,
+  EmptyState,
+  ErrorState,
+  ListGroup,
+  LoadingState,
+  RoundButton,
   Screen,
   TabHeader,
-  Button,
-  Icon,
-  ListRow,
-  LoadingState,
-  ErrorState,
-  EmptyState,
 } from '../../components';
+import { useTabBarClearance } from '../../components/TabBar';
+import { AddItemField } from '../../features/shop/AddItemField';
+import { ShoppingFooter } from '../../features/shop/ShoppingFooter';
+import { ShoppingRow } from '../../features/shop/ShoppingRow';
+import { useDebounced } from '../../hooks/useDebounced';
 import { useFormat } from '../../hooks/useFormat';
-import { useShoppingList, useToggleShoppingItem, useCheckoutShopping } from '../../hooks/shopping';
 import { useLocations } from '../../hooks/inventory';
-import { localizedName, formatMeasure } from '../../lib/format';
-import { radius, spacing } from '../../theme';
-import { useTheme } from '../../theme/useTheme';
+import { useSearchIngredients } from '../../hooks/profile';
+import {
+  useAddShoppingItems,
+  useCheckoutShopping,
+  useShoppingList,
+  useToggleShoppingItem,
+} from '../../hooks/shopping';
+import { formatMeasure, formatQty, localizedName } from '../../lib/format';
+import { addFieldAction, formatShoppingListForShare } from '../../lib/shopping-share';
+import { useToastStore } from '../../stores/toast';
+import { spacing } from '../../theme';
+
+const ADD_DEBOUNCE_MS = 250;
+const MAX_SUGGESTIONS = 5;
+
+function countMessage(raw: string, count: number, formattedCount: string): string {
+  return raw.replace(String(count), formattedCount);
+}
+
+function itemSentence(name: string, measure: string, purchased: boolean, purchasedLabel: string) {
+  return purchased ? `${name}, ${measure}, ${purchasedLabel}` : `${name}, ${measure}`;
+}
 
 export default function Shopping() {
   const { t, locale, prefs } = useFormat();
-  const { colors } = useTheme();
+  const clearance = useTabBarClearance();
   const list = useShoppingList();
   const toggle = useToggleShoppingItem();
   const checkout = useCheckoutShopping();
+  const addItems = useAddShoppingItems();
   const locations = useLocations();
+  const [term, setTerm] = useState('');
+  const debouncedTerm = useDebounced(term, ADD_DEBOUNCE_MS);
+  const ingredientSearch = useSearchIngredients(debouncedTerm);
 
   const items = list.data ?? [];
-  const purchasedIds = items.filter((item) => item.purchased).map((item) => item.id);
+  const unpurchasedItems = useMemo(() => items.filter((item) => !item.purchased), [items]);
+  const purchasedItems = useMemo(() => items.filter((item) => item.purchased), [items]);
+  const purchasedIds = useMemo(() => purchasedItems.map((item) => item.id), [purchasedItems]);
   const targetLocation = locations.data?.[0]?.id;
+  const normalizedTerm = term.trim();
+  const normalizedDebouncedTerm = debouncedTerm.trim();
+  const hasActiveAddTerm = normalizedTerm.length > 0 && normalizedTerm === normalizedDebouncedTerm;
+  const allSearchResults = hasActiveAddTerm ? (ingredientSearch.data?.items ?? []) : [];
+  const suggestions = allSearchResults.slice(0, MAX_SUGGESTIONS);
+  const addAction = addFieldAction(debouncedTerm, allSearchResults);
+  const showNoMatch =
+    hasActiveAddTerm && ingredientSearch.isSuccess && allSearchResults.length === 0;
 
-  const moveToKitchen = () => {
-    if (purchasedIds.length === 0 || !targetLocation) return;
-    checkout.mutate({ itemIds: purchasedIds, locationId: targetLocation });
+  const shareMessage = useMemo(
+    () =>
+      formatShoppingListForShare(items, locale, (quantity, unit) =>
+        formatMeasure(t, locale, quantity, unit, prefs),
+      ),
+    [items, locale, prefs, t],
+  );
+  const shareList = () => {
+    if (!shareMessage) return;
+    void Share.share({ message: shareMessage });
   };
 
+  const addIngredient = (ingredient: Ingredient) => {
+    addItems.mutate({
+      planId: null,
+      items: [{ ingredientId: ingredient.id, quantity: 1, unit: ingredient.defaultUnit }],
+    });
+    setTerm('');
+  };
+  const addExactMatch = () => {
+    if (!addAction.ingredient) return;
+    addIngredient(addAction.ingredient);
+  };
+
+  const moveToKitchen = () => {
+    const count = purchasedIds.length;
+    if (count === 0 || !targetLocation) return;
+    checkout.mutate(
+      { itemIds: purchasedIds, locationId: targetLocation },
+      {
+        onSuccess: () => {
+          useToastStore.getState().show({ message: t('shopping.movedCount', { count }) });
+        },
+      },
+    );
+  };
+
+  const purchasedCountText = formatQty(locale, purchasedIds.length, prefs);
+  const moveTitle =
+    purchasedIds.length > 0
+      ? countMessage(
+          t('mobile.shop.moveCount', { count: purchasedIds.length }),
+          purchasedIds.length,
+          purchasedCountText,
+        )
+      : t('shopping.moveToKitchen');
+  const renderRows = (rows: readonly ShoppingListItem[]) =>
+    rows.map((item) => {
+      const name = localizedName(locale, item.nameEn, item.nameAr);
+      const measure = formatMeasure(t, locale, item.quantity, item.unit, prefs);
+      const accessibilityLabel = itemSentence(
+        name,
+        measure,
+        item.purchased,
+        t('shopping.purchased'),
+      );
+      return (
+        <ShoppingRow
+          key={item.id}
+          name={name}
+          measure={measure}
+          purchased={item.purchased}
+          accessibilityLabel={accessibilityLabel}
+          onToggle={() => toggle.mutate({ id: item.id, purchased: !item.purchased })}
+        />
+      );
+    });
+
   return (
-    <Screen scroll tabBar refreshing={list.isRefetching} onRefresh={() => void list.refetch()}>
-      <TabHeader title={t('shopping.title')} />
+    <Screen
+      scroll
+      tabBar
+      refreshing={list.isRefetching}
+      onRefresh={() => void list.refetch()}
+      footer={
+        <ShoppingFooter
+          title={moveTitle}
+          disabled={purchasedIds.length === 0 || !targetLocation}
+          loading={checkout.isPending}
+          bottomPadding={clearance}
+          onPress={moveToKitchen}
+        />
+      }
+    >
+      <TabHeader
+        title={t('shopping.title')}
+        action={
+          shareMessage ? (
+            <RoundButton
+              icon="share"
+              tone="surface"
+              size={44}
+              accessibilityLabel={t('mobile.shop.share')}
+              onPress={shareList}
+            />
+          ) : undefined
+        }
+      />
+
+      <AddItemField
+        term={term}
+        locale={locale}
+        suggestions={suggestions}
+        placeholder={t('mobile.shop.addPlaceholder')}
+        addLabel={t('mobile.shop.add')}
+        noMatchLabel={t('mobile.shop.noMatch')}
+        showNoMatch={showNoMatch}
+        actionEnabled={addAction.enabled}
+        submitting={addItems.isPending}
+        onTermChange={setTerm}
+        onAddAction={addExactMatch}
+        onChoose={addIngredient}
+      />
 
       {list.isLoading ? (
         <LoadingState />
@@ -44,60 +188,20 @@ export default function Shopping() {
       ) : items.length === 0 ? (
         <EmptyState icon="basket" title={t('shopping.empty')} />
       ) : (
-        <>
-          <View style={{ gap: spacing.sm }}>
-            {items.map((item) => {
-              const itemLabel = localizedName(locale, item.nameEn, item.nameAr);
-              return (
-                <ListRow
-                  key={item.id}
-                  title={itemLabel}
-                  subtitle={formatMeasure(t, locale, item.quantity, item.unit, prefs)}
-                  accessibilityLabel={item.purchased ? t('shopping.purchased') : itemLabel}
-                  leading={
-                    <Pressable
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: item.purchased }}
-                      accessibilityLabel={itemLabel}
-                      onPress={() => toggle.mutate({ id: item.id, purchased: !item.purchased })}
-                      style={{
-                        width: 44,
-                        height: 44,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 26,
-                          height: 26,
-                          borderRadius: radius.sm,
-                          borderWidth: 1,
-                          borderColor: item.purchased ? colors.success : colors.border,
-                          backgroundColor: item.purchased ? colors.successSoft : colors.surface,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        {item.purchased ? (
-                          <Icon name="check" size={16} color={colors.success} />
-                        ) : null}
-                      </View>
-                    </Pressable>
-                  }
-                />
-              );
-            })}
-          </View>
+        <View style={{ gap: spacing.lg }}>
+          {unpurchasedItems.length > 0 ? (
+            <ListGroup>{renderRows(unpurchasedItems)}</ListGroup>
+          ) : null}
 
-          <Button
-            title={t('shopping.moveToKitchen')}
-            icon="check"
-            disabled={purchasedIds.length === 0 || !targetLocation}
-            loading={checkout.isPending}
-            onPress={moveToKitchen}
-          />
-        </>
+          {purchasedItems.length > 0 ? (
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="heading" muted accessibilityRole="header">
+                {t('shopping.purchased')}
+              </AppText>
+              <ListGroup>{renderRows(purchasedItems)}</ListGroup>
+            </View>
+          ) : null}
+        </View>
       )}
     </Screen>
   );

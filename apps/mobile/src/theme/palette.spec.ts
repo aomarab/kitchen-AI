@@ -119,6 +119,13 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     }
   });
 
+  it('the shopping checkbox tick separates from success fill', () => {
+    expect(
+      contrast(colors.textInverse, colors.success),
+      'textInverse on success',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
   it('primaryText reads as text on its own soft chip', () => {
     expect(contrast(colors.primaryText, colors.primarySoft)).toBeGreaterThanOrEqual(AA_TEXT);
   });

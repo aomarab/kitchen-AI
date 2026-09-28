@@ -38,6 +38,7 @@ export const IONICONS = {
   star: 'star',
   starOutline: 'star-outline',
   basket: 'basket-outline',
+  share: 'share-outline',
   restaurant: 'restaurant-outline',
   settings: 'settings-outline',
   bell: 'notifications-outline',

@@ -276,6 +276,13 @@ export const mobileEn = {
       keepMeal: 'Keep this meal',
       regenerating: 'Finding another meal…',
     },
+    shop: {
+      share: 'Share list',
+      addPlaceholder: 'Add an item…',
+      add: 'Add',
+      noMatch: 'No ingredient matches that.',
+      moveCount: 'Move {count} to Kitchen',
+    },
     item: {
       nameLabel: 'Name',
       namePlaceholder: 'What you call it',

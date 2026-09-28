@@ -66,6 +66,19 @@ describe('mobile source sweep', () => {
       path: 'features/plans/DayChipStrip.tsx',
       pattern: /minHeight:\s*(\d+)/,
     },
+    'shopping.tsx': { path: 'app/(tabs)/shopping.tsx', pattern: /size=\{(\d+)\}/ },
+    'AddItemField.tsx': {
+      path: 'features/shop/AddItemField.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'ShoppingCheckbox.tsx': {
+      path: 'features/shop/ShoppingCheckbox.tsx',
+      pattern: /height:\s*(\d+)/,
+    },
+    'ShoppingRow.tsx': {
+      path: 'features/shop/ShoppingRow.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {

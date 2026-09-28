@@ -350,6 +350,13 @@ export const mobileAr: MobileMessages = {
       keepMeal: 'الإبقاء على هذه الوجبة',
       regenerating: 'جارٍ اقتراح وجبة أخرى…',
     },
+    shop: {
+      share: 'مشاركة القائمة',
+      addPlaceholder: 'أضف غرضًا…',
+      add: 'إضافة',
+      noMatch: 'لا يوجد مكوّن مطابق.',
+      moveCount: 'انقل {count} إلى المطبخ',
+    },
     item: {
       nameLabel: 'الاسم',
       namePlaceholder: 'ما تسمّيه في بيتكم',

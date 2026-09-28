@@ -168,7 +168,7 @@ const apricotDark: Palette = {
     onDanger: '#2A1A12',
     accent: '#A3CF95',
     accentSoft: '#1F2B1B',
-    success: '#74D29B',
+    success: '#44A36A',
     successSoft: '#15291D',
     warn: '#F2B45E',
     warnInverse: '#A56300',

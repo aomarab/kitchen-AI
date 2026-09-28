@@ -133,30 +133,42 @@ describe('information architecture (spec §4)', () => {
   });
 
   it('keeps inline tab controls named and inside safe areas (spec §12)', () => {
-    const shopping = read('app', '(tabs)', 'shopping.tsx');
-    const checkbox = shopping.match(
-      /<Pressable[\s\S]*?accessibilityRole="checkbox"[\s\S]*?style=\{\{([\s\S]*?)\}\}/,
+    const checkboxFile = read('features', 'shop', 'ShoppingCheckbox.tsx');
+    expect(checkboxFile, 'shopping checkbox Pressable is missing').toContain(
+      'accessibilityRole="checkbox"',
     );
-    const checkboxSource = checkbox?.[0] ?? '';
-    const checkboxStyle = checkbox?.[1] ?? '';
-
-    expect(checkboxSource, 'shopping checkbox Pressable is missing').not.toBe('');
-    expect(checkboxStyle, 'shopping checkbox touch target width is below 44pt').toMatch(
+    expect(checkboxFile, 'shopping checkbox touch target width is below 44pt').toMatch(
       /(?:minWidth|width):\s*44/,
     );
-    expect(checkboxStyle, 'shopping checkbox touch target height is below 44pt').toMatch(
+    expect(checkboxFile, 'shopping checkbox touch target height is below 44pt').toMatch(
       /(?:minHeight|height):\s*44/,
     );
-    expect(checkboxSource, 'shopping checkbox must be named for its item').not.toContain(
-      "accessibilityLabel={t('shopping.purchased')}",
+    expect(checkboxFile, 'shopping checkbox label should be injected by its row').toContain(
+      'accessibilityLabel={label}',
     );
-    expect(checkboxSource, 'shopping checkbox label should use the localized item name').toMatch(
-      /accessibilityLabel=\{(?:itemLabel|localizedName\(locale,\s*item\.nameEn,\s*item\.nameAr\))\}/,
+    const row = read('features', 'shop', 'ShoppingRow.tsx');
+    expect(row, 'shopping row must pass a sentence label to the checkbox').toContain(
+      'accessibilityLabel',
+    );
+    expect(row, 'purchased shopping rows should be struck through').toContain(
+      "textDecorationLine: 'line-through'",
     );
 
     const kitchen = read('app', '(tabs)', 'kitchen.tsx');
     expect(kitchen).not.toContain("edges={['top']}");
     expect(kitchen).toContain("edges={['top', 'left', 'right']}");
+  });
+
+  it('keeps Shop on native sharing and catalog-only adds (spec §9.7)', () => {
+    const shopping = read('app', '(tabs)', 'shopping.tsx');
+    expect(shopping).toContain('Share.share');
+    expect(shopping).toContain('formatShoppingListForShare');
+    expect(shopping).toContain('useSearchIngredients');
+    expect(shopping).toContain('useAddShoppingItems');
+    expect(shopping).toContain('ingredientId: ingredient.id');
+    expect(shopping, 'Shop must not send free-text names to addShoppingItems').not.toMatch(
+      /items:\s*\[\s*\{[\s\S]*?(?:name|label|rawName)\s*:/,
+    );
   });
 
   it('keeps Kitchen wired to the G2 screen contract', () => {
