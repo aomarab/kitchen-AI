@@ -119,10 +119,10 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     }
   });
 
-  it('the shopping checkbox tick separates from success fill', () => {
+  it('success fills carry a readable tick or label', () => {
     expect(
-      contrast(colors.textInverse, colors.success),
-      'textInverse on success',
+      contrast(colors.onSuccess, colors.success),
+      'onSuccess on success',
     ).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 

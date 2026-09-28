@@ -49,4 +49,14 @@ describe('useToastStore', () => {
     vi.advanceTimersByTime(TOAST_MS - 999);
     expect(useToastStore.getState().toast).toBeNull();
   });
+
+  it('keeps a non-negative sticky footer offset for toast placement', async () => {
+    const { useToastStore } = await import('./toast');
+
+    useToastStore.getState().setFooterOffset(128);
+    expect(useToastStore.getState().footerOffset).toBe(128);
+
+    useToastStore.getState().setFooterOffset(-10);
+    expect(useToastStore.getState().footerOffset).toBe(0);
+  });
 });

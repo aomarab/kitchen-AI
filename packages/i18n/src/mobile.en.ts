@@ -282,6 +282,10 @@ export const mobileEn = {
       add: 'Add',
       noMatch: 'No ingredient matches that.',
       moveCount: 'Move {count} to Kitchen',
+      shareFailed: "Couldn't share the list. {reason}",
+      addFailed: "Couldn't add that item. {reason}",
+      updateFailed: "Couldn't update that item. {reason}",
+      moveFailed: "Couldn't move those items. {reason}",
     },
     item: {
       nameLabel: 'Name',

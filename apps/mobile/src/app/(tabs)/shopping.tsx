@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Share, View } from 'react-native';
 import type { Ingredient, ShoppingListItem } from '@kitchen/contracts';
+import type { MessageKey } from '@kitchen/i18n';
 import {
   AppText,
   EmptyState,
@@ -11,7 +12,6 @@ import {
   Screen,
   TabHeader,
 } from '../../components';
-import { useTabBarClearance } from '../../components/TabBar';
 import { AddItemField } from '../../features/shop/AddItemField';
 import { ShoppingFooter } from '../../features/shop/ShoppingFooter';
 import { ShoppingRow } from '../../features/shop/ShoppingRow';
@@ -25,6 +25,7 @@ import {
   useShoppingList,
   useToggleShoppingItem,
 } from '../../hooks/shopping';
+import { errorMessageKey } from '../../lib/errors';
 import { formatMeasure, formatQty, localizedName } from '../../lib/format';
 import { addFieldAction, formatShoppingListForShare } from '../../lib/shopping-share';
 import { useToastStore } from '../../stores/toast';
@@ -43,7 +44,6 @@ function itemSentence(name: string, measure: string, purchased: boolean, purchas
 
 export default function Shopping() {
   const { t, locale, prefs } = useFormat();
-  const clearance = useTabBarClearance();
   const list = useShoppingList();
   const toggle = useToggleShoppingItem();
   const checkout = useCheckoutShopping();
@@ -74,17 +74,31 @@ export default function Shopping() {
       ),
     [items, locale, prefs, t],
   );
+  const showShopError = (key: MessageKey, error: unknown) => {
+    useToastStore.getState().show({
+      message: t(key, { reason: t(errorMessageKey(error)) }),
+    });
+  };
   const shareList = () => {
     if (!shareMessage) return;
-    void Share.share({ message: shareMessage });
+    void Share.share({ message: shareMessage })
+      .then((result) => {
+        if (result.action === Share.dismissedAction) return;
+      })
+      .catch((error: unknown) => showShopError('mobile.shop.shareFailed', error));
   };
 
   const addIngredient = (ingredient: Ingredient) => {
-    addItems.mutate({
-      planId: null,
-      items: [{ ingredientId: ingredient.id, quantity: 1, unit: ingredient.defaultUnit }],
-    });
-    setTerm('');
+    addItems.mutate(
+      {
+        planId: null,
+        items: [{ ingredientId: ingredient.id, quantity: 1, unit: ingredient.defaultUnit }],
+      },
+      {
+        onSuccess: () => setTerm(''),
+        onError: (error) => showShopError('mobile.shop.addFailed', error),
+      },
+    );
   };
   const addExactMatch = () => {
     if (!addAction.ingredient) return;
@@ -100,6 +114,7 @@ export default function Shopping() {
         onSuccess: () => {
           useToastStore.getState().show({ message: t('shopping.movedCount', { count }) });
         },
+        onError: (error) => showShopError('mobile.shop.moveFailed', error),
       },
     );
   };
@@ -130,7 +145,12 @@ export default function Shopping() {
           measure={measure}
           purchased={item.purchased}
           accessibilityLabel={accessibilityLabel}
-          onToggle={() => toggle.mutate({ id: item.id, purchased: !item.purchased })}
+          onToggle={() =>
+            toggle.mutate(
+              { id: item.id, purchased: !item.purchased },
+              { onError: (error) => showShopError('mobile.shop.updateFailed', error) },
+            )
+          }
         />
       );
     });
@@ -146,7 +166,6 @@ export default function Shopping() {
           title={moveTitle}
           disabled={purchasedIds.length === 0 || !targetLocation}
           loading={checkout.isPending}
-          bottomPadding={clearance}
           onPress={moveToKitchen}
         />
       }

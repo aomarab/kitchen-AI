@@ -9,6 +9,7 @@ import { useTheme } from '../theme/useTheme';
 
 export function Toast() {
   const toast = useToastStore((state) => state.toast);
+  const footerOffset = useToastStore((state) => state.footerOffset);
   const dismiss = useToastStore((state) => state.dismiss);
   const clearance = useTabBarClearance();
   const reduceMotion = useReduceMotion();
@@ -32,6 +33,7 @@ export function Toast() {
     toast.onAction?.();
     dismiss();
   };
+  const bottomOffset = (footerOffset > 0 ? footerOffset : clearance) + spacing.sm;
 
   return (
     <View
@@ -40,7 +42,7 @@ export function Toast() {
         position: 'absolute',
         start: spacing.lg,
         end: spacing.lg,
-        bottom: clearance + spacing.sm,
+        bottom: bottomOffset,
         alignItems: 'center',
       }}
     >

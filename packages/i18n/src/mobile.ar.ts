@@ -356,6 +356,10 @@ export const mobileAr: MobileMessages = {
       add: 'إضافة',
       noMatch: 'لا يوجد مكوّن مطابق.',
       moveCount: 'انقل {count} إلى المطبخ',
+      shareFailed: 'تعذّرت مشاركة القائمة. {reason}',
+      addFailed: 'تعذّرت إضافة هذا الغرض. {reason}',
+      updateFailed: 'تعذّر تحديث هذا الغرض. {reason}',
+      moveFailed: 'تعذّر نقل هذه الأغراض. {reason}',
     },
     item: {
       nameLabel: 'الاسم',

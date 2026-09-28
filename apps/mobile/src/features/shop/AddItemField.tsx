@@ -1,9 +1,11 @@
 import { Fragment } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import type { Ingredient } from '@kitchen/contracts';
+import type { Locale } from '@kitchen/i18n';
 import { AppText, Card, FoodIcon, RoundButton } from '../../components';
 import { ingredientName } from '../../lib/format';
-import type { Locale } from '@kitchen/i18n';
+import { useLocale } from '../../lib/locale';
+import { resolveFontFamily, useFontStore } from '../../lib/fonts';
 import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
@@ -45,6 +47,9 @@ export function AddItemField({
   onChoose,
 }: AddItemFieldProps) {
   const { colors } = useTheme();
+  const { dir, locale: inputLocale } = useLocale();
+  const fontsLoaded = useFontStore((state) => state.loaded);
+  const fontFamily = resolveFontFamily(inputLocale, fontsLoaded);
   const hasSuggestions = suggestions.length > 0;
   const showCard = hasSuggestions || showNoMatch;
   const addDisabled = !actionEnabled || submitting;
@@ -70,12 +75,18 @@ export function AddItemField({
           onChangeText={onTermChange}
           placeholder={placeholder}
           placeholderTextColor={colors.textMuted}
+          autoCorrect={false}
+          autoCapitalize="none"
           onSubmitEditing={addDisabled ? undefined : onAddAction}
           returnKeyType="done"
           style={{
             flex: 1,
             minHeight: 44,
             color: colors.text,
+            fontSize: 16,
+            fontFamily,
+            textAlign: 'auto',
+            writingDirection: dir,
             paddingVertical: 0,
           }}
         />

@@ -35,6 +35,7 @@ export interface PaletteColors {
   readonly primarySoft: string;
   readonly onFill: string;
   readonly onDanger: string;
+  readonly onSuccess: string;
   readonly accent: string;
   readonly accentSoft: string;
   readonly warn: string;
@@ -127,6 +128,7 @@ const apricotLight: Palette = {
     primarySoft: '#FFE9E0',
     onFill: '#2A1A12',
     onDanger: '#FFFFFF',
+    onSuccess: '#FFFFFF',
     accent: '#3F6A36',
     accentSoft: '#E3EDDD',
     success: '#1C7443',
@@ -166,9 +168,10 @@ const apricotDark: Palette = {
     primarySoft: '#3B2218',
     onFill: '#2A1A12',
     onDanger: '#2A1A12',
+    onSuccess: '#2A1A12',
     accent: '#A3CF95',
     accentSoft: '#1F2B1B',
-    success: '#44A36A',
+    success: '#74D29B',
     successSoft: '#15291D',
     warn: '#F2B45E',
     warnInverse: '#A56300',

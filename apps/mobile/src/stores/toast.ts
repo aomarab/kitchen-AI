@@ -11,8 +11,10 @@ export interface ToastOptions {
 
 interface ToastState {
   toast: ToastOptions | null;
+  footerOffset: number;
   show: (toast: ToastOptions) => void;
   dismiss: () => void;
+  setFooterOffset: (height: number) => void;
 }
 
 let dismissTimer: ReturnType<typeof setTimeout> | null = null;
@@ -25,6 +27,7 @@ function clearDismissTimer() {
 
 export const useToastStore = create<ToastState>((set) => ({
   toast: null,
+  footerOffset: 0,
   show: (toast) => {
     clearDismissTimer();
     set({ toast });
@@ -38,4 +41,5 @@ export const useToastStore = create<ToastState>((set) => ({
     clearDismissTimer();
     set({ toast: null });
   },
+  setFooterOffset: (height) => set({ footerOffset: Math.max(0, height) }),
 }));

@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
+  type LayoutChangeEvent,
   Platform,
   ScrollView,
   View,
@@ -8,8 +9,10 @@ import {
   type ViewStyle,
   RefreshControl,
 } from 'react-native';
+import { useIsFocused } from 'expo-router';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { useTabBarClearance } from './TabBar';
+import { useToastStore } from '../stores/toast';
 import { spacing } from '../theme';
 import { contentMaxWidth } from '../theme/layout';
 import { useTheme } from '../theme/useTheme';
@@ -50,15 +53,23 @@ export function Screen({
   footer,
 }: ScreenProps) {
   const { colors } = useTheme();
+  const isFocused = useIsFocused();
   const { width } = useWindowDimensions();
   const clearance = useTabBarClearance();
+  const setToastFooterOffset = useToastStore((state) => state.setFooterOffset);
   const maxWidth = contentMaxWidth(width);
+  const hasFooter = !!footer;
   // `lg` between top-level blocks against the `sm` most screens use inside a
   // section gives a real 2:1 rhythm tier. At the previous `md` the gap between
   // two sections was 12 and the gap inside one was 8, so nothing grouped and
   // every screen read as one undifferentiated stack.
   const pad: ViewStyle = {
     ...(padded ? { padding: spacing.lg, gap: spacing.lg } : null),
+    ...(tabBar && !hasFooter ? { paddingBottom: clearance } : null),
+  };
+  const footerPad: ViewStyle = {
+    padding: spacing.lg,
+    paddingTop: spacing.sm,
     ...(tabBar ? { paddingBottom: clearance } : null),
   };
   // `undefined` below the breakpoint leaves the phone layout untouched. Above
@@ -70,6 +81,16 @@ export function Screen({
   // the only form that stays centred in both directions (spec §4.3).
   const centering: ViewStyle = maxWidth ? { alignItems: 'center' } : {};
   const block: ViewStyle = maxWidth ? { width: '100%', maxWidth } : { width: '100%' };
+  useEffect(() => {
+    if (!isFocused) return;
+    if (!hasFooter) setToastFooterOffset(0);
+    return () => setToastFooterOffset(0);
+  }, [hasFooter, isFocused, setToastFooterOffset]);
+
+  const onFooterLayout = (event: LayoutChangeEvent) => {
+    if (isFocused) setToastFooterOffset(event.nativeEvent.layout.height);
+  };
+
   return (
     <SafeAreaView edges={edges} style={[{ flex: 1, backgroundColor: colors.bg }, style]}>
       <KeyboardAvoidingView
@@ -98,7 +119,9 @@ export function Screen({
         )}
         {footer ? (
           <View style={centering}>
-            <View style={[{ padding: spacing.lg, paddingTop: spacing.sm }, block]}>{footer}</View>
+            <View onLayout={onFooterLayout} style={[footerPad, block]}>
+              {footer}
+            </View>
           </View>
         ) : null}
       </KeyboardAvoidingView>

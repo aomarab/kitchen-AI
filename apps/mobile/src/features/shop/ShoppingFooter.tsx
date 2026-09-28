@@ -5,19 +5,12 @@ interface ShoppingFooterProps {
   title: string;
   disabled: boolean;
   loading: boolean;
-  bottomPadding: number;
   onPress: () => void;
 }
 
-export function ShoppingFooter({
-  title,
-  disabled,
-  loading,
-  bottomPadding,
-  onPress,
-}: ShoppingFooterProps) {
+export function ShoppingFooter({ title, disabled, loading, onPress }: ShoppingFooterProps) {
   return (
-    <View style={{ paddingBottom: bottomPadding }}>
+    <View>
       <Button title={title} icon="check" disabled={disabled} loading={loading} onPress={onPress} />
     </View>
   );

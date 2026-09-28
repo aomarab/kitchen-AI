@@ -153,6 +153,17 @@ describe('information architecture (spec §4)', () => {
     expect(row, 'purchased shopping rows should be struck through').toContain(
       "textDecorationLine: 'line-through'",
     );
+    expect(
+      checkboxFile,
+      'unchecked shopping checkbox ring must use the accessible token',
+    ).toContain('colors.textMuted');
+    expect(checkboxFile, 'unchecked shopping checkbox ring must be 1.5pt').toContain(
+      'borderWidth: checked ? 1 : 1.5',
+    );
+    expect(
+      checkboxFile,
+      'shopping checkbox tick must use the semantic success label token',
+    ).toContain('colors.onSuccess');
 
     const kitchen = read('app', '(tabs)', 'kitchen.tsx');
     expect(kitchen).not.toContain("edges={['top']}");
@@ -166,9 +177,38 @@ describe('information architecture (spec §4)', () => {
     expect(shopping).toContain('useSearchIngredients');
     expect(shopping).toContain('useAddShoppingItems');
     expect(shopping).toContain('ingredientId: ingredient.id');
+    expect(shopping, 'Share dismissals should not show failure feedback').toContain(
+      'Share.dismissedAction',
+    );
+    expect(shopping, 'Shop action failures should use the standard error mapping').toContain(
+      'errorMessageKey',
+    );
+    expect(
+      shopping,
+      'Shop add success should clear the field only after the mutation succeeds',
+    ).toContain('onSuccess: () => setTerm');
+    expect(shopping, 'Shop mutations should surface failures').toContain('onError');
     expect(shopping, 'Shop must not send free-text names to addShoppingItems').not.toMatch(
       /items:\s*\[\s*\{[\s\S]*?(?:name|label|rawName)\s*:/,
     );
+  });
+
+  it('keeps sticky footer and toast geometry above the floating tab bar', () => {
+    const screen = read('components', 'Screen.tsx');
+    const toast = read('components', 'Toast.tsx');
+    expect(screen).toContain('tabBar && !hasFooter');
+    expect(screen).toContain('onFooterLayout');
+    expect(screen).toContain('setToastFooterOffset(event.nativeEvent.layout.height)');
+    expect(toast).toContain('footerOffset > 0 ? footerOffset : clearance');
+  });
+
+  it('keeps the Shop add field aligned and typed like shared fields', () => {
+    const addField = read('features', 'shop', 'AddItemField.tsx');
+    expect(addField).toContain("textAlign: 'auto'");
+    expect(addField).toContain('writingDirection: dir');
+    expect(addField).toContain('resolveFontFamily');
+    expect(addField).toContain('autoCorrect={false}');
+    expect(addField).toContain('autoCapitalize="none"');
   });
 
   it('keeps Kitchen wired to the G2 screen contract', () => {

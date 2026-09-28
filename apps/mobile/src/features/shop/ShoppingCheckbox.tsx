@@ -30,14 +30,14 @@ export function ShoppingCheckbox({ checked, label, onPress }: ShoppingCheckboxPr
           width: 24,
           height: 24,
           borderRadius: radius.sm,
-          borderWidth: 1,
-          borderColor: checked ? colors.success : colors.border,
+          borderWidth: checked ? 1 : 1.5,
+          borderColor: checked ? colors.success : colors.textMuted,
           backgroundColor: checked ? colors.success : colors.surface,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        {checked ? <Icon name="check" size={16} color={colors.textInverse} /> : null}
+        {checked ? <Icon name="check" size={16} color={colors.onSuccess} /> : null}
       </View>
     </Pressable>
   );
