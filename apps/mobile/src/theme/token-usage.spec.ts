@@ -51,6 +51,7 @@ describe('mobile source sweep', () => {
     'StarRating.tsx': { path: 'components/StarRating.tsx', pattern: /minHeight:\s*(\d+)/ },
     'TabBar.tsx': { path: 'components/TabBar.tsx', pattern: /minHeight:\s*(\d+)/ },
     'Tile.tsx': { path: 'components/Tile.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'ToggleRow.tsx': { path: 'components/ToggleRow.tsx', pattern: /minHeight:\s*(\d+)/ },
     'ArPins.tsx': { path: 'features/capture/ArPins.tsx', pattern: /minHeight:\s*(\d+)/ },
     'Shutter.tsx': { path: 'features/capture/Shutter.tsx', pattern: /width:\s*(\d+)/ },
     'QuestionTile.tsx': {

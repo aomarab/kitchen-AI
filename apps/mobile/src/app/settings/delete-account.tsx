@@ -31,12 +31,27 @@ export default function DeleteAccount() {
   const [confirmation, setConfirmation] = useState('');
   const [password, setPassword] = useState('');
 
-  if (meQuery.isLoading || householdsQuery.isLoading) return <LoadingState />;
+  if (meQuery.isLoading || householdsQuery.isLoading) {
+    return (
+      <Screen>
+        <Header title={t('mobile.deleteAccount.title')} onBack={() => router.back()} />
+        <LoadingState />
+      </Screen>
+    );
+  }
   if (meQuery.isError)
-    return <ErrorState error={meQuery.error} onRetry={() => void meQuery.refetch()} />;
+    return (
+      <Screen>
+        <Header title={t('mobile.deleteAccount.title')} onBack={() => router.back()} />
+        <ErrorState error={meQuery.error} onRetry={() => void meQuery.refetch()} />
+      </Screen>
+    );
   if (householdsQuery.isError)
     return (
-      <ErrorState error={householdsQuery.error} onRetry={() => void householdsQuery.refetch()} />
+      <Screen>
+        <Header title={t('mobile.deleteAccount.title')} onBack={() => router.back()} />
+        <ErrorState error={householdsQuery.error} onRetry={() => void householdsQuery.refetch()} />
+      </Screen>
     );
   if (!meQuery.data || !householdsQuery.data) return null;
 
@@ -61,7 +76,9 @@ export default function DeleteAccount() {
     <Screen scroll>
       <Header title={t('mobile.deleteAccount.title')} onBack={() => router.back()} />
 
-      <AppText muted>{t('mobile.deleteAccount.intro')}</AppText>
+      <AppText variant="body" muted>
+        {t('mobile.deleteAccount.intro')}
+      </AppText>
 
       <Card style={{ gap: spacing.sm }}>
         <AppText variant="label" muted>
@@ -93,26 +110,29 @@ export default function DeleteAccount() {
         })}
       </Card>
 
-      <Field
-        label={t('mobile.deleteAccount.confirmLabel', { word })}
-        value={confirmation}
-        onChangeText={setConfirmation}
-        autoCapitalize="none"
-        autoCorrect={false}
-        editable={!mutation.isPending}
-      />
-
-      {user.hasPassword ? (
+      <Card style={{ gap: spacing.md }}>
         <Field
-          label={t('mobile.deleteAccount.passwordLabel')}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
+          label={t('mobile.deleteAccount.confirmLabel', { word })}
+          value={confirmation}
+          onChangeText={setConfirmation}
           autoCapitalize="none"
-          autoComplete="current-password"
+          autoCorrect={false}
           editable={!mutation.isPending}
         />
-      ) : null}
+
+        {user.hasPassword ? (
+          <Field
+            label={t('mobile.deleteAccount.passwordLabel')}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="current-password"
+            editable={!mutation.isPending}
+          />
+        ) : null}
+      </Card>
 
       {mutation.isError ? (
         <View accessibilityLiveRegion="polite">

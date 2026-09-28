@@ -9,10 +9,12 @@ import {
   Button,
   Card,
   Field,
+  ListGroup,
   ListRow,
   LoadingState,
   ErrorState,
   EmptyState,
+  SectionLabel,
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useHouseholds, useUpdateHousehold, useRotateInviteCode } from '../../hooks/profile';
@@ -24,8 +26,7 @@ export default function Household() {
   const router = useRouter();
   const households = useHouseholds();
   const activeId = useAuthStore((state) => state.activeHouseholdId);
-  const household =
-    households.data?.find((h) => h.id === activeId) ?? households.data?.[0] ?? null;
+  const household = households.data?.find((h) => h.id === activeId) ?? households.data?.[0] ?? null;
 
   const update = useUpdateHousehold(household?.id ?? '');
   const rotate = useRotateInviteCode(household?.id ?? '');
@@ -62,14 +63,16 @@ export default function Household() {
     <Screen scroll>
       <Header title={t('household.title')} onBack={() => router.back()} />
 
-      <Field label={t('household.name')} value={draftName} onChangeText={setName} />
-      <Button
-        title={t('common.save')}
-        icon="check"
-        disabled={draftName.trim() === household.name || draftName.trim().length === 0}
-        loading={update.isPending}
-        onPress={() => update.mutate({ name: draftName.trim() })}
-      />
+      <Card style={{ gap: spacing.md }}>
+        <Field label={t('household.name')} value={draftName} onChangeText={setName} />
+        <Button
+          title={t('common.save')}
+          icon="check"
+          disabled={draftName.trim() === household.name || draftName.trim().length === 0}
+          loading={update.isPending}
+          onPress={() => update.mutate({ name: draftName.trim() })}
+        />
+      </Card>
 
       <Card style={{ gap: spacing.sm }}>
         <AppText variant="label" muted>
@@ -94,20 +97,26 @@ export default function Household() {
         </View>
       </Card>
 
-      <AppText variant="heading">{t('household.members')}</AppText>
-      {household.members.map((member) => (
-        <ListRow
-          key={member.userId}
-          title={member.displayName}
-          subtitle={member.email}
-          trailing={
-            <Badge
-              tone={member.role === 'owner' ? 'info' : 'neutral'}
-              label={member.role === 'owner' ? t('household.owner') : t('household.member')}
+      <View style={{ gap: spacing.sm }}>
+        <SectionLabel>{t('household.members')}</SectionLabel>
+        <ListGroup>
+          {household.members.map((member) => (
+            <ListRow
+              key={member.userId}
+              grouped
+              icon="user"
+              title={member.displayName}
+              subtitle={member.email}
+              trailing={
+                <Badge
+                  tone={member.role === 'owner' ? 'info' : 'neutral'}
+                  label={member.role === 'owner' ? t('household.owner') : t('household.member')}
+                />
+              }
             />
-          }
-        />
-      ))}
+          ))}
+        </ListGroup>
+      </View>
     </Screen>
   );
 }

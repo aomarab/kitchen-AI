@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { Pressable, View, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  View,
+  type AccessibilityRole,
+  type AccessibilityState,
+  type ViewStyle,
+} from 'react-native';
 import { AppText } from './AppText';
 import { DirectionalIcon } from './DirectionalIcon';
 import { Icon, type IconName } from './Icon';
@@ -19,6 +25,8 @@ export interface ListRowProps {
   showChevron?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityState?: AccessibilityState;
   /**
    * A row inside a `ListGroup`: the group card owns the fill, edge and corners,
    * so the row drops its own and grows to 56pt.
@@ -46,6 +54,8 @@ export function ListRow({
   showChevron,
   accessibilityLabel,
   accessibilityHint,
+  accessibilityRole,
+  accessibilityState,
   grouped,
   titleColor,
   style,
@@ -109,9 +119,10 @@ export function ListRow({
   if (!onPress) return content;
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={accessibilityRole ?? 'button'}
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityHint={accessibilityHint}
+      accessibilityState={accessibilityState}
       accessibilityValue={value ? { text: value } : undefined}
       onPress={onPress}
       style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}

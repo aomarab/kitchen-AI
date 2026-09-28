@@ -12,11 +12,13 @@ import {
   AppText,
   Badge,
   Card,
+  ListGroup,
   ToggleRow,
   SegmentedControl,
   QuantityStepper,
   LoadingState,
   ErrorState,
+  SectionLabel,
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useReminderSettings, useUpdateReminderSettings } from '../../hooks/reminders';
@@ -88,29 +90,30 @@ export default function Reminders() {
         {update.isSuccess ? <Badge tone="info" label={t('mobile.reminders.saved')} /> : null}
       </View>
 
-      <Card style={{ gap: spacing.lg }}>
-        <AppText variant="label" muted>
-          {t('mobile.reminders.nudgesTitle')}
-        </AppText>
-        {/*
-          The rows are derived from SCHEDULED_REMINDER_TYPES, not hand-listed,
-          so this screen can only offer a switch the firing engine can act on.
-          Stretch was absent until a cadence setting existed; it is back for
-          the same reason, without anyone having to edit this list.
-        */}
-        {SCHEDULED_REMINDER_TYPES.map((type) => {
-          const row = toggleCopy[type];
-          return (
-            <ToggleRow
-              key={type}
-              label={row.label}
-              hint={row.hint}
-              value={s[row.key]}
-              onValueChange={(v) => update.mutate({ [row.key]: v })}
-            />
-          );
-        })}
-      </Card>
+      <View style={{ gap: spacing.sm }}>
+        <SectionLabel>{t('mobile.reminders.nudgesTitle')}</SectionLabel>
+        <ListGroup>
+          {/*
+            The rows are derived from SCHEDULED_REMINDER_TYPES, not hand-listed,
+            so this screen can only offer a switch the firing engine can act on.
+            Stretch was absent until a cadence setting existed; it is back for
+            the same reason, without anyone having to edit this list.
+          */}
+          {SCHEDULED_REMINDER_TYPES.map((type) => {
+            const row = toggleCopy[type];
+            return (
+              <ToggleRow
+                key={type}
+                grouped
+                label={row.label}
+                hint={row.hint}
+                value={s[row.key]}
+                onValueChange={(v) => update.mutate({ [row.key]: v })}
+              />
+            );
+          })}
+        </ListGroup>
+      </View>
 
       <Card style={{ gap: spacing.sm }}>
         <AppText variant="label" muted>

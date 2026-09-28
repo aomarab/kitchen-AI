@@ -132,6 +132,31 @@ describe('information architecture (spec §4)', () => {
     expect(row).toMatch(/grouped\s*\?\s*\{[^}]*minHeight:\s*56/);
   });
 
+  it('keeps Account and Settings rows on the grouped G10 contract (spec §9.7)', () => {
+    const themePicker = read('features', 'settings', 'ThemePicker.tsx');
+    expect(themePicker, 'ThemePicker must use the shared segmented control').toContain(
+      '<SegmentedControl',
+    );
+    expect(themePicker, 'ThemePicker must not keep its hand-rolled Pressable track').not.toContain(
+      'Pressable',
+    );
+
+    const settings = read('app', 'settings', 'index.tsx');
+    expect(settings, 'Settings navigation groups should use ListGroup cards').toContain(
+      '<ListGroup',
+    );
+    const rows = settings.match(/<ListRow[\s\S]*?\/>/g) ?? [];
+    expect(rows.length, 'Settings should render navigation rows').toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row, `Settings navigation row is not grouped:\n${row}`).toContain('grouped');
+    }
+
+    const deleteAccount = read('app', 'settings', 'delete-account.tsx');
+    expect(deleteAccount, 'Delete account must keep the destructive CTA tone').toContain(
+      'variant="danger"',
+    );
+  });
+
   it('keeps inline tab controls named and inside safe areas (spec §12)', () => {
     const checkboxFile = read('features', 'shop', 'ShoppingCheckbox.tsx');
     expect(checkboxFile, 'shopping checkbox Pressable is missing').toContain(

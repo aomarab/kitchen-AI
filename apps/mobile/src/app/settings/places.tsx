@@ -11,6 +11,7 @@ import {
   ErrorState,
   Field,
   Header,
+  ListGroup,
   ListRow,
   LoadingState,
   Screen,
@@ -106,32 +107,40 @@ export default function Places() {
     <Screen scroll>
       <Header title={t('mobile.places.title')} onBack={() => router.back()} />
 
-      {places.map((place) => {
-        const count = counts.get(place.id) ?? 0;
-        const plan = planLocationRemoval(place, count, places);
-        return (
-          <ListRow
-            key={place.id}
-            title={locationLabel(t, place)}
-            subtitle={
-              count === 0 ? t('mobile.places.empty') : t('mobile.places.itemCount', { count })
-            }
-            onPress={() => openEdit(place)}
-            trailing={
-              <Button
-                title={t('mobile.places.remove')}
-                variant="ghost"
-                // Removing the last place would leave nowhere to put food, and
-                // nowhere to move what is already stored.
-                disabled={plan.action === 'blocked'}
-                onPress={() =>
-                  plan.action === 'delete' ? remove.mutate({ id: place.id }) : setRemoving(place)
+      {places.length > 0 ? (
+        <ListGroup>
+          {places.map((place) => {
+            const count = counts.get(place.id) ?? 0;
+            const plan = planLocationRemoval(place, count, places);
+            return (
+              <ListRow
+                key={place.id}
+                grouped
+                icon="location"
+                title={locationLabel(t, place)}
+                subtitle={
+                  count === 0 ? t('mobile.places.empty') : t('mobile.places.itemCount', { count })
+                }
+                onPress={() => openEdit(place)}
+                trailing={
+                  <Button
+                    title={t('mobile.places.remove')}
+                    variant="ghost"
+                    // Removing the last place would leave nowhere to put food, and
+                    // nowhere to move what is already stored.
+                    disabled={plan.action === 'blocked'}
+                    onPress={() =>
+                      plan.action === 'delete'
+                        ? remove.mutate({ id: place.id })
+                        : setRemoving(place)
+                    }
+                  />
                 }
               />
-            }
-          />
-        );
-      })}
+            );
+          })}
+        </ListGroup>
+      ) : null}
 
       <Button title={t('mobile.places.add')} icon="plus" variant="secondary" onPress={openAdd} />
 
@@ -140,28 +149,30 @@ export default function Places() {
         onClose={close}
         title={editing?.location ? t('mobile.places.rename') : t('mobile.places.add')}
       >
-        <Field
-          label={t('mobile.places.title')}
-          placeholder={t('mobile.places.namePlaceholder')}
-          value={name}
-          onChangeText={setName}
-          autoFocus
-        />
-        <View style={{ gap: spacing.xs }}>
-          <AppText variant="label" muted>
-            {t('mobile.places.kind')}
-          </AppText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {TYPES.map((option) => (
-              <Chip
-                key={option}
-                label={t(`inventory.locations.${option}`)}
-                selected={type === option}
-                onPress={() => setType(option)}
-              />
-            ))}
+        <Card style={{ gap: spacing.md }}>
+          <Field
+            label={t('mobile.places.title')}
+            placeholder={t('mobile.places.namePlaceholder')}
+            value={name}
+            onChangeText={setName}
+            autoFocus
+          />
+          <View style={{ gap: spacing.xs }}>
+            <AppText variant="label" muted>
+              {t('mobile.places.kind')}
+            </AppText>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              {TYPES.map((option) => (
+                <Chip
+                  key={option}
+                  label={t(`inventory.locations.${option}`)}
+                  selected={type === option}
+                  onPress={() => setType(option)}
+                />
+              ))}
+            </View>
           </View>
-        </View>
+        </Card>
         <Button
           title={t('common.save')}
           icon="check"
@@ -184,10 +195,12 @@ export default function Places() {
         {destinations.length === 0 ? (
           <AppText style={{ color: colors.danger }}>{t('mobile.places.cannotRemoveLast')}</AppText>
         ) : (
-          <Card style={{ gap: spacing.sm }}>
+          <ListGroup>
             {destinations.map((destination) => (
               <ListRow
                 key={destination.id}
+                grouped
+                icon="location"
                 title={locationLabel(t, destination)}
                 subtitle={t('mobile.places.moveHere')}
                 onPress={() =>
@@ -199,7 +212,7 @@ export default function Places() {
                 }
               />
             ))}
-          </Card>
+          </ListGroup>
         )}
       </Sheet>
     </Screen>
