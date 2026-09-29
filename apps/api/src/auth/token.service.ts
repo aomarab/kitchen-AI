@@ -148,8 +148,19 @@ export class TokenService {
       );
   }
 
-  private async revokeAllForUser(userId: string): Promise<void> {
-    await this.db
+  async revokeAllForUser(userId: string): Promise<void>;
+  async revokeAllForUser(userId: string, tx: TxClient): Promise<void>;
+  async revokeAllForUser(userId: string, tx?: TxClient): Promise<void> {
+    if (tx) {
+      await this.revokeAllForUserWith(tx, userId);
+      return;
+    }
+
+    await this.db.transaction((innerTx) => this.revokeAllForUserWith(innerTx, userId));
+  }
+
+  private async revokeAllForUserWith(tx: TxClient, userId: string): Promise<void> {
+    await tx
       .update(refreshTokens)
       .set({ revokedAt: new Date() })
       .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
