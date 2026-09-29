@@ -177,12 +177,14 @@ export default function Shopping() {
       refreshing={list.isRefetching}
       onRefresh={() => void list.refetch()}
       footer={
-        <ShoppingFooter
-          title={moveTitle}
-          disabled={purchasedIds.length === 0 || !targetLocation}
-          loading={checkout.isPending}
-          onPress={moveToKitchen}
-        />
+        items.length > 0 ? (
+          <ShoppingFooter
+            title={moveTitle}
+            disabled={purchasedIds.length === 0 || !targetLocation}
+            loading={checkout.isPending}
+            onPress={moveToKitchen}
+          />
+        ) : undefined
       }
     >
       <TabHeader
@@ -227,7 +229,11 @@ export default function Shopping() {
         ) : list.isError ? (
           <ErrorState error={list.error} onRetry={() => void list.refetch()} />
         ) : items.length === 0 ? (
-          <EmptyState illustration="bag" title={t('shopping.empty')} />
+          <EmptyState
+            illustration="bag"
+            title={t('shopping.empty')}
+            message={t('mobile.shop.emptyBody')}
+          />
         ) : (
           <View style={{ gap: spacing.xl }}>
             {unpurchasedItems.length > 0 ? (

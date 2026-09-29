@@ -38,11 +38,13 @@ export default function Timers() {
         refreshing={timersQuery.isRefetching}
         onRefresh={() => void timersQuery.refetch()}
         footer={
-          <Button
-            title={t('mobile.timers.newTimer')}
-            leadingIcon="plus"
-            onPress={() => setSheetOpen(true)}
-          />
+          ordered.length === 0 && !timersQuery.isLoading && !timersQuery.isError ? undefined : (
+            <Button
+              title={t('mobile.timers.newTimer')}
+              leadingIcon="plus"
+              onPress={() => setSheetOpen(true)}
+            />
+          )
         }
       >
         <Header title={t('mobile.timers.title')} onBack={() => router.back()} />
@@ -59,6 +61,8 @@ export default function Timers() {
             illustration="timer"
             title={t('mobile.timers.empty')}
             message={t('mobile.timers.emptyHint')}
+            actionLabel={t('mobile.timers.newTimer')}
+            onAction={() => setSheetOpen(true)}
           />
         ) : (
           <View style={{ gap: spacing.md }}>

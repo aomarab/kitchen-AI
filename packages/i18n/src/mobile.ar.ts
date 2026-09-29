@@ -224,6 +224,7 @@ export const mobileAr: MobileMessages = {
       selectLocation: 'اختر موقعاً',
       confirmTitle: 'إضافة إلى مطبخك؟',
       confirmBody: 'لن يُضاف شيء حتى تؤكد.',
+      addToKitchen: 'أضف إلى المطبخ',
     },
     review: {
       hint: 'لا يُحفظ شيء حتى تؤكد. تحقق من الكميات — فنحن نقدّرها من الصورة.',
@@ -1020,6 +1021,7 @@ export const mobileAr: MobileMessages = {
       share: 'مشاركة القائمة',
       addPlaceholder: 'أضف غرضًا…',
       add: 'إضافة',
+      emptyBody: 'أي شيء تنقصه الخطة يمكن أن يصل هنا بلمسة واحدة.',
       noMatch: 'لا يوجد مكوّن مطابق.',
       moveCount: 'انقل {count} إلى المطبخ',
       shareFailed: 'تعذّرت مشاركة القائمة. {reason}',

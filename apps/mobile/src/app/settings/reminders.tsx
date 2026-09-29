@@ -1,7 +1,6 @@
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  SCHEDULED_REMINDER_TYPES,
   type BreakCadenceMinutes,
   type ReminderType,
   type StretchCadenceMinutes,
@@ -24,6 +23,8 @@ import { useReminderSettings, useUpdateReminderSettings } from '../../hooks/remi
 import { clampHydrationGoal, clampQuietHour } from '../../lib/reminders';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
+
+const REMINDER_ROW_ORDER: ReminderType[] = ['break', 'stretch', 'morning', 'hydration'];
 
 function SettingStepperRow({
   title,
@@ -51,7 +52,7 @@ function SettingStepperRow({
   return (
     <View
       style={{
-        minHeight: 64,
+        minHeight: 54,
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.md,
@@ -128,11 +129,6 @@ export default function Reminders() {
   if (!query.data) return frame(null);
 
   const s = query.data;
-  const cadenceShort = (minutes: number) =>
-    t('mobile.reminders.cadenceShort', { minutes }).replace(
-      String(minutes),
-      formatQty(locale, minutes, prefs),
-    );
   const cadenceEvery = (minutes: number) =>
     t('mobile.reminders.cadenceEvery', { minutes }).replace(
       String(minutes),
@@ -166,7 +162,7 @@ export default function Reminders() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll contentStyle={{ gap: spacing.lg }}>
       <Header title={t('mobile.reminders.title')} onBack={() => router.back()} />
 
       <AppText variant="body" muted>
@@ -176,7 +172,7 @@ export default function Reminders() {
       <View style={{ gap: spacing.sm }}>
         <SectionLabel>{t('mobile.reminders.nudgesTitle')}</SectionLabel>
         <ListGroup>
-          {SCHEDULED_REMINDER_TYPES.map((type) => {
+          {REMINDER_ROW_ORDER.map((type) => {
             const row = toggleCopy[type];
             return (
               <ToggleRow
@@ -197,7 +193,7 @@ export default function Reminders() {
           title={t('mobile.reminders.cadenceTitle')}
           caption={cadenceEvery(s.breakCadenceMinutes)}
           value={s.breakCadenceMinutes}
-          label={cadenceShort(s.breakCadenceMinutes)}
+          label={formatQty(locale, s.breakCadenceMinutes, prefs)}
           min={30}
           max={120}
           step={30}
@@ -209,7 +205,7 @@ export default function Reminders() {
           title={t('mobile.reminders.stretchCadenceTitle')}
           caption={cadenceEvery(s.stretchCadenceMinutes)}
           value={s.stretchCadenceMinutes}
-          label={cadenceShort(s.stretchCadenceMinutes)}
+          label={formatQty(locale, s.stretchCadenceMinutes, prefs)}
           min={30}
           max={120}
           step={30}

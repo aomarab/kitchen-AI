@@ -178,6 +178,7 @@ export const mobileEn = {
       selectLocation: 'Choose a location',
       confirmTitle: 'Add to your kitchen?',
       confirmBody: 'Nothing is added until you confirm.',
+      addToKitchen: 'Add to kitchen',
     },
     review: {
       hint: 'Nothing is saved until you confirm. Check the quantities — we estimate them from the photo.',
@@ -851,6 +852,7 @@ export const mobileEn = {
       share: 'Share list',
       addPlaceholder: 'Add an item…',
       add: 'Add',
+      emptyBody: 'Anything a plan is missing can land here in one tap.',
       noMatch: 'No ingredient matches that.',
       moveCount: 'Move {count} to Kitchen',
       shareFailed: "Couldn't share the list. {reason}",

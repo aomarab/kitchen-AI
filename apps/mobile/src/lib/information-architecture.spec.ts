@@ -417,7 +417,8 @@ describe('information architecture (spec §4)', () => {
     expect(review).toContain('orderedReviewRows');
     expect(review).toContain("t('mobile.review.hint')");
     expect(review).toContain('ReviewFooter');
-    expect(row).toContain('<QuantityStepper');
+    expect(review).toContain("const rowVariant = source === 'assistant' ? 'rich' : 'flat'");
+    expect(row).toContain('showQuantityStepper');
     expect(row).toContain('borderBottomColor: colors.rowline');
     expect(row).not.toContain('<Tile');
     expect(review).not.toContain('<Bento');
@@ -1192,9 +1193,11 @@ describe('information architecture (spec §4)', () => {
     const newTimerSheet = read('features', 'timers', 'NewTimerSheet.tsx');
 
     expect(timers).toContain('<NewTimerSheet');
-    expect(timers).toMatch(/footer=\{\s*<Button/);
+    expect(timers).toContain(
+      'ordered.length === 0 && !timersQuery.isLoading && !timersQuery.isError',
+    );
+    expect(timers).toContain("actionLabel={t('mobile.timers.newTimer')}");
     expect(timers).not.toContain('showFooter');
-    expect(timers).not.toContain('!timersQuery.isLoading && !timersQuery.isError');
     expect(timers).toContain('illustration="timer"');
     expect(timers).not.toContain('<Tile');
     expect(timers).not.toContain('RoundButton');
@@ -1215,9 +1218,10 @@ describe('information architecture (spec §4)', () => {
     ).toContain("title={t('mobile.timers.addMinute')}");
     expect(
       newTimerSheet,
-      'New timer duration must use the J stepper and keep preset chips.',
-    ).toContain('<QuantityStepper');
-    expect(newTimerSheet).toContain('<Chip');
+      'New timer duration must use the frame-matching plain Minutes field.',
+    ).toContain('keyboardType="number-pad"');
+    expect(newTimerSheet).not.toContain('<QuantityStepper');
+    expect(newTimerSheet).not.toContain('<Chip');
     expect(newTimerSheet).toContain('durationSec: minutes * 60');
     expect(newTimerSheet).toContain('const [minutes, setMinutes] = useState<number>(5)');
   });

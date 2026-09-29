@@ -14,6 +14,7 @@ export interface ReviewTileProps {
   location: StorageLocation | undefined;
   onPress: () => void;
   onQuantityChange: (quantity: number) => void;
+  showQuantityStepper?: boolean;
 }
 
 function phraseLabel(
@@ -33,8 +34,14 @@ function badgeFor(
   return { label: t('mobile.capture.noExpiry'), tone: 'muted' as const };
 }
 
-/** Flat J review row: item-row rhythm plus the capture-specific quantity stepper. */
-export function ReviewTile({ row, location, onPress, onQuantityChange }: ReviewTileProps) {
+/** Flat J review row; assistant review can opt into the richer quantity stepper row. */
+export function ReviewTile({
+  row,
+  location,
+  onPress,
+  onQuantityChange,
+  showQuantityStepper = true,
+}: ReviewTileProps) {
   const { t, locale, prefs } = useFormat();
   const { colors } = useTheme();
   const pressFeedback = usePressFeedback();
@@ -93,16 +100,18 @@ export function ReviewTile({ row, location, onPress, onQuantityChange }: ReviewT
           </View>
         </Animated.View>
       </Pressable>
-      <View style={{ paddingStart: 56 + 14 }}>
-        <QuantityStepper
-          value={row.quantity}
-          onChange={onQuantityChange}
-          unit={unitLabel(t, row.unit)}
-          accessibilityLabel={name}
-          decrementLabel={t('mobile.common.decrease')}
-          incrementLabel={t('mobile.common.increase')}
-        />
-      </View>
+      {showQuantityStepper ? (
+        <View style={{ paddingStart: 56 + 14 }}>
+          <QuantityStepper
+            value={row.quantity}
+            onChange={onQuantityChange}
+            unit={unitLabel(t, row.unit)}
+            accessibilityLabel={name}
+            decrementLabel={t('mobile.common.decrease')}
+            incrementLabel={t('mobile.common.increase')}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }

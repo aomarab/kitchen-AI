@@ -27,6 +27,8 @@ describe('field border tones', () => {
       expect(source).toMatch(/minHeight:\s*multiline \? 132 : 48/);
       expect(source).toContain('paddingHorizontal: multiline ? 14 : horizontalPadding');
       expect(source).toContain('paddingVertical: multiline ? 14 : 0');
+      expect(source).toContain('invalid?: boolean');
+      expect(source).toContain("error || invalid ? 'invalid' : undefined");
     });
 
     it('shows the textarea count only when the caller passes maxLength', () => {
@@ -44,6 +46,8 @@ describe('field border tones', () => {
       expect(source).toContain('name="search"');
       expect(source).toContain('onMicPress: () => void');
       expect(source).toContain('micAccessibilityLabel: string');
+      expect(source).toContain('onClear: () => void');
+      expect(source).toContain('clearAccessibilityLabel: string');
       expect(source).toContain('<IconButton');
     });
   });

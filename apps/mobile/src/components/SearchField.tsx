@@ -17,10 +17,20 @@ type MicProps =
       micAccessibilityLabel: string;
     };
 
-export type SearchFieldProps = TextInputProps & MicProps;
+type ClearProps =
+  | {
+      onClear?: undefined;
+      clearAccessibilityLabel?: never;
+    }
+  | {
+      onClear: () => void;
+      clearAccessibilityLabel: string;
+    };
+
+export type SearchFieldProps = TextInputProps & MicProps & ClearProps;
 
 export const SearchField = forwardRef<TextInput, SearchFieldProps>(function SearchField(
-  { style, onMicPress, micAccessibilityLabel, ...rest },
+  { style, onMicPress, micAccessibilityLabel, onClear, clearAccessibilityLabel, ...rest },
   ref,
 ) {
   const { colors } = useTheme();
@@ -69,6 +79,15 @@ export const SearchField = forwardRef<TextInput, SearchFieldProps>(function Sear
           tone="plain"
           size={36}
           onPress={onMicPress}
+        />
+      ) : null}
+      {onClear ? (
+        <IconButton
+          accessibilityLabel={clearAccessibilityLabel}
+          icon="x"
+          tone="plain"
+          size={36}
+          onPress={onClear}
         />
       ) : null}
     </View>

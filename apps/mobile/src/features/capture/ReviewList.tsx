@@ -191,12 +191,14 @@ function ReviewRows({
   review,
   locations,
   focusedIndex,
+  rowVariant,
   onTileLayout,
 }: {
   rows: ReviewRow[];
   review: ReviewListState;
   locations: StorageLocation[];
   focusedIndex: number;
+  rowVariant: 'flat' | 'rich';
   onTileLayout?: (tempId: string, index: number, y: number) => void;
 }) {
   const { locale } = useFormat();
@@ -232,6 +234,7 @@ function ReviewRows({
                 location={locations.find((location) => location.id === row.locationId)}
                 onPress={() => review.openEdit(row)}
                 onQuantityChange={(quantity) => review.updateQuantity(row.tempId, quantity)}
+                showQuantityStepper={rowVariant === 'rich'}
               />
             )}
           </View>
@@ -258,6 +261,7 @@ export function ReviewList({
   const internal = useReviewListState({ session, source, locations, onConfirm });
   const review = state ?? internal;
   const presentation = editPresentation ?? (source === 'assistant' ? 'inline' : 'sheet');
+  const rowVariant = source === 'assistant' ? 'rich' : 'flat';
   const rows = review.orderedRows;
   const focusedIndex = focusIndex(rows, focus);
 
@@ -286,6 +290,7 @@ export function ReviewList({
         review={review}
         locations={locations}
         focusedIndex={focusedIndex}
+        rowVariant={rowVariant}
         onTileLayout={onTileLayout}
       />
 

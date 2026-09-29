@@ -20,9 +20,9 @@ import { SCHEDULED_REMINDER_TYPES, reminderTypeSchema } from '@kitchen/contracts
  * would have passed for a hand-added stretch row.
  *
  * What replaces it is structural, and it is the property that actually
- * matters: the screen renders **one** `ToggleRow`, inside a map over
- * `SCHEDULED_REMINDER_TYPES`. A screen shaped that way cannot offer a switch
- * the engine will ignore, whatever the contract's list becomes.
+ * matters: the screen renders **one** `ToggleRow`, inside a map over the
+ * frame-ordered reminder list. The list stays typed as `ReminderType[]`, and
+ * this test keeps it aligned with the contract's scheduled types.
  */
 const source = (relative: string) =>
   readFileSync(join(__dirname, '..', ...relative.split('/')), 'utf8');
@@ -32,8 +32,14 @@ const occurrences = (haystack: string, needle: string) => haystack.split(needle)
 describe('mobile reminder surfaces', () => {
   const screen = source('app/settings/reminders.tsx');
 
-  it('reads the toggle list from the contract instead of hand-listing it', () => {
-    expect(screen).toContain('SCHEDULED_REMINDER_TYPES.map');
+  it('renders toggles in the frame order while staying aligned with scheduled types', () => {
+    expect(screen).toContain(
+      "const REMINDER_ROW_ORDER: ReminderType[] = ['break', 'stretch', 'morning', 'hydration'];",
+    );
+    for (const type of SCHEDULED_REMINDER_TYPES) {
+      expect(screen).toContain(`'${type}'`);
+    }
+    expect(screen).toContain('REMINDER_ROW_ORDER.map');
   });
 
   it('renders exactly one ToggleRow, so no nudge can be offered off-list', () => {

@@ -308,7 +308,6 @@ export default function Kitchen() {
       {selectedLocation ? (
         <Header
           title={locationLabel(t, selectedLocation)}
-          subtitle={selectedSummary ?? undefined}
           onBack={clearPlace}
           trailing={
             <IconButton
@@ -385,6 +384,15 @@ export default function Kitchen() {
       )}
 
       <View style={{ paddingHorizontal: spacing.gutter, gap: spacing.xl }}>
+        {selectedLocation && selectedSummary ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <AppText variant="caption" muted style={{ flex: 1 }}>
+              {selectedSummary}
+            </AppText>
+            <SortAction label={sortLabel} onPress={() => setSortOpen(true)} />
+          </View>
+        ) : null}
+
         {useFirstItems.length > 0 ? (
           <View style={{ gap: spacing.sm }}>
             <SectionHeading
@@ -398,7 +406,7 @@ export default function Kitchen() {
           </View>
         ) : null}
 
-        {recentItems.length > 0 ? (
+        {!selectedLocation && recentItems.length > 0 ? (
           <View
             style={{ gap: spacing.sm }}
             onLayout={(event) => setJustAddedY(event.nativeEvent.layout.y)}
@@ -419,11 +427,6 @@ export default function Kitchen() {
             actionLabel={selectedLocation ? undefined : t('mobile.kitchen.sortBy')}
             onAction={selectedLocation ? undefined : () => setSortOpen(true)}
           />
-          {selectedLocation ? (
-            <View style={{ alignItems: 'flex-end' }}>
-              <SortAction label={sortLabel} onPress={() => setSortOpen(true)} />
-            </View>
-          ) : null}
 
           {inventory.isLoading ? (
             <LoadingState />

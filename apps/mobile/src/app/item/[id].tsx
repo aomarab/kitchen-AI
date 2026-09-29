@@ -36,6 +36,7 @@ import {
   formatDateL,
   formatExpiryLabel,
   formatMeasure,
+  formatQty,
   itemName,
   locationLabel,
   unitLabel,
@@ -234,6 +235,7 @@ export default function ItemDetail() {
   const draftExpiryLabel = formatExpiryLabel(t, locale, expiresAt || null, prefs);
   const expiryText = draftExpiryLabel ?? t('mobile.home.freshNone');
   const quantityText = formatMeasure(t, locale, item.quantity, item.unit, prefs);
+  const quantityValueText = formatQty(locale, item.quantity, prefs);
   const quantityAccessibility = `${t('inventory.quantity')} ${quantityText}`;
   const locationAccessibility = `${t('inventory.location')} ${locationText}`;
   const expiryAccessibility = `${t('inventory.expiryDate')} ${expiryText}`;
@@ -285,7 +287,8 @@ export default function ItemDetail() {
             <QuantityStepper
               value={item.quantity}
               onChange={onAdjust}
-              label={quantityText}
+              label={quantityValueText}
+              unit={unitLabel(t, item.unit)}
               accessibilityLabel={quantityAccessibility}
               decrementLabel={t('mobile.common.decrease')}
               incrementLabel={t('mobile.common.increase')}

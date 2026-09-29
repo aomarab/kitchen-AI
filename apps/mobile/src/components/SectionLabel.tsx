@@ -14,7 +14,7 @@ export function SectionLabel({ children, actionLabel, onAction }: SectionLabelPr
   const pressFeedback = usePressFeedback();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-      <AppText variant="heading" style={{ flex: 1 }}>
+      <AppText variant="label" style={{ flex: 1 }}>
         {children}
       </AppText>
       {actionLabel && onAction ? (

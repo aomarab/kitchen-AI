@@ -10,16 +10,16 @@ import {
   Field,
   FoodIcon,
   ListRow,
-  QuantityStepper,
   Sheet,
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useSearchIngredients } from '../../hooks/profile';
 import type { ReviewRow } from '../../lib/capture';
 import { applyIngredient, hasValidIngredientSelection, isNewReviewRow } from '../../lib/review';
-import { ingredientName, localizedName, locationLabel, unitLabel } from '../../lib/format';
-import { COMMON_UNITS } from '../../lib/units';
+import { ingredientName, localizedName, locationLabel } from '../../lib/format';
 import { spacing } from '../../theme';
+import { QuantityField } from './QuantityField';
+import { UnitSelectField } from './UnitSelectField';
 
 export interface ReviewSaveMeta {
   ingredientChanged: boolean;
@@ -56,19 +56,6 @@ function suggestionItem(ingredient: Ingredient) {
   };
 }
 
-function UnitChip({
-  unit,
-  selected,
-  onPress,
-}: {
-  unit: Unit;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const { t } = useFormat();
-  return <Chip label={unitLabel(t, unit)} selected={selected} onPress={onPress} />;
-}
-
 export function ReviewEditSheet({
   visible,
   row,
@@ -85,6 +72,7 @@ export function ReviewEditSheet({
   const [term, setTerm] = useState('');
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [unitTouched, setUnitTouched] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
   const search = useSearchIngredients(term);
 
   useEffect(() => {
@@ -93,6 +81,7 @@ export function ReviewEditSheet({
     setTerm(label);
     setSelectedLabel(row && !isNewReviewRow(row) ? label : null);
     setUnitTouched(false);
+    setNameFocused(false);
   }, [locale, row]);
 
   useEffect(() => {
@@ -109,6 +98,7 @@ export function ReviewEditSheet({
       const label = ingredientName(locale, ingredient);
       setTerm(label);
       setSelectedLabel(label);
+      setNameFocused(false);
       return next;
     });
   };
@@ -123,7 +113,9 @@ export function ReviewEditSheet({
     setDraft((current) => (current ? { ...current, unit } : current));
   };
 
-  const suggestions = (search.data?.items ?? []).slice(0, 5);
+  const showSuggestions =
+    nameFocused && term.trim().length > 0 && !hasValidIngredientSelection(term, selectedLabel);
+  const suggestions = showSuggestions ? (search.data?.items ?? []).slice(0, 5) : [];
   const saveDisabled = draft.locationId === '' || !hasValidIngredientSelection(term, selectedLabel);
 
   const form = (
@@ -142,6 +134,8 @@ export function ReviewEditSheet({
         placeholder={t('mobile.capture.searchIngredient')}
         autoCorrect={false}
         autoFocus={focusName}
+        onFocus={() => setNameFocused(true)}
+        onBlur={() => setNameFocused(false)}
       />
 
       {suggestions.length > 0 ? (
@@ -158,30 +152,17 @@ export function ReviewEditSheet({
         </View>
       ) : null}
 
-      <QuantityStepper
-        value={draft.quantity}
-        onChange={(quantity) =>
-          setDraft((current) => (current ? { ...current, quantity } : current))
-        }
-        unit={unitLabel(t, draft.unit)}
-        accessibilityLabel={t('inventory.quantity')}
-        decrementLabel={t('mobile.common.decrease')}
-        incrementLabel={t('mobile.common.increase')}
-      />
-
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('inventory.unit')}
-        </AppText>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          {COMMON_UNITS.map((unit) => (
-            <UnitChip
-              key={unit}
-              unit={unit}
-              selected={draft.unit === unit}
-              onPress={() => setUnit(unit)}
-            />
-          ))}
+      <View style={{ flexDirection: 'row', gap: spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <QuantityField
+            value={draft.quantity}
+            onChange={(quantity) =>
+              setDraft((current) => (current ? { ...current, quantity } : current))
+            }
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <UnitSelectField value={draft.unit} onChange={setUnit} />
         </View>
       </View>
 
@@ -227,10 +208,8 @@ export function ReviewEditSheet({
         />
         <Button
           title={t('common.save')}
-          leadingIcon="check"
           disabled={saveDisabled}
-          fullWidth={false}
-          style={{ flex: 2 }}
+          style={{ flex: 1 }}
           onPress={() => onSave(draft, { ingredientChanged: ingredientChanged(row, draft) })}
         />
       </View>

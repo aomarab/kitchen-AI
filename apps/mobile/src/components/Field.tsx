@@ -11,6 +11,7 @@ export interface FieldProps extends TextInputProps {
   label?: string;
   error?: string;
   hint?: string;
+  invalid?: boolean;
 }
 
 /** Labelled text input with error/hint slots. Aligns text to the writing edge. */
@@ -19,6 +20,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
     label,
     error,
     hint,
+    invalid,
     style,
     onFocus,
     onBlur,
@@ -39,7 +41,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
   const fontFamily = resolveFontFamily(locale, fontsLoaded, bodyType.fontWeight, 'body');
   const [focused, setFocused] = useState(false);
   const [draftText, setDraftText] = useState(() => String(defaultValue ?? ''));
-  const border = fieldBorder({ focused, error });
+  const border = fieldBorder({ focused, error: error || invalid ? 'invalid' : undefined });
   const disabled = editable === false;
   const horizontalPadding = 14 - (border.width - 1);
   const countText = value ?? draftText;

@@ -259,11 +259,15 @@ describe('review screen source contract (G4)', () => {
     expect(source).toContain('reviewScrollTarget(listY.current, rowY)');
   });
 
-  it('keeps the review row on the J item-row pattern with an inline stepper', () => {
+  it('keeps capture review rows flat while preserving the richer assistant stepper row', () => {
     const source = read('features', 'capture', 'ReviewTile.tsx');
+    const list = read('features', 'capture', 'ReviewList.tsx');
 
     expect(source).toContain('<FoodIcon');
+    expect(source).toContain('showQuantityStepper');
     expect(source).toContain('<QuantityStepper');
+    expect(list).toContain("const rowVariant = source === 'assistant' ? 'rich' : 'flat'");
+    expect(list).toContain("showQuantityStepper={rowVariant === 'rich'}");
     expect(source).toContain('borderBottomColor: colors.rowline');
     expect(source).toContain('paddingVertical: 10');
     expect(source).toContain('gap: 14');

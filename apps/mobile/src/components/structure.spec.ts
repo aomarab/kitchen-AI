@@ -133,13 +133,22 @@ describe('Coral structure source guards', () => {
     expect(sheet).toContain('height: 4');
     expect(sheet).toContain('backgroundColor: colors.overlay');
     const section = read('SectionLabel.tsx');
-    expect(section).toContain('variant="heading"');
+    expect(section).toContain('variant="label"');
     expect(section).not.toContain('uppercase');
     const row = read('ListRow.tsx');
     expect(row).toContain('borderBottomWidth: StyleSheet.hairlineWidth');
     expect(row).toContain('borderBottomColor: colors.rowline');
     expect(row).toContain('size={22}');
     expect(read('ListGroup.tsx')).not.toContain('<Card');
+  });
+
+  it('keeps QuantityStepper as a one-line number box with units in accessibility only', () => {
+    const source = read('QuantityStepper.tsx');
+    expect(source).toContain('accessibilityValue={accessible ? { text:');
+    expect(source).toContain('unit ? `${display} ${unit}` : display');
+    expect(source).toContain('fontVariant: [');
+    expect(source).not.toContain('variant="caption" muted center');
+    expect(source).not.toContain('{unit ? (');
   });
 
   it('keeps Card and Tile on cardEdge with animated press dimming instead of scale', () => {

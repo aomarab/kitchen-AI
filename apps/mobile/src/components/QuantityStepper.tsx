@@ -12,9 +12,9 @@ export interface QuantityStepperProps {
   step?: number;
   min?: number;
   max?: number;
-  /** Replaces the bare number, e.g. "8 cups". */
+  /** Replaces the bare number; keep this one line and render units outside the box. */
   label?: string;
-  /** Shown as a caption under the value, e.g. "kg". */
+  /** Kept in accessibilityValue while the visual box stays one line. */
   unit?: string;
   /** What is being adjusted, spoken before the value. */
   accessibilityLabel?: string;
@@ -151,14 +151,14 @@ export function QuantityStepper({
         >
           {circle('decrement', decrement, atMin)}
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <AppText variant="bodyStrong" center style={{ fontVariant: ['tabular-nums'] }}>
+            <AppText
+              variant="bodyStrong"
+              center
+              numberOfLines={1}
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
               {display}
             </AppText>
-            {unit ? (
-              <AppText variant="caption" muted center>
-                {unit}
-              </AppText>
-            ) : null}
           </View>
           {circle('increment', increment, atMax)}
         </View>

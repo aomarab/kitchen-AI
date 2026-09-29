@@ -150,7 +150,7 @@ export default function RecipeDetail() {
         variant="secondary"
         size="L"
         fullWidth={false}
-        style={{ minHeight: RECIPE_FOOTER_ACTION_HEIGHT, flex: 0.52 }}
+        style={{ minHeight: RECIPE_FOOTER_ACTION_HEIGHT, flexShrink: 0 }}
         onPress={() => setConfirm(true)}
       />
       <Button
