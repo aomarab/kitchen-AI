@@ -37,10 +37,11 @@ export function assistantDetectionAccessibilityLabel({
   label: string;
   confidenceLabel?: string | null;
 }): string {
+  if (confidenceLabel && label.includes(confidenceLabel)) return label;
   return orderedVisibleText([label, confidenceLabel]);
 }
 
-export function assistantPausedAccessibilityLabel({
+export function assistantPausedTextAccessibilityLabel({
   title,
   body,
 }: {

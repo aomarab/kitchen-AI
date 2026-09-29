@@ -3,7 +3,7 @@ import {
   assistantDetectionAccessibilityLabel,
   assistantHeaderAccessibilityLabel,
   assistantModeAccessibilityLabel,
-  assistantPausedAccessibilityLabel,
+  assistantPausedTextAccessibilityLabel,
 } from './accessibility';
 
 describe('assistant accessibility labels', () => {
@@ -37,9 +37,19 @@ describe('assistant accessibility labels', () => {
     ).toBe('Spinach, not sure');
   });
 
+  it('does not repeat a visible low-confidence phrase', () => {
+    const label = assistantDetectionAccessibilityLabel({
+      label: 'Spinach, not sure',
+      confidenceLabel: 'not sure',
+    });
+
+    expect(label.match(/not sure/g)).toHaveLength(1);
+    expect(label).toBe('Spinach, not sure');
+  });
+
   it('speaks the paused card title before its body', () => {
     expect(
-      assistantPausedAccessibilityLabel({
+      assistantPausedTextAccessibilityLabel({
         title: 'Session paused',
         body: 'Resume to keep talking.',
       }),

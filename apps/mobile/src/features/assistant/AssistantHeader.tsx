@@ -61,7 +61,6 @@ export function AssistantHeader({
     >
       <IconButton
         icon="x"
-        directional
         size={44}
         tone={controlTone}
         accessibilityLabel={backLabel}
@@ -211,6 +210,7 @@ export function MediaControl({
           size={44}
           tone={tone ?? 'media'}
           accessibilityLabel={label}
+          accessibilityState={active === undefined ? undefined : { selected: active }}
           onPress={onPress}
         />
         {badge != null ? (

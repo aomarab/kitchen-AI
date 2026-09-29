@@ -97,6 +97,11 @@ describe('assistant screen guards', () => {
     expect(header).toContain('icon="more"');
     expect(header).toContain('assistantHeaderAccessibilityLabel');
     expect(header).toContain('demoLabel');
+    const closeButton =
+      header.match(
+        /<IconButton[\s\S]*?icon="x"[\s\S]*?accessibilityLabel=\{backLabel\}[\s\S]*?\/>/,
+      )?.[0] ?? '';
+    expect(closeButton).not.toContain('directional');
   });
 
   it('draws text bubbles and waveform to the Coral spec', () => {
@@ -124,6 +129,25 @@ describe('assistant screen guards', () => {
     expect(source).toContain('source="assistant"');
     expect(source).toContain('create.mutate');
     expect(source).not.toContain('useAdjustQuantity');
+  });
+
+  it('exposes media toggle state and blocks paused overlay background touches', () => {
+    const header = read('features', 'assistant', 'AssistantHeader.tsx');
+    const source = read('features', 'assistant', 'LiveAssistantScreen.tsx');
+
+    expect(header).toContain(
+      'accessibilityState={active === undefined ? undefined : { selected: active }}',
+    );
+    expect(source).not.toContain('pointerEvents="box-none"');
+    expect(source).toContain('assistantPausedTextAccessibilityLabel');
+
+    const pausedOverlay = source.slice(source.indexOf('function SessionPausedOverlay'));
+    const pausedCardOpen =
+      pausedOverlay.match(
+        /<View\s+style=\{\{\s*backgroundColor: colors\.surface[\s\S]*?\}\}\s*>/,
+      )?.[0] ?? '';
+    expect(pausedCardOpen).not.toContain('accessible');
+    expect(pausedCardOpen).not.toContain('accessibilityLabel');
   });
 
   it('uses the source-owned assistant accessibility helpers for custom labels', () => {

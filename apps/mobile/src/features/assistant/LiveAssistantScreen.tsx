@@ -18,7 +18,7 @@ import { detectionsToSession } from '../../lib/assistant/detections';
 import { appendTranscriptTurn, groupTurns, showStarters } from '../../lib/assistant/transcript';
 import {
   assistantDetectionAccessibilityLabel,
-  assistantPausedAccessibilityLabel,
+  assistantPausedTextAccessibilityLabel,
 } from '../../lib/assistant/accessibility';
 import type {
   AssistantStatus,
@@ -1002,7 +1002,6 @@ function SessionPausedOverlay({
   const { colors } = useTheme();
   return (
     <View
-      pointerEvents="box-none"
       style={{
         position: 'absolute',
         top: 0,
@@ -1015,9 +1014,6 @@ function SessionPausedOverlay({
       }}
     >
       <View
-        accessible
-        accessibilityRole="alert"
-        accessibilityLabel={assistantPausedAccessibilityLabel({ title, body })}
         style={{
           backgroundColor: colors.surface,
           padding: spacing.xl,
@@ -1025,8 +1021,15 @@ function SessionPausedOverlay({
         }}
       >
         <Icon name="timer" size={44} color={colors.text} />
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="title">{title}</AppText>
+        <View
+          accessible
+          accessibilityRole="alert"
+          accessibilityLabel={assistantPausedTextAccessibilityLabel({ title, body })}
+          style={{ gap: spacing.sm }}
+        >
+          <AppText variant="title" accessibilityRole="header">
+            {title}
+          </AppText>
           <AppText variant="body" color="textMuted">
             {body}
           </AppText>
