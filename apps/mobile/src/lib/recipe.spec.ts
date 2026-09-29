@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  parseRecipeSegmentParam,
   parseServingsParam,
   recipeStockCount,
   recipeTopBarBacked,
@@ -45,6 +46,20 @@ describe('scaleQuantityForServings', () => {
 
   it('rounds to the same two display decimals as formatMeasure', () => {
     expect(scaleQuantityForServings(1, 3, 2)).toBe(0.67);
+  });
+});
+
+describe('parseRecipeSegmentParam', () => {
+  it('opens the tab a deep link asks for', () => {
+    expect(parseRecipeSegmentParam('videos')).toBe('videos');
+    expect(parseRecipeSegmentParam(['steps'])).toBe('steps');
+    expect(parseRecipeSegmentParam('ingredients')).toBe('ingredients');
+  });
+
+  it('falls back to the ingredients for anything else', () => {
+    for (const value of [undefined, '', 'Videos', 'watch', ['nope'], 7]) {
+      expect(parseRecipeSegmentParam(value)).toBe('ingredients');
+    }
   });
 });
 

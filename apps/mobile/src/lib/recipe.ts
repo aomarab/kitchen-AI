@@ -72,6 +72,19 @@ export function parseServingsParam(value: unknown): number | null {
   return parsed;
 }
 
+export const RECIPE_SEGMENTS = ['ingredients', 'steps', 'videos'] as const;
+export type RecipeSegment = (typeof RECIPE_SEGMENTS)[number];
+
+/**
+ * The recipe detail tab to open on. Home's "Watch how" deep-links straight to
+ * the videos, so the tab arrives as a route param and anything unrecognised
+ * falls back to the ingredients.
+ */
+export function parseRecipeSegmentParam(value: unknown): RecipeSegment {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return RECIPE_SEGMENTS.find((segment) => segment === raw) ?? 'ingredients';
+}
+
 export function recipeTopBarFadeRange({
   heroHeight,
   sheetOverlap,

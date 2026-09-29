@@ -17,6 +17,7 @@ export function TonightRecipeCard({
   accessibilityLabel,
   onOpenRecipe,
   onCookRecipe,
+  onWatchRecipe,
 }: {
   entry: MealPlanEntry;
   minutesLabel: string;
@@ -25,6 +26,7 @@ export function TonightRecipeCard({
   accessibilityLabel: string;
   onOpenRecipe: () => void;
   onCookRecipe: () => void;
+  onWatchRecipe: () => void;
 }) {
   const { t } = useFormat();
   const meta = [pantryLabel, servingsLabel].filter(Boolean).join(' · ');
@@ -67,7 +69,7 @@ export function TonightRecipeCard({
             variant="secondary"
             size="S"
             fullWidth={false}
-            onPress={onOpenRecipe}
+            onPress={onWatchRecipe}
           />
         </View>
       </View>

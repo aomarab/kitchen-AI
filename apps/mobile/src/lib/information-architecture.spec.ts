@@ -868,6 +868,16 @@ describe('information architecture (spec §4)', () => {
       'onOpenRecipe',
     );
     expect(tonightCard, 'Tonight recipe must keep cook-mode navigation').toContain('onCookRecipe');
+    expect(tonightCard, 'Watch how must open the videos, not the recipe top').toContain(
+      'onPress={onWatchRecipe}',
+    );
+    expect(home, 'Watch how must deep-link to the videos tab').toContain(
+      'router.push(`/recipe/${recipeId}?tab=videos`)',
+    );
+    expect(
+      read('app', 'recipe', '[id]', 'index.tsx'),
+      'Recipe reset must honour the requested tab, not force the ingredients',
+    ).not.toContain("setSegment('ingredients')");
     expect(tonightCard, 'Tonight recipe must use the J full-bleed recipe photo').toContain(
       'size={196}',
     );

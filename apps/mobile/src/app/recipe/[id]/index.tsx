@@ -33,7 +33,13 @@ import { RecipeVideoCard } from '../../../features/recipe/RecipeVideoCard';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe } from '../../../hooks/recipe';
 import { formatMinutes, formatQty } from '../../../lib/format';
-import { recipeStockCount, recipeTopBarBacked, recipeTopBarFadeRange } from '../../../lib/recipe';
+import {
+  parseRecipeSegmentParam,
+  recipeStockCount,
+  recipeTopBarBacked,
+  recipeTopBarFadeRange,
+  type RecipeSegment,
+} from '../../../lib/recipe';
 import { spacing } from '../../../theme';
 import { useTheme } from '../../../theme/useTheme';
 
@@ -42,8 +48,6 @@ const MAX_SERVINGS = 12;
 const HERO_HEIGHT = 280;
 const TOP_BAR_ROW_HEIGHT = 44;
 const RECIPE_FOOTER_ACTION_HEIGHT = 44;
-
-type RecipeSegment = 'ingredients' | 'steps' | 'videos';
 
 const DIFFICULTY_KEY: Record<
   Difficulty,
@@ -59,12 +63,12 @@ export default function RecipeDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const { colors } = useTheme();
   const recipe = useRecipe(id ?? null, locale);
   const [confirm, setConfirm] = useState(false);
   const [cooked, setCooked] = useState(false);
-  const [segment, setSegment] = useState<RecipeSegment>('ingredients');
+  const [segment, setSegment] = useState<RecipeSegment>(() => parseRecipeSegmentParam(tab));
   const [servings, setServings] = useState<number | null>(null);
   const [heroImageLoaded, setHeroImageLoaded] = useState(false);
   const [barBacked, setBarBacked] = useState(false);
@@ -102,13 +106,13 @@ export default function RecipeDetail() {
 
   useEffect(() => {
     setServings(null);
-    setSegment('ingredients');
+    setSegment(parseRecipeSegmentParam(tab));
     setCooked(false);
     setHeroImageLoaded(false);
     setBarBacked(false);
     barBackedRef.current = false;
     scrollY.setValue(0);
-  }, [id, scrollY]);
+  }, [id, tab, scrollY]);
 
   if (recipe.isLoading) {
     return (

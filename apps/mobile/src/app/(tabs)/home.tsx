@@ -123,6 +123,7 @@ export default function Home() {
   const openNotifications = () => router.push('/settings/notifications');
   const openRecipe = (recipeId: string) => router.push(`/recipe/${recipeId}`);
   const cookRecipe = (recipeId: string) => router.push(`/recipe/${recipeId}/cook`);
+  const watchRecipe = (recipeId: string) => router.push(`/recipe/${recipeId}?tab=videos`);
   const scanReceipt = () => router.push('/capture?method=receipt');
   const openPlan = () => router.push('/plans');
   const planWeek = week ? openPlan : generatePlan;
@@ -219,6 +220,7 @@ export default function Home() {
             accessibilityLabel={tonightAccessibilityLabel ?? tonight.recipe.title}
             onOpenRecipe={() => openRecipe(tonight.recipe.id)}
             onCookRecipe={() => cookRecipe(tonight.recipe.id)}
+            onWatchRecipe={() => watchRecipe(tonight.recipe.id)}
           />
         ) : (
           <NoPlanCard onGenerate={generatePlan} />
