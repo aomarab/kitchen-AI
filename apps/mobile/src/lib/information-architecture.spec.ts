@@ -835,11 +835,13 @@ describe('information architecture (spec §4)', () => {
     );
   });
 
-  it('keeps Recipe on the G9 screen contract', () => {
+  it('keeps Recipe on the Coral J screen contract', () => {
     const recipe = read('app', 'recipe', '[id]', 'index.tsx');
+    const ingredientRow = read('features', 'recipe', 'RecipeIngredientRow.tsx');
+    const videoCard = read('features', 'recipe', 'RecipeVideoCard.tsx');
 
     expect(recipe).toContain('<RecipeThumb');
-    expect(recipe).toContain('height: 360');
+    expect(recipe).toContain('const HERO_HEIGHT = 280');
     expect(recipe).toContain('const TOP_BAR_ROW_HEIGHT = 44');
     expect(recipe).toContain('recipeTopBarBacked');
     expect(recipe).toContain('recipeTopBarFadeRange');
@@ -854,7 +856,7 @@ describe('information architecture (spec §4)', () => {
     expect(recipe).toContain('listener: handleRecipeScroll');
     expect(recipe).toContain('pointerEvents="none"');
     expect(recipe).toContain('StyleSheet.hairlineWidth');
-    expect(recipe).toContain("tone={barBacked ? 'surface' : 'mediaLight'}");
+    expect(recipe).toContain("tone={barBacked ? 'plain' : 'media'}");
     expect(recipe).toContain('showLightStatusBar');
     expect(recipe).toContain('!barBacked');
     expect(recipe).not.toContain('heroUnderStatus');
@@ -865,26 +867,48 @@ describe('information architecture (spec §4)', () => {
     expect(recipe).not.toContain('Animated.timing');
     expect(recipe).not.toContain('TOP_BAR_FADE_MS');
     expect(recipe).toContain('recipeStockCount');
-    expect(recipe).toContain('scaleQuantityForServings');
+    expect(ingredientRow).toContain('scaleQuantityForServings');
     expect(recipe).toContain('<SegmentedControl');
+    expect(recipe).toContain("value: 'videos'");
     expect(recipe).toContain("segment === 'steps'");
-    expect(recipe).toContain('<YoutubePlayer');
+    expect(recipe).toContain("segment === 'videos'");
+    expect(videoCard).toContain('<YoutubePlayer');
+    expect(recipe).toContain('<RecipeMetaRow');
+    expect(recipe).toContain('<RecipeIngredientRow');
+    expect(recipe).toContain('<RecipeStepRow');
+    expect(recipe).toContain('<RecipeCookedSheetContent');
+    expect(recipe).toContain('<QuantityStepper');
+    expect(recipe).toContain("t('recipe.markCooked')");
+    expect(recipe).toContain("t('mobile.recipe.startCooking')");
     expect(recipe).toContain('mobile.recipe.minutesValue');
-    expect(recipe).toContain('mobile.recipe.totalTimeLabel');
-    expect(recipe).toContain('mobile.recipe.difficultyLabel');
+    expect(recipe).toContain('mobile.recipe.prepLabel');
+    expect(recipe).toContain('mobile.recipe.cookLabel');
+    expect(recipe).toContain('DIFFICULTY_KEY');
+    expect(recipe).not.toContain('RoundButton');
+    expect(recipe).not.toContain('<Tile');
+    expect(recipe).not.toContain('<ListGroup');
+    expect(recipe).not.toContain('<ListRow');
+    expect(recipe).not.toContain('tintNamed');
     expect(recipe).not.toMatch(/heart/i);
   });
 
-  it('keeps Cook on the G9 screen contract', () => {
+  it('keeps Cook on the Coral J always-dark screen contract', () => {
     const cook = read('app', 'recipe', '[id]', 'cook.tsx');
+    const timerControl = read('features', 'recipe', 'CookTimerPanel.tsx');
 
+    expect(cook).toMatch(
+      /export default function CookMode\(\) \{\s*return \(\s*<ThemeModeOverride mode="dark">[\s\S]*?<StatusBar style="light" \/>[\s\S]*?<CookModeContent \/>[\s\S]*?<\/ThemeModeOverride>/,
+    );
     expect(cook).toContain('useKeepAwake()');
     expect(cook).toContain("direction: 'ltr'");
-    expect(cook).toContain('accessibilityRole="progressbar"');
+    expect(cook).toContain('<Progress');
     expect(cook).toContain(
       'accessibilityValue={{ min: 0, max: total, now: step + 1, text: progressLabel }}',
     );
-    expect(cook).toContain('<OrbMascot');
+    expect(cook).toContain('<IconButton');
+    expect(cook).toContain('label="M"');
+    expect(cook).not.toContain('<OrbMascot');
+    expect(cook).not.toContain('RoundButton');
     expect(cook).toContain('stepIngredients(');
     expect(cook).toContain('parseServingsParam');
     expect(cook).toContain('projectTimer(existing, now)');
@@ -892,7 +916,6 @@ describe('information architecture (spec §4)', () => {
     expect(cook).toContain('lockMode');
     expect(cook).toContain("backgroundColor: 'transparent'");
 
-    const timerControl = cook.match(/function StepTimerControl[\s\S]*/)?.[0] ?? '';
     expect(timerControl).toContain('<Button');
     expect(timerControl).not.toMatch(/\n\s+accessible\b/);
     expect(timerControl).not.toContain('accessibilityLabel={caption}');
@@ -905,6 +928,7 @@ describe('information architecture (spec §4)', () => {
       'The screen-reader label must keep the legacy countdown-inclusive running timer wording.',
     ).toContain("t('mobile.recipe.stepTimerRunning'");
     expect(timerControl).toContain('accessibilityLabel={statusAccessibilityLabel}');
+    expect(timerControl).not.toContain('tintNamed');
   });
 
   it('adds the G9 recipe labels in both languages', () => {

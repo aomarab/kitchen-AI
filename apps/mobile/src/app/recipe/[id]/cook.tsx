@@ -1,35 +1,45 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { formatRemaining, projectTimer, type CookingTimer } from '@kitchen/contracts';
+import { projectTimer } from '@kitchen/contracts';
 import {
   AppText,
   Button,
-  Chip,
+  ErrorState,
+  Header,
+  IconButton,
   LoadingState,
-  OrbMascot,
-  RoundButton,
+  Progress,
   Screen,
 } from '../../../components';
 import { LiveAssistantScreen } from '../../../features/assistant/LiveAssistantScreen';
+import { CookIngredientChip } from '../../../features/recipe/CookIngredientChip';
+import { CookTimerPanel } from '../../../features/recipe/CookTimerPanel';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe } from '../../../hooks/recipe';
 import { useCreateTimer, useTimers } from '../../../hooks/timers';
-import { existingStepTimer, stepTimerPlan, type StepTimerPlan } from '../../../lib/cook-timers';
+import { existingStepTimer, stepTimerPlan } from '../../../lib/cook-timers';
 import { hasRunningTimer, useTimerTick } from '../../../lib/timers';
-import { formatMeasure, formatMinutes, ingredientName } from '../../../lib/format';
-import { parseServingsParam, scaleQuantityForServings, stepIngredients } from '../../../lib/recipe';
-import { radius, spacing } from '../../../theme';
+import { formatMinutes } from '../../../lib/format';
+import { parseServingsParam, stepIngredients } from '../../../lib/recipe';
+import { spacing, ThemeModeOverride } from '../../../theme';
 import { useTheme } from '../../../theme/useTheme';
 
-/**
- * Full-screen cook mode: one step at a time, large type, forward/back stepping.
- * `useKeepAwake` holds a wake lock for as long as this screen is mounted so the
- * display never sleeps mid-recipe (spec §6.3).
- */
+const COOK_NAV_TARGET_HEIGHT = 44;
+
 export default function CookMode() {
+  return (
+    <ThemeModeOverride mode="dark">
+      <StatusBar style="light" />
+      <CookModeContent />
+    </ThemeModeOverride>
+  );
+}
+
+function CookModeContent() {
   useKeepAwake();
   // Ticks only while a timer is worth watching, so a recipe with no timer
   // running does not re-render this screen once a second for no reason.
@@ -54,17 +64,27 @@ export default function CookMode() {
   // is no camera or typing to reach for mid-cook.
   const [assistantOpen, setAssistantOpen] = useState(false);
 
-  if (recipe.isLoading || !recipe.data) {
+  if (recipe.isLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Screen padded={false} edges={['top', 'bottom', 'left', 'right']}>
         <LoadingState />
-      </SafeAreaView>
+      </Screen>
+    );
+  }
+
+  if (recipe.isError || !recipe.data) {
+    return (
+      <Screen>
+        <Header title={t('mobile.common.error')} onBack={() => router.back()} />
+        <ErrorState error={recipe.error} onRetry={() => void recipe.refetch()} />
+      </Screen>
     );
   }
 
   const steps = recipe.data.steps;
   const current = steps[step]!;
-  const isLast = step === steps.length - 1;
+  const total = steps.length;
+  const isLast = step === total - 1;
   const servings = parseServingsParam(params.servings) ?? recipe.data.servings;
   const matchedIngredients = stepIngredients(current.text, recipe.data.ingredients, locale);
   const nextStep = steps[step + 1] ?? null;
@@ -81,75 +101,86 @@ export default function CookMode() {
   const projected = existing ? projectTimer(existing, now) : null;
   const progressLabel = t('mobile.recipe.stepProgress', {
     current: formatMinutes(locale, step + 1, prefs),
-    total: formatMinutes(locale, steps.length, prefs),
+    total: formatMinutes(locale, total, prefs),
   });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.md }}>
+        <View
+          style={{ paddingHorizontal: spacing.gutter, paddingTop: spacing.md, gap: spacing.xl }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <View style={{ width: 48, alignItems: 'flex-start' }}>
-              <RoundButton
-                icon="close"
-                tone="surface"
-                size={40}
-                accessibilityLabel={t('mobile.recipe.exitCookMode')}
+            <View
+              style={{ width: 74, minHeight: COOK_NAV_TARGET_HEIGHT, justifyContent: 'center' }}
+            >
+              <Button
+                title={t('mobile.recipe.exitCookMode')}
+                variant="ghost"
+                size="S"
+                fullWidth={false}
                 onPress={() => router.back()}
               />
             </View>
             <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
-              <AppText variant="bodyStrong" numberOfLines={1} center>
-                {recipe.data.title}
-              </AppText>
               <AppText variant="caption" muted center numberOfLines={1}>
                 {progressLabel}
               </AppText>
             </View>
-            <View style={{ width: 48, alignItems: 'flex-end' }}>
-              <Pressable
-                accessibilityRole="button"
+            <View
+              style={{
+                width: 74,
+                minHeight: COOK_NAV_TARGET_HEIGHT,
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+              }}
+            >
+              <IconButton
+                label="M"
+                tone="surface"
                 accessibilityLabel={t('mobile.assistant.cookAsk')}
                 onPress={() => setAssistantOpen(true)}
-                style={({ pressed }) => ({
-                  width: 44,
-                  height: 44,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: pressed ? 0.85 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                })}
-              >
-                <OrbMascot size={44} state={assistantOpen ? 'listening' : 'idle'} />
-              </Pressable>
+              />
             </View>
           </View>
 
-          <ProgressBar step={step} total={steps.length} progressLabel={progressLabel} />
+          <Progress
+            value={(step + 1) / total}
+            accessibilityLabel={progressLabel}
+            accessibilityValue={{ min: 0, max: total, now: step + 1, text: progressLabel }}
+            style={{ direction: 'ltr' }}
+          />
         </View>
 
         <ScrollView
-          contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, flexGrow: 1 }}
+          contentContainerStyle={{
+            padding: spacing.gutter,
+            gap: spacing.xl,
+            flexGrow: 1,
+          }}
           showsVerticalScrollIndicator={false}
         >
-          <AppText variant="hero">{current.text}</AppText>
+          <View style={{ gap: spacing.md }}>
+            <AppText variant="eyebrow" color="primaryText">
+              {t('mobile.recipe.stepWord')} {formatMinutes(locale, step + 1, prefs)}
+            </AppText>
+            <AppText variant="hero">{current.text}</AppText>
+          </View>
 
           {matchedIngredients.length > 0 ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-              {matchedIngredients.map((item) => {
-                const quantity = scaleQuantityForServings(
-                  item.quantity,
-                  recipe.data.servings,
-                  servings,
-                );
-                const name = ingredientName(locale, item.ingredient);
-                const measure = formatMeasure(t, locale, quantity, item.unit, prefs);
-                return <Chip key={item.ingredient.id} label={`${name} · ${measure}`} />;
-              })}
+              {matchedIngredients.map((ingredient) => (
+                <CookIngredientChip
+                  key={ingredient.ingredient.id}
+                  ingredient={ingredient}
+                  servings={servings}
+                  baseServings={recipe.data.servings}
+                />
+              ))}
             </View>
           ) : null}
 
-          <StepTimerControl
+          <CookTimerPanel
             plan={plan}
             projected={projected}
             pending={createTimer.isPending}
@@ -160,27 +191,18 @@ export default function CookMode() {
           />
 
           {nextStep ? (
-            <View
-              style={{
-                padding: spacing.lg,
-                gap: spacing.xs,
-                borderRadius: radius.lg,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.bg,
-              }}
-            >
-              <AppText variant="caption" muted>
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="label" muted>
                 {t('mobile.recipe.upNext')}
               </AppText>
-              <AppText numberOfLines={2}>{nextStep.text}</AppText>
+              <AppText muted>{nextStep.text}</AppText>
             </View>
           ) : null}
         </ScrollView>
 
         <View
           style={{
-            padding: spacing.lg,
+            padding: spacing.gutter,
             paddingTop: spacing.sm,
             gap: spacing.sm,
             borderTopWidth: 1,
@@ -188,30 +210,27 @@ export default function CookMode() {
             backgroundColor: colors.bg,
           }}
         >
-          <AppText variant="caption" muted center>
-            {t('mobile.recipe.cookModeHint')}
-          </AppText>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <RoundButton
-              icon="back"
-              directional
-              tone="surface"
-              size={48}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Button
+              title={t('mobile.recipe.prev')}
+              variant="secondary"
               disabled={step === 0}
-              accessibilityLabel={t('mobile.recipe.prev')}
+              style={{ flex: 0.35, minHeight: COOK_NAV_TARGET_HEIGHT }}
               onPress={() => setStep((s) => Math.max(0, s - 1))}
             />
             <Button
               title={isLast ? t('mobile.recipe.finish') : t('mobile.recipe.next')}
-              icon={isLast ? 'check' : undefined}
               variant="primary"
+              style={{ flex: 1, minHeight: COOK_NAV_TARGET_HEIGHT }}
               onPress={() => {
                 if (isLast) router.back();
-                else setStep((s) => Math.min(steps.length - 1, s + 1));
+                else setStep((s) => Math.min(total - 1, s + 1));
               }}
-              style={{ flex: 1 }}
             />
           </View>
+          <AppText variant="caption" muted center>
+            {t('mobile.recipe.cookModeHint')}
+          </AppText>
         </View>
       </View>
 
@@ -227,119 +246,5 @@ export default function CookMode() {
         </View>
       ) : null}
     </SafeAreaView>
-  );
-}
-
-function ProgressBar({
-  step,
-  total,
-  progressLabel,
-}: {
-  step: number;
-  total: number;
-  progressLabel: string;
-}) {
-  const { colors } = useTheme();
-  return (
-    <View
-      accessible
-      accessibilityRole="progressbar"
-      accessibilityValue={{ min: 0, max: total, now: step + 1, text: progressLabel }}
-      style={{ flexDirection: 'row', direction: 'ltr', gap: spacing.xs }}
-    >
-      {Array.from({ length: total }).map((_, index) => (
-        <View
-          key={index}
-          style={{
-            flex: 1,
-            height: 4,
-            borderRadius: radius.pill,
-            backgroundColor: index <= step ? colors.primary : colors.border,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
-/**
- * The one control cook mode adds: start this step's timer, or watch it.
- *
- * Renders nothing for an untimed step, and nothing for a step longer than
- * `MAX_TIMER_DURATION_SEC` — a button that the contract would refuse is worse
- * than no button, and a twelve-hour prove is not something anyone stands in
- * front of the phone waiting for.
- */
-function StepTimerControl({
-  plan,
-  projected,
-  pending,
-  durationMinutes,
-  onStart,
-}: {
-  plan: StepTimerPlan;
-  projected: CookingTimer | null;
-  pending: boolean;
-  durationMinutes: number;
-  onStart: () => void;
-}) {
-  const { t, locale, prefs } = useFormat();
-  const { colors, tintNamed } = useTheme();
-
-  if (!plan.ok) return null;
-
-  const tint = tintNamed('butter');
-  const countdown = projected
-    ? formatRemaining(projected.remainingSec)
-    : formatRemaining(Math.round(durationMinutes * 60));
-  const finished = projected?.status === 'done';
-  const runningAnnouncement = projected
-    ? t('mobile.recipe.stepTimerRunning', {
-        remaining: formatRemaining(projected.remainingSec),
-      })
-    : undefined;
-  const statusCaption = projected
-    ? finished
-      ? t('mobile.recipe.stepTimerDone')
-      : t('mobile.recipe.stepTimerRunningStatus')
-    : null;
-  const statusAccessibilityLabel = finished ? (statusCaption ?? undefined) : runningAnnouncement;
-  const buttonTitle = t('mobile.recipe.startStepTimer', {
-    minutes: formatMinutes(locale, durationMinutes, prefs),
-  });
-
-  return (
-    <View
-      style={{
-        padding: spacing.lg,
-        gap: spacing.md,
-        borderRadius: radius.xl,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: tint.bg,
-      }}
-    >
-      <AppText variant="numeral" style={{ color: tint.fg }}>
-        {countdown}
-      </AppText>
-      {statusCaption ? (
-        <AppText
-          variant="caption"
-          accessibilityLabel={statusAccessibilityLabel}
-          style={{ color: colors.textMuted }}
-        >
-          {statusCaption}
-        </AppText>
-      ) : null}
-      {projected ? null : (
-        <Button
-          title={buttonTitle}
-          icon="clock"
-          variant="primary"
-          disabled={pending}
-          onPress={onStart}
-        />
-      )}
-    </View>
   );
 }

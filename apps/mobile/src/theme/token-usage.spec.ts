@@ -113,8 +113,18 @@ describe('mobile source sweep', () => {
       path: 'features/shop/ShoppingRow.tsx',
       pattern: /minHeight:\s*(\d+)/,
     },
-    'recipe/[id]/index.tsx': { path: 'app/recipe/[id]/index.tsx', pattern: /height:\s*(\d+)/ },
-    'recipe/[id]/cook.tsx': { path: 'app/recipe/[id]/cook.tsx', pattern: /height:\s*(\d+)/ },
+    'recipe/[id]/index.tsx': {
+      path: 'app/recipe/[id]/index.tsx',
+      pattern: /RECIPE_FOOTER_ACTION_HEIGHT\s*=\s*(\d+)/,
+    },
+    'recipe/[id]/cook.tsx': {
+      path: 'app/recipe/[id]/cook.tsx',
+      pattern: /COOK_NAV_TARGET_HEIGHT\s*=\s*(\d+)/,
+    },
+    'RecipeIngredientRow.tsx': {
+      path: 'features/recipe/RecipeIngredientRow.tsx',
+      pattern: /RECIPE_INGREDIENT_ROW_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
     'item/[id].tsx': {
       path: 'app/item/[id].tsx',
       pattern: /ITEM_DETAIL_MIN_TOUCH_TARGET\s*=\s*(\d+)/,

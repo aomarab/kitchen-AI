@@ -472,6 +472,15 @@ export const mobileAr: MobileMessages = {
       }),
       totalTimeLabel: 'الوقت الكلي',
       difficultyLabel: 'الصعوبة',
+      prepLabel: 'التحضير',
+      cookLabel: 'الطهي',
+      moreIngredients: plural('count', {
+        one: '+ مكوّن آخر',
+        two: '+ مكوّنان آخران',
+        few: '+ {count} مكوّنات أخرى',
+        many: '+ {count} مكوّنًا آخر',
+        other: '+ {count} مكوّن آخر',
+      }),
     },
     account: {
       title: 'الحساب',

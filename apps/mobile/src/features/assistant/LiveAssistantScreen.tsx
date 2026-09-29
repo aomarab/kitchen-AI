@@ -310,7 +310,6 @@ export function LiveAssistantScreen({
 
       {lockMode ? (
         <LockedVoiceOverlay
-          orbState={orbState}
           speaking={speaking}
           demoBadge={demoBadge}
           caption={lastAssistant?.text ?? captionLabel}

@@ -1,7 +1,16 @@
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppText, Button, Card, OrbMascot, RoundButton, type IconName } from '../../components';
+import {
+  AppText,
+  Avatar,
+  Button,
+  Card,
+  IconButton,
+  OrbMascot,
+  RoundButton,
+  type IconName,
+} from '../../components';
 import { radius, spacing, type ColorToken } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 import type { OrbState } from '../../lib/orb';
@@ -244,7 +253,6 @@ export function MediaControl({
 }
 
 export function LockedVoiceOverlay({
-  orbState,
   speaking,
   demoBadge,
   caption,
@@ -259,7 +267,6 @@ export function LockedVoiceOverlay({
   onClose,
   onResume,
 }: {
-  orbState: OrbState;
   speaking: boolean;
   demoBadge: ReactNode;
   caption: string;
@@ -293,7 +300,7 @@ export function LockedVoiceOverlay({
         }}
       >
         <View style={{ alignItems: 'center', gap: spacing.md, padding: spacing.xl }}>
-          <OrbMascot size={72} state={orbState} />
+          <Avatar name="Mama" size={80} />
           {speaking ? <Waveform /> : null}
           {demoBadge}
           <AppText variant="bodyStrong" center>
@@ -310,10 +317,10 @@ export function LockedVoiceOverlay({
             <PanelControl
               icon={micMuted ? 'micOff' : 'mic'}
               label={micLabel}
-              tone={micMuted ? 'sunk' : 'primary'}
+              tone={micMuted ? 'surface' : 'coral'}
               onPress={onToggleMic}
             />
-            <PanelControl icon="close" label={closeLabel} tone="sunk" onPress={onClose} />
+            <PanelControl icon="close" label={closeLabel} tone="surface" onPress={onClose} />
           </View>
         </View>
       </SafeAreaView>
@@ -329,12 +336,12 @@ function PanelControl({
 }: {
   icon: IconName;
   label: string;
-  tone: 'primary' | 'sunk';
+  tone: 'surface' | 'coral';
   onPress: () => void;
 }) {
   return (
     <View style={{ alignItems: 'center', gap: spacing.xs }}>
-      <RoundButton icon={icon} size={48} tone={tone} accessibilityLabel={label} onPress={onPress} />
+      <IconButton icon={icon} size={48} tone={tone} accessibilityLabel={label} onPress={onPress} />
       <AppText variant="caption" muted center>
         {label}
       </AppText>

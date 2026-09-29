@@ -199,6 +199,53 @@ describe('capture and review Coral rhythm', () => {
   });
 });
 
+describe('recipe and cook Coral rhythm', () => {
+  const recipe = read('../app/recipe/[id]/index.tsx');
+  const cook = read('../app/recipe/[id]/cook.tsx');
+  const ingredientRow = read('../features/recipe/RecipeIngredientRow.tsx');
+  const stepRow = read('../features/recipe/RecipeStepRow.tsx');
+  const metaRow = read('../features/recipe/RecipeMetaRow.tsx');
+  const cookedSheet = read('../features/recipe/RecipeCookedSheetContent.tsx');
+
+  it('draws recipe detail from Coral rows and media icon buttons, not legacy tiles', () => {
+    expect(recipe).toContain('RECIPE_FOOTER_ACTION_HEIGHT = 44');
+    expect(recipe).toContain('const HERO_HEIGHT = 280');
+    expect(recipe).toContain("tone={barBacked ? 'plain' : 'media'}");
+    expect(recipe).not.toContain('RoundButton');
+    expect(recipe).not.toContain('<Tile');
+    expect(recipe).not.toContain('<ListRow');
+    expect(recipe).not.toContain('<ListGroup');
+
+    expect(metaRow).toContain('borderBottomColor: colors.rowline');
+    expect(metaRow).toContain('paddingVertical: spacing.md');
+    expect(ingredientRow).toContain('RECIPE_INGREDIENT_ROW_MIN_HEIGHT = 44');
+    expect(ingredientRow).toContain('width: 72');
+    expect(ingredientRow).toContain('name={statusIcon}');
+    expect(stepRow).toContain('STEP_NUMBER_BOX_SIZE = 28');
+    expect(stepRow).toContain('borderWidth: 1.5');
+    expect(stepRow).toContain('borderBottomColor: colors.rowline');
+  });
+
+  it('keeps the cooked sheet as an action sheet with the original mutation trigger', () => {
+    expect(cookedSheet).not.toContain('<StarRating');
+    expect(cookedSheet).toContain('deductInventory: true');
+    expect(cookedSheet).toContain('servings: servingCount');
+    expect(cookedSheet).toContain("t('recipe.cookedConfirm')");
+    expect(cookedSheet).toContain("t('recipe.markCooked')");
+  });
+
+  it('keeps cook mode square, dark, and progress-driven without the retired orb chrome', () => {
+    expect(cook).toContain('ThemeModeOverride mode="dark"');
+    expect(cook).toContain('<StatusBar style="light" />');
+    expect(cook).toContain('COOK_NAV_TARGET_HEIGHT = 44');
+    expect(cook).toContain('<Progress');
+    expect(cook).toContain('label="M"');
+    expect(cook).not.toContain('<OrbMascot');
+    expect(cook).not.toContain('RoundButton');
+    expect(cook).not.toContain('tintNamed');
+  });
+});
+
 describe('G1 primitive extensions', () => {
   it('lets Tile replace the icon with a leading slot, fall back to ember and expose actions', () => {
     const source = read('./Tile.tsx');

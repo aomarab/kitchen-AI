@@ -71,8 +71,11 @@ describe('Coral structure source guards', () => {
   });
 
   it('exports the 4pt Progress primitive', () => {
-    expect(read('Progress.tsx')).toContain('height: 4');
-    expect(read('Progress.tsx')).toContain('accessibilityRole="progressbar"');
+    const source = read('Progress.tsx');
+    expect(source).toContain('height: 4');
+    expect(source).toContain('accessibilityRole="progressbar"');
+    expect(source).toContain('accessibilityValue?: AccessibilityValue');
+    expect(source).toContain('accessibilityValue ?? { min: 0, max: 100');
     expect(read('index.ts')).toContain('export { Progress }');
   });
 

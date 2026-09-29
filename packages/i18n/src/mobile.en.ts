@@ -371,6 +371,12 @@ export const mobileEn = {
       }),
       totalTimeLabel: 'Total time',
       difficultyLabel: 'Difficulty',
+      prepLabel: 'Prep',
+      cookLabel: 'Cook',
+      moreIngredients: plural('count', {
+        one: '+ 1 more',
+        other: '+ {count} more',
+      }),
     },
     account: {
       title: 'Account',
