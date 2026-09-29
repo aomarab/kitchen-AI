@@ -27,6 +27,7 @@ const revenueCatWebhookSchema = z
         app_user_id: z.string().min(1),
         transaction_id: z.string().min(1).nullish(),
         product_id: z.string().min(1).nullish(),
+        environment: z.string().min(1).nullish(),
         store: z.string().min(1).nullish(),
       })
       .passthrough(),
@@ -41,6 +42,7 @@ function toWebhookEvent(body: RevenueCatWebhook): WebhookEvent {
     intentId: event.app_user_id,
     storeTransactionId: event.transaction_id ?? undefined,
     productId: event.product_id ?? undefined,
+    environment: event.environment ?? undefined,
     store: event.store === 'PLAY_STORE' ? 'google' : 'apple',
   };
 }
@@ -58,7 +60,10 @@ function secretMatches(provided: string, expected: string): boolean {
  * `AuthGuard`/`HouseholdGuard`: the caller is RevenueCat, not a signed-in user.
  * The constant-time secret check below is therefore the only barrier between the
  * public internet and free credits — an unsigned or wrongly-signed call is
- * refused before it can move any balance.
+ * refused before it can move any balance. When PAYMENTS_DISABLED is true the
+ * service still acknowledges authentic deliveries with 200, but treats them as
+ * no-ops so RevenueCat does not retry forever while purchases are intentionally
+ * unavailable.
  */
 @Controller('webhooks')
 export class WebhookController {

@@ -50,20 +50,24 @@ image at `apps/api/Dockerfile` (built as `node dist/main.js`, `apps/api/src/main
 Fill a production `.env` from `.env.example`. The contract **fails closed** in production — these
 guards will refuse to boot, which is the point (`apps/api/src/config/env.ts`, `env.spec.ts`):
 
-| Variable                                                                    | Required when                                          | How to produce                                                                                                                    |
-| --------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV=production`                                                       | always                                                 | enables every guard below                                                                                                         |
-| `JWT_SECRET`                                                                | always; **≥ 32 chars, not the placeholder** in prod    | `openssl rand -base64 48`                                                                                                         |
-| `CORS_ORIGINS`                                                              | prod (non-empty)                                       | comma-separated web origins, e.g. `https://kitchen.app`                                                                           |
-| `DATABASE_URL`, `REDIS_URL`, `S3_*`                                         | always                                                 | from section A                                                                                                                    |
-| `GOOGLE_CLIENT_ID`, `APPLE_CLIENT_ID`                                       | prod                                                   | comma-separated OAuth client ids to pin the ID-token `aud` — one per platform                                                     |
-| `OPENAI_API_KEY`                                                            | when `AI_MOCK=false`                                   | OpenAI key with Realtime + the configured models                                                                                  |
-| `GEMINI_API_KEY`                                                            | when `AI_MOCK=false` **and** `AI_VISION_VENDOR=gemini` | optional; only if routing vision to Gemini                                                                                        |
-| `REVENUECAT_API_KEY`, `REVENUECAT_WEBHOOK_SECRET`                           | when `PAYMENTS_MOCK=false`                             | RevenueCat REST key + a webhook shared secret (constant-time checked)                                                             |
-| `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_TOKEN_ENC_KEY` | when `APPLE_REVOKE_MOCK=false`                         | Apple Sign-In key material; `APPLE_TOKEN_ENC_KEY` must be **base64 that decodes to exactly 32 bytes** (`openssl rand -base64 32`) |
+| Variable                                                                    | Required when                                            | How to produce                                                                                                                     |
+| --------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV=production`                                                       | always                                                   | enables every guard below                                                                                                          |
+| `JWT_SECRET`                                                                | always; **≥ 32 chars, not the placeholder** in prod      | `openssl rand -base64 48`                                                                                                          |
+| `CORS_ORIGINS`                                                              | prod (non-empty)                                         | comma-separated web origins, e.g. `https://kitchen.app`                                                                            |
+| `DATABASE_URL`, `REDIS_URL`, `S3_*`                                         | always                                                   | from section A                                                                                                                     |
+| `GOOGLE_CLIENT_ID`, `APPLE_CLIENT_ID`                                       | prod                                                     | comma-separated OAuth client ids to pin the ID-token `aud` — one per platform                                                      |
+| `OPENAI_API_KEY`                                                            | when `AI_MOCK=false`                                     | OpenAI key with Realtime + the configured models                                                                                   |
+| `GEMINI_API_KEY`                                                            | when `AI_MOCK=false` **and** `AI_VISION_VENDOR=gemini`   | optional; only if routing vision to Gemini                                                                                         |
+| `PAYMENTS_DISABLED`                                                         | prod when `PAYMENTS_MOCK=true`                           | set `true` to ship without purchases; `/credits/intents`, `/credits/purchases`, and RevenueCat crediting close while balances work |
+| `REVENUECAT_API_KEY`, `REVENUECAT_WEBHOOK_SECRET`                           | when `PAYMENTS_MOCK=false` and `PAYMENTS_DISABLED=false` | RevenueCat REST key + a webhook shared secret (constant-time checked)                                                              |
+| `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_TOKEN_ENC_KEY` | when `APPLE_REVOKE_MOCK=false`                           | Apple Sign-In key material; `APPLE_TOKEN_ENC_KEY` must be **base64 that decodes to exactly 32 bytes** (`openssl rand -base64 32`)  |
 
 - [ ] Generate and set a strong `JWT_SECRET` (the shipped `change-me-in-production` is now rejected
       in production — do not reuse it).
+- [ ] Choose the payments posture before booting production: set `PAYMENTS_DISABLED=true` while IAP
+      is unavailable, or set `PAYMENTS_MOCK=false`, `PAYMENTS_DISABLED=false`, and provide both
+      RevenueCat values for a paid launch.
 - [ ] Boot the API once against the production env and confirm it starts. Any missing/weak value
       prints an `Invalid environment:` list and exits — fix until it boots.
 
@@ -72,8 +76,9 @@ guards will refuse to boot, which is the point (`apps/api/src/config/env.ts`, `e
 The whole system defaults to offline/free mocks. For a paid launch, turn on the real paths:
 
 - [ ] `AI_MOCK=false` — real OpenAI/Gemini calls (needs `OPENAI_API_KEY`).
-- [ ] `PAYMENTS_MOCK=false` — real RevenueCat receipt verification (the mock **approves every
-      purchase for free**; leaving it on gives credits away).
+- [ ] `PAYMENTS_MOCK=false` and `PAYMENTS_DISABLED=false` — real RevenueCat receipt verification
+      (the mock **approves every purchase for free**; production permits it only while purchases are
+      disabled).
 - [ ] `APPLE_REVOKE_MOCK=false` — real Apple token revocation on account deletion (App Store
       Guideline 5.1.1(v); the publishing-compliance spec exists for exactly this).
 - [ ] Web: production does **not** enable mocks from `NEXT_PUBLIC_API_MOCK` (it fails closed in
@@ -130,6 +135,9 @@ production `DATABASE_URL`:
 - [ ] Map them to RevenueCat entitlements; set `REVENUECAT_API_KEY`.
 - [ ] Configure the RevenueCat webhook to POST to the API with the `REVENUECAT_WEBHOOK_SECRET` in the
       Authorization header (this secret is the only barrier between the internet and free credits).
+- [ ] Set `PAYMENTS_DISABLED=false` only after the products and webhook are ready. Production rejects
+      RevenueCat sandbox/TestFlight purchases and any purchase whose `product_id` does not match the
+      recorded intent.
 - [ ] Verify credit prices: `CREDIT_COSTS` / `FREE_MONTHLY_GRANT` in
       `packages/contracts/src/credits.ts` are contract — confirm they match the store product values.
 - [ ] Re-verify AI vendor rates before charging real money: `MODEL_RATES_USD_PER_MTOK`
@@ -174,7 +182,7 @@ minutes are metered). Actions is otherwise enabled
       green — the same gate passes locally today.
 - [ ] Until then, the **local gate is the source of truth**: `pnpm build`,
       `pnpm typecheck`, `pnpm lint`, `pnpm test` (with `pnpm infra:up && pnpm
-  db:migrate && pnpm db:seed` first, since API specs are integration tests).
+db:migrate && pnpm db:seed` first, since API specs are integration tests).
       PRs currently merge without a green check **by design**, not by accident.
 
 ## J. Pre-launch verification (P2 — L2-e2e)

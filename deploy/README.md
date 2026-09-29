@@ -128,13 +128,14 @@ Point the mobile app at it by building with
 
 ## Turning on the paid paths later
 
-The system boots fully working with `AI_MOCK=true` and `PAYMENTS_MOCK=true`
-(offline, free). When you are ready:
+The system boots fully working with `AI_MOCK=true`, `PAYMENTS_MOCK=true`, and
+`PAYMENTS_DISABLED=true` (offline AI, no purchases). When you are ready:
 
 - **AI:** set `AI_MOCK=false` and add `OPENAI_API_KEY` (or an OpenAI-compatible
   key). `AI_DAILY_BUDGET_USD` caps daily spend.
-- **Payments:** set `PAYMENTS_MOCK=false` and add `REVENUECAT_API_KEY` +
-  `REVENUECAT_WEBHOOK_SECRET`. See `docs/store-listing/iap-setup.md`.
+- **Payments:** set `PAYMENTS_MOCK=false`, `PAYMENTS_DISABLED=false`, and add
+  `REVENUECAT_API_KEY` + `REVENUECAT_WEBHOOK_SECRET`. See
+  `docs/store-listing/iap-setup.md`.
 - **Apple deletion revoke:** set `APPLE_REVOKE_MOCK=false` and the four `APPLE_*`
   values.
 

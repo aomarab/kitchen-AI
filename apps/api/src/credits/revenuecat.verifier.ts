@@ -6,7 +6,10 @@ const REQUEST_TIMEOUT_MS = 10_000;
 
 interface RevenueCatSubscriber {
   subscriber?: {
-    non_subscriptions?: Record<string, { id?: string; store_transaction_id?: string }[]>;
+    non_subscriptions?: Record<
+      string,
+      { id?: string; store_transaction_id?: string; is_sandbox?: boolean }[]
+    >;
   };
 }
 
@@ -18,7 +21,9 @@ interface RevenueCatSubscriber {
  * transaction under the expected product id. Anything else is not-valid: a
  * non-2xx is raised as `EXTERNAL_SERVICE_ERROR` rather than being parsed as
  * success (so a transport hiccup can never be mistaken for a paid receipt), and
- * a mismatched product id returns `valid: false` so the caller refuses it.
+ * a mismatched product id returns `valid: false` so the caller refuses it. In
+ * production, sandbox/TestFlight receipts are also not-valid; non-production
+ * keeps accepting them so store integration can be tested before launch.
  *
  * The subscriber is looked up by RevenueCat *app user id* — which the client
  * sets to the purchase intent id before checkout — because that, not the store
@@ -30,6 +35,7 @@ export class RevenueCatVerifier implements PaymentVerifier {
   constructor(
     private readonly apiKey: string,
     private readonly baseUrl = REVENUECAT_BASE_URL,
+    private readonly nodeEnv: 'development' | 'test' | 'production' = 'development',
   ) {}
 
   async verify(
@@ -64,12 +70,15 @@ export class RevenueCatVerifier implements PaymentVerifier {
     }
 
     const body = (await response.json().catch(() => ({}))) as RevenueCatSubscriber;
-    const purchases = Object.values(body.subscriber?.non_subscriptions ?? {}).flat();
-    const matched = purchases.some(
+    const purchases = body.subscriber?.non_subscriptions?.[productId] ?? [];
+    const matched = purchases.find(
       (p) => p.store_transaction_id === storeTransactionId || p.id === storeTransactionId,
     );
-    const productMatches = productId in (body.subscriber?.non_subscriptions ?? {});
 
-    return { storeTransactionId, productId, valid: matched && productMatches };
+    return {
+      storeTransactionId,
+      productId,
+      valid: Boolean(matched) && !(this.nodeEnv === 'production' && matched?.is_sandbox),
+    };
   }
 }

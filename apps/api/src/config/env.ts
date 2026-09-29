@@ -133,6 +133,17 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((value) => value === 'true'),
+  /**
+   * When true, purchase creation/confirmation and purchase-crediting webhooks
+   * are disabled while balance reads and credit spending keep working. This is
+   * the safe production posture before store products and RevenueCat are live:
+   * `PAYMENTS_MOCK` may remain true for offline boot, but no receipt can mint
+   * paid credits.
+   */
+  PAYMENTS_DISABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   /** RevenueCat REST key; used by the verifier to confirm a store receipt. */
   REVENUECAT_API_KEY: z.string().default(''),
   /**
@@ -187,10 +198,19 @@ const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
       message: 'is required when AI_MOCK is false',
     });
   }
+  if (env.NODE_ENV === 'production' && env.PAYMENTS_MOCK && !env.PAYMENTS_DISABLED) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['PAYMENTS_MOCK'],
+      message:
+        'approves every receipt; set PAYMENTS_MOCK=false with RevenueCat keys, or PAYMENTS_DISABLED=true to ship without purchases',
+    });
+  }
   // With payments live the webhook signature is the only barrier to free
   // credits, and the verifier cannot call RevenueCat without a key — a missing
-  // secret or key would silently open or break the money path.
-  if (env.NODE_ENV === 'production' && !env.PAYMENTS_MOCK) {
+  // secret or key would silently open or break the money path. Deployments with
+  // purchases disabled do not need RevenueCat material yet.
+  if (env.NODE_ENV === 'production' && !env.PAYMENTS_DISABLED && !env.PAYMENTS_MOCK) {
     for (const key of ['REVENUECAT_API_KEY', 'REVENUECAT_WEBHOOK_SECRET'] as const) {
       if (env[key].trim() === '') {
         ctx.addIssue({

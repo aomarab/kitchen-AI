@@ -18,7 +18,7 @@ import { RevenueCatVerifier } from './revenuecat.verifier.js';
       useFactory: (env: Env) =>
         env.PAYMENTS_MOCK
           ? new MockPaymentVerifier()
-          : new RevenueCatVerifier(env.REVENUECAT_API_KEY),
+          : new RevenueCatVerifier(env.REVENUECAT_API_KEY, undefined, env.NODE_ENV),
     },
   ],
   exports: [CreditsService],

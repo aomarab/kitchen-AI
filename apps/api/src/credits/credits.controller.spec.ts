@@ -5,6 +5,7 @@ import request from 'supertest';
 import { creditBalanceSchema, FREE_MONTHLY_GRANT } from '@kitchen/contracts';
 import { AppModule } from '../app.module.js';
 import { DB } from '../db/index.js';
+import { ENV, loadEnv } from '../config/env.js';
 import { AppExceptionFilter } from '../common/errors.js';
 import {
   cleanup,
@@ -48,6 +49,10 @@ describe('Credits HTTP routes', () => {
   let userId: string;
   let householdId: string;
   let token: string;
+  // Mutable so the payments-disabled cases below can flip the flag on this
+  // one app: a second AppModule torn down within ~100ms of init races
+  // BullMQ's Redis handshake and leaks "Connection is closed" rejections.
+  const env = { ...loadEnv() };
 
   beforeAll(async () => {
     ctx = createTestContext();
@@ -58,6 +63,8 @@ describe('Credits HTTP routes', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(DB)
       .useValue(ctx.db)
+      .overrideProvider(ENV)
+      .useValue(env)
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -123,13 +130,53 @@ describe('Credits HTTP routes', () => {
   /* POST /credits/purchases — auth guard */
 
   it('POST /credits/purchases — no auth → 401', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/credits/purchases')
-      .send({
-        intentId: '00000000-0000-4000-8000-000000000000',
-        storeTransactionId: 'x',
-        store: 'apple',
-      });
+    const res = await request(app.getHttpServer()).post('/credits/purchases').send({
+      intentId: '00000000-0000-4000-8000-000000000000',
+      storeTransactionId: 'x',
+      store: 'apple',
+    });
     expect(res.status).toBe(401);
+  });
+
+  describe('with payments disabled', () => {
+    beforeAll(() => {
+      env.PAYMENTS_DISABLED = true;
+    });
+
+    afterAll(() => {
+      env.PAYMENTS_DISABLED = false;
+    });
+
+    it('POST /credits/intents — payments disabled → 503', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/credits/intents')
+        .set('authorization', `Bearer ${token}`)
+        .set('x-household-id', householdId)
+        .send({ productId: 'credits_300' });
+
+      expect(res.status).toBe(503);
+      expect(res.body).toMatchObject({
+        code: 'AI_UNAVAILABLE',
+        messageKey: 'errors.PAYMENTS_DISABLED',
+      });
+    });
+
+    it('POST /credits/purchases — payments disabled → 503', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/credits/purchases')
+        .set('authorization', `Bearer ${token}`)
+        .set('x-household-id', householdId)
+        .send({
+          intentId: '00000000-0000-4000-8000-000000000000',
+          storeTransactionId: 'txn-disabled-route',
+          store: 'apple',
+        });
+
+      expect(res.status).toBe(503);
+      expect(res.body).toMatchObject({
+        code: 'AI_UNAVAILABLE',
+        messageKey: 'errors.PAYMENTS_DISABLED',
+      });
+    });
   });
 });
