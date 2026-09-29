@@ -18,9 +18,21 @@ describe('recipeIngredientAccessibilityLabel', () => {
       recipeIngredientAccessibilityLabel({
         quantity: '800 g',
         name: 'Chicken breast',
+        optionalLabel: null,
         statusLabel: 'In stock',
       }),
     ).toBe('800 g, Chicken breast, In stock');
+  });
+
+  it('includes the optional caption between the name and stock status', () => {
+    expect(
+      recipeIngredientAccessibilityLabel({
+        quantity: '30 ml',
+        name: 'Olive oil',
+        optionalLabel: 'Optional',
+        statusLabel: 'In stock',
+      }),
+    ).toBe('30 ml, Olive oil, Optional, In stock');
   });
 
   it('keeps signed quantities in the cooked sheet label', () => {
@@ -28,6 +40,7 @@ describe('recipeIngredientAccessibilityLabel', () => {
       recipeIngredientAccessibilityLabel({
         quantity: '− 1½ cups',
         name: 'White rice',
+        optionalLabel: null,
         statusLabel: 'Not in stock',
       }),
     ).toBe('− 1½ cups, White rice, Not in stock');

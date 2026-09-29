@@ -224,6 +224,9 @@ describe('recipe and cook Coral rhythm', () => {
     expect(ingredientRow).toContain('accessible');
     expect(ingredientRow).toContain('accessibilityLabel={accessibilityLabel}');
     expect(ingredientRow).toContain('t(recipeIngredientStatusKey(ingredient))');
+    expect(ingredientRow).toContain(
+      "optionalLabel: ingredient.optional ? t('recipe.optional') : null",
+    );
     expect(ingredientRow).toContain('width: 72');
     expect(ingredientRow).toContain('name={statusIcon}');
     expect(stepRow).toContain('STEP_NUMBER_BOX_SIZE = 28');

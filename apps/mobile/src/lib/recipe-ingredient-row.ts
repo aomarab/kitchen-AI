@@ -13,11 +13,13 @@ export function recipeIngredientStatusKey(
 export function recipeIngredientAccessibilityLabel({
   quantity,
   name,
+  optionalLabel,
   statusLabel,
 }: {
   quantity: string;
   name: string;
+  optionalLabel?: string | null;
   statusLabel: string;
 }): string {
-  return `${quantity}, ${name}, ${statusLabel}`;
+  return [quantity, name, optionalLabel, statusLabel].filter(Boolean).join(', ');
 }

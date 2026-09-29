@@ -34,6 +34,7 @@ export function RecipeIngredientRow({
   const accessibilityLabel = recipeIngredientAccessibilityLabel({
     quantity: visibleQuantity,
     name,
+    optionalLabel: ingredient.optional ? t('recipe.optional') : null,
     statusLabel,
   });
   const statusIcon: IconName = ingredient.inStock ? 'check' : ingredient.shortfall ? 'alert' : 'x';
