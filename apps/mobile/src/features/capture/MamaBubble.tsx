@@ -11,15 +11,25 @@ const MESSAGE_PADDING_HORIZONTAL = 14;
 const ACTION_GAP = 10;
 
 export interface MamaBubbleProps {
+  title?: string;
   message: string;
   actions?: ReactNode;
   accessory?: ReactNode;
+  caption?: string | null;
   error?: string | null;
   style?: StyleProp<ViewStyle>;
 }
 
 /** Bottom capture prompt. J retires the orb here, keeping only the spoken prompt and actions. */
-export function MamaBubble({ message, actions, accessory, error, style }: MamaBubbleProps) {
+export function MamaBubble({
+  title,
+  message,
+  actions,
+  accessory,
+  caption,
+  error,
+  style,
+}: MamaBubbleProps) {
   const { colors } = useTheme();
   return (
     <View
@@ -42,6 +52,7 @@ export function MamaBubble({ message, actions, accessory, error, style }: MamaBu
             paddingHorizontal: MESSAGE_PADDING_HORIZONTAL,
           }}
         >
+          {title ? <AppText variant="bodyStrong">{title}</AppText> : null}
           <AppText variant="body">{message}</AppText>
           {error ? (
             <AppText variant="caption" color="danger" style={{ marginTop: spacing.xs }}>
@@ -52,6 +63,11 @@ export function MamaBubble({ message, actions, accessory, error, style }: MamaBu
         {accessory ? <View style={{ flexShrink: 0 }}>{accessory}</View> : null}
       </View>
       {actions ? <View style={{ flexDirection: 'row', gap: ACTION_GAP }}>{actions}</View> : null}
+      {caption ? (
+        <AppText variant="caption" muted>
+          {caption}
+        </AppText>
+      ) : null}
     </View>
   );
 }

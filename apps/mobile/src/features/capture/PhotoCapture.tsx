@@ -660,7 +660,17 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
   const renderBubbleActions = () => {
     if (flow === 'looking') return renderLookingSheetActions();
     if (flow === 'nothingFound') {
-      return <Button title={t('mobile.capture.retake')} fullWidth={false} onPress={retake} />;
+      return (
+        <>
+          <Button title={t('mobile.capture.retake')} style={{ flex: 1 }} onPress={retake} />
+          <Button
+            title={t('mobile.capture.manualTitle')}
+            variant="ghost"
+            fullWidth={false}
+            onPress={() => onMethodChange('manual')}
+          />
+        </>
+      );
     }
     if (flow === 'result') {
       if (!session || !resultActionState) return null;
@@ -754,10 +764,16 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
         }}
       >
         <MamaBubble
+          title={flow === 'nothingFound' ? t('mobile.capture.nothingSpotted') : undefined}
           message={bubbleMessage()}
           error={bubbleError ? t(bubbleError) : null}
           actions={renderBubbleActions()}
           accessory={renderPostCaptureTrayOpener()}
+          caption={
+            flow === 'nothingFound' && photos.length > 0
+              ? t('mobile.review.emptyPhotos', { count: photos.length })
+              : null
+          }
         />
       </View>
     );

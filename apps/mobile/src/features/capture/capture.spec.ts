@@ -212,11 +212,19 @@ describe('capture screen source contract (G3b)', () => {
 
   it('renders nothing-found through the shared post-shutter media sheet', () => {
     const source = read('features', 'capture', 'PhotoCapture.tsx');
+    const bubble = read('features', 'capture', 'MamaBubble.tsx');
 
-    expect(source).not.toContain('mobile.capture.nothingSpotted');
+    expect(source).toContain("title={flow === 'nothingFound' ? t('mobile.capture.nothingSpotted')");
+    expect(source).toContain("if (flow === 'nothingFound') return t('capture.nothingFound');");
+    expect(source).toContain("title={t('mobile.capture.retake')}");
+    expect(source).toContain("title={t('mobile.capture.manualTitle')}");
+    expect(source).toContain('variant="ghost"');
+    expect(source).toContain("onPress={() => onMethodChange('manual')}");
+    expect(source).toContain("t('mobile.review.emptyPhotos', { count: photos.length })");
+    expect(bubble).toContain('caption?: string | null');
+    expect(bubble).toContain('<AppText variant="caption" muted>');
     expect(source).not.toContain('<Illustration name="camera"');
     expect(source).toContain("flow === 'looking' || flow === 'result' || flow === 'nothingFound'");
-    expect(source).toContain("if (flow === 'nothingFound') return t('capture.nothingFound');");
     expect(source).toContain('bottom: flushSheet ? 0 : bottomHeight + spacing.md');
   });
 
