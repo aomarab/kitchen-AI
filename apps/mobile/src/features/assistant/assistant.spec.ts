@@ -19,6 +19,16 @@ describe('assistant screen guards', () => {
     expect(source).toContain('initialMode={assistantModeFromParam(params.mode)}');
   });
 
+  it('surfaces adapter errors instead of looking connected and silent', () => {
+    const source = read('features', 'assistant', 'LiveAssistantScreen.tsx');
+
+    // A failed real connection used to be swallowed: the header still said
+    // "connected" and typed messages vanished with no reply.
+    expect(source).toContain("event.type === 'error'");
+    expect(source).toContain('assistantFailureMessageKey(failure)');
+    expect(source).toContain('assistantConnectionLabelKey(status)');
+  });
+
   it('renders the demo banner from an isMock value outside mode branches', () => {
     const source = read('features', 'assistant', 'LiveAssistantScreen.tsx');
     const badge = source.indexOf('const demoBanner =');

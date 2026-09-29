@@ -44,6 +44,8 @@ const reportItemsArgsSchema = z.object({ items: z.array(reportedItemSchema) });
 
 /** Server events we act on. Everything else on the data channel is ignored. */
 const TRANSCRIPT_DONE = 'response.output_audio_transcript.done';
+/** A text-only session's reply: there is no audio, so no audio transcript. */
+const TEXT_DONE = 'response.output_text.done';
 const USER_TRANSCRIPT_DONE = 'conversation.item.input_audio_transcription.completed';
 const FUNCTION_ARGS_DONE = 'response.function_call_arguments.done';
 
@@ -66,6 +68,7 @@ const AUDIO_CLEARED = 'output_audio_buffer.cleared';
 interface ServerEvent {
   type?: string;
   transcript?: string;
+  text?: string;
   name?: string;
   arguments?: string;
   item_id?: string;
@@ -237,6 +240,11 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
     for (const track of stream?.getAudioTracks() ?? []) {
       pc.addTrack(track, stream!);
     }
+    // With no microphone (text mode) the offer would carry no audio section,
+    // which the provider rejects with 400 `invalid_offer`. Negotiate a
+    // receive-only one instead; replies are switched to text on `open`.
+    const textOnly = (stream?.getAudioTracks().length ?? 0) === 0;
+    if (textOnly) pc.addTransceiver('audio', { direction: 'recvonly' });
 
     const channel = pc.createDataChannel('oai-events');
     this.channel = channel;
@@ -245,6 +253,16 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
     });
     channel.addEventListener('open', () => {
       if (this.stopped) return;
+      // A typed chat is answered in text: read, not played aloud, and no
+      // output audio is billed.
+      if (textOnly) {
+        channel.send(
+          JSON.stringify({
+            type: 'session.update',
+            session: { type: 'realtime', output_modalities: ['text'] },
+          }),
+        );
+      }
       onEvent({ type: 'status', status: 'live' });
       // Sight begins when the channel can carry a message, and only if there is
       // a camera to sample. A stop() before this clears the timer again.
@@ -387,13 +405,19 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
       return;
     }
 
-    if (event.type === TRANSCRIPT_DONE && event.transcript) {
+    const assistantText =
+      event.type === TRANSCRIPT_DONE
+        ? event.transcript
+        : event.type === TEXT_DONE
+          ? event.text
+          : undefined;
+    if (assistantText) {
       onEvent({
         type: 'transcript',
         turn: {
           id: event.item_id ?? event.event_id ?? `a${this.detectionSeq++}`,
           role: 'assistant',
-          text: event.transcript,
+          text: assistantText,
         },
       });
       return;
@@ -412,6 +436,9 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
     }
 
     if (event.type === FUNCTION_ARGS_DONE && event.name === 'report_items' && event.arguments) {
+      // With no camera there is nothing to have seen, so any "detection" is
+      // invented — refused here as well as in the session instructions.
+      if ((this.stream?.getVideoTracks().length ?? 0) === 0) return;
       const items = this.parseDetections(event.arguments);
       // An empty result is not the same as no result: reporting `[]` here after
       // every failed parse would flicker the detection list to empty whenever

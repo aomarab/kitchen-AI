@@ -35,6 +35,7 @@ const MOBILE_CAPTURE = 'apps/mobile/src/lib/capture.ts';
 const MOBILE_MOCK = 'apps/mobile/src/lib/assistant/mock-realtime.ts';
 const MOBILE_DETECT = 'apps/mobile/src/lib/assistant/detections.ts';
 const MOBILE_PERSONA = 'apps/mobile/src/lib/assistant/persona.ts';
+const MOBILE_REALTIME = 'apps/mobile/src/lib/assistant/openai-realtime.ts';
 const MOCK = 'apps/web/src/lib/assistant/mock-realtime.ts';
 const CONNECTIVITY = 'apps/web/src/stores/connectivity.ts';
 const SCREEN_VIEW = 'apps/web/src/components/screen/SmartScreenView.tsx';
@@ -68,6 +69,7 @@ const MOBILE_CAPTURE_SPEC = ['@kitchen/mobile', 'src/lib/capture.spec.ts'];
 const MOBILE_MOCK_SPEC = ['@kitchen/mobile', 'src/lib/assistant/mock-realtime.spec.ts'];
 const MOBILE_DETECT_SPEC = ['@kitchen/mobile', 'src/lib/assistant/detections.spec.ts'];
 const MOBILE_PERSONA_SPEC = ['@kitchen/mobile', 'src/lib/assistant/persona.spec.ts'];
+const MOBILE_REALTIME_SPEC = ['@kitchen/mobile', 'src/lib/assistant/openai-realtime.spec.ts'];
 const MOCK_SPEC = ['@kitchen/web', 'src/lib/assistant/mock-realtime.test.ts'];
 const CONNECTIVITY_SPEC = ['@kitchen/web', 'src/stores/connectivity.test.ts'];
 const SCREEN_VIEW_SPEC = ['@kitchen/web', 'src/components/screen/SmartScreenView.test.tsx'];
@@ -825,8 +827,8 @@ const CASES = [
     file: PLAN_SERVICE,
     spec: ATTRIBUTION_SPEC,
     check: 'attributes the planner\u2019s own gateway call to the regeneration',
-    from: "      { spendGroupId, action: 'plan.regenerateEntry' },",
-    to: '      undefined,',
+    from: "        { spendGroupId: chargedSpendGroupId, action: 'plan.regenerateEntry' },",
+    to: '        undefined,',
   },
   {
     // The worker runs long after the spend, in another process. Dropping the
@@ -1222,6 +1224,54 @@ const CASES = [
     check: 'falls back to the default when the stored persona has left the catalog',
     from: 'return parsed.success ? parsed.data : DEFAULT_ASSISTANT_PERSONA;',
     to: "return parsed.success ? parsed.data : 'salma';",
+  },
+  {
+    // One session serves typed chat, voice and live camera. Told it could see
+    // unconditionally, the live model answered a typed question by describing a
+    // counter it had never been shown.
+    name: 'the assistant is told it can see without having been sent an image',
+    file: PROVIDER,
+    spec: API_SPEC,
+    check: 'makes sight conditional on a camera image having been sent',
+    from: 'If no image has been sent in this conversation, you cannot see the kitchen',
+    to: 'You can always see the kitchen',
+  },
+  {
+    name: 'the web adapter reports detections from a session with no camera',
+    file: WEB,
+    spec: WEB_SPEC,
+    check: 'reports no detections from a session without a camera',
+    from: '      if ((this.stream?.getVideoTracks().length ?? 0) === 0) return;\n',
+    to: '',
+  },
+  {
+    name: 'the mobile adapter reports detections from a session with no camera',
+    file: MOBILE_REALTIME,
+    spec: MOBILE_REALTIME_SPEC,
+    check: 'reports no detections from a session without a camera',
+    from: '      if (!this.camera) return;\n',
+    to: '',
+  },
+  {
+    // Even a receive-only audio section makes react-native-webrtc start the
+    // audio device: an audio session on the phone while the user types, and a
+    // CoreAudio deadlock that aborts the app on the iOS Simulator.
+    name: 'a typed chat on mobile negotiates WebRTC instead of the socket',
+    file: MOBILE_REALTIME,
+    spec: MOBILE_REALTIME_SPEC,
+    check: 'opens neither the microphone nor a peer connection',
+    from: '    if (audio === false) {\n      this.openSocket(',
+    to: '    if (audio === null) {\n      this.openSocket(',
+  },
+  {
+    // RN dispatches `error` then `close` for a refused socket. Without the error
+    // the screen ends silently and the user never learns the chat is down.
+    name: 'a refused chat socket ends the session without saying why',
+    file: MOBILE_REALTIME,
+    spec: MOBILE_REALTIME_SPEC,
+    check: 'reports a socket that never opens as one failed connection',
+    from: "      if (failed || !opened) onEvent({ type: 'error', code: 'assistant.connectFailed' });\n",
+    to: '',
   },
 ];
 

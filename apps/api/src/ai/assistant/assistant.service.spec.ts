@@ -410,6 +410,37 @@ describe('OpenAiRealtimeSessionProvider', () => {
     }
   });
 
+  it('makes sight conditional on a camera image having been sent', async () => {
+    // One session serves typed chat, voice and live camera. Told it could "see
+    // through the camera" unconditionally, the live model answered a typed
+    // question by describing a counter it had never been shown.
+    const bodies: string[] = [];
+    const restore = withFetch((async (_url: string, init: RequestInit) => {
+      bodies.push(String(init.body));
+      return new Response(
+        JSON.stringify({ value: 'ek_live', expires_at: 1, session: { model: 'gpt-realtime' } }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }) as unknown as typeof globalThis.fetch);
+
+    try {
+      const provider = new OpenAiRealtimeSessionProvider('sk-secret', 'gpt-realtime');
+      await provider.mint('en', 'BRIEF', 'layla');
+      await provider.mint('ar', 'BRIEF', 'layla');
+      const [en, ar] = bodies.map(
+        (b) => (JSON.parse(b) as { session: { instructions: string } }).session.instructions,
+      );
+
+      expect(en).not.toMatch(/who can see through the camera/);
+      expect(en).toMatch(/If no image has been sent in this conversation, you cannot see/);
+      expect(en).toMatch(/report_items only for items visible in a camera image/);
+      expect(ar).not.toContain('ترى ما تريه الكاميرا');
+      expect(ar).toContain('إن لم تصلكِ أي صورة');
+    } finally {
+      restore();
+    }
+  });
+
   it('reports the model the provider bound, not the one we asked for', async () => {
     const restore = withFetch(
       (async () =>

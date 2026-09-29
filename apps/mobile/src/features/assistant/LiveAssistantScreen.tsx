@@ -6,7 +6,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { StatusBar } from 'expo-status-bar';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useIsFocused, useRouter } from 'expo-router';
-import { AppText, Button, Card, DirectionalIcon, Icon } from '../../components';
+import { AppText, Button, Card, DirectionalIcon, Icon, type IconName } from '../../components';
 import { ReviewList } from '../capture/ReviewList';
 import { Sheet } from '../../components/Sheet';
 import { useFormat } from '../../hooks/useFormat';
@@ -15,6 +15,10 @@ import { formatMeasure, localizedName } from '../../lib/format';
 import { api } from '../../lib/api';
 import { OpenAiRealtimeAssistantClient } from '../../lib/assistant/openai-realtime';
 import { detectionsToSession } from '../../lib/assistant/detections';
+import {
+  assistantConnectionLabelKey,
+  assistantFailureMessageKey,
+} from '../../lib/assistant/failure';
 import { ASSISTANT_MODES, type AssistantMode } from '../../lib/assistant/mode';
 import { appendTranscriptTurn, groupTurns, showStarters } from '../../lib/assistant/transcript';
 import {
@@ -123,6 +127,8 @@ export function LiveAssistantScreen({
   const [modeSheetOpen, setModeSheetOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [capReached, setCapReached] = useState(false);
+  /** The last adapter error code for this session; cleared when a new one starts. */
+  const [failure, setFailure] = useState<string | null>(null);
   const [sessionNonce, setSessionNonce] = useState(0);
 
   const clientRef = useRef<RealtimeAssistantClient | null>(null);
@@ -182,6 +188,7 @@ export function LiveAssistantScreen({
     if (!conversationReady) return;
     setSpeaking(false);
     setCapReached(false);
+    setFailure(null);
     if (mode !== 'live') setDetections([]);
     const client = createClientRef.current();
     clientRef.current = client;
@@ -197,6 +204,7 @@ export function LiveAssistantScreen({
         else if (event.type === 'transcript')
           setTurns((prev) => appendTranscriptTurn(prev, event.turn, { isMock: client.isMock }));
         else if (event.type === 'detections') setDetections(event.items);
+        else if (event.type === 'error') setFailure(event.code);
       },
     });
     return () => {
@@ -236,6 +244,8 @@ export function LiveAssistantScreen({
   const sendMessage = useCallback((message: string) => {
     const text = message.trim();
     if (!text) return;
+    // A lost reply is forgotten on the next attempt; a lost session is not.
+    setFailure((prev) => (prev === 'assistant.providerError' ? null : prev));
     clientRef.current?.sendText(text);
     setDraft('');
   }, []);
@@ -304,8 +314,11 @@ export function LiveAssistantScreen({
     minutes: formatNumber(locale, MAX_ASSISTANT_SESSION_MS / 60_000),
   });
   const isLiveSurface = mode === 'live' && !lockMode;
-  const connectionLabel =
-    status === 'connecting' ? t('mobile.assistant.connecting') : t('mobile.assistant.connected');
+  const connectionLabel = t(assistantConnectionLabelKey(status));
+  // Fatal errors are followed by `ended`; anything else lost one reply only.
+  const sessionFailed = failure !== null && status === 'ended' && !capReached;
+  const replyFailed = failure !== null && status === 'live';
+  const failureMessage = failure ? t(assistantFailureMessageKey(failure)) : null;
   const demoLabel = isMock ? t('mobile.assistant.demoBadge') : t('mobile.assistant.liveBadge');
   const demoBanner =
     isMock && !isLiveSurface ? <DemoBanner label={t('mobile.assistant.demoNote')} /> : null;
@@ -349,10 +362,12 @@ export function LiveAssistantScreen({
           micMuted={micMuted}
           micLabel={micMuted ? t('mobile.assistant.micMuted') : t('mobile.assistant.mic')}
           closeLabel={t('mobile.assistant.cookClose')}
-          capReached={capReached}
-          capTitle={t('mobile.assistant.capTitle')}
-          capBody={capBody}
-          resumeLabel={t('mobile.assistant.resume')}
+          capReached={capReached || sessionFailed}
+          capTitle={
+            sessionFailed ? t('mobile.assistant.errorTitle') : t('mobile.assistant.capTitle')
+          }
+          capBody={sessionFailed && failureMessage ? failureMessage : capBody}
+          resumeLabel={sessionFailed ? t('common.retry') : t('mobile.assistant.resume')}
           onToggleMic={toggleMic}
           onClose={endSession}
           onResume={resume}
@@ -391,7 +406,13 @@ export function LiveAssistantScreen({
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Card style={{ gap: spacing.md, margin: spacing.lg }}>
                 <AppText variant="heading">{t('mobile.assistant.cameraTitle')}</AppText>
-                <AppText muted>{t('mobile.assistant.cameraHint')}</AppText>
+                <AppText muted>
+                  {/* No session exists behind this gate yet, so it cannot know
+                      whether one will be scripted: say "demo" only once one is. */}
+                  {clientRef.current?.isMock
+                    ? t('mobile.assistant.cameraHint')
+                    : t('mobile.assistant.cameraHintLive')}
+                </AppText>
                 {permission && !permission.canAskAgain ? (
                   <AppText variant="caption" color="danger">
                     {t('mobile.permissions.denied')}
@@ -413,7 +434,13 @@ export function LiveAssistantScreen({
           ) : mode === 'live' ? (
             <>
               {detections.length > 0 || isMock ? (
-                <SpottedSampleLabel label={t('mobile.assistant.spottedLabel')} />
+                <SpottedSampleLabel
+                  label={
+                    isMock
+                      ? t('mobile.assistant.spottedLabel')
+                      : t('mobile.assistant.spottedLabelLive')
+                  }
+                />
               ) : null}
               <DetectionOverlay
                 detections={detections}
@@ -471,7 +498,7 @@ export function LiveAssistantScreen({
           ) : mode === 'voice' ? (
             <VoiceAssistantPanel
               title={t('mobile.assistant.voiceTitle')}
-              hint={t('mobile.assistant.voiceHint')}
+              hint={isMock ? t('mobile.assistant.voiceHint') : t('mobile.assistant.voiceHintLive')}
               speakingLabel={t('mobile.assistant.speaking')}
               caption={lastAssistant?.text ?? t('mobile.assistant.connecting')}
               captionsOn={captionsOn}
@@ -536,6 +563,17 @@ export function LiveAssistantScreen({
                     {t('mobile.assistant.connecting')}
                   </AppText>
                 ) : null}
+                {replyFailed && failureMessage ? (
+                  <AppText
+                    variant="caption"
+                    center
+                    color="danger"
+                    accessibilityRole="alert"
+                    style={{ marginTop: spacing.md }}
+                  >
+                    {failureMessage}
+                  </AppText>
+                ) : null}
               </ScrollView>
 
               <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md }}>
@@ -577,6 +615,16 @@ export function LiveAssistantScreen({
               onResume={resume}
               onEnd={endSession}
             />
+          ) : sessionFailed && failureMessage ? (
+            <SessionPausedOverlay
+              icon={failure === 'assistant.micDenied' ? 'micOff' : 'wifiOff'}
+              title={t('mobile.assistant.errorTitle')}
+              body={failureMessage}
+              resumeLabel={t('common.retry')}
+              endLabel={t('mobile.assistant.end')}
+              onResume={resume}
+              onEnd={endSession}
+            />
           ) : null}
         </SafeAreaView>
       )}
@@ -586,7 +634,9 @@ export function LiveAssistantScreen({
         onClose={() => setConfirmOpen(false)}
         title={t('mobile.assistant.confirmTitle')}
       >
-        <AppText muted>{t('mobile.assistant.confirmBody')}</AppText>
+        <AppText muted>
+          {isMock ? t('mobile.assistant.confirmBody') : t('mobile.assistant.confirmBodyLive')}
+        </AppText>
         {detections.length === 0 ? (
           <AppText muted>{t('mobile.assistant.confirmEmpty')}</AppText>
         ) : (
@@ -986,6 +1036,7 @@ function LiveCaptionPanel({
 }
 
 function SessionPausedOverlay({
+  icon = 'timer',
   title,
   body,
   resumeLabel,
@@ -993,6 +1044,7 @@ function SessionPausedOverlay({
   onResume,
   onEnd,
 }: {
+  icon?: IconName;
   title: string;
   body: string;
   resumeLabel: string;
@@ -1021,7 +1073,7 @@ function SessionPausedOverlay({
           gap: spacing.lg,
         }}
       >
-        <Icon name="timer" size={44} color={colors.text} />
+        <Icon name={icon} size={44} color={colors.text} />
         <View
           accessible
           accessibilityRole="alert"

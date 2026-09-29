@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import type { RealtimeSession } from '@kitchen/contracts';
-import { OpenAiRealtimeAssistantClient } from './openai-realtime';
+import { OpenAiRealtimeAssistantClient, realtimeSocketUrl } from './openai-realtime';
 import type { OpenAiRealtimeOptions } from './openai-realtime';
 import type { AssistantEvent } from './realtime-port';
 
@@ -22,6 +22,7 @@ type PeerConnectionLike = ReturnType<NonNullable<OpenAiRealtimeOptions['createPe
 type GetUserMedia = NonNullable<OpenAiRealtimeOptions['getUserMedia']>;
 type StreamLike = Awaited<ReturnType<GetUserMedia>>;
 type TrackLike = ReturnType<StreamLike['getAudioTracks']>[number];
+type CreateSocket = NonNullable<OpenAiRealtimeOptions['createSocket']>;
 
 const REAL_SESSION: RealtimeSession = {
   clientSecret: 'ek_live',
@@ -52,6 +53,16 @@ class FakeDataChannel {
   }
   message(payload: unknown) {
     this.emit('message', { data: JSON.stringify(payload) });
+  }
+}
+
+/** React Native's WebSocket, as far as the text transport uses it. */
+class FakeSocket extends FakeDataChannel {
+  constructor(
+    readonly url: string,
+    readonly clientSecret: string,
+  ) {
+    super();
   }
 }
 
@@ -141,16 +152,29 @@ function setup(
     options.getUserMedia ?? (async () => makeStream(track) as unknown as StreamLike),
   );
 
+  const createPeerConnection = vi.fn(() => pc as unknown as PeerConnectionLike);
+  const sockets: FakeSocket[] = [];
+  const createSocket = vi.fn((url: string, clientSecret: string) => {
+    const socket = new FakeSocket(url, clientSecret);
+    sockets.push(socket);
+    return socket;
+  });
+
   const client = new OpenAiRealtimeAssistantClient({
     createSession,
-    createPeerConnection: () => pc as unknown as PeerConnectionLike,
+    createPeerConnection,
     getUserMedia: getUserMedia as unknown as GetUserMedia,
+    createSocket: createSocket as unknown as CreateSocket,
     captureFrame,
   });
 
   return {
     client,
     pc,
+    createPeerConnection,
+    createSocket,
+    /** The typed-chat socket, once `start({ audio: false })` has opened one. */
+    socket: () => sockets[0]!,
     events,
     track,
     fetchMock,
@@ -215,16 +239,139 @@ describe('OpenAiRealtimeAssistantClient (mobile)', () => {
     await client.stop();
   });
 
-  it('never opens the microphone on a text-only session', async () => {
-    const { pc, start, getUserMedia, events, client } = setup();
-    await start({ camera: false, audio: false });
-    // The phone must not listen while the user is typing.
-    expect(getUserMedia).not.toHaveBeenCalled();
-    expect(pc.tracks).toHaveLength(0);
-    // It still connects: the channel opening drives it live.
+  describe('typed chat (text-only session)', () => {
+    it('opens neither the microphone nor a peer connection', async () => {
+      const { start, getUserMedia, createPeerConnection, fetchMock, client } = setup();
+      await start({ camera: false, audio: false });
+      // The phone must not listen while the user is typing. And no WebRTC at
+      // all: the provider rejects an offer without an audio section, and even a
+      // receive-only one starts the native audio device — an audio session on
+      // the phone and a CoreAudio deadlock that aborts the app on the Simulator.
+      expect(getUserMedia).not.toHaveBeenCalled();
+      expect(createPeerConnection).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
+      await client.stop();
+    });
+
+    it('connects over the provider WebSocket bearing the ephemeral secret', async () => {
+      const { start, createSocket, client } = setup();
+      await start({ camera: false, audio: false });
+      expect(createSocket).toHaveBeenCalledWith(
+        'wss://api.openai.com/v1/realtime?model=gpt-realtime',
+        REAL_SESSION.clientSecret,
+      );
+      await client.stop();
+    });
+
+    it('goes live on open and switches replies to text', async () => {
+      const { socket, events, start, client } = setup();
+      await start({ camera: false, audio: false });
+      expect(events.some((event) => event.type === 'status' && event.status === 'live')).toBe(
+        false,
+      );
+
+      socket().emit('open', {});
+
+      expect(events.some((event) => event.type === 'status' && event.status === 'live')).toBe(true);
+      expect(socket().sent.map((raw) => JSON.parse(raw))).toContainEqual({
+        type: 'session.update',
+        session: { type: 'realtime', output_modalities: ['text'] },
+      });
+      await client.stop();
+    });
+
+    it('sends typed messages over the socket and maps the text reply', async () => {
+      const { socket, events, start, client } = setup();
+      await start({ camera: false, audio: false });
+      socket().emit('open', {});
+
+      client.sendText('What can I cook?');
+      const sent = socket().sent.map((raw) => JSON.parse(raw) as { type: string });
+      expect(sent.slice(-2).map((event) => event.type)).toEqual([
+        'conversation.item.create',
+        'response.create',
+      ]);
+
+      socket().message({ type: 'response.output_text.done', text: 'Try shakshuka', item_id: 't1' });
+      expect(events.filter((event) => event.type === 'transcript').at(-1)).toEqual({
+        type: 'transcript',
+        turn: { id: 't1', role: 'assistant', text: 'Try shakshuka' },
+      });
+      await client.stop();
+    });
+
+    it('reports a socket that never opens as one failed connection', async () => {
+      const { socket, events, start } = setup();
+      await start({ camera: false, audio: false });
+
+      // React Native dispatches `error` and then `close` for a refused socket.
+      socket().emit('error', {});
+      socket().emit('close', {});
+      await Promise.resolve();
+
+      expect(events.filter((event) => event.type === 'error')).toEqual([
+        { type: 'error', code: 'assistant.connectFailed' },
+      ]);
+      expect(events.at(-1)).toEqual({ type: 'status', status: 'ended' });
+      expect(socket().closed).toBe(true);
+    });
+
+    it('ends without an error when the server closes a live session cleanly', async () => {
+      const { socket, events, start } = setup();
+      await start({ camera: false, audio: false });
+      socket().emit('open', {});
+
+      socket().emit('close', {});
+      await Promise.resolve();
+
+      expect(events.some((event) => event.type === 'error')).toBe(false);
+      expect(events.at(-1)).toEqual({ type: 'status', status: 'ended' });
+    });
+
+    it('closes the socket on stop and ignores the close that follows', async () => {
+      const { socket, events, start, client } = setup();
+      await start({ camera: false, audio: false });
+      socket().emit('open', {});
+
+      await client.stop();
+      const before = events.length;
+      socket().emit('close', {});
+      await Promise.resolve();
+
+      expect(socket().closed).toBe(true);
+      expect(events).toHaveLength(before);
+    });
+  });
+
+  it('keeps a voice session on WebRTC with spoken replies', async () => {
+    const { pc, start, createSocket, client } = setup();
+    await start({ camera: false, audio: true });
     pc.channel.emit('open', {});
-    expect(events.some((event) => event.type === 'status' && event.status === 'live')).toBe(true);
+
+    expect(createSocket).not.toHaveBeenCalled();
+    expect(pc.channel.sent.some((raw) => raw.includes('session.update'))).toBe(false);
     await client.stop();
+  });
+
+  it('maps a text reply on the data channel onto an assistant transcript turn', async () => {
+    const { pc, events, start, client } = setup();
+    await start();
+
+    pc.channel.message({ type: 'response.output_text.done', text: 'Try shakshuka', item_id: 't1' });
+
+    expect(events.filter((event) => event.type === 'transcript')).toEqual([
+      { type: 'transcript', turn: { id: 't1', role: 'assistant', text: 'Try shakshuka' } },
+    ]);
+    await client.stop();
+  });
+
+  it('derives the socket URL from the server-supplied calls URL', () => {
+    expect(realtimeSocketUrl(REAL_SESSION)).toBe(
+      'wss://api.openai.com/v1/realtime?model=gpt-realtime',
+    );
+    expect(realtimeSocketUrl({ callsUrl: 'https://example.test/v2/rt/calls/', model: 'a b' })).toBe(
+      'wss://example.test/v2/rt?model=a%20b',
+    );
   });
 
   it('POSTs the SDP offer to the session callsUrl bearing the ephemeral secret', async () => {
@@ -406,6 +553,53 @@ describe('OpenAiRealtimeAssistantClient (mobile)', () => {
       unit: 'piece',
     });
     await client.stop();
+  });
+
+  it('reports no detections from a session without a camera', async () => {
+    // Seen against the live model: asked "what can I make tonight?" in typed
+    // chat, it described peppers "on your counter" and said it would log them.
+    // With no camera there is nothing to have seen, so a report is invented.
+    const voice = setup();
+    await voice.start({ camera: false, audio: true });
+    voice.pc.channel.message({
+      type: 'response.function_call_arguments.done',
+      name: 'report_items',
+      arguments: JSON.stringify({
+        items: [
+          {
+            nameEn: 'Tomato',
+            nameAr: 'طماطم',
+            quantity: 3,
+            unit: 'piece',
+            confidence: 0.9,
+            category: 'vegetable',
+          },
+        ],
+      }),
+    });
+    expect(voice.events.some((event) => event.type === 'detections')).toBe(false);
+    await voice.client.stop();
+
+    const text = setup();
+    await text.start({ camera: false, audio: false });
+    text.socket().message({
+      type: 'response.function_call_arguments.done',
+      name: 'report_items',
+      arguments: JSON.stringify({
+        items: [
+          {
+            nameEn: 'Tomato',
+            nameAr: 'طماطم',
+            quantity: 3,
+            unit: 'piece',
+            confidence: 0.9,
+            category: 'vegetable',
+          },
+        ],
+      }),
+    });
+    expect(text.events.some((event) => event.type === 'detections')).toBe(false);
+    await text.client.stop();
   });
 
   it('accepts the exact arguments a live gpt-realtime session produced', async () => {

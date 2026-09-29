@@ -853,6 +853,20 @@ export const mobileEn = {
       confirmTitle: 'Add spotted items',
       confirmBody: 'These sample items were spotted. Review and add the ones you actually have.',
       confirmEmpty: 'Nothing spotted yet — keep the camera on your food for a moment.',
+      // Real-session twins of the demo copy above: a live model must not be
+      // described as a sample, just as a scripted one must never read as real.
+      voiceHintLive: 'Just start talking — like a phone call.',
+      cameraHintLive: 'Point the camera at your food and talk while Mama looks.',
+      spottedLabelLive: 'Spotted',
+      confirmBodyLive: 'Mama spotted these. Review and add the ones you actually have.',
+      disconnected: 'disconnected',
+      errorTitle: "Couldn't reach Mama",
+      errorConnect:
+        'The connection dropped before Mama could answer. Check your internet and try again.',
+      errorMint:
+        "Couldn't start a session — you may be out of credits, or the service is busy. Try again in a moment.",
+      errorMic: 'Microphone access is off. Allow it in Settings to talk, or switch to Text.',
+      errorReply: "Mama couldn't answer that one. Try again.",
     },
     // Kept at the namespace root for backwards compatibility with existing imports.
     offlineBanner: 'Offline — changes are saved and will sync automatically.',
