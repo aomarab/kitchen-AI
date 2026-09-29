@@ -22,6 +22,7 @@ import { AppText, Button, Chip, Icon, IconButton, Illustration, Sheet } from '..
 import { usePressFeedback } from '../../components/press-feedback';
 import { CameraGate, useCameraAccess } from './CameraGate';
 import { CaptureChrome, type CaptureMediaMethod, type CaptureMethod } from './CaptureChrome';
+import { CaptureTorchButton } from './CaptureTorchButton';
 import { MamaBubble } from './MamaBubble';
 import { Shutter } from './Shutter';
 import { ArPins } from './ArPins';
@@ -45,7 +46,11 @@ import {
   type LocalPhoto,
 } from '../../lib/capture';
 import { buildArPinLabel } from '../../lib/ar-pin-labels';
-import { deriveCaptureFlowState } from '../../lib/capture-flow';
+import {
+  captureFlowShowsBottomCameraControls,
+  captureFlowShowsModeTabs,
+  deriveCaptureFlowState,
+} from '../../lib/capture-flow';
 import { layoutPins, type PinFrame } from '../../lib/ar-pins';
 import { formatMeasure, localizedName } from '../../lib/format';
 import { resizeForUpload } from '../../lib/image';
@@ -245,6 +250,12 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
     session,
     lastError,
   });
+  const showModeTabs = captureFlowShowsModeTabs(flow);
+  const showBottomCameraControls = captureFlowShowsBottomCameraControls(flow);
+
+  useEffect(() => {
+    if (!showBottomCameraControls) setBottomHeight(0);
+  }, [showBottomCameraControls]);
 
   useEffect(() => {
     if (mode !== 'receipt' || job.data?.status !== 'done' || !job.data.resultRef) return;
@@ -770,17 +781,10 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
         onPress={retake}
       />
     ) : cameraGranted ? (
-      <IconButton
-        icon={torch ? 'flashOff' : 'zap'}
-        size={44}
-        tone="media"
-        accessibilityLabel={torch ? t('mobile.capture.flashOff') : t('mobile.capture.flashOn')}
-        accessibilityState={{ checked: torch }}
-        onPress={() => setTorch((value) => !value)}
-      />
+      <CaptureTorchButton enabled={torch} onToggle={() => setTorch((value) => !value)} />
     ) : null;
 
-  const bottom = (
+  const bottomCameraControls = (
     <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, gap: spacing.xs }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <MediaPressable
@@ -899,8 +903,9 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
       method={method}
       onMethodChange={onMethodChange}
       onClose={onClose}
+      showModeTabs={showModeTabs}
       trailing={trailing}
-      bottom={bottom}
+      bottom={showBottomCameraControls ? bottomCameraControls : undefined}
       onTopLayout={setTopHeight}
       onBottomLayout={setBottomHeight}
     >

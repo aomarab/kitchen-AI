@@ -108,8 +108,45 @@ describe('capture screen source contract (G3b)', () => {
     expect(source).toContain('<IconButton');
     expect(source).toContain('tone="media"');
     expect(source).toContain('<CaptureModeTabs');
+    expect(source).toContain('showModeTabs = true');
+    expect(source).toContain('showModeTabs ? (');
     expect(source).toContain('colors.primaryInverse');
     expect(source).not.toContain('<RoundButton');
+  });
+
+  it('keeps barcode flash in the top trailing media slot without changing scanning', () => {
+    const barcode = read('features', 'capture', 'BarcodeCapture.tsx');
+    const torch = read('features', 'capture', 'CaptureTorchButton.tsx');
+
+    expect(barcode).toContain('const [torch, setTorch] = useState(false)');
+    expect(barcode).toContain('<CaptureTorchButton');
+    expect(barcode).toContain('enabled={torch}');
+    expect(barcode).toContain('onToggle={() => setTorch((value) => !value)}');
+    expect(barcode).toContain('trailing={trailing}');
+    expect(barcode).toContain('enableTorch={torch}');
+    expect(barcode).toContain('onBarcodeScanned={onScan}');
+    expect(torch).toContain("icon={enabled ? 'flashOff' : 'zap'}");
+    expect(torch).toContain("t('mobile.capture.flashOff')");
+    expect(torch).toContain("t('mobile.capture.flashOn')");
+    expect(torch).toContain('tone="media"');
+    expect(torch).toContain('size={44}');
+  });
+
+  it('hides mode tabs and bottom camera controls after capture states', () => {
+    const photo = read('features', 'capture', 'PhotoCapture.tsx');
+    const flow = read('lib', 'capture-flow.ts');
+
+    expect(flow).toContain('export function captureFlowShowsModeTabs');
+    expect(flow).toContain('return flow ===');
+    expect(flow).toContain('export function captureFlowShowsBottomCameraControls');
+    expect(flow).toContain("flow !== 'looking'");
+    expect(flow).toContain("flow !== 'result'");
+    expect(photo).toContain('const showModeTabs = captureFlowShowsModeTabs(flow)');
+    expect(photo).toContain(
+      'const showBottomCameraControls = captureFlowShowsBottomCameraControls(flow)',
+    );
+    expect(photo).toContain('bottom={showBottomCameraControls ? bottomCameraControls : undefined}');
+    expect(photo).toContain('showModeTabs={showModeTabs}');
   });
 
   it('focus-gates light status bar content on the dark media surface', () => {

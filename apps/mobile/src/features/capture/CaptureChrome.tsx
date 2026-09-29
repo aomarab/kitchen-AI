@@ -23,6 +23,7 @@ interface CaptureChromeProps {
   method: CaptureMethod;
   onMethodChange: (method: CaptureMethod) => void;
   onClose: () => void;
+  showModeTabs?: boolean;
   trailing?: ReactNode;
   bottom?: ReactNode;
   children: ReactNode;
@@ -128,6 +129,7 @@ export function CaptureChrome({
   method,
   onMethodChange,
   onClose,
+  showModeTabs = true,
   trailing,
   bottom,
   children,
@@ -174,9 +176,11 @@ export function CaptureChrome({
           <View style={{ flex: 1 }} />
           <View style={{ minWidth: 44, alignItems: 'flex-end' }}>{trailing}</View>
         </View>
-        <View style={{ paddingHorizontal: spacing.gutter }}>
-          <CaptureModeTabs method={method} onMethodChange={onMethodChange} media />
-        </View>
+        {showModeTabs ? (
+          <View style={{ paddingHorizontal: spacing.gutter }}>
+            <CaptureModeTabs method={method} onMethodChange={onMethodChange} media />
+          </View>
+        ) : null}
       </SafeAreaView>
 
       {bottom ? (

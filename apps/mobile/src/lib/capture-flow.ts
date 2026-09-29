@@ -26,3 +26,11 @@ export function deriveCaptureFlowState({
   if (photoCount > 0) return 'shot';
   return 'framing';
 }
+
+export function captureFlowShowsModeTabs(flow: CaptureFlowState): boolean {
+  return flow === 'framing';
+}
+
+export function captureFlowShowsBottomCameraControls(flow: CaptureFlowState): boolean {
+  return flow !== 'looking' && flow !== 'result' && flow !== 'nothingFound';
+}

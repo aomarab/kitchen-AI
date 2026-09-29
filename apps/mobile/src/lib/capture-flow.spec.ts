@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@kitchen/api-client';
 import type { RecognitionSession } from '@kitchen/contracts';
-import { deriveCaptureFlowState } from './capture-flow';
+import {
+  captureFlowShowsBottomCameraControls,
+  captureFlowShowsModeTabs,
+  deriveCaptureFlowState,
+  type CaptureFlowState,
+} from './capture-flow';
 
 function session(): RecognitionSession {
   return { id: 'sess-1', items: [], emptyPhotoKeys: [], createdAt: '2026-09-27T10:00:00.000Z' };
@@ -63,5 +68,19 @@ describe('deriveCaptureFlowState', () => {
         lastError: new Error('boom'),
       }),
     ).toBe('shot');
+  });
+
+  it('shows mode tabs only before capture', () => {
+    const states: CaptureFlowState[] = ['framing', 'shot', 'looking', 'result', 'nothingFound'];
+
+    expect(states.filter(captureFlowShowsModeTabs)).toEqual(['framing']);
+  });
+
+  it('removes legacy bottom camera controls from progress and result states', () => {
+    expect(captureFlowShowsBottomCameraControls('framing')).toBe(true);
+    expect(captureFlowShowsBottomCameraControls('shot')).toBe(true);
+    expect(captureFlowShowsBottomCameraControls('looking')).toBe(false);
+    expect(captureFlowShowsBottomCameraControls('result')).toBe(false);
+    expect(captureFlowShowsBottomCameraControls('nothingFound')).toBe(false);
   });
 });

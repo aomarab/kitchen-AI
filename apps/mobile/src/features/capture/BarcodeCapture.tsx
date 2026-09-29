@@ -6,6 +6,7 @@ import type { RouteResponse, Unit } from '@kitchen/contracts';
 import { AppText, Badge, Button, Card, Chip, Field, QuantityStepper } from '../../components';
 import { CameraGate, useCameraAccess } from './CameraGate';
 import { CaptureChrome, type CaptureMediaMethod, type CaptureMethod } from './CaptureChrome';
+import { CaptureTorchButton } from './CaptureTorchButton';
 import { useFormat } from '../../hooks/useFormat';
 import { useBarcodeLookup } from '../../hooks/capture';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
@@ -36,6 +37,7 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
   const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState<Unit>('piece');
   const [locationId, setLocationId] = useState<string>('');
+  const [torch, setTorch] = useState(false);
 
   const lookup = useBarcodeLookup();
   const locations = useLocations();
@@ -64,6 +66,10 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
   };
 
   const guideSize = Math.min(width * 0.72, 280);
+
+  const trailing = cameraPermission?.granted ? (
+    <CaptureTorchButton enabled={torch} onToggle={() => setTorch((value) => !value)} />
+  ) : null;
 
   const bottom = (
     <View style={{ padding: spacing.lg, gap: spacing.sm }}>
@@ -139,6 +145,7 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
       method={method}
       onMethodChange={onMethodChange}
       onClose={onClose}
+      trailing={trailing}
       bottom={bottom}
       onTopLayout={setTopHeight}
       onBottomLayout={setBottomHeight}
@@ -151,6 +158,7 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
         >
           <CameraView
             style={{ flex: 1 }}
+            enableTorch={torch}
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_e', 'code128', 'qr'] }}
             onBarcodeScanned={onScan}
           />
