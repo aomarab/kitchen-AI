@@ -173,7 +173,14 @@ export class StorageService {
       return getSignedUrl(this.client, command, { expiresIn: EXPIRES_IN_SECONDS });
     }
 
-    const object = await this.client.send(command);
+    const object = await this.client.send(command).catch((error: unknown) => {
+      // A key that was never uploaded is the caller's mistake, not a server
+      // fault — surface it as a 404 instead of letting NoSuchKey become a 500.
+      if ((error as { name?: string }).name === 'NoSuchKey') {
+        throw AppError.notFound('errors.NOT_FOUND');
+      }
+      throw error;
+    });
     if (!object.Body) throw AppError.notFound('errors.NOT_FOUND');
     const bytes = await object.Body.transformToByteArray();
     const contentType = object.ContentType ?? 'image/jpeg';
@@ -193,10 +200,8 @@ export class StorageService {
   }
 
   private signGet(key: string): Promise<string> {
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
-      { expiresIn: EXPIRES_IN_SECONDS },
-    );
+    return getSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
+      expiresIn: EXPIRES_IN_SECONDS,
+    });
   }
 }

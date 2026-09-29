@@ -306,33 +306,40 @@ export class PlanService {
     scenario?: string,
   ): Promise<MealPlanEntry> {
     await this.loadPlan(householdId, planId);
-    await this.credits.assertCanAfford(householdId, 'plan.regenerateEntry');
     const existing = await this.loadEntryRow(planId, entryId);
 
     // Minted here so the generation below is recorded against the spend that
-    // follows it, rather than as anonymous usage.
+    // pays for it, rather than as anonymous usage.
     const spendGroupId = randomUUID();
-    const { recipeId, fullyCovered } = await runInBillingContext(
-      { spendGroupId, action: 'plan.regenerateEntry' },
-      () =>
-        this.planner.regenerateEntry({
-          householdId,
-          userId,
-          date: existing.date,
-          slot: existing.slot,
-          excludeRecipeIds: [existing.recipeId, ...body.excludeRecipeIds],
-          ...(body.note ? { note: body.note } : {}),
-          ...(scenario ? { scenario } : {}),
-        }),
-    );
+    const chargedSpendGroupId = await this.credits.spend(householdId, 'plan.regenerateEntry', {
+      spendGroupId,
+    });
 
-    await this.db
-      .update(mealPlanEntries)
-      .set({ recipeId, fullyCovered })
-      .where(and(eq(mealPlanEntries.id, entryId), eq(mealPlanEntries.planId, planId)));
+    try {
+      const { recipeId, fullyCovered } = await runInBillingContext(
+        { spendGroupId: chargedSpendGroupId, action: 'plan.regenerateEntry' },
+        () =>
+          this.planner.regenerateEntry({
+            householdId,
+            userId,
+            date: existing.date,
+            slot: existing.slot,
+            excludeRecipeIds: [existing.recipeId, ...body.excludeRecipeIds],
+            ...(body.note ? { note: body.note } : {}),
+            ...(scenario ? { scenario } : {}),
+          }),
+      );
 
-    await this.credits.spend(householdId, 'plan.regenerateEntry', { spendGroupId });
-    return this.loadEntry(planId, entryId);
+      await this.db
+        .update(mealPlanEntries)
+        .set({ recipeId, fullyCovered })
+        .where(and(eq(mealPlanEntries.id, entryId), eq(mealPlanEntries.planId, planId)));
+
+      return await this.loadEntry(planId, entryId);
+    } catch (error) {
+      await this.credits.refundSpendGroup(householdId, chargedSpendGroupId);
+      throw error;
+    }
   }
 
   private async loadPlan(householdId: string, id: string) {
@@ -364,17 +371,21 @@ export class PlanService {
     return this.toEntry({ ...row, recipe: row.recipe as RecipeRow }, locale);
   }
 
-  private toMealPlan(row: {
-    id: string;
-    householdId: string;
-    scope: MealPlan['scope'];
-    startsOn: string;
-    endsOn: string;
-    status: MealPlan['status'];
-    locale: string;
-    createdAt: Date;
-    entries: EntryWithRecipe[];
-  }, media: Map<string, ResolvedMedia>, requested?: Locale): MealPlan {
+  private toMealPlan(
+    row: {
+      id: string;
+      householdId: string;
+      scope: MealPlan['scope'];
+      startsOn: string;
+      endsOn: string;
+      status: MealPlan['status'];
+      locale: string;
+      createdAt: Date;
+      entries: EntryWithRecipe[];
+    },
+    media: Map<string, ResolvedMedia>,
+    requested?: Locale,
+  ): MealPlan {
     const locale = this.readingLocale(row, requested);
     const entries = [...row.entries]
       .sort((a, b) => a.date.localeCompare(b.date) || a.position - b.position)

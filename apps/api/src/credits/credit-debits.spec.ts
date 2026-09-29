@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
-import { CREDIT_COSTS } from '@kitchen/contracts';
+import { CREDIT_COSTS, type CreditAction } from '@kitchen/contracts';
 import type { VisionResult } from '@kitchen/contracts';
 import { creditActionForScope } from './credit-actions.js';
 import { MediaService } from '../ai/recipes/media.service.js';
@@ -80,6 +80,20 @@ async function reversalTotal(householdId: string): Promise<number> {
     .reduce((sum, r) => sum + r.delta, 0);
 }
 
+async function expectActionLedgerRows(
+  householdId: string,
+  action: CreditAction,
+  expected: { spendRows: number; reversalRows: number },
+): Promise<void> {
+  const rows = await ctx.db
+    .select()
+    .from(creditLedger)
+    .where(eq(creditLedger.householdId, householdId));
+  const actionRows = rows.filter((r) => r.action === action);
+  expect(actionRows.filter((r) => r.kind === 'spend')).toHaveLength(expected.spendRows);
+  expect(actionRows.filter((r) => r.kind === 'reversal')).toHaveLength(expected.reversalRows);
+}
+
 /**
  * Zero out a household's balance by directly setting both buckets to 0.
  * This avoids spending loops that would pollute the ledger and slow the test.
@@ -145,27 +159,37 @@ describe('RecognitionService debit site (pantry.scan)', () => {
 
     const after = await credits.balance(householdId);
     expect(after.freeBalance).toBe(before.freeBalance - CREDIT_COSTS['pantry.scan']);
+    await expectActionLedgerRows(householdId, 'pantry.scan', {
+      spendRows: 1,
+      reversalRows: 0,
+    });
   });
 
-  it('refuses with INSUFFICIENT_CREDITS and leaves the balance unchanged when broke', async () => {
+  it('refuses with INSUFFICIENT_CREDITS, leaves the balance unchanged, and makes no AI call when broke', async () => {
     const { userId, householdId, credits } = await seedCtx();
     await drainCredits(householdId, credits);
     const before = await credits.balance(householdId);
-    const svc = makeRecognitionService(credits);
+    const execute = vi.fn(async () => ({ ingredients: [] }) satisfies VisionResult);
+    const svc = makeRecognitionService(credits, { execute: execute as AiGateway['execute'] });
     await expect(
       svc.recognize({ householdId, userId, request: { photoKeys: ['photo-key-2'] } }),
     ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS' });
     const after = await credits.balance(householdId);
     expect(after.freeBalance).toBe(before.freeBalance);
+    expect(execute).not.toHaveBeenCalled();
+    await expectActionLedgerRows(householdId, 'pantry.scan', {
+      spendRows: 0,
+      reversalRows: 0,
+    });
   });
 
-  it('does NOT debit when the provider call fails', async () => {
+  it('refunds the spend when the provider call fails', async () => {
     const { userId, householdId, credits } = await seedCtx();
-    // Gateway that throws after assertCanAfford has already passed.
+    const execute = vi.fn(async () => {
+      throw new Error('provider down');
+    });
     const svc = makeRecognitionService(credits, {
-      execute: vi.fn(async () => {
-        throw new Error('provider down');
-      }),
+      execute: execute as AiGateway['execute'],
     });
     const before = await credits.balance(householdId);
     await expect(
@@ -173,6 +197,11 @@ describe('RecognitionService debit site (pantry.scan)', () => {
     ).rejects.toThrow('provider down');
     const after = await credits.balance(householdId);
     expect(after.freeBalance).toBe(before.freeBalance);
+    expect(execute).toHaveBeenCalledTimes(1);
+    await expectActionLedgerRows(householdId, 'pantry.scan', {
+      spendRows: 1,
+      reversalRows: 1,
+    });
   });
 });
 
@@ -247,31 +276,46 @@ describe('PlanService.regenerateEntry debit site (plan.regenerateEntry)', () => 
     await svc.regenerateEntry(householdId, userId, planId, entryId, { excludeRecipeIds: [] });
     const after = await credits.balance(householdId);
     expect(after.freeBalance).toBe(before.freeBalance - CREDIT_COSTS['plan.regenerateEntry']);
+    await expectActionLedgerRows(householdId, 'plan.regenerateEntry', {
+      spendRows: 1,
+      reversalRows: 0,
+    });
   });
 
-  it('refuses with INSUFFICIENT_CREDITS and leaves balance unchanged when broke', async () => {
+  it('refuses with INSUFFICIENT_CREDITS, leaves balance unchanged, and makes no AI call when broke', async () => {
     const { userId, householdId, credits } = await seedCtx();
     const { planId, entryId } = await seedPlanEntry(householdId);
 
     await drainCredits(householdId, credits);
 
     const before = await credits.balance(householdId);
-    const svc = makePlanService(credits);
+    const regenerateEntry = vi.fn(async () => ({
+      recipeId: 'unreachable-recipe-id',
+      servings: 2,
+      fullyCovered: true,
+    }));
+    const svc = makePlanService(credits, { regenerateEntry });
     await expect(
       svc.regenerateEntry(householdId, userId, planId, entryId, { excludeRecipeIds: [] }),
     ).rejects.toMatchObject({ code: 'INSUFFICIENT_CREDITS' });
     const after = await credits.balance(householdId);
     expect(after.freeBalance).toBe(before.freeBalance);
+    expect(regenerateEntry).not.toHaveBeenCalled();
+    await expectActionLedgerRows(householdId, 'plan.regenerateEntry', {
+      spendRows: 0,
+      reversalRows: 0,
+    });
   });
 
-  it('does NOT debit when the planner throws', async () => {
+  it('refunds the spend when the planner throws', async () => {
     const { userId, householdId, credits } = await seedCtx();
     const { planId, entryId } = await seedPlanEntry(householdId);
 
+    const regenerateEntry = vi.fn(async () => {
+      throw new Error('planner error');
+    });
     const svc = makePlanService(credits, {
-      regenerateEntry: vi.fn(async () => {
-        throw new Error('planner error');
-      }),
+      regenerateEntry,
     });
 
     const before = await credits.balance(householdId);
@@ -280,6 +324,11 @@ describe('PlanService.regenerateEntry debit site (plan.regenerateEntry)', () => 
     ).rejects.toThrow('planner error');
     const after = await credits.balance(householdId);
     expect(after.freeBalance).toBe(before.freeBalance);
+    expect(regenerateEntry).toHaveBeenCalledTimes(1);
+    await expectActionLedgerRows(householdId, 'plan.regenerateEntry', {
+      spendRows: 1,
+      reversalRows: 1,
+    });
   });
 });
 
