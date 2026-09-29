@@ -455,6 +455,12 @@ describe('information architecture (spec §4)', () => {
       '<Tile',
     );
     expect(item, 'Quantity stays editable inline on the page').toContain('<QuantityStepper');
+    expect(item, 'Item detail keeps the visible unit beside the numeric stepper').toContain(
+      'const quantityUnitText = unitLabel(t, item.unit);',
+    );
+    expect(item, 'Item detail keeps the visible unit beside the numeric stepper').toContain(
+      '{quantityUnitText}',
+    );
     expect(item, 'Item footer keeps the remove action visible outside the edit sheet').toContain(
       "title={t('inventory.deleteItem')}",
     );
@@ -742,7 +748,13 @@ describe('information architecture (spec §4)', () => {
     expect(kitchen).not.toMatch(/sourceLabel|sourceKey/);
     expect(kitchen, 'Kitchen header action migrated off RoundButton').not.toContain('RoundButton');
     expect(kitchen, 'Kitchen header must keep the add action').toContain('<IconButton');
-    expect(kitchen, 'Kitchen header must keep the account affordance').toContain('<AccountButton');
+    expect(
+      read('components', 'TabHeader.tsx'),
+      'TabHeader owns the account affordance for every tab',
+    ).toContain('<AccountButton');
+    expect(kitchen, 'Kitchen must not duplicate the TabHeader account affordance').not.toContain(
+      '<AccountButton',
+    );
     expect(kitchen, 'J search is the 44pt SearchField below the header').toContain('<SearchField');
 
     const placeTile = kitchen.match(/function PlaceTile[\s\S]*?function SortSheet/)?.[0] ?? '';
@@ -992,6 +1004,9 @@ describe('information architecture (spec §4)', () => {
     expect(recipe).toContain("segment === 'steps'");
     expect(recipe).toContain("segment === 'videos'");
     expect(videoCard).toContain('<YoutubePlayer');
+    expect(videoCard).toContain('formatRecipeVideoDuration');
+    expect(videoCard).toContain('thumbnailOverlay={');
+    expect(videoCard).toContain('backgroundColor: colors.surfaceInverse');
     expect(recipe).toContain('<RecipeMetaRow');
     expect(recipe).toContain('<RecipeIngredientRow');
     expect(recipe).toContain('<RecipeStepRow');

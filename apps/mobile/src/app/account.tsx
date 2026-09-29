@@ -44,7 +44,7 @@ export default function Account() {
       />
 
       <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.account.kitchenSection')}</SectionLabel>
+        <SectionLabel small>{t('mobile.account.kitchenSection')}</SectionLabel>
         <ListGroup>
           {row(t('mobile.more.profile'), 'sliders', '/profile')}
           {row(t('mobile.more.household'), 'users', '/settings/household')}
@@ -53,7 +53,7 @@ export default function Account() {
       </View>
 
       <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.account.toolsSection')}</SectionLabel>
+        <SectionLabel small>{t('mobile.account.toolsSection')}</SectionLabel>
         <ListGroup>
           {row(t('mobile.screen.entry'), 'tablet', '/screen')}
           {row(t('mobile.timers.entry'), 'timer', '/timers')}
@@ -62,7 +62,7 @@ export default function Account() {
       </View>
 
       <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.account.appSection')}</SectionLabel>
+        <SectionLabel small>{t('mobile.account.appSection')}</SectionLabel>
         <ListGroup>
           {row(t('mobile.more.notifications'), 'bell', '/settings/notifications')}
           {row(t('mobile.more.settings'), 'settings', '/settings')}

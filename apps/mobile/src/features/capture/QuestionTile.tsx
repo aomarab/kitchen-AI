@@ -38,14 +38,12 @@ export function QuestionTile({ name, onYes, onNo }: QuestionTileProps) {
         <Button
           title={t('mobile.review.no')}
           variant="secondary"
-          fullWidth={false}
           style={{ flex: 1, flexBasis: 0 }}
           onPress={onNo}
         />
         <Button
           title={t('mobile.review.yes')}
           variant="inverse"
-          fullWidth={false}
           style={{ flex: 1, flexBasis: 0 }}
           onPress={onYes}
         />

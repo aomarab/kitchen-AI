@@ -51,7 +51,7 @@ export default function Settings() {
       <Header title={t('mobile.settings.title')} onBack={() => router.back()} />
 
       <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.settings.appearance')}</SectionLabel>
+        <SectionLabel small>{t('mobile.settings.appearance')}</SectionLabel>
         <AppText variant="bodyStrong">{t('mobile.settings.mode')}</AppText>
         <ThemePicker />
         <AppText variant="caption" muted>
@@ -83,7 +83,7 @@ export default function Settings() {
       </ListGroup>
 
       <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.settings.kitchenSection')}</SectionLabel>
+        <SectionLabel small>{t('mobile.settings.kitchenSection')}</SectionLabel>
         <ListGroup>
           <ListRow
             icon="bell"
@@ -117,7 +117,7 @@ export default function Settings() {
       </View>
 
       <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.settings.about')}</SectionLabel>
+        <SectionLabel small>{t('mobile.settings.about')}</SectionLabel>
         <ListGroup>
           <ListRow
             icon="chat"

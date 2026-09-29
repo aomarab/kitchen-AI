@@ -203,7 +203,6 @@ export function ReviewEditSheet({
           variant="ghost"
           tone="danger"
           fullWidth={false}
-          style={{ flex: 1 }}
           onPress={() => onRemove(draft)}
         />
         <Button

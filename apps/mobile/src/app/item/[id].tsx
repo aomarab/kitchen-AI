@@ -236,6 +236,7 @@ export default function ItemDetail() {
   const expiryText = draftExpiryLabel ?? t('mobile.home.freshNone');
   const quantityText = formatMeasure(t, locale, item.quantity, item.unit, prefs);
   const quantityValueText = formatQty(locale, item.quantity, prefs);
+  const quantityUnitText = unitLabel(t, item.unit);
   const quantityAccessibility = `${t('inventory.quantity')} ${quantityText}`;
   const locationAccessibility = `${t('inventory.location')} ${locationText}`;
   const expiryAccessibility = `${t('inventory.expiryDate')} ${expiryText}`;
@@ -284,15 +285,20 @@ export default function ItemDetail() {
         <ListRow
           title={t('inventory.quantity')}
           trailing={
-            <QuantityStepper
-              value={item.quantity}
-              onChange={onAdjust}
-              label={quantityValueText}
-              unit={unitLabel(t, item.unit)}
-              accessibilityLabel={quantityAccessibility}
-              decrementLabel={t('mobile.common.decrease')}
-              incrementLabel={t('mobile.common.increase')}
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <QuantityStepper
+                value={item.quantity}
+                onChange={onAdjust}
+                label={quantityValueText}
+                unit={quantityUnitText}
+                accessibilityLabel={quantityAccessibility}
+                decrementLabel={t('mobile.common.decrease')}
+                incrementLabel={t('mobile.common.increase')}
+              />
+              <AppText variant="caption" muted>
+                {quantityUnitText}
+              </AppText>
+            </View>
           }
         />
         <ListRow

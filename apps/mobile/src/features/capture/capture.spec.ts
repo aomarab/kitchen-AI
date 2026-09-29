@@ -125,6 +125,12 @@ describe('capture screen source contract (G3b)', () => {
     expect(barcode).toContain('trailing={trailing}');
     expect(barcode).toContain('enableTorch={torch}');
     expect(barcode).toContain('onBarcodeScanned={onScan}');
+    expect(barcode).toContain(
+      'const manualEntryVisible = manualEntryOpen || cameraPermission?.granted === false;',
+    );
+    expect(barcode).toContain('manualEntryVisible || result');
+    expect(barcode).toContain('const displayUnit = unitLabel(t, unit);');
+    expect(barcode).toContain('{displayUnit}');
     expect(torch).toContain("icon={enabled ? 'flashOff' : 'zap'}");
     expect(torch).toContain("t('mobile.capture.flashOff')");
     expect(torch).toContain("t('mobile.capture.flashOn')");
@@ -213,8 +219,21 @@ describe('review screen source contract (G4)', () => {
     expect(source).toContain('name="leaf"');
     expect(source).toContain('variant="secondary"');
     expect(source).toContain('variant="inverse"');
+    expect(source).toContain('style={{ flex: 1, flexBasis: 0 }}');
+    expect(source).not.toContain('fullWidth={false}');
     expect(source).not.toContain('OrbMascot');
     expect(source).not.toContain('scale: pressed');
+  });
+
+  it('keeps review edit actions weighted as compact Remove and filling Save', () => {
+    const source = read('features', 'capture', 'ReviewEditSheet.tsx');
+    const removeBlock = source.match(
+      /<Button\s+title=\{t\('mobile\.review\.remove'\)\}[\s\S]*?\/>/,
+    )?.[0];
+
+    expect(removeBlock).toContain('fullWidth={false}');
+    expect(removeBlock).not.toContain('style={{ flex: 1 }}');
+    expect(source).toMatch(/title=\{t\('common\.save'\)\}[\s\S]*?style=\{\{ flex: 1 \}\}/);
   });
 
   it('renders a trailing Retake action in the review header', () => {

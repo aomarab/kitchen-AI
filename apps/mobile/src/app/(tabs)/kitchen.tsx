@@ -3,7 +3,6 @@ import { FlatList, ScrollView, View, type LayoutChangeEvent } from 'react-native
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { InventoryItem } from '@kitchen/contracts';
 import {
-  AccountButton,
   AppText,
   Bento,
   Button,
@@ -52,15 +51,12 @@ type RankedPlace = ReturnType<typeof rankPlaces>[number];
 function HeaderActions({ onAddPress }: { onAddPress: () => void }) {
   const { t } = useFormat();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-      <IconButton
-        icon="plus"
-        tone="plain"
-        accessibilityLabel={t('inventory.addItem')}
-        onPress={onAddPress}
-      />
-      <AccountButton />
-    </View>
+    <IconButton
+      icon="plus"
+      tone="plain"
+      accessibilityLabel={t('inventory.addItem')}
+      onPress={onAddPress}
+    />
   );
 }
 

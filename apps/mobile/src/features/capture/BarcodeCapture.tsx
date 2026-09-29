@@ -104,13 +104,15 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
   };
 
   const guideSize = Math.min(width * 0.72, 280);
+  const manualEntryVisible = manualEntryOpen || cameraPermission?.granted === false;
+  const displayUnit = unitLabel(t, unit);
 
   const trailing = cameraPermission?.granted ? (
     <CaptureTorchButton enabled={torch} onToggle={() => setTorch((value) => !value)} />
   ) : null;
 
   const bottom =
-    manualEntryOpen || result ? (
+    manualEntryVisible || result ? (
       <View style={{ padding: spacing.lg, gap: spacing.sm }}>
         <Card style={{ gap: spacing.sm }}>
           <Field
@@ -146,14 +148,19 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
               ) : null}
               {result.match ? <Badge tone="primary" label={t('recipe.inStock')} /> : null}
             </View>
-            <QuantityStepper
-              value={quantity}
-              onChange={setQuantity}
-              unit={unitLabel(t, unit)}
-              accessibilityLabel={t('inventory.quantity')}
-              decrementLabel={t('mobile.common.decrease')}
-              incrementLabel={t('mobile.common.increase')}
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <QuantityStepper
+                value={quantity}
+                onChange={setQuantity}
+                unit={displayUnit}
+                accessibilityLabel={t('inventory.quantity')}
+                decrementLabel={t('mobile.common.decrease')}
+                incrementLabel={t('mobile.common.increase')}
+              />
+              <AppText variant="caption" muted>
+                {displayUnit}
+              </AppText>
+            </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
               {(locations.data ?? []).map((loc) => (
                 <Chip

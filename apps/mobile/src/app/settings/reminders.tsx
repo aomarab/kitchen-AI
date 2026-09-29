@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import {
   type BreakCadenceMinutes,
   type ReminderType,
+  SCHEDULED_REMINDER_TYPES,
   type StretchCadenceMinutes,
 } from '@kitchen/contracts';
 import {
@@ -24,7 +25,10 @@ import { clampHydrationGoal, clampQuietHour } from '../../lib/reminders';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
-const REMINDER_ROW_ORDER: ReminderType[] = ['break', 'stretch', 'morning', 'hydration'];
+const REMINDER_FRAME_RANK: readonly ReminderType[] = ['break', 'stretch', 'morning', 'hydration'];
+const REMINDER_ROW_ORDER = [...SCHEDULED_REMINDER_TYPES].sort(
+  (a, b) => REMINDER_FRAME_RANK.indexOf(a) - REMINDER_FRAME_RANK.indexOf(b),
+) satisfies ReminderType[];
 
 function SettingStepperRow({
   title,
@@ -52,7 +56,7 @@ function SettingStepperRow({
   return (
     <View
       style={{
-        minHeight: 54,
+        minHeight: 48,
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.md,
@@ -93,7 +97,7 @@ function QuietHourRow({
   incrementLabel: string;
 }) {
   return (
-    <View style={{ flex: 1, gap: spacing.xs }}>
+    <View style={{ flex: 1, gap: 2 }}>
       <AppText variant="caption">{title}</AppText>
       <QuantityStepper
         value={value}
@@ -162,15 +166,15 @@ export default function Reminders() {
   };
 
   return (
-    <Screen scroll contentStyle={{ gap: spacing.lg }}>
+    <Screen scroll contentStyle={{ gap: spacing.md, paddingVertical: spacing.md }}>
       <Header title={t('mobile.reminders.title')} onBack={() => router.back()} />
 
       <AppText variant="body" muted>
         {t('mobile.reminders.subtitle')}
       </AppText>
 
-      <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.reminders.nudgesTitle')}</SectionLabel>
+      <View style={{ gap: spacing.xs }}>
+        <SectionLabel small>{t('mobile.reminders.nudgesTitle')}</SectionLabel>
         <ListGroup>
           {REMINDER_ROW_ORDER.map((type) => {
             const row = toggleCopy[type];
@@ -187,8 +191,8 @@ export default function Reminders() {
         </ListGroup>
       </View>
 
-      <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.reminders.howOftenTitle')}</SectionLabel>
+      <View style={{ gap: spacing.xs }}>
+        <SectionLabel small>{t('mobile.reminders.howOftenTitle')}</SectionLabel>
         <SettingStepperRow
           title={t('mobile.reminders.cadenceTitle')}
           caption={cadenceEvery(s.breakCadenceMinutes)}
@@ -226,8 +230,8 @@ export default function Reminders() {
         />
       </View>
 
-      <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.reminders.quietHoursTitle')}</SectionLabel>
+      <View style={{ gap: spacing.xs }}>
+        <SectionLabel small>{t('mobile.reminders.quietHoursTitle')}</SectionLabel>
         <AppText variant="caption" muted>
           {t('mobile.reminders.quietHoursHint')}
         </AppText>

@@ -8,13 +8,19 @@ export interface SectionLabelProps {
   children: ReactNode;
   actionLabel?: string;
   onAction?: () => void;
+  small?: boolean;
 }
 
-export function SectionLabel({ children, actionLabel, onAction }: SectionLabelProps) {
+export function SectionLabel({
+  children,
+  actionLabel,
+  onAction,
+  small = false,
+}: SectionLabelProps) {
   const pressFeedback = usePressFeedback();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-      <AppText variant="label" style={{ flex: 1 }}>
+      <AppText variant={small ? 'label' : 'heading'} style={{ flex: 1 }}>
         {children}
       </AppText>
       {actionLabel && onAction ? (
