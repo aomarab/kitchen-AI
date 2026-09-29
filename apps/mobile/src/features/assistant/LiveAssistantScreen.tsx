@@ -516,7 +516,7 @@ export function LiveAssistantScreen({
                 ref={scrollRef}
                 style={{ flex: 1 }}
                 contentContainerStyle={{
-                  paddingHorizontal: spacing.lg,
+                  paddingHorizontal: spacing.gutter,
                   paddingTop: spacing.md,
                   paddingBottom: spacing.lg,
                   gap: spacing.sm,

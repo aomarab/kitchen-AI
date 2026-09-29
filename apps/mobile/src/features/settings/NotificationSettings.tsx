@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, Linking, StyleSheet, View } from 'react-native';
+import { AppState, Linking, View } from 'react-native';
 import { useLocale } from '../../lib/locale';
 import { useSettingsStore } from '../../stores/settings';
 import { useNotificationStatus } from '../../stores/notification-status';
@@ -70,7 +70,7 @@ function StatusMessage({
         gap: spacing.sm,
         padding: spacing.md,
         backgroundColor: colors.surfaceAlt,
-        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomWidth: 1,
         borderBottomColor: colors.rowline,
       }}
     >

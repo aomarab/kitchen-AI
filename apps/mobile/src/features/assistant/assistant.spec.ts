@@ -121,9 +121,13 @@ describe('assistant screen guards', () => {
     expect(bubble).toContain('maxWidth: 290');
     expect(bubble).toContain('paddingVertical: 10');
     expect(bubble).toContain('paddingHorizontal: 14');
+    expect(bubble).toContain("alignSelf: 'stretch'");
     expect(bubble).toContain('backgroundColor: mine ? colors.inverse : colors.surfaceAlt');
+    expect(waveform).toContain('WAVEFORM_BAR_COUNT = 24');
     expect(waveform).toContain('WAVEFORM_BAR_WIDTH = 3');
     expect(waveform).toContain('WAVEFORM_BAR_GAP = 3');
+    expect(waveform).toContain('WAVEFORM_WIDTH = 141');
+    expect(waveform).toContain('WAVEFORM_HEIGHT = 40');
     expect(waveform).toContain('highlightTail');
   });
 

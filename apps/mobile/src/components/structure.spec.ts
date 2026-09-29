@@ -145,7 +145,7 @@ describe('Coral structure source guards', () => {
     expect(section).toContain("variant={small ? 'label' : 'heading'}");
     expect(section).not.toContain('uppercase');
     const row = read('ListRow.tsx');
-    expect(row).toContain('borderBottomWidth: StyleSheet.hairlineWidth');
+    expect(row).toContain('borderBottomWidth: 1');
     expect(row).toContain('borderBottomColor: colors.rowline');
     expect(row).toContain('size={22}');
     expect(read('ListGroup.tsx')).not.toContain('<Card');

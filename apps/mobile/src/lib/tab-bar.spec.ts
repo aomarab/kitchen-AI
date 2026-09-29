@@ -61,6 +61,15 @@ describe('J tab bar source', () => {
     expect(source).toContain('variant="tab"');
   });
 
+  it('passes 24pt glyphs from the tab layout while leaving the scan key unchanged', () => {
+    const layout = read('app/(tabs)/_layout.tsx');
+    expect(layout).toContain('<Icon name="home" color={color} size={24} />');
+    expect(layout).toContain('<Icon name="fridge" color={color} size={24} />');
+    expect(layout).toContain('<Icon name="calendar" color={color} size={24} />');
+    expect(layout).toContain('<Icon name="bag" color={color} size={24} />');
+    expect(source).toContain('Icon name="scan" size={22} color={colors.onFill}');
+  });
+
   it('keeps the centre scan action as a 52×40 primary key with a 44pt target', () => {
     expect(source).toContain('SCAN_KEY_WIDTH = 52');
     expect(source).toContain('SCAN_KEY_HEIGHT = 40');

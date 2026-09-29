@@ -19,7 +19,7 @@ function BubbleShell({ mine, children, accessibilityLabel, liveRegion }: BubbleS
   return (
     <View
       style={{
-        width: '100%',
+        alignSelf: 'stretch',
         flexDirection: 'row',
         justifyContent: mine ? 'flex-end' : 'flex-start',
         gap: spacing.sm,

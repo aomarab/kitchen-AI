@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import {
   Animated,
   Pressable,
-  StyleSheet,
   View,
   type AccessibilityRole,
   type AccessibilityState,
@@ -64,7 +63,7 @@ export function ListRow({
           gap: 14,
           paddingVertical: spacing.md,
           paddingHorizontal: 0,
-          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomWidth: 1,
           borderBottomColor: colors.rowline,
           backgroundColor: colors.bg,
         },

@@ -67,9 +67,13 @@ describe.each(['light', 'dark'] as ThemeMode[])('button tones, coral %s', (mode)
           ? colors.surfaceInverse
           : tone.fill;
     expect(contrast(tone.glyph, ground), name).toBeGreaterThanOrEqual(AA_NON_TEXT);
-    if (tone.border !== 'transparent') {
+    if (tone.border !== 'transparent' && name !== 'outline') {
       expect(contrast(tone.border, colors.bg), `${name} edge`).toBeGreaterThanOrEqual(AA_NON_TEXT);
     }
+  });
+
+  it('uses the hairline border token for outline icon buttons', () => {
+    expect(iconButtonTone(colors, 'outline').border).toBe(colors.border);
   });
 
   it('uses the media overlay token for media icon buttons', () => {

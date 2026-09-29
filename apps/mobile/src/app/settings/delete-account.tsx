@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Screen,
@@ -120,7 +120,7 @@ export default function DeleteAccount() {
                 alignItems: 'center',
                 padding: spacing.lg,
                 backgroundColor: colors.surfaceAlt,
-                borderBottomWidth: StyleSheet.hairlineWidth,
+                borderBottomWidth: 1,
                 borderBottomColor: colors.rowline,
               }}
             >

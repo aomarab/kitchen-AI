@@ -43,6 +43,7 @@ import {
   isoDate,
   isoDateTime,
 } from './data';
+import { uuidv4 } from '../lib/uuid';
 
 /* ------------------------------------------------------------------ */
 /* Mutable in-memory database                                          */
@@ -246,10 +247,7 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
   leaveHousehold: okEmpty,
   getProfile: () => HttpResponse.json(db.profile),
   submitFeedback: () =>
-    HttpResponse.json(
-      { id: crypto.randomUUID(), createdAt: new Date().toISOString() },
-      { status: 201 },
-    ),
+    HttpResponse.json({ id: uuidv4(), createdAt: new Date().toISOString() }, { status: 201 }),
   updateProfile: async ({ request }) => {
     const body = await readBody(request);
     db.profile = { ...db.profile, ...(body as object) };

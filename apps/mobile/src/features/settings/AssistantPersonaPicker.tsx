@@ -1,4 +1,4 @@
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
 import {
   ASSISTANT_PERSONAS,
   assistantPersonaSchema,
@@ -132,7 +132,7 @@ export function AssistantPersonaPicker() {
           gap: spacing.sm,
           padding: spacing.lg,
           backgroundColor: colors.surfaceAlt,
-          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomWidth: 1,
           borderBottomColor: colors.rowline,
         }}
       >

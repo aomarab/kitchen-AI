@@ -1,4 +1,4 @@
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { MealPlanEntry, MealPlanEntryState, MealSlot } from '@kitchen/contracts';
 import type { MessageKey } from '@kitchen/i18n';
@@ -94,7 +94,7 @@ function RecipeRow({
             alignItems: 'center',
             gap: 14,
             paddingVertical: 10,
-            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomWidth: 1,
             borderBottomColor: colors.rowline,
           },
           pressFeedback.animatedStyle,

@@ -62,6 +62,14 @@ describe('mock coverage', () => {
     expect(unknown).toEqual([]);
   });
 
+  it('keeps mock feedback ids on the Hermes-safe UUID helper', () => {
+    const source = read('mocks/handlers.ts');
+    expect(source).toContain("import { uuidv4 } from '../lib/uuid'");
+    expect(source).toContain('submitFeedback: () =>');
+    expect(source).toContain('{ id: uuidv4(), createdAt: new Date().toISOString() }');
+    expect(source).not.toContain('crypto.randomUUID()');
+  });
+
   it('keeps every mock YouTube id syntactically playable', () => {
     const source = read('mocks/data.ts');
     const ids = [...source.matchAll(/youtubeId: '([^']+)'/g)].map((match) => match[1]!);

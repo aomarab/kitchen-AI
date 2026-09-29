@@ -113,7 +113,7 @@ export function iconButtonTone(colors: PaletteColors, tone: IconButtonTone): Ico
         borderWidth: 0,
       };
     case 'outline':
-      return { fill: colors.bg, glyph: colors.text, border: colors.control, borderWidth: 1 };
+      return { fill: colors.bg, glyph: colors.text, border: colors.border, borderWidth: 1 };
     case 'coral':
       return { fill: colors.primary, glyph: colors.onFill, border: colors.primary, borderWidth: 0 };
     case 'inverse':

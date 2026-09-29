@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { StorageLocation, StorageLocationType } from '@kitchen/contracts';
 import { storageLocationTypeSchema } from '@kitchen/contracts';
@@ -80,7 +80,7 @@ function MoveDestinationRow({
             alignItems: 'center',
             gap: 14,
             paddingVertical: spacing.md,
-            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomWidth: 1,
             borderBottomColor: colors.rowline,
           },
           pressFeedback.animatedStyle,

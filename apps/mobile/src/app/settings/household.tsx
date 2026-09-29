@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Share, StyleSheet, View } from 'react-native';
+import { Share, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Screen,
@@ -104,7 +104,7 @@ export default function Household() {
           gap: spacing.md,
           padding: spacing.xl,
           backgroundColor: colors.surfaceAlt,
-          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomWidth: 1,
           borderBottomColor: colors.rowline,
         }}
       >

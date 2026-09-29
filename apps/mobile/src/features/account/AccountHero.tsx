@@ -1,4 +1,4 @@
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
 import { AppText, Avatar, DirectionalIcon } from '../../components';
 import { usePressFeedback } from '../../components/press-feedback';
 import { accountProfileAccessibilityLabel } from '../../lib/settings-accessibility';
@@ -34,7 +34,7 @@ export function AccountHero({ name, email, profileHint, onPress }: AccountHeroPr
             alignItems: 'center',
             gap: 14,
             paddingVertical: spacing.md,
-            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomWidth: 1,
             borderBottomColor: colors.rowline,
           },
           pressFeedback.animatedStyle,
