@@ -654,7 +654,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
   };
 
   const renderBubbleActions = () => {
-    if (flow === 'looking') return null;
+    if (flow === 'looking') return renderLookingSheetActions();
     if (flow === 'nothingFound') {
       return <Button title={t('mobile.capture.retake')} fullWidth={false} onPress={retake} />;
     }
@@ -704,6 +704,35 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
     );
   };
 
+  const renderPostCaptureTrayOpener = () => {
+    if ((flow !== 'looking' && flow !== 'result') || photos.length === 0) return null;
+    return (
+      <Button
+        title={t('mobile.capture.photosCount', { count: photos.length })}
+        variant="ghost"
+        size="S"
+        leadingIcon="image"
+        fullWidth={false}
+        accessibilityLabel={t('mobile.capture.openTray', { count: photos.length })}
+        onPress={() => setTrayOpen(true)}
+      />
+    );
+  };
+
+  const renderLookingSheetActions = () => {
+    if (atLimit) return null;
+    return (
+      <Button
+        title={t('mobile.capture.fromLibrary')}
+        variant="ghost"
+        leadingIcon="image"
+        fullWidth={false}
+        accessibilityLabel={t('mobile.capture.fromLibrary')}
+        onPress={() => void pickLibrary()}
+      />
+    );
+  };
+
   const renderBubble = () => {
     if (flow === 'framing') return null;
     const bubbleError =
@@ -722,6 +751,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
           message={bubbleMessage()}
           error={bubbleError ? t(bubbleError) : null}
           actions={renderBubbleActions()}
+          accessory={renderPostCaptureTrayOpener()}
         />
       </View>
     );

@@ -7,12 +7,13 @@ import { useTheme } from '../../theme/useTheme';
 export interface MamaBubbleProps {
   message: string;
   actions?: ReactNode;
+  accessory?: ReactNode;
   error?: string | null;
   style?: StyleProp<ViewStyle>;
 }
 
 /** Bottom capture prompt. J retires the orb here, keeping only the spoken prompt and actions. */
-export function MamaBubble({ message, actions, error, style }: MamaBubbleProps) {
+export function MamaBubble({ message, actions, accessory, error, style }: MamaBubbleProps) {
   const { colors } = useTheme();
   return (
     <View
@@ -28,7 +29,12 @@ export function MamaBubble({ message, actions, error, style }: MamaBubbleProps) 
       ]}
     >
       <View style={{ backgroundColor: colors.surfaceAlt, padding: spacing.md }}>
-        <AppText variant="body">{message}</AppText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <AppText variant="body" style={{ flex: 1 }}>
+            {message}
+          </AppText>
+          {accessory}
+        </View>
         {error ? (
           <AppText variant="caption" color="danger" style={{ marginTop: spacing.xs }}>
             {error}

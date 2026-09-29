@@ -149,6 +149,19 @@ describe('capture screen source contract (G3b)', () => {
     expect(photo).toContain('showModeTabs={showModeTabs}');
   });
 
+  it('moves post-capture-only bottom control actions into the result/progress sheet', () => {
+    const source = read('features', 'capture', 'PhotoCapture.tsx');
+
+    expect(source).toContain('renderPostCaptureTrayOpener');
+    expect(source).toContain("flow !== 'looking' && flow !== 'result'");
+    expect(source).toContain("t('mobile.capture.openTray', { count: photos.length })");
+    expect(source).toContain('onPress={() => setTrayOpen(true)}');
+    expect(source).toContain('accessory={renderPostCaptureTrayOpener()}');
+    expect(source).toContain('renderLookingSheetActions');
+    expect(source).toContain("t('mobile.capture.fromLibrary')");
+    expect(source).toContain('onPress={() => void pickLibrary()}');
+  });
+
   it('focus-gates light status bar content on the dark media surface', () => {
     const source = read('features', 'capture', 'CaptureChrome.tsx');
 
