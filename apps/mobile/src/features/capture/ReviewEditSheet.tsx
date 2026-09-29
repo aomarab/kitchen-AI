@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, View, type TextInput } from 'react-native';
+import { ScrollView, View, type TextInput } from 'react-native';
 import type { Ingredient, StorageLocation, Unit } from '@kitchen/contracts';
 import {
   AppText,
@@ -19,12 +19,13 @@ import type { ReviewRow } from '../../lib/capture';
 import { applyIngredient, hasValidIngredientSelection, isNewReviewRow } from '../../lib/review';
 import { ingredientName, localizedName, locationLabel, unitLabel } from '../../lib/format';
 import { COMMON_UNITS } from '../../lib/units';
-import { radius, spacing } from '../../theme';
-import { useTheme } from '../../theme/useTheme';
+import { spacing } from '../../theme';
 
 export interface ReviewSaveMeta {
   ingredientChanged: boolean;
 }
+
+export const REVIEW_EDIT_ACTION_MIN_HEIGHT = 44;
 
 export interface ReviewEditSheetProps {
   visible: boolean;
@@ -79,7 +80,6 @@ export function ReviewEditSheet({
   onRemove,
 }: ReviewEditSheetProps) {
   const { t, locale } = useFormat();
-  const { colors } = useTheme();
   const nameRef = useRef<TextInput>(null);
   const [draft, setDraft] = useState<ReviewRow | null>(row);
   const [term, setTerm] = useState('');
@@ -214,39 +214,31 @@ export function ReviewEditSheet({
         doneLabel={t('mobile.capture.pickDate')}
       />
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('mobile.review.remove')}
-        onPress={() => onRemove(draft)}
-        style={({ pressed }) => ({
-          minHeight: 44,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: radius.pill,
-          opacity: pressed ? 0.7 : 1,
-        })}
+      <View
+        style={{ minHeight: REVIEW_EDIT_ACTION_MIN_HEIGHT, flexDirection: 'row', gap: spacing.md }}
       >
-        <AppText variant="button" style={{ color: colors.danger }}>
-          {t('mobile.review.remove')}
-        </AppText>
-      </Pressable>
-
-      <Button
-        title={t('common.save')}
-        icon="check"
-        disabled={saveDisabled}
-        onPress={() => onSave(draft, { ingredientChanged: ingredientChanged(row, draft) })}
-      />
-      <Button title={t('common.cancel')} variant="ghost" onPress={onCancel} />
+        <Button
+          title={t('mobile.review.remove')}
+          variant="ghost"
+          tone="danger"
+          fullWidth={false}
+          style={{ flex: 1 }}
+          onPress={() => onRemove(draft)}
+        />
+        <Button
+          title={t('common.save')}
+          leadingIcon="check"
+          disabled={saveDisabled}
+          fullWidth={false}
+          style={{ flex: 2 }}
+          onPress={() => onSave(draft, { ingredientChanged: ingredientChanged(row, draft) })}
+        />
+      </View>
     </View>
   );
 
   if (inline) {
-    return (
-      <Card tone="alt" style={{ gap: spacing.md }}>
-        {form}
-      </Card>
-    );
+    return <Card style={{ gap: spacing.md }}>{form}</Card>;
   }
 
   return (

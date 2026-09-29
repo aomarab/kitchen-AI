@@ -39,6 +39,13 @@ export interface PlacedPin {
   lowConfidence: boolean;
 }
 
+export interface PinBoxRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface Candidate {
   item: PinItem;
   inputIndex: number;
@@ -148,6 +155,21 @@ export function layoutPins(
   };
 }
 
+export function boxRectForFrame(box: PinItem['box'], frame: PinFrame): PinBoxRect | null {
+  if (!isUsableFrame(frame)) return null;
+  const parsed = normalizedBoxSchema.safeParse(box);
+  if (!parsed.success) return null;
+
+  const scale = coverScale(frame);
+  const { offsetX, offsetY } = coverOffset(frame, scale);
+  return {
+    x: offsetX + parsed.data.x * frame.imageWidth * scale,
+    y: offsetY + parsed.data.y * frame.imageHeight * scale,
+    width: parsed.data.w * frame.imageWidth * scale,
+    height: parsed.data.h * frame.imageHeight * scale,
+  };
+}
+
 function isUsableFrame(frame: PinFrame): boolean {
   return [frame.width, frame.height, frame.imageWidth, frame.imageHeight].every(
     (value) => Number.isFinite(value) && value > 0,
@@ -158,12 +180,22 @@ function anchorForBox(
   box: { x: number; y: number; w: number; h: number },
   frame: PinFrame,
 ): { x: number; y: number } {
-  const scale = Math.max(frame.width / frame.imageWidth, frame.height / frame.imageHeight);
-  const offsetX = (frame.width - frame.imageWidth * scale) / 2;
-  const offsetY = (frame.height - frame.imageHeight * scale) / 2;
+  const scale = coverScale(frame);
+  const { offsetX, offsetY } = coverOffset(frame, scale);
   return {
     x: offsetX + (box.x + box.w / 2) * frame.imageWidth * scale,
     y: offsetY + (box.y + box.h / 2) * frame.imageHeight * scale,
+  };
+}
+
+function coverScale(frame: PinFrame): number {
+  return Math.max(frame.width / frame.imageWidth, frame.height / frame.imageHeight);
+}
+
+function coverOffset(frame: PinFrame, scale: number): { offsetX: number; offsetY: number } {
+  return {
+    offsetX: (frame.width - frame.imageWidth * scale) / 2,
+    offsetY: (frame.height - frame.imageHeight * scale) / 2,
   };
 }
 

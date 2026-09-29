@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
+  Animated,
   Image,
   Pressable,
   ScrollView,
@@ -7,16 +8,20 @@ import {
   View,
   useWindowDimensions,
   type LayoutChangeEvent,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { CameraView } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import type { MessageKey } from '@kitchen/i18n';
 import type { RecognizedItem } from '@kitchen/contracts';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { AppText, Button, Chip, Icon, RoundButton, Sheet } from '../../components';
+import { AppText, Button, Chip, Icon, IconButton, Illustration, Sheet } from '../../components';
+import { usePressFeedback } from '../../components/press-feedback';
 import { CameraGate, useCameraAccess } from './CameraGate';
-import { CaptureChrome, type CaptureMediaMethod } from './CaptureChrome';
+import { CaptureChrome, type CaptureMediaMethod, type CaptureMethod } from './CaptureChrome';
 import { MamaBubble } from './MamaBubble';
 import { Shutter } from './Shutter';
 import { ArPins } from './ArPins';
@@ -47,14 +52,14 @@ import { resizeForUpload } from '../../lib/image';
 import { useToastStore } from '../../stores/toast';
 import { useCaptureStore, type CaptureSource } from '../../stores/capture';
 import { maxPhotosFor } from './limits';
-import { radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import { scrimGradient } from '../../theme/scrim';
 import { useTheme } from '../../theme/useTheme';
 
 interface PhotoCaptureProps {
   mode: CaptureSource;
   method: CaptureMediaMethod;
-  onMethodChange: (method: CaptureMediaMethod) => void;
+  onMethodChange: (method: CaptureMethod) => void;
   onClose: () => void;
 }
 
@@ -70,6 +75,112 @@ function sizeFrom(event: LayoutChangeEvent): ViewSize {
 
 function safeSize(size: ViewSize | null): size is ViewSize {
   return !!size && size.width > 0 && size.height > 0;
+}
+
+function GuideCorner({
+  vertical,
+  horizontal,
+  color,
+}: {
+  vertical: 'top' | 'bottom';
+  horizontal: 'start' | 'end';
+  color: string;
+}) {
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        [vertical]: 0,
+        [horizontal]: 0,
+        width: 28,
+        height: 28,
+      }}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          top: vertical === 'top' ? 0 : undefined,
+          bottom: vertical === 'bottom' ? 0 : undefined,
+          start: 0,
+          end: 0,
+          height: 3,
+          backgroundColor: color,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          start: horizontal === 'start' ? 0 : undefined,
+          end: horizontal === 'end' ? 0 : undefined,
+          width: 3,
+          backgroundColor: color,
+        }}
+      />
+    </View>
+  );
+}
+
+function CaptureGuide({ color }: { color: string }) {
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        width: '80%',
+        aspectRatio: 3 / 4,
+        maxHeight: '62%',
+        alignSelf: 'center',
+        top: '19%',
+      }}
+    >
+      <GuideCorner vertical="top" horizontal="start" color={color} />
+      <GuideCorner vertical="top" horizontal="end" color={color} />
+      <GuideCorner vertical="bottom" horizontal="start" color={color} />
+      <GuideCorner vertical="bottom" horizontal="end" color={color} />
+    </View>
+  );
+}
+
+function MediaPressable({
+  accessibilityLabel,
+  disabled,
+  onPress,
+  children,
+  style,
+}: {
+  accessibilityLabel: string;
+  disabled?: boolean;
+  onPress: () => void;
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const pressFeedback = usePressFeedback();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      {...pressFeedback.pressHandlers}
+      style={[
+        {
+          width: 44,
+          height: 44,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        style,
+      ]}
+    >
+      <Animated.View style={disabled ? { opacity: 0.5 } : pressFeedback.animatedStyle}>
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
 }
 
 /**
@@ -342,24 +453,8 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
   };
 
   const renderGuide = () => {
-    if (mode !== 'receipt' || flow !== 'framing') return null;
-    return (
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          width: '80%',
-          aspectRatio: 3 / 4,
-          maxHeight: '62%',
-          alignSelf: 'center',
-          top: '19%',
-          borderWidth: 2,
-          borderColor: colors.textInverse,
-          borderRadius: radius.lg,
-          opacity: 0.8,
-        }}
-      />
-    );
+    if (flow !== 'framing') return null;
+    return <CaptureGuide color={mode === 'receipt' ? colors.primaryInverse : colors.textInverse} />;
   };
 
   const lastLocalPhoto = photos[photos.length - 1] ?? null;
@@ -441,9 +536,8 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
             <View
               key={photo.photoKey}
               style={{
-                width: 6,
-                height: 6,
-                borderRadius: 3,
+                width: 8,
+                height: 2,
                 backgroundColor: index === pageIndex ? colors.textInverse : colors.textInverseMuted,
               }}
             />
@@ -566,7 +660,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
             />
             <Button
               title={t('mobile.capture.reviewFirst')}
-              variant="soft"
+              variant="secondary"
               fullWidth={false}
               onPress={() => router.push('/capture/review')}
             />
@@ -582,7 +676,20 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
       );
     }
     return (
-      <Button title={t('mobile.capture.lookNow')} fullWidth={false} onPress={() => void submit()} />
+      <>
+        <Button
+          title={t('mobile.capture.addAnother')}
+          variant="secondary"
+          fullWidth={false}
+          disabled={!cameraGranted || atLimit}
+          onPress={() => void takePhoto()}
+        />
+        <Button
+          title={t('mobile.capture.lookNow')}
+          fullWidth={false}
+          onPress={() => void submit()}
+        />
+      </>
     );
   };
 
@@ -601,7 +708,6 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
         }}
       >
         <MamaBubble
-          state={flow === 'looking' ? 'looking' : 'idle'}
           message={bubbleMessage()}
           error={bubbleError ? t(bubbleError) : null}
           actions={renderBubbleActions()}
@@ -623,37 +729,28 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
       >
         {photos.map((photo) => (
           <View key={photo.uri} style={{ width: 88, height: 88 }}>
-            <Image
-              source={{ uri: photo.uri }}
-              style={{ width: 88, height: 88, borderRadius: radius.md }}
-            />
-            <Pressable
-              accessibilityRole="button"
+            <Image source={{ uri: photo.uri }} style={{ width: 88, height: 88 }} />
+            <MediaPressable
               accessibilityLabel={t('mobile.capture.removePhoto')}
               onPress={() => removePhoto(photo.uri)}
               style={{
                 position: 'absolute',
                 top: -spacing.sm,
                 end: -spacing.sm,
-                width: 44,
-                height: 44,
-                alignItems: 'center',
-                justifyContent: 'center',
               }}
             >
               <View
                 style={{
                   width: 28,
                   height: 28,
-                  borderRadius: 14,
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: colors.surfaceInverse,
                 }}
               >
-                <Icon name="close" size={16} color={colors.textInverse} />
+                <Icon name="x" size={16} color={colors.textInverse} />
               </View>
-            </Pressable>
+            </MediaPressable>
           </View>
         ))}
       </ScrollView>
@@ -665,17 +762,17 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
 
   const trailing =
     flow === 'result' ? (
-      <RoundButton
-        icon="sync"
-        size={40}
+      <IconButton
+        icon="refresh"
+        size={44}
         tone="media"
         accessibilityLabel={t('mobile.capture.retake')}
         onPress={retake}
       />
     ) : cameraGranted ? (
-      <RoundButton
-        icon="flash"
-        size={40}
+      <IconButton
+        icon={torch ? 'flashOff' : 'zap'}
+        size={44}
         tone="media"
         accessibilityLabel={torch ? t('mobile.capture.flashOff') : t('mobile.capture.flashOn')}
         accessibilityState={{ checked: torch }}
@@ -686,30 +783,23 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
   const bottom = (
     <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, gap: spacing.xs }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Pressable
-          accessibilityRole="button"
+        <MediaPressable
           accessibilityLabel={t('mobile.capture.fromLibrary')}
           disabled={atLimit || flow === 'result'}
           onPress={() => void pickLibrary()}
-          style={({ pressed }) => ({
-            width: 44,
-            height: 44,
-            borderRadius: radius.md,
-            alignItems: 'center',
-            justifyContent: 'center',
+          style={{
             overflow: 'hidden',
             borderWidth: 1,
             borderColor: colors.borderInverse,
             backgroundColor: colors.surfaceInverseAlt,
-            opacity: atLimit || flow === 'result' ? 0.5 : pressed ? 0.85 : 1,
-          })}
+          }}
         >
           {lastLocalPhoto ? (
             <Image source={{ uri: lastLocalPhoto.uri }} style={{ width: 44, height: 44 }} />
           ) : (
-            <Icon name="images" size={22} color={colors.textInverse} />
+            <Icon name="image" size={22} color={colors.textInverse} />
           )}
-        </Pressable>
+        </MediaPressable>
         <Shutter
           count={photos.length}
           accessibilityLabel={t('mobile.capture.shutter')}
@@ -721,12 +811,13 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
             flow === 'looking' ||
             flow === 'nothingFound'
           }
+          busy={busy}
           onPress={() => void takePhoto()}
           onOpenTray={() => setTrayOpen(true)}
         />
-        <RoundButton
-          icon="cameraReverse"
-          size={40}
+        <IconButton
+          icon="flip"
+          size={44}
           tone="media"
           accessibilityLabel={t('mobile.capture.flip')}
           disabled={
@@ -742,6 +833,66 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
       ) : null}
     </View>
   );
+
+  if (flow === 'nothingFound') {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.bg,
+          paddingHorizontal: spacing.gutter,
+          paddingTop: 54,
+          paddingBottom: spacing.gutter,
+        }}
+      >
+        <StatusBar style="dark" />
+        <View style={{ minHeight: 44, justifyContent: 'center' }}>
+          <View style={{ position: 'absolute', start: -spacing.md, top: 0 }}>
+            <IconButton
+              icon="x"
+              tone="plain"
+              accessibilityLabel={t('common.close')}
+              onPress={onClose}
+            />
+          </View>
+          <AppText variant="bodyStrong" center>
+            {t('capture.title')}
+          </AppText>
+        </View>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.lg,
+            paddingBottom: spacing.xxl,
+          }}
+        >
+          <Illustration name="camera" size={88} />
+          <View style={{ gap: spacing.sm }}>
+            <AppText variant="title" center>
+              {t('mobile.capture.nothingSpotted')}
+            </AppText>
+            <AppText variant="body" color="textMuted" center>
+              {t('capture.nothingFound')}
+            </AppText>
+          </View>
+          <Button title={t('mobile.capture.retake')} fullWidth={false} onPress={retake} />
+          <Button
+            title={t('mobile.capture.manualTitle')}
+            variant="ghost"
+            fullWidth={false}
+            onPress={() => onMethodChange('manual')}
+          />
+          {photos.length > 0 ? (
+            <AppText variant="caption" color="textMuted" center>
+              {t('mobile.review.emptyPhotos', { count: photos.length })}
+            </AppText>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <CaptureChrome

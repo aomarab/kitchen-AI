@@ -1,26 +1,25 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { Pressable, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View } from 'react-native';
 import type {
   InventoryItemInput,
   InventorySource,
   RecognitionSession,
   StorageLocation,
 } from '@kitchen/contracts';
-import { AppText, Bento, Button, Icon } from '../../components';
-import type { TileSpan } from '../../components/Tile';
+import { AppText, Button } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { buildInventoryInputs, initialReviewRows, type ReviewRow } from '../../lib/capture';
 import {
   focusIndex,
   needsAnswer,
   newReviewRow,
+  orderedReviewRows,
   reviewHeadlineCount,
   reviewScrollTarget,
   unansweredCount,
 } from '../../lib/review';
 import { localizedName } from '../../lib/format';
-import { radius, spacing } from '../../theme';
-import { useTheme } from '../../theme/useTheme';
+import { spacing } from '../../theme';
 import { QuestionTile } from './QuestionTile';
 import { ReviewEditSheet, type ReviewSaveMeta } from './ReviewEditSheet';
 import { ReviewTile } from './ReviewTile';
@@ -38,6 +37,8 @@ export interface ReviewListProps {
   onTileLayout?: (tempId: string, index: number, y: number) => void;
 }
 
+export const REVIEW_FOOTER_ACTION_MIN_HEIGHT = 44;
+
 interface EditState {
   row: ReviewRow;
   focusName: boolean;
@@ -46,6 +47,7 @@ interface EditState {
 export interface ReviewListState {
   rows: ReviewRow[];
   includedRows: ReviewRow[];
+  orderedRows: ReviewRow[];
   answered: ReadonlySet<string>;
   count: number;
   unanswered: number;
@@ -79,11 +81,10 @@ export function useReviewListState({
     setRows(initialReviewRows(session, locations));
     setAnswered(new Set());
     setEdit(null);
-    // Reset only when the recognition session or the location identity changes;
-    // otherwise an inline [] fallback from a caller would erase edits every render.
   }, [locationIds, session.id]);
 
   const includedRows = useMemo(() => rows.filter((row) => row.include), [rows]);
+  const orderedRows = useMemo(() => orderedReviewRows(rows, answered), [answered, rows]);
   const count = useMemo(() => reviewHeadlineCount(rows), [rows]);
   const unanswered = useMemo(() => unansweredCount(rows, answered), [answered, rows]);
 
@@ -135,6 +136,7 @@ export function useReviewListState({
   return {
     rows,
     includedRows,
+    orderedRows,
     answered,
     count,
     unanswered,
@@ -150,85 +152,17 @@ export function useReviewListState({
   };
 }
 
-function ReviewAddTile({ onPress }: { onPress: () => void; span?: TileSpan }) {
-  const { t } = useFormat();
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={t('mobile.review.addSomething')}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        flexBasis: 0,
-        minWidth: 0,
-        minHeight: 140,
-        borderRadius: radius.xl,
-        borderWidth: 1,
-        borderStyle: 'dashed',
-        borderColor: colors.border,
-        backgroundColor: 'transparent',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.sm,
-        opacity: pressed ? 0.8 : 1,
-        transform: [{ scale: pressed ? 0.98 : 1 }],
-      })}
-    >
-      <Icon name="plus" size={24} color={colors.text} />
-      <AppText variant="bodyStrong">{t('mobile.review.addSomething')}</AppText>
-    </Pressable>
-  );
-}
-
-interface TileDescriptor {
-  key: string;
-  tempId?: string;
-  element: ReactElement;
-}
-
-function ReviewBento({
-  tiles,
-  onTileLayout,
-}: {
-  tiles: TileDescriptor[];
-  onTileLayout?: (tempId: string, index: number, y: number) => void;
-}) {
-  const bentoY = useRef(0);
-  return (
-    <View
-      onLayout={(event) => {
-        bentoY.current = event.nativeEvent.layout.y;
-      }}
-    >
-      <Bento
-        onRowLayout={(indices, rowY) => {
-          for (const index of indices) {
-            const tile = tiles[index];
-            if (tile?.tempId) {
-              onTileLayout?.(tile.tempId, index, reviewScrollTarget(bentoY.current, rowY));
-            }
-          }
-        }}
-      >
-        {tiles.map((tile) => tile.element)}
-      </Bento>
-    </View>
-  );
-}
-
 export function ReviewFooter({
   state,
   submitting,
 }: {
-  state: Pick<ReviewListState, 'count' | 'unanswered' | 'confirm'>;
+  state: Pick<ReviewListState, 'count' | 'unanswered' | 'confirm' | 'openAdd'>;
   submitting?: boolean;
 }) {
   const { t } = useFormat();
-  const { colors } = useTheme();
   const disabled = state.count === 0 || state.unanswered > 0;
   return (
-    <View style={{ gap: spacing.sm }}>
+    <View style={{ minHeight: REVIEW_FOOTER_ACTION_MIN_HEIGHT, gap: spacing.sm }}>
       {state.unanswered > 0 ? (
         <AppText variant="caption" color="warn" center>
           {t('mobile.review.resolveFirst', { count: state.unanswered })}
@@ -236,29 +170,78 @@ export function ReviewFooter({
       ) : null}
       <Button
         title={t('mobile.review.addCount', { count: state.count })}
-        icon="check"
+        leadingIcon="check"
         disabled={disabled}
         loading={submitting}
         onPress={state.confirm}
       />
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: spacing.xs,
-        }}
-      >
-        <Icon name="info" size={14} color={colors.textMuted} />
-        <AppText variant="caption" muted center>
-          {t('mobile.review.savedOnAdd')}
-        </AppText>
-      </View>
+      <Button
+        title={t('mobile.review.addSomething')}
+        variant="ghost"
+        fullWidth={false}
+        style={{ alignSelf: 'center' }}
+        onPress={state.openAdd}
+      />
     </View>
   );
 }
 
-/** Bento confirmation list. Nothing reaches inventory until ReviewFooter calls confirm. */
+function ReviewRows({
+  rows,
+  review,
+  locations,
+  focusedIndex,
+  onTileLayout,
+}: {
+  rows: ReviewRow[];
+  review: ReviewListState;
+  locations: StorageLocation[];
+  focusedIndex: number;
+  onTileLayout?: (tempId: string, index: number, y: number) => void;
+}) {
+  const { locale } = useFormat();
+  const listY = useRef(0);
+  return (
+    <View
+      onLayout={(event) => {
+        listY.current = event.nativeEvent.layout.y;
+      }}
+    >
+      {rows.map((row, index) => {
+        const name = localizedName(locale, row.nameEn, row.nameAr);
+        const shouldAsk = needsAnswer(row, review.answered);
+        return (
+          <View
+            key={row.tempId}
+            onLayout={(event) => {
+              const rowY = event.nativeEvent.layout.y;
+              if (focusedIndex === index) {
+                onTileLayout?.(row.tempId, index, reviewScrollTarget(listY.current, rowY));
+              }
+            }}
+          >
+            {shouldAsk ? (
+              <QuestionTile
+                name={name}
+                onYes={() => review.answerYes(row)}
+                onNo={() => review.openEdit(row, { focusName: true })}
+              />
+            ) : (
+              <ReviewTile
+                row={row}
+                location={locations.find((location) => location.id === row.locationId)}
+                onPress={() => review.openEdit(row)}
+                onQuantityChange={(quantity) => review.updateQuantity(row.tempId, quantity)}
+              />
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Confirmation list. Nothing reaches inventory until ReviewFooter calls confirm. */
 export function ReviewList({
   session,
   source,
@@ -271,65 +254,39 @@ export function ReviewList({
   focus,
   onTileLayout,
 }: ReviewListProps) {
-  const { t, locale } = useFormat();
-  const { tintIn } = useTheme();
+  const { t } = useFormat();
   const internal = useReviewListState({ session, source, locations, onConfirm });
   const review = state ?? internal;
   const presentation = editPresentation ?? (source === 'assistant' ? 'inline' : 'sheet');
-  const focusedIndex = focusIndex(review.rows, focus);
-
-  const tiles: TileDescriptor[] = review.includedRows.map((row, index) => {
-    const name = localizedName(locale, row.nameEn, row.nameAr);
-    const shouldAsk = needsAnswer(row, review.answered);
-    const element = shouldAsk ? (
-      <QuestionTile
-        key={row.tempId}
-        span={1}
-        name={name}
-        onYes={() => review.answerYes(row)}
-        onNo={() => review.openEdit(row, { focusName: true })}
-      />
-    ) : (
-      <ReviewTile
-        key={row.tempId}
-        span={1}
-        row={row}
-        tint={tintIn(index)}
-        location={locations.find((location) => location.id === row.locationId)}
-        onPress={() => review.openEdit(row)}
-        onQuantityChange={(quantity) => review.updateQuantity(row.tempId, quantity)}
-      />
-    );
-    return { key: row.tempId, tempId: row.tempId, element };
-  });
-
-  tiles.push({
-    key: 'add-something',
-    element: <ReviewAddTile key="add-something" span={1} onPress={review.openAdd} />,
-  });
+  const rows = review.orderedRows;
+  const focusedIndex = focusIndex(rows, focus);
 
   return (
     <View style={{ gap: spacing.lg }}>
-      <AppText variant="hero">
+      <AppText variant="display">
         {t('mobile.review.headline')}{' '}
-        <AppText variant="hero" color="primaryText">
+        <AppText variant="display" color="primaryText">
           {t('mobile.review.headlineAccent', { count: review.count })}
-        </AppText>
-        {'\n'}
+        </AppText>{' '}
         {t('mobile.review.headlineTail')}
       </AppText>
 
+      <AppText variant="caption" color="textMuted">
+        {t('mobile.review.hint')}
+      </AppText>
+
       {session.emptyPhotoKeys.length > 0 ? (
-        <AppText variant="caption" muted>
+        <AppText variant="caption" color="textMuted">
           {t('mobile.review.emptyPhotos', { count: session.emptyPhotoKeys.length })}
         </AppText>
       ) : null}
 
-      <ReviewBento
-        tiles={tiles}
-        onTileLayout={(tempId, index, y) => {
-          if (focusedIndex === index) onTileLayout?.(tempId, index, y);
-        }}
+      <ReviewRows
+        rows={rows}
+        review={review}
+        locations={locations}
+        focusedIndex={focusedIndex}
+        onTileLayout={onTileLayout}
       />
 
       <ReviewEditSheet

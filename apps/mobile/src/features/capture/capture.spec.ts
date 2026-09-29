@@ -22,13 +22,15 @@ function executableSource(file: string): string {
 }
 
 describe('capture screen source contract (G3b)', () => {
-  it('keeps the media segmented control to Photo, Barcode and Receipt only', () => {
-    const source = read('app', 'capture', 'index.tsx');
-    const options = source.match(/const MEDIA_METHOD_OPTIONS[\s\S]*?\] as const;/)?.[0] ?? '';
+  it('keeps the J capture mode tabs in frame order, including Manual', () => {
+    const source = read('features', 'capture', 'CaptureChrome.tsx');
+    const options = source.match(/const CAPTURE_METHOD_OPTIONS[\s\S]*?\] as const;/)?.[0] ?? '';
     const values = [...options.matchAll(/value: '([^']+)'/g)].map((match) => match[1]);
 
-    expect(values).toEqual(['photo', 'barcode', 'receipt']);
-    expect(options).not.toContain("'manual'");
+    expect(values).toEqual(['photo', 'barcode', 'receipt', 'manual']);
+    expect(source).toContain('export function CaptureModeTabs');
+    expect(source).not.toContain('<SegmentedControl');
+    expect(source).not.toContain('RoundButton');
   });
 
   it('renders method=manual as ManualAdd inside a normal themed Screen', () => {
@@ -38,8 +40,7 @@ describe('capture screen source contract (G3b)', () => {
     )?.[0];
 
     expect(manualBranch).toContain('<Screen');
-    expect(manualBranch).toContain('<Header');
-    expect(manualBranch).toContain("t('mobile.capture.manualTitle')");
+    expect(manualBranch).toContain('<CapturePageHeader');
     expect(manualBranch).toContain('<ManualAdd />');
     expect(manualBranch).not.toContain('<CaptureChrome');
   });
@@ -74,7 +75,14 @@ describe('capture screen source contract (G3b)', () => {
     const source = existsSync(path) ? readFileSync(path, 'utf8') : '';
 
     expect(source).toContain("direction: 'ltr'");
+    expect(source).toContain('DETECTION_CORNER_LENGTH = 18');
+    expect(source).toContain('DETECTION_CORNER_THICKNESS = 3');
+    expect(source).toContain('DETECTION_TAG_HEIGHT = 22');
+    expect(source).toContain('boxRectForFrame');
+    expect(source).toContain('colors.primary');
+    expect(source).toContain('colors.textInverseMuted');
     expect(source).not.toMatch(/I18nManager|isRTL/);
+    expect(source).not.toContain('PIN_ANCHOR / 2');
   });
 
   it('keeps CameraGate inside CaptureChrome so permission prompts cannot remove navigation', () => {
@@ -94,11 +102,14 @@ describe('capture screen source contract (G3b)', () => {
     expect(source.indexOf('renderHintScrim()')).toBeLessThan(source.indexOf('renderHint()'));
   });
 
-  it('lets the top trailing slot grow for the Retake text pill', () => {
+  it('uses media icon buttons and a four-tab text strip in capture chrome', () => {
     const source = read('features', 'capture', 'CaptureChrome.tsx');
 
-    expect(source).toContain('minWidth: 44');
-    expect(source).not.toContain('width: 44, alignItems');
+    expect(source).toContain('<IconButton');
+    expect(source).toContain('tone="media"');
+    expect(source).toContain('<CaptureModeTabs');
+    expect(source).toContain('colors.primaryInverse');
+    expect(source).not.toContain('<RoundButton');
   });
 
   it('focus-gates light status bar content on the dark media surface', () => {
@@ -113,13 +124,18 @@ describe('capture screen source contract (G3b)', () => {
     );
   });
 
-  it('skips the shutter press scale when Reduce Motion is enabled', () => {
+  it('draws the only J circle as a 76pt/60pt inverse shutter without press scaling', () => {
     const source = read('features', 'capture', 'Shutter.tsx');
-    const animatePress = source.match(/const animatePress[\s\S]*?Animated\.timing/)?.[0] ?? '';
 
-    expect(source).toContain('useReduceMotion()');
-    expect(animatePress).toContain('if (reduceMotion)');
-    expect(animatePress).toContain('pressScale.setValue(1)');
+    expect(source).toContain('SHUTTER_RING_SIZE = 76');
+    expect(source).toContain('SHUTTER_CORE_SIZE = 60');
+    expect(source).toContain('SHUTTER_RING_WIDTH = 3');
+    expect(source).toContain('SHUTTER_BUSY_OPACITY = 0.4');
+    expect(source).toContain('radius.shutter');
+    expect(source).toContain('colors.textInverse');
+    expect(source).toContain('usePressFeedback()');
+    expect(source).not.toContain('pressScale');
+    expect(source).not.toContain('scale: pressed');
   });
 });
 
@@ -141,11 +157,14 @@ describe('review screen source contract (G4)', () => {
     expect(review).toContain('onConfirm(buildInventoryInputs(rows, source))');
   });
 
-  it('keeps the question tile free of the coral primary colour', () => {
+  it('renders the J question row without the retired orb mascot', () => {
     const source = read('features', 'capture', 'QuestionTile.tsx');
 
-    expect(source).not.toContain('colors.primary');
-    expect(source).not.toContain('variant="primary"');
+    expect(source).toContain('name="leaf"');
+    expect(source).toContain('variant="secondary"');
+    expect(source).toContain('variant="inverse"');
+    expect(source).not.toContain('OrbMascot');
+    expect(source).not.toContain('scale: pressed');
   });
 
   it('renders a trailing Retake action in the review header', () => {
@@ -164,35 +183,42 @@ describe('review screen source contract (G4)', () => {
     expect(scrollCall).not.toContain('animated: true');
   });
 
-  it('drops the old review hint and exposes a sticky-footer split', () => {
+  it('keeps the review hint under the headline and exposes a sticky-footer split', () => {
     const source = read('features', 'capture', 'ReviewList.tsx');
 
     expect(source).toContain("footer?: 'inline' | 'none'");
     expect(source).toContain('export function ReviewFooter');
-    expect(source).not.toContain("t('mobile.review.hint')");
+    expect(source).toContain("t('mobile.review.hint')");
+    expect(source).toContain("t('mobile.review.addSomething')");
   });
 
-  it('uses the shared Bento primitive instead of forking bento layout', () => {
+  it('uses flat review rows instead of the old Bento review grid', () => {
     const source = read('features', 'capture', 'ReviewList.tsx');
 
-    expect(source).toContain('<Bento');
+    expect(source).toContain('orderedReviewRows');
+    expect(source).toContain('<ReviewTile');
     expect(source).not.toContain('bentoRows');
     expect(source).not.toContain("from '../../components/tile-layout'");
+    expect(source).not.toContain('<Bento');
+    expect(source).not.toContain('tintIn');
   });
 
-  it('adds the Bento offset back to row-local focus positions', () => {
+  it('adds the list offset back to row-local focus positions', () => {
     const source = read('features', 'capture', 'ReviewList.tsx');
 
-    expect(source).toContain('reviewScrollTarget(bentoY.current, rowY)');
+    expect(source).toContain('reviewScrollTarget(listY.current, rowY)');
   });
 
-  it('keeps the review stepper visually inside the shared tile frame', () => {
+  it('keeps the review row on the J item-row pattern with an inline stepper', () => {
     const source = read('features', 'capture', 'ReviewTile.tsx');
 
-    expect(source).toContain('<Tile');
-    expect(source).toContain("position: 'absolute'");
-    expect(source).toContain('start: spacing.md');
-    expect(source).toContain('bottom: spacing.xs');
+    expect(source).toContain('<FoodIcon');
+    expect(source).toContain('<QuantityStepper');
+    expect(source).toContain('borderBottomColor: colors.rowline');
+    expect(source).toContain('paddingVertical: 10');
+    expect(source).toContain('gap: 14');
     expect(source).not.toContain('BentoColumn');
+    expect(source).not.toContain('<Tile');
+    expect(source).not.toContain('tint=');
   });
 });

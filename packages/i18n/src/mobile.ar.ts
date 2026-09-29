@@ -155,6 +155,7 @@ export const mobileAr: MobileMessages = {
         other: 'وصلت إلى الحد: {count} صورة. أزِل واحدة لإضافة غيرها.',
       }),
       captureFailed: 'تعذّر التقاط الصورة. حاول مرة أخرى.',
+      nothingSpotted: 'لم نرَ شيئًا',
       retake: 'إعادة الالتقاط',
       usePhoto: 'استخدام الصورة',
       scanBarcodeHint: 'حاذِ الباركود داخل الإطار.',

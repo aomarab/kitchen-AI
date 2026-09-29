@@ -124,7 +124,7 @@ export default function CaptureReview() {
       <Screen>
         <Header title={t('capture.reviewTitle')} onBack={() => router.back()} />
         <EmptyState
-          icon="camera"
+          illustration="camera"
           title={t('capture.nothingFound')}
           actionLabel={t('capture.title')}
           onAction={() => router.replace('/capture')}

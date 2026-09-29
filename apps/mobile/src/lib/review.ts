@@ -23,6 +23,17 @@ export function unansweredCount(rows: readonly ReviewRow[], answered: ReadonlySe
   return rows.filter((row) => row.include && needsAnswer(row, answered)).length;
 }
 
+export function orderedReviewRows(
+  rows: readonly ReviewRow[],
+  answered: ReadonlySet<string>,
+): ReviewRow[] {
+  const included = rows.filter((row) => row.include);
+  return [
+    ...included.filter((row) => needsAnswer(row, answered)),
+    ...included.filter((row) => !needsAnswer(row, answered)),
+  ];
+}
+
 export function isNewReviewRow(row: ReviewRow): boolean {
   return !row.ingredientId && row.nameEn === '' && row.nameAr === '' && row.rawName === '';
 }

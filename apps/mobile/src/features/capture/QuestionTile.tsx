@@ -1,8 +1,8 @@
-import { Pressable, View } from 'react-native';
-import { AppText, OrbMascot } from '../../components';
+import { View } from 'react-native';
+import { AppText, Button, Icon } from '../../components';
 import type { TileSpan } from '../../components/Tile';
 import { useFormat } from '../../hooks/useFormat';
-import { radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 export interface QuestionTileProps {
@@ -12,75 +12,43 @@ export interface QuestionTileProps {
   onNo: () => void;
 }
 
-function AnswerButton({
-  label,
-  filled,
-  onPress,
-}: {
-  label: string;
-  filled?: boolean;
-  onPress: () => void;
-}) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: 44,
-        flex: 1,
-        flexBasis: 0,
-        minWidth: 0,
-        borderRadius: radius.pill,
-        borderWidth: 1,
-        borderColor: colors.bg,
-        backgroundColor: filled ? colors.bg : 'transparent',
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: pressed ? 0.85 : 1,
-        transform: [{ scale: pressed ? 0.98 : 1 }],
-      })}
-    >
-      <AppText variant="button" style={{ color: filled ? colors.text : colors.bg }}>
-        {label}
-      </AppText>
-    </Pressable>
-  );
-}
-
-/** Inverted low-confidence prompt tile, with no coral brand colour inside. */
+/** Low-confidence prompt row. */
 export function QuestionTile({ name, onYes, onNo }: QuestionTileProps) {
   const { t } = useFormat();
-  const { colors, isDark, shadow } = useTheme();
+  const { colors } = useTheme();
   return (
     <View
       style={{
-        flex: 1,
-        minWidth: 0,
-        minHeight: 140,
-        borderRadius: radius.xl,
-        borderWidth: 1,
-        borderColor: colors.text,
-        backgroundColor: colors.text,
-        padding: spacing.md,
-        gap: spacing.md,
-        ...(isDark ? null : shadow.card),
+        minHeight: 120,
+        backgroundColor: colors.surfaceAlt,
+        padding: spacing.lg,
+        gap: spacing.sm,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <OrbMascot size={24} state="idle" />
-        <AppText variant="caption" style={{ color: colors.bg }}>
-          {t('mobile.review.notSure')}
-        </AppText>
+      <View style={{ flexDirection: 'row', gap: spacing.md }}>
+        <Icon name="leaf" size={22} color={colors.primary} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <AppText variant="bodyStrong">{t('mobile.review.isThis', { name })}</AppText>
+          <AppText variant="caption" muted>
+            {t('mobile.review.notSure')}
+          </AppText>
+        </View>
       </View>
-      <AppText variant="bodyStrong" style={{ color: colors.bg }}>
-        {t('mobile.review.isThis', { name })}
-      </AppText>
-      <View style={{ flex: 1 }} />
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <AnswerButton label={t('mobile.review.yes')} filled onPress={onYes} />
-        <AnswerButton label={t('mobile.review.no')} onPress={onNo} />
+        <Button
+          title={t('mobile.review.no')}
+          variant="secondary"
+          fullWidth={false}
+          style={{ flex: 1, flexBasis: 0 }}
+          onPress={onNo}
+        />
+        <Button
+          title={t('mobile.review.yes')}
+          variant="inverse"
+          fullWidth={false}
+          style={{ flex: 1, flexBasis: 0 }}
+          onPress={onYes}
+        />
       </View>
     </View>
   );

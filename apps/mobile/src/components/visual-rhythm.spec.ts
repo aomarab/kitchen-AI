@@ -166,6 +166,39 @@ describe('shop screen rhythm', () => {
   });
 });
 
+describe('capture and review Coral rhythm', () => {
+  const chrome = read('../features/capture/CaptureChrome.tsx');
+  const photo = read('../features/capture/PhotoCapture.tsx');
+  const shutter = read('../features/capture/Shutter.tsx');
+  const pins = read('../features/capture/ArPins.tsx');
+  const review = read('../features/capture/ReviewList.tsx');
+  const row = read('../features/capture/ReviewTile.tsx');
+
+  it('keeps media capture on inverse tokens with square media buttons', () => {
+    expect(chrome).toContain('colors.surfaceInverse');
+    expect(chrome).toContain('tone="media"');
+    expect(chrome).toContain('colors.primaryInverse');
+    expect(photo).toContain('colors.surfaceInverseAlt');
+    expect(photo).not.toContain('RoundButton');
+  });
+
+  it('uses the single allowed circle only for the shutter', () => {
+    expect(shutter).toContain('SHUTTER_RING_SIZE = 76');
+    expect(shutter).toContain('SHUTTER_CORE_SIZE = 60');
+    expect(shutter).toContain('radius.shutter');
+    expect(`${chrome}\n${photo}\n${pins}\n${review}\n${row}`).not.toMatch(/borderRadius:\s*\d+/);
+  });
+
+  it('draws review as flat rows with a sticky footer, not bento tiles', () => {
+    expect(review).toContain("footer?: 'inline' | 'none'");
+    expect(review).toContain('orderedReviewRows');
+    expect(row).toContain('borderBottomColor: colors.rowline');
+    expect(row).toContain('paddingVertical: 10');
+    expect(review).not.toContain('<Bento');
+    expect(row).not.toContain('<Tile');
+  });
+});
+
 describe('G1 primitive extensions', () => {
   it('lets Tile replace the icon with a leading slot, fall back to ember and expose actions', () => {
     const source = read('./Tile.tsx');

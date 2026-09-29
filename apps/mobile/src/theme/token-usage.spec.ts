@@ -80,16 +80,22 @@ describe('mobile source sweep', () => {
       pattern: /BALANCE_ORB_SIZE\s*=\s*(\d+)/,
     },
     'ArPins.tsx': { path: 'features/capture/ArPins.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'Shutter.tsx': { path: 'features/capture/Shutter.tsx', pattern: /width:\s*(\d+)/ },
+    'Shutter.tsx': {
+      path: 'features/capture/Shutter.tsx',
+      pattern: /SHUTTER_TOUCH_TARGET_SIZE\s*=\s*(\d+)/,
+    },
     'QuestionTile.tsx': {
       path: 'features/capture/QuestionTile.tsx',
       pattern: /minHeight:\s*(\d+)/,
     },
     'ReviewEditSheet.tsx': {
       path: 'features/capture/ReviewEditSheet.tsx',
-      pattern: /minHeight:\s*(\d+)/,
+      pattern: /REVIEW_EDIT_ACTION_MIN_HEIGHT\s*=\s*(\d+)/,
     },
-    'ReviewList.tsx': { path: 'features/capture/ReviewList.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'ReviewList.tsx': {
+      path: 'features/capture/ReviewList.tsx',
+      pattern: /REVIEW_FOOTER_ACTION_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
     'DayChipStrip.tsx': {
       path: 'features/plans/DayChipStrip.tsx',
       pattern: /DAY_CELL_HEIGHT\s*=\s*(\d+)/,

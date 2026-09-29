@@ -354,6 +354,36 @@ describe('information architecture (spec §4)', () => {
     );
   });
 
+  it('keeps Capture and Review on the Coral confirmation contract (spec §9.7)', () => {
+    const capture = read('app', 'capture', 'index.tsx');
+    const chrome = read('features', 'capture', 'CaptureChrome.tsx');
+    const photo = read('features', 'capture', 'PhotoCapture.tsx');
+    const pins = read('features', 'capture', 'ArPins.tsx');
+    const review = read('features', 'capture', 'ReviewList.tsx');
+    const row = read('features', 'capture', 'ReviewTile.tsx');
+
+    expect(capture).toContain('<CapturePageHeader');
+    expect(chrome).toContain('CAPTURE_METHOD_OPTIONS');
+    expect(chrome).toContain("value: 'manual'");
+    expect(chrome).toContain('export function CaptureModeTabs');
+    expect(chrome).not.toContain('<SegmentedControl');
+    expect(photo).toContain('colors.surfaceInverseAlt');
+    expect(photo).toContain("setSession(session, 'photo', zipPhotos(photos, keys))");
+    expect(photo).toContain("setSession(session, 'receipt')");
+    expect(photo).toContain(
+      'buildInventoryInputs(initialReviewRows(session, locations.data ?? [])',
+    );
+    expect(pins).toContain('DETECTION_CORNER_LENGTH = 18');
+    expect(pins).toContain('DETECTION_TAG_HEIGHT = 22');
+    expect(review).toContain('orderedReviewRows');
+    expect(review).toContain("t('mobile.review.hint')");
+    expect(review).toContain('ReviewFooter');
+    expect(row).toContain('<QuantityStepper');
+    expect(row).toContain('borderBottomColor: colors.rowline');
+    expect(row).not.toContain('<Tile');
+    expect(review).not.toContain('<Bento');
+  });
+
   it('keeps Item detail on the append-only event-ledger contract (spec §9.7)', () => {
     const item = read('app', 'item', '[id].tsx');
     const productReview = read('features', 'inventory', 'ProductReview.tsx');
@@ -1078,8 +1108,11 @@ describe('information architecture (spec §4)', () => {
     const resultTrailing =
       capture.match(/flow === 'result' \? \([\s\S]*?\) : cameraGranted/)?.[0] ?? '';
 
-    expect(resultTrailing).toContain('<RoundButton');
+    expect(resultTrailing).toContain('<IconButton');
+    expect(resultTrailing).toContain('icon="refresh"');
+    expect(resultTrailing).toContain('tone="media"');
     expect(resultTrailing).toContain("accessibilityLabel={t('mobile.capture.retake')}");
+    expect(resultTrailing).not.toContain('<RoundButton');
     expect(resultTrailing).not.toContain('<Button');
     expect(resultTrailing).not.toContain("title={t('mobile.capture.retake')}");
   });

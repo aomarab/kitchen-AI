@@ -5,20 +5,20 @@ import { useRouter } from 'expo-router';
 import type { RouteResponse, Unit } from '@kitchen/contracts';
 import { AppText, Badge, Button, Card, Chip, Field, QuantityStepper } from '../../components';
 import { CameraGate, useCameraAccess } from './CameraGate';
-import { CaptureChrome, type CaptureMediaMethod } from './CaptureChrome';
+import { CaptureChrome, type CaptureMediaMethod, type CaptureMethod } from './CaptureChrome';
 import { useFormat } from '../../hooks/useFormat';
 import { useBarcodeLookup } from '../../hooks/capture';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
 import { locationLabel, unitLabel } from '../../lib/format';
 import { buildBarcodeInput } from '../../lib/capture';
-import { radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 type Lookup = RouteResponse<'lookupBarcode'>;
 
 interface BarcodeCaptureProps {
   method: CaptureMediaMethod;
-  onMethodChange: (method: CaptureMediaMethod) => void;
+  onMethodChange: (method: CaptureMethod) => void;
   onClose: () => void;
 }
 
@@ -102,7 +102,7 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
                 {result.brand}
               </AppText>
             ) : null}
-            {result.match ? <Badge tone="info" label={t('recipe.inStock')} /> : null}
+            {result.match ? <Badge tone="primary" label={t('recipe.inStock')} /> : null}
           </View>
           <QuantityStepper
             value={quantity}
@@ -124,7 +124,7 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
           </View>
           <Button
             title={t('inventory.addItem')}
-            icon="check"
+            leadingIcon="check"
             loading={create.isPending}
             disabled={!locationId}
             onPress={() => void confirm()}
@@ -162,12 +162,60 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
               top: '26%',
               width: guideSize,
               height: guideSize,
-              borderWidth: 2,
-              borderColor: colors.textInverse,
-              borderRadius: radius.lg,
-              opacity: 0.8,
             }}
-          />
+          >
+            {(['top-start', 'top-end', 'bottom-start', 'bottom-end'] as const).map((corner) => {
+              const [vertical, horizontal] = corner.split('-') as [
+                'top' | 'bottom',
+                'start' | 'end',
+              ];
+              return (
+                <View
+                  key={corner}
+                  style={{
+                    position: 'absolute',
+                    [vertical]: 0,
+                    [horizontal]: 0,
+                    width: 28,
+                    height: 28,
+                  }}
+                >
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: vertical === 'top' ? 0 : undefined,
+                      bottom: vertical === 'bottom' ? 0 : undefined,
+                      start: 0,
+                      end: 0,
+                      height: 3,
+                      backgroundColor: colors.textInverse,
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      start: horizontal === 'start' ? 0 : undefined,
+                      end: horizontal === 'end' ? 0 : undefined,
+                      width: 3,
+                      backgroundColor: colors.textInverse,
+                    }}
+                  />
+                </View>
+              );
+            })}
+            <View
+              style={{
+                position: 'absolute',
+                start: 44,
+                end: 44,
+                top: guideSize / 2,
+                height: 2,
+                backgroundColor: colors.primaryInverse,
+              }}
+            />
+          </View>
         </CameraGate>
       </View>
     </CaptureChrome>

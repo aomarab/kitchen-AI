@@ -128,6 +128,7 @@ export const mobileEn = {
         other: "That's all {count} photos this step takes. Remove one to add another.",
       }),
       captureFailed: "That photo couldn't be taken. Try again.",
+      nothingSpotted: 'Nothing spotted',
       retake: 'Retake',
       usePhoto: 'Use photo',
       scanBarcodeHint: 'Line the barcode up inside the frame.',

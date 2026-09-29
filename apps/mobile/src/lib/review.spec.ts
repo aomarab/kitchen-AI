@@ -7,6 +7,7 @@ import {
   hasValidIngredientSelection,
   needsAnswer,
   newReviewRow,
+  orderedReviewRows,
   reviewHeadlineCount,
   reviewScrollTarget,
   unansweredCount,
@@ -164,6 +165,21 @@ describe('expiryPhrase', () => {
 });
 
 describe('review counts and focus', () => {
+  it('orders unresolved low-confidence rows before confirmed review rows', () => {
+    const rows = [
+      row({ tempId: 'fresh', confidence: 0.95 }),
+      row({ tempId: 'answered-low', confidence: LOW_CONFIDENCE - 0.01 }),
+      row({ tempId: 'unanswered-low', confidence: LOW_CONFIDENCE - 0.01 }),
+      row({ tempId: 'excluded-low', confidence: LOW_CONFIDENCE - 0.01, include: false }),
+    ];
+
+    expect(orderedReviewRows(rows, new Set(['answered-low'])).map((item) => item.tempId)).toEqual([
+      'unanswered-low',
+      'fresh',
+      'answered-low',
+    ]);
+  });
+
   it('counts included rows for the headline', () => {
     expect(reviewHeadlineCount([row(), row({ include: false }), row({ tempId: 'three' })])).toBe(2);
   });

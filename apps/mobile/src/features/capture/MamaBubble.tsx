@@ -1,48 +1,41 @@
 import type { ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import { AppText, OrbMascot } from '../../components';
-import type { OrbState } from '../../components/OrbMascot';
-import { radius, spacing } from '../../theme';
+import { AppText } from '../../components';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 export interface MamaBubbleProps {
-  state?: OrbState;
   message: string;
   actions?: ReactNode;
   error?: string | null;
   style?: StyleProp<ViewStyle>;
 }
 
-/** Floating Mama prompt used by capture shot, looking, result and empty states. */
-export function MamaBubble({ state = 'idle', message, actions, error, style }: MamaBubbleProps) {
-  const { colors, shadow } = useTheme();
+/** Bottom capture prompt. J retires the orb here, keeping only the spoken prompt and actions. */
+export function MamaBubble({ message, actions, error, style }: MamaBubbleProps) {
+  const { colors } = useTheme();
   return (
     <View
       style={[
         {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-          padding: spacing.md,
-          borderRadius: radius.lg,
+          gap: spacing.lg,
+          paddingHorizontal: spacing.gutter,
+          paddingTop: spacing.lg,
+          paddingBottom: spacing.gutter,
           backgroundColor: colors.surface,
-          ...shadow.raised,
         },
         style,
       ]}
     >
-      <OrbMascot size={44} state={state} />
-      <View style={{ flex: 1, gap: spacing.sm }}>
-        <AppText variant="bodyStrong">{message}</AppText>
+      <View style={{ backgroundColor: colors.surfaceAlt, padding: spacing.md }}>
+        <AppText variant="body">{message}</AppText>
         {error ? (
-          <AppText variant="caption" style={{ color: colors.danger }}>
+          <AppText variant="caption" color="danger" style={{ marginTop: spacing.xs }}>
             {error}
           </AppText>
         ) : null}
-        {actions ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>{actions}</View>
-        ) : null}
       </View>
+      {actions ? <View style={{ flexDirection: 'row', gap: spacing.md }}>{actions}</View> : null}
     </View>
   );
 }

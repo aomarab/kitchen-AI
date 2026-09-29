@@ -5,12 +5,12 @@ import type { Ingredient, Unit } from '@kitchen/contracts';
 import {
   AppText,
   Button,
-  Card,
   Chip,
   DateField,
-  Field,
   ListRow,
   QuantityStepper,
+  SearchField,
+  Toggle,
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useSearchIngredients } from '../../hooks/profile';
@@ -72,8 +72,8 @@ export function ManualAdd() {
 
   if (!selected) {
     return (
-      <View style={{ flex: 1, padding: spacing.lg, gap: spacing.md }}>
-        <Field
+      <View style={{ flex: 1, padding: spacing.gutter, gap: spacing.lg }}>
+        <SearchField
           value={term}
           onChangeText={setTerm}
           placeholder={t('mobile.capture.searchIngredient')}
@@ -95,10 +95,13 @@ export function ManualAdd() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <Card style={{ gap: spacing.md }}>
-        <AppText variant="heading">{ingredientName(locale, selected)}</AppText>
-
+    <ScrollView contentContainerStyle={{ padding: spacing.gutter, gap: spacing.lg }}>
+      <View style={{ gap: spacing.md }}>
+        <SearchField
+          value={ingredientName(locale, selected)}
+          editable={false}
+          placeholder={t('mobile.capture.searchIngredient')}
+        />
         <QuantityStepper
           value={quantity}
           onChange={setQuantity}
@@ -148,11 +151,31 @@ export function ManualAdd() {
           clearLabel={t('mobile.capture.clearDate')}
           doneLabel={t('mobile.capture.pickDate')}
         />
-      </Card>
+
+        <View
+          style={{
+            minHeight: 56,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottomWidth: 1,
+            borderBottomColor: colors.rowline,
+          }}
+        >
+          <AppText variant="body">{t('mobile.capture.noExpiry')}</AppText>
+          <Toggle
+            value={expiresAt.trim() === ''}
+            accessibilityLabel={t('mobile.capture.noExpiry')}
+            onValueChange={(value) => {
+              if (value) setExpiresAt('');
+            }}
+          />
+        </View>
+      </View>
 
       <Button
         title={t('inventory.addItem')}
-        icon="check"
+        leadingIcon="check"
         loading={create.isPending}
         disabled={!locationId || !expiryValid}
         onPress={confirm}
@@ -163,6 +186,9 @@ export function ManualAdd() {
         </AppText>
       ) : null}
       <Button title={t('common.cancel')} variant="ghost" onPress={() => setSelected(null)} />
+      <AppText variant="caption" muted center>
+        {t('mobile.capture.confirmBody')}
+      </AppText>
     </ScrollView>
   );
 }
