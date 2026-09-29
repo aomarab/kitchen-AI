@@ -128,7 +128,7 @@ export function ReviewEditSheet({
 
       <Field
         ref={nameRef}
-        label={t('mobile.capture.searchIngredient')}
+        label={t('mobile.kitchen.sort.name')}
         value={term}
         onChangeText={changeTerm}
         placeholder={t('mobile.capture.searchIngredient')}

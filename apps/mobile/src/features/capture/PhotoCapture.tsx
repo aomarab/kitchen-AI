@@ -13,12 +13,11 @@ import {
 } from 'react-native';
 import { CameraView } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StatusBar } from 'expo-status-bar';
 import type { MessageKey } from '@kitchen/i18n';
 import type { RecognizedItem } from '@kitchen/contracts';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { AppText, Button, Chip, Icon, IconButton, Illustration, Sheet } from '../../components';
+import { AppText, Button, Chip, Icon, IconButton, Sheet } from '../../components';
 import { usePressFeedback } from '../../components/press-feedback';
 import { CameraGate, useCameraAccess } from './CameraGate';
 import { CaptureChrome, type CaptureMediaMethod, type CaptureMethod } from './CaptureChrome';
@@ -37,7 +36,7 @@ import { captureErrorKey, isNothingFound } from '../../lib/capture-error';
 import { errorMessageKey } from '../../lib/errors';
 import {
   buildInventoryInputs,
-  canAddAll,
+  captureResultActionState,
   initialReviewRows,
   isLowConfidence,
   photoForItem,
@@ -60,6 +59,8 @@ import { maxPhotosFor } from './limits';
 import { spacing } from '../../theme';
 import { scrimGradient } from '../../theme/scrim';
 import { useTheme } from '../../theme/useTheme';
+
+const RESULT_REVIEW_FIRST_WIDTH = 120;
 
 interface PhotoCaptureProps {
   mode: CaptureSource;
@@ -195,7 +196,7 @@ function MediaPressable({
  */
 export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCaptureProps) {
   const { t, locale, dir, prefs } = useFormat();
-  const { colors, scrim, isDark } = useTheme();
+  const { colors, scrim } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const setSession = useCaptureStore((state) => state.setSession);
@@ -437,7 +438,10 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
     : activePageItems.map((item) => item.tempId);
   const traySet = new Set([...trayIds, ...unmappedItems().map((item) => item.tempId)]);
   const trayItems = session?.items.filter((item) => traySet.has(item.tempId)) ?? [];
-  const addAllAllowed = session ? canAddAll(session, locations.data ?? []) : false;
+  const resultActionState = session
+    ? captureResultActionState(session, locations.data ?? [])
+    : null;
+  const addAllAllowed = resultActionState?.kind === 'addAll';
   const unsureCount = session?.items.filter((item) => isLowConfidence(item.confidence)).length ?? 0;
 
   const handleAddAll = async () => {
@@ -659,21 +663,22 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
       return <Button title={t('mobile.capture.retake')} fullWidth={false} onPress={retake} />;
     }
     if (flow === 'result') {
-      if (!session) return null;
-      if (addAllAllowed) {
+      if (!session || !resultActionState) return null;
+      if (resultActionState.kind === 'addAll') {
         return (
           <>
-            <Button
-              title={t('mobile.capture.addAll', { count: session.items.length })}
-              fullWidth={false}
-              loading={create.isPending}
-              onPress={() => void handleAddAll()}
-            />
             <Button
               title={t('mobile.capture.reviewFirst')}
               variant="secondary"
               fullWidth={false}
+              style={{ width: RESULT_REVIEW_FIRST_WIDTH }}
               onPress={() => router.push('/capture/review')}
+            />
+            <Button
+              title={t('mobile.capture.addAll', { count: resultActionState.count })}
+              loading={create.isPending}
+              style={{ flex: 1 }}
+              onPress={() => void handleAddAll()}
             />
           </>
         );
@@ -681,7 +686,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
       return (
         <Button
           title={t('mobile.capture.review')}
-          fullWidth={false}
+          style={{ flex: 1 }}
           onPress={() => router.push('/capture/review')}
         />
       );
@@ -737,14 +742,15 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
     if (flow === 'framing') return null;
     const bubbleError =
       error ?? addAllError ?? (captureError ? 'mobile.capture.captureFailed' : null);
+    const flushSheet = flow === 'looking' || flow === 'result' || flow === 'nothingFound';
     return (
       <View
         onLayout={(event) => setBubbleHeight(event.nativeEvent.layout.height)}
         style={{
           position: 'absolute',
-          start: spacing.lg,
-          end: spacing.lg,
-          bottom: bottomHeight + spacing.md,
+          start: 0,
+          end: 0,
+          bottom: flushSheet ? 0 : bottomHeight + spacing.md,
         }}
       >
         <MamaBubble
@@ -867,66 +873,6 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
       ) : null}
     </View>
   );
-
-  if (flow === 'nothingFound') {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.bg,
-          paddingHorizontal: spacing.gutter,
-          paddingTop: 54,
-          paddingBottom: spacing.gutter,
-        }}
-      >
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-        <View style={{ minHeight: 44, justifyContent: 'center' }}>
-          <View style={{ position: 'absolute', start: -spacing.md, top: 0 }}>
-            <IconButton
-              icon="x"
-              tone="plain"
-              accessibilityLabel={t('common.close')}
-              onPress={onClose}
-            />
-          </View>
-          <AppText variant="bodyStrong" center>
-            {t('capture.title')}
-          </AppText>
-        </View>
-        <View
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: spacing.lg,
-            paddingBottom: spacing.xxl,
-          }}
-        >
-          <Illustration name="camera" size={88} />
-          <View style={{ gap: spacing.sm }}>
-            <AppText variant="title" center>
-              {t('mobile.capture.nothingSpotted')}
-            </AppText>
-            <AppText variant="body" color="textMuted" center>
-              {t('capture.nothingFound')}
-            </AppText>
-          </View>
-          <Button title={t('mobile.capture.retake')} fullWidth={false} onPress={retake} />
-          <Button
-            title={t('mobile.capture.manualTitle')}
-            variant="ghost"
-            fullWidth={false}
-            onPress={() => onMethodChange('manual')}
-          />
-          {photos.length > 0 ? (
-            <AppText variant="caption" color="textMuted" center>
-              {t('mobile.review.emptyPhotos', { count: photos.length })}
-            </AppText>
-          ) : null}
-        </View>
-      </View>
-    );
-  }
 
   return (
     <CaptureChrome

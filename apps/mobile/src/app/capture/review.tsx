@@ -7,7 +7,7 @@ import type {
   RecognitionSession,
   StorageLocation,
 } from '@kitchen/contracts';
-import { Screen, Header, EmptyState, LoadingState, ErrorState, Button } from '../../components';
+import { Screen, Header, EmptyState, LoadingState, ErrorState } from '../../components';
 import { ReviewFooter, ReviewList, useReviewListState } from '../../features/capture/ReviewList';
 import { useFormat } from '../../hooks/useFormat';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
@@ -15,10 +15,6 @@ import { useReduceMotion } from '../../hooks/motion';
 import { spacing } from '../../theme';
 import { useCaptureStore } from '../../stores/capture';
 import { useToastStore } from '../../stores/toast';
-
-function retakeMethod(source: InventorySource): 'photo' | 'receipt' {
-  return source === 'receipt' ? 'receipt' : 'photo';
-}
 
 function ReviewReady({
   session,
@@ -57,7 +53,7 @@ function ReviewReady({
 
   return (
     <Screen footer={<ReviewFooter state={review} submitting={submitting} />}>
-      <ReviewHeader source={source} />
+      <ReviewHeader />
       <ScrollView
         ref={scrollRef}
         keyboardShouldPersistTaps="handled"
@@ -81,28 +77,10 @@ function ReviewReady({
   );
 }
 
-function ReviewHeader({ source }: { source: InventorySource }) {
+function ReviewHeader() {
   const { t } = useFormat();
   const router = useRouter();
-  const reset = useCaptureStore((state) => state.reset);
-  return (
-    <Header
-      title={t('capture.reviewTitle')}
-      onBack={() => router.back()}
-      trailing={
-        <Button
-          title={t('mobile.review.retake')}
-          variant="ghost"
-          fullWidth={false}
-          onPress={() => {
-            const method = retakeMethod(source);
-            reset();
-            router.replace({ pathname: '/capture', params: { method } });
-          }}
-        />
-      }
-    />
-  );
+  return <Header title={t('capture.reviewTitle')} onBack={() => router.back()} />;
 }
 
 /**
@@ -136,7 +114,7 @@ export default function CaptureReview() {
   if (locations.isLoading) {
     return (
       <Screen>
-        <ReviewHeader source={source} />
+        <ReviewHeader />
         <LoadingState />
       </Screen>
     );
@@ -145,7 +123,7 @@ export default function CaptureReview() {
   if (locations.isError) {
     return (
       <Screen>
-        <ReviewHeader source={source} />
+        <ReviewHeader />
         <ErrorState error={locations.error} onRetry={() => void locations.refetch()} />
       </Screen>
     );

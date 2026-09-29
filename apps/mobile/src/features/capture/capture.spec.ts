@@ -65,11 +65,32 @@ describe('capture screen source contract (G3b)', () => {
 
   it('offers Add all only through the canAddAll gate and Review-equivalent payload', () => {
     const source = read('features', 'capture', 'PhotoCapture.tsx');
+    const logic = read('lib', 'capture.ts');
 
-    expect(source).toContain('canAddAll(session, locations.data ?? [])');
+    expect(source).toContain('captureResultActionState(session, locations.data ?? [])');
+    expect(logic).toContain('if (canAddAll(session, locations))');
     expect(source).toContain(
       "buildInventoryInputs(initialReviewRows(session, locations.data ?? []), 'photo')",
     );
+  });
+
+  it('uses the Coral result sheet action layout without weakening the add-all gate', () => {
+    const source = read('features', 'capture', 'PhotoCapture.tsx');
+    const bubble = read('features', 'capture', 'MamaBubble.tsx');
+
+    expect(source).toContain('RESULT_REVIEW_FIRST_WIDTH = 120');
+    expect(source).toContain('style={{ width: RESULT_REVIEW_FIRST_WIDTH }}');
+    expect(source).toContain("resultActionState.kind === 'addAll'");
+    expect(source.indexOf("t('mobile.capture.reviewFirst')")).toBeLessThan(
+      source.indexOf("t('mobile.capture.addAll', { count: resultActionState.count })"),
+    );
+    expect(source).toContain("title={t('mobile.capture.review')}");
+    expect(source).toContain('style={{ flex: 1 }}');
+    expect(bubble).toContain('SHEET_PADDING = 20');
+    expect(bubble).toContain('MESSAGE_MAX_WIDTH = 290');
+    expect(bubble).toContain('MESSAGE_PADDING_VERTICAL = 10');
+    expect(bubble).toContain('MESSAGE_PADDING_HORIZONTAL = 14');
+    expect(bubble).toContain('ACTION_GAP = 10');
   });
 
   it('stores photo sessions with photos and receipt sessions without them', () => {
@@ -189,15 +210,14 @@ describe('capture screen source contract (G3b)', () => {
     );
   });
 
-  it('uses the resolved theme for the non-media nothing-found status bar', () => {
+  it('renders nothing-found through the shared post-shutter media sheet', () => {
     const source = read('features', 'capture', 'PhotoCapture.tsx');
-    const start = source.lastIndexOf("if (flow === 'nothingFound')");
-    const end = source.indexOf('return (\n    <CaptureChrome', start);
-    const nothingFound = source.slice(start, end);
 
-    expect(source).toContain('const { colors, scrim, isDark } = useTheme();');
-    expect(nothingFound).toContain("<StatusBar style={isDark ? 'light' : 'dark'} />");
-    expect(nothingFound).not.toContain('<StatusBar style="dark" />');
+    expect(source).not.toContain('mobile.capture.nothingSpotted');
+    expect(source).not.toContain('<Illustration name="camera"');
+    expect(source).toContain("flow === 'looking' || flow === 'result' || flow === 'nothingFound'");
+    expect(source).toContain("if (flow === 'nothingFound') return t('capture.nothingFound');");
+    expect(source).toContain('bottom: flushSheet ? 0 : bottomHeight + spacing.md');
   });
 
   it('draws the only J circle as a 76pt/60pt inverse shutter without press scaling', () => {
@@ -256,11 +276,23 @@ describe('review screen source contract (G4)', () => {
     expect(source).toMatch(/title=\{t\('common\.save'\)\}[\s\S]*?style=\{\{ flex: 1 \}\}/);
   });
 
-  it('renders a trailing Retake action in the review header', () => {
+  it('removes Retake from the review header while keeping back navigation', () => {
     const source = read('app', 'capture', 'review.tsx');
 
-    expect(source).toContain('trailing={');
-    expect(source).toContain("t('mobile.review.retake')");
+    expect(source).toContain(
+      "<Header title={t('capture.reviewTitle')} onBack={() => router.back()} />",
+    );
+    expect(source).not.toContain('trailing={');
+    expect(source).not.toContain("t('mobile.review.retake')");
+    expect(source).not.toContain('retakeMethod');
+  });
+
+  it('labels the review edit search field as Name while preserving ingredient search', () => {
+    const source = read('features', 'capture', 'ReviewEditSheet.tsx');
+
+    expect(source).toContain("label={t('mobile.kitchen.sort.name')}");
+    expect(source).toContain("placeholder={t('mobile.capture.searchIngredient')}");
+    expect(source).toContain('useSearchIngredients(term)');
   });
 
   it('respects Reduce Motion when focus-scrolling to a reviewed item', () => {

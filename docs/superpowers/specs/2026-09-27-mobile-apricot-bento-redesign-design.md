@@ -835,8 +835,9 @@ This is a media surface (§6.4) and stays dark in both modes.
    `mobile.capture.recognizing`. The upload and recognition job run as today.
 4. **Result.** The still stays on screen. With several photos, it becomes a pager with dots, and
    each page holds that photo's pins, since `photoKey` ties an item to its photo. The pins land
-   (§13), and the tray fills. The Mama bubble reads `mobile.capture.seeCount` ("I see 6 things")
-   plus one of two offers:
+   (§13), and the tray fills. The Coral visual spec supersedes only this bubble-card layout with a
+   full-bleed bottom sheet; the add-all confidence/location gate below is unchanged. The Mama bubble
+   reads `mobile.capture.seeCount` ("I see 6 things") plus one of two offers:
    - **Every item confident:** "— add them all?". The actions are `primary` "Add all n"
      (`mobile.capture.addAll`) and `soft` "Review first" (`mobile.capture.reviewFirst`). "Add all"
      builds exactly what Review would have submitted untouched:

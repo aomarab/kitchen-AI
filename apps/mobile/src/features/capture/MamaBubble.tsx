@@ -4,6 +4,12 @@ import { AppText } from '../../components';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
+const SHEET_PADDING = 20;
+const MESSAGE_MAX_WIDTH = 290;
+const MESSAGE_PADDING_VERTICAL = 10;
+const MESSAGE_PADDING_HORIZONTAL = 14;
+const ACTION_GAP = 10;
+
 export interface MamaBubbleProps {
   message: string;
   actions?: ReactNode;
@@ -20,28 +26,32 @@ export function MamaBubble({ message, actions, accessory, error, style }: MamaBu
       style={[
         {
           gap: spacing.lg,
-          paddingHorizontal: spacing.gutter,
-          paddingTop: spacing.lg,
-          paddingBottom: spacing.gutter,
+          padding: SHEET_PADDING,
           backgroundColor: colors.surface,
         },
         style,
       ]}
     >
-      <View style={{ backgroundColor: colors.surfaceAlt, padding: spacing.md }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <AppText variant="body" style={{ flex: 1 }}>
-            {message}
-          </AppText>
-          {accessory}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View
+          style={{
+            maxWidth: MESSAGE_MAX_WIDTH,
+            flexShrink: 1,
+            backgroundColor: colors.surfaceAlt,
+            paddingVertical: MESSAGE_PADDING_VERTICAL,
+            paddingHorizontal: MESSAGE_PADDING_HORIZONTAL,
+          }}
+        >
+          <AppText variant="body">{message}</AppText>
+          {error ? (
+            <AppText variant="caption" color="danger" style={{ marginTop: spacing.xs }}>
+              {error}
+            </AppText>
+          ) : null}
         </View>
-        {error ? (
-          <AppText variant="caption" color="danger" style={{ marginTop: spacing.xs }}>
-            {error}
-          </AppText>
-        ) : null}
+        {accessory ? <View style={{ flexShrink: 0 }}>{accessory}</View> : null}
       </View>
-      {actions ? <View style={{ flexDirection: 'row', gap: spacing.md }}>{actions}</View> : null}
+      {actions ? <View style={{ flexDirection: 'row', gap: ACTION_GAP }}>{actions}</View> : null}
     </View>
   );
 }

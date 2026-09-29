@@ -505,7 +505,12 @@ only where the frame introduces copy with no key.
   plan-specific bulk-add or clear behavior was present.
 - Capture/review: the review row uses plain location meta rather than a place chip; the barcode
   flash slot was added; receipt credit-quote sample copy was omitted because no quote behavior
-  exists.
+  exists. By user ruling (2026-09-29), the capture results/looking/nothing-found post-shutter
+  surface uses the Coral full-bleed bottom sheet layout, but the Apricot add-all confidence/location
+  gate remains unchanged: "Review first" + "Add all n" appears only when `canAddAll`, otherwise the
+  sheet shows a single "Review". By user ruling (2026-09-29), the Review header removes the trailing
+  "Retake" action; photo users can still leave with Back and retake from the capture results refresh
+  control.
 - Capture/review/timers: user rulings R1–R3 chose the frame controls: Timers New uses text fields
   instead of the duration stepper/preset chips; capture Review rows are flat while Assistant
   add-spotted keeps the richer existing rows; capture Manual add and Review edit use a Quantity
