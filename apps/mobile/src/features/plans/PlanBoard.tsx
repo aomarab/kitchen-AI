@@ -178,16 +178,18 @@ function PlanDayRow({
           <AppText variant="bodyStrong" numberOfLines={1}>
             {entry.recipe.title}
           </AppText>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            {isCooked ? <Icon name="check" size={14} color={colors.success} /> : null}
-            <AppText
-              variant="caption"
-              numberOfLines={1}
-              style={{ color: isCooked ? colors.success : colors.textMuted }}
-            >
+          {isCooked ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <AppText variant="caption" numberOfLines={1} style={{ color: colors.textMuted }}>
+                {`${slot} · ${minutesLabel} ·`}
+              </AppText>
+              <Badge tone="success" label={statusLabel} />
+            </View>
+          ) : (
+            <AppText variant="caption" numberOfLines={1} style={{ color: colors.textMuted }}>
               {caption}
             </AppText>
-          </View>
+          )}
         </View>
         <DirectionalIcon name="chevR" size={18} color={colors.control} />
       </Animated.View>

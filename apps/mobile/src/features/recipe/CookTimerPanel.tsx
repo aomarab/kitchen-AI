@@ -44,6 +44,7 @@ export function CookTimerPanel({
     minutes: formatMinutes(locale, durationMinutes, prefs),
   });
   const progress = projected ? 1 - countdownSeconds / totalSeconds : 0;
+  const progressLabel = t('mobile.recipe.stepTimerProgress');
 
   return (
     <View
@@ -77,7 +78,12 @@ export function CookTimerPanel({
           />
         ) : null}
       </View>
-      <Progress value={progress} tone={finished ? 'idle' : 'active'} />
+      <Progress
+        value={progress}
+        tone={finished ? 'idle' : 'active'}
+        accessibilityLabel={progressLabel}
+        accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}
+      />
       {projected ? null : (
         <Button
           title={buttonTitle}

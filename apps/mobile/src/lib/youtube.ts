@@ -1,3 +1,5 @@
+import { paletteFor } from '../theme/palettes';
+
 /**
  * A YouTube video id is exactly 11 URL-safe base64 characters.
  *
@@ -41,9 +43,7 @@ export const WEBVIEW_ORIGIN_WHITELIST = ['http://*', 'https://*'];
 export function isAllowedEmbedUrl(url: string): boolean {
   // WebViews navigate to about:blank internally; blocking it breaks the embed.
   if (url === 'about:blank') return true;
-  return YOUTUBE_EMBED_ORIGINS.some(
-    (origin) => url === origin || url.startsWith(`${origin}/`),
-  );
+  return YOUTUBE_EMBED_ORIGINS.some((origin) => url === origin || url.startsWith(`${origin}/`));
 }
 
 /**
@@ -61,9 +61,9 @@ export function isAllowedEmbedUrl(url: string): boolean {
 export const EMBED_BASE_URL = 'https://www.youtube.com';
 
 /** What the player page reports back over `postMessage`. */
-export type EmbedMessage =
-  | { type: 'ready' }
-  | { type: 'error'; code: string };
+export type EmbedMessage = { type: 'ready' } | { type: 'error'; code: string };
+
+export const DEFAULT_EMBED_BACKGROUND_COLOR = paletteFor('dark').colors.surfaceInverse;
 
 /**
  * Parses a message from the player page.
@@ -113,7 +113,10 @@ export function watchOnYoutubeUrl(youtubeId: string): string | null {
  * script here, and validating at the point of construction means no caller can
  * forget to.
  */
-export function buildEmbedHtml(youtubeId: string): string | null {
+export function buildEmbedHtml(
+  youtubeId: string,
+  backgroundColor = DEFAULT_EMBED_BACKGROUND_COLOR,
+): string | null {
   if (!isValidYoutubeId(youtubeId)) return null;
 
   return `<!DOCTYPE html>
@@ -121,7 +124,7 @@ export function buildEmbedHtml(youtubeId: string): string | null {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<style>html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}#player{width:100%;height:100%}</style>
+<style>html,body{margin:0;padding:0;height:100%;background:${backgroundColor};overflow:hidden}#player{width:100%;height:100%}</style>
 </head>
 <body>
 <div id="player"></div>

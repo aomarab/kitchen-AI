@@ -59,7 +59,7 @@ describe('pushed-screen header', () => {
 
   it('backs out through a 44pt IconButton that mirrors in RTL', () => {
     // The old bare 26pt chevron relied on hitSlop for its touch target.
-    expect(source).toMatch(/<IconButton[\s\S]*icon="back"[\s\S]*directional/);
+    expect(source).toMatch(/<IconButton[\s\S]*icon="chevL"[\s\S]*directional/);
     expect(source).toContain('tone="plain"');
   });
 });
@@ -88,7 +88,7 @@ describe('surfaces', () => {
   it('a sheet floats on the sheet shadow and closes through a plain 44pt icon button', () => {
     const source = read('./Sheet.tsx');
     expect(source).toMatch(/shadow\.sheet/);
-    expect(source).toMatch(/<IconButton[\s\S]*icon="close"/);
+    expect(source).toMatch(/<IconButton[\s\S]*icon="x"/);
     expect(source).toMatch(/variant="title"/);
     expect(source).toContain('width: 36');
     expect(source).toContain('height: 4');

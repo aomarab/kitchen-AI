@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildEmbedHtml,
+  DEFAULT_EMBED_BACKGROUND_COLOR,
   EMBED_BASE_URL,
   isAllowedEmbedUrl,
   isValidYoutubeId,
@@ -124,6 +125,12 @@ describe('buildEmbedHtml', () => {
     expect(html).toContain('autoplay: 1');
   });
 
+  it('uses the media inverse token as the default player background and allows injection', () => {
+    expect(DEFAULT_EMBED_BACKGROUND_COLOR).toMatch(/^#[0-9A-F]{6}$/i);
+    expect(buildEmbedHtml('dQw4w9WgXcQ')).toContain(`background:${DEFAULT_EMBED_BACKGROUND_COLOR}`);
+    expect(buildEmbedHtml('dQw4w9WgXcQ', 'token-media-bg')).toContain('background:token-media-bg');
+  });
+
   /**
    * The id is the only interpolated value and it now lands inside a script, so
    * it is validated here rather than relying on every caller to have checked
@@ -145,7 +152,10 @@ describe('buildEmbedHtml', () => {
 
 describe('parseEmbedMessage', () => {
   it('reads the codes the player reports', () => {
-    expect(parseEmbedMessage('{"type":"error","code":"150"}')).toEqual({ type: 'error', code: '150' });
+    expect(parseEmbedMessage('{"type":"error","code":"150"}')).toEqual({
+      type: 'error',
+      code: '150',
+    });
     expect(parseEmbedMessage('{"type":"ready"}')).toEqual({ type: 'ready' });
   });
 
@@ -158,7 +168,10 @@ describe('parseEmbedMessage', () => {
 
   it('still reports an error whose code is missing or not a string', () => {
     expect(parseEmbedMessage('{"type":"error"}')).toEqual({ type: 'error', code: 'unknown' });
-    expect(parseEmbedMessage('{"type":"error","code":150}')).toEqual({ type: 'error', code: 'unknown' });
+    expect(parseEmbedMessage('{"type":"error","code":150}')).toEqual({
+      type: 'error',
+      code: 'unknown',
+    });
   });
 });
 

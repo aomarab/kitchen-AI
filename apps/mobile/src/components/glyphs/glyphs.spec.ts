@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ICON_PATHS } from './icon-paths';
 import { ILLUSTRATION_PATHS } from './illustration-paths';
-import {
-  BRAND_ICON_NAMES,
-  DIRECTIONAL_ICON_NAMES,
-  LEGACY_ICON_ALIASES,
-  LEGACY_ICON_NAMES,
-} from './stroke';
+import { BRAND_ICON_NAMES, DIRECTIONAL_ICON_NAMES } from './stroke';
 
 type PathCommand = 'M' | 'L' | 'H' | 'V' | 'C' | 'Z';
 interface Coordinate {
@@ -121,35 +116,22 @@ describe('J Coral glyph path data', () => {
     }
   });
 
-  it('maps every non-brand legacy icon key to an existing J glyph', () => {
-    const brandNames = new Set<string>(BRAND_ICON_NAMES);
+  it('keeps brand marks as the only non-glyph icon names', () => {
     const glyphNames = new Set<string>(Object.keys(ICON_PATHS));
-    const legacyNamesNeedingAliases = LEGACY_ICON_NAMES.filter((name) => !brandNames.has(name));
 
-    expect(Object.keys(LEGACY_ICON_ALIASES).sort()).toEqual([...legacyNamesNeedingAliases].sort());
-    for (const [legacy, glyph] of Object.entries(LEGACY_ICON_ALIASES)) {
-      expect(glyphNames.has(glyph), `${legacy} → ${glyph}`).toBe(true);
+    expect(BRAND_ICON_NAMES).toEqual(['apple', 'google']);
+    for (const name of BRAND_ICON_NAMES) {
+      expect(glyphNames.has(name), name).toBe(false);
     }
   });
 
   it('exports exactly the icons that mirror under RTL', () => {
-    const expected = [
-      'chevL',
-      'chevR',
-      'arrowL',
-      'arrowR',
-      'send',
-      'logout',
-      'chevron',
-      'back',
-      'arrowForward',
-    ];
+    const expected = ['chevL', 'chevR', 'arrowL', 'arrowR', 'send', 'logout'];
     const glyphNames = new Set<string>(Object.keys(ICON_PATHS));
-    const legacyNames = new Set<string>(LEGACY_ICON_NAMES);
 
     expect(DIRECTIONAL_ICON_NAMES).toEqual(expected);
     for (const name of DIRECTIONAL_ICON_NAMES) {
-      expect(glyphNames.has(name) || legacyNames.has(name), name).toBe(true);
+      expect(glyphNames.has(name), name).toBe(true);
     }
   });
 });

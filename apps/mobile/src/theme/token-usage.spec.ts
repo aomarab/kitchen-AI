@@ -65,7 +65,10 @@ describe('mobile source sweep', () => {
    */
   const TOUCH_TARGETS: Record<string, { path: string; pattern: RegExp }> = {
     'Button.tsx': { path: 'components/Button.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'Checkbox.tsx': { path: 'components/Checkbox.tsx', pattern: /height:\s*(\d+)/ },
+    'Checkbox.tsx': {
+      path: 'components/Checkbox.tsx',
+      pattern: /CHECKBOX_TARGET_SIZE\s*=\s*(\d+)/,
+    },
     'Field.tsx': {
       path: 'components/Field.tsx',
       pattern: /minHeight:\s*multiline \? 132 : (\d+)/,
@@ -91,7 +94,7 @@ describe('mobile source sweep', () => {
     'StarRating.tsx': { path: 'components/StarRating.tsx', pattern: /minHeight:\s*(\d+)/ },
     'TabBar.tsx': { path: 'components/TabBar.tsx', pattern: /minHeight:\s*(\d+)/ },
     'Tile.tsx': { path: 'components/Tile.tsx', pattern: /QUICK_ACTION_MIN_HEIGHT\s*=\s*(\d+)/ },
-    'Toggle.tsx': { path: 'components/Toggle.tsx', pattern: /height:\s*(\d+)/ },
+    'Toggle.tsx': { path: 'components/Toggle.tsx', pattern: /TOGGLE_TARGET_SIZE\s*=\s*(\d+)/ },
     'ToggleRow.tsx': {
       path: 'components/ToggleRow.tsx',
       pattern: /TOGGLE_ROW_MIN_HEIGHT\s*=\s*(\d+)/,

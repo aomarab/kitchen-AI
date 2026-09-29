@@ -124,7 +124,7 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, coral %s', (mode
 
   it('star tones use filled Coral and empty control strokes', () => {
     expect(starTone(colors, true)).toMatchObject({ glyph: colors.primary, icon: 'star' });
-    expect(starTone(colors, false)).toMatchObject({ glyph: colors.control, icon: 'starOutline' });
+    expect(starTone(colors, false)).toMatchObject({ glyph: colors.control, icon: 'star' });
     expect(contrast(starTone(colors, false).glyph, colors.bg), 'empty star').toBeGreaterThanOrEqual(
       AA_NON_TEXT,
     );
@@ -174,14 +174,17 @@ describe('control touch targets', () => {
   it('new square controls expose roles and 44pt pressable targets', () => {
     const checkbox = read('./Checkbox.tsx');
     expect(checkbox).toContain('accessibilityRole="checkbox"');
-    expect(checkbox).toMatch(/width:\s*44/);
-    expect(checkbox).toMatch(/height:\s*44/);
-    expect(checkbox).toMatch(/width:\s*22/);
-    expect(checkbox).toMatch(/height:\s*22/);
+    expect(checkbox).toMatch(/CHECKBOX_TARGET_SIZE = 44/);
+    expect(checkbox).toContain('width: CHECKBOX_TARGET_SIZE');
+    expect(checkbox).toContain('height: CHECKBOX_TARGET_SIZE');
+    expect(checkbox).toMatch(/CHECKBOX_VISUAL_SIZE = 22/);
+    expect(checkbox).toContain('width: CHECKBOX_VISUAL_SIZE');
+    expect(checkbox).toContain('height: CHECKBOX_VISUAL_SIZE');
 
     const toggle = read('./Toggle.tsx');
     expect(toggle).toContain('accessibilityRole="switch"');
-    expect(toggle).toMatch(/height:\s*44/);
+    expect(toggle).toMatch(/TOGGLE_TARGET_SIZE = 44/);
+    expect(toggle).toContain('height: TOGGLE_TARGET_SIZE');
     expect(toggle).toMatch(/TRACK_WIDTH = 44/);
     expect(toggle).toMatch(/TRACK_HEIGHT = 26/);
     expect(toggle).toContain('duration: reduceMotion ? 0 : 160');

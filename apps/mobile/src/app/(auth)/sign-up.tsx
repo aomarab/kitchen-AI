@@ -1,15 +1,25 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { AuthLayout, AppText, AuthSwitchLink, Field, Button, OAuthButtons } from '../../components';
+import {
+  AuthLayout,
+  AppText,
+  AuthSwitchLink,
+  Field,
+  Button,
+  OAuthButtons,
+  Icon,
+} from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useSignUp } from '../../hooks/auth';
 import { errorMessageKey } from '../../lib/errors';
 import { passwordRuleFailures, passwordSatisfiesClientRules } from '../../lib/password-rules';
 import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 export default function SignUp() {
   const { t, locale } = useFormat();
+  const { colors } = useTheme();
   const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -60,10 +70,13 @@ export default function SignUp() {
         {showPasswordRules ? (
           <View style={{ gap: spacing.xs }}>
             {passwordFailures.map((key) => (
-              <View key={key} style={{ flexDirection: 'row', gap: spacing.xs }}>
-                <AppText color="danger" variant="caption">
-                  ✕
-                </AppText>
+              <View
+                key={key}
+                accessible
+                accessibilityLabel={`${t(key)}, ${t('mobile.auth.passwordRuleUnmet')}`}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+              >
+                <Icon name="x" size={14} color={colors.danger} />
                 <AppText color="danger" variant="caption" style={{ flex: 1 }}>
                   {t(key)}
                 </AppText>

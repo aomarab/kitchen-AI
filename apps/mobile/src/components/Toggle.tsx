@@ -9,6 +9,7 @@ import { useTheme } from '../theme/useTheme';
 
 export const TRACK_WIDTH = 44;
 export const TRACK_HEIGHT = 26;
+export const TOGGLE_TARGET_SIZE = 44;
 const KNOB_SIZE = 20;
 const TRACK_INSET = 3;
 const TOGGLE_TRAVEL = TRACK_WIDTH - KNOB_SIZE - TRACK_INSET * 2;
@@ -61,7 +62,7 @@ export function Toggle({
       testID={testID}
       style={[
         {
-          height: 44,
+          height: TOGGLE_TARGET_SIZE,
           alignItems: 'center',
           justifyContent: 'center',
         },

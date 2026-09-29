@@ -26,7 +26,7 @@ export function CreditBalance({ balance, onTopUp, style }: CreditBalanceProps) {
       <AppText variant="label" color="primaryText">
         {t('mobile.home.topUp')}
       </AppText>
-      <DirectionalIcon name="chevron" size={18} color={colors.control} />
+      <DirectionalIcon name="chevR" size={18} color={colors.control} />
     </>
   ) : null;
   const row = (

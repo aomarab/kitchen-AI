@@ -45,7 +45,7 @@ export function YoutubePlayer({
   const [failed, setFailed] = useState(false);
   const { colors } = useTheme();
 
-  const embedHtml = buildEmbedHtml(youtubeId);
+  const embedHtml = buildEmbedHtml(youtubeId, colors.surfaceInverse);
   const watchUrl = watchOnYoutubeUrl(youtubeId);
   const showError = failed || embedHtml === null;
 
@@ -55,7 +55,7 @@ export function YoutubePlayer({
         aspectRatio: 16 / 9,
         borderRadius: radius.none,
         overflow: 'hidden',
-        backgroundColor: '#000',
+        backgroundColor: colors.surfaceInverse,
       }}
     >
       {showError ? (
@@ -119,7 +119,7 @@ export function YoutubePlayer({
           }}
           onError={() => setFailed(true)}
           onHttpError={() => setFailed(true)}
-          style={{ flex: 1, backgroundColor: '#000' }}
+          style={{ flex: 1, backgroundColor: colors.surfaceInverse }}
         />
       ) : (
         <Pressable

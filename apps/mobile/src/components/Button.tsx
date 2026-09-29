@@ -106,7 +106,7 @@ export function Button({
               {title}
             </AppText>
             {lastIcon ? <Icon name={lastIcon} size={18} color={tone.label} /> : null}
-            {arrow ? <DirectionalIcon name="arrowForward" size={18} color={tone.label} /> : null}
+            {arrow ? <DirectionalIcon name="arrowR" size={18} color={tone.label} /> : null}
           </>
         )}
       </Animated.View>

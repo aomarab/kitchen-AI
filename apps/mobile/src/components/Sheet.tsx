@@ -56,7 +56,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
                     {title ?? ''}
                   </AppText>
                   <IconButton
-                    icon="close"
+                    icon="x"
                     tone="plain"
                     accessibilityLabel={t('common.close')}
                     onPress={onClose}

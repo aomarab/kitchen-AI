@@ -49,6 +49,7 @@ import { useTheme } from '../theme/useTheme';
 
 export const KIOSK_EXIT_TARGET_SIZE = 44;
 const KIOSK_CARD_MIN_HEIGHT = 182;
+const KIOSK_PORTRAIT_CARD_MIN_HEIGHT = 142;
 const KIOSK_TABLET_CARD_MIN_HEIGHT = 518;
 
 /**
@@ -323,6 +324,12 @@ function KioskCard({
   );
 }
 
+function kioskCardModeStyle(mode: 'portrait' | 'wide' | 'tablet'): StyleProp<ViewStyle> {
+  if (mode === 'tablet') return { minHeight: KIOSK_TABLET_CARD_MIN_HEIGHT };
+  if (mode === 'portrait') return { flex: 0, minHeight: KIOSK_PORTRAIT_CARD_MIN_HEIGHT };
+  return null;
+}
+
 function KioskPlanCard({
   mode,
   eyebrow,
@@ -350,7 +357,7 @@ function KioskPlanCard({
     nudgeActive ? t('mobile.screen.nudgeAcknowledge') : null,
   ]);
   return (
-    <KioskCard style={mode === 'tablet' ? { minHeight: KIOSK_TABLET_CARD_MIN_HEIGHT } : null}>
+    <KioskCard style={kioskCardModeStyle(mode)}>
       <View style={{ flex: 1, gap: spacing.lg }}>
         <View accessible accessibilityLabel={planAccessibilityLabel} style={{ gap: spacing.md }}>
           <AppText variant="eyebrow" muted>
@@ -416,7 +423,7 @@ function KioskTimerCard({
   );
 
   return (
-    <KioskCard style={mode === 'tablet' ? { minHeight: KIOSK_TABLET_CARD_MIN_HEIGHT } : null}>
+    <KioskCard style={kioskCardModeStyle(mode)}>
       <View style={{ flex: 1, gap: spacing.lg }}>
         <View accessible accessibilityLabel={accessibilityLabel} style={{ gap: spacing.md }}>
           <AppText variant="eyebrow" muted>
@@ -476,7 +483,7 @@ function KioskHydrationCard({
     <KioskCard
       onPress={onPress}
       accessibilityLabel={accessibilityLabel}
-      style={mode === 'tablet' ? { minHeight: KIOSK_TABLET_CARD_MIN_HEIGHT } : null}
+      style={kioskCardModeStyle(mode)}
     >
       <View style={{ flex: 1, gap: spacing.lg }}>
         <View style={{ gap: spacing.md }}>

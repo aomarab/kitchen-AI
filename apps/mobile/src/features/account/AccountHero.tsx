@@ -49,7 +49,7 @@ export function AccountHero({ name, email, profileHint, onPress }: AccountHeroPr
             </AppText>
           ) : null}
         </View>
-        <DirectionalIcon name="chevron" size={18} color={colors.control} />
+        <DirectionalIcon name="chevR" size={18} color={colors.control} />
       </Animated.View>
     </Pressable>
   );

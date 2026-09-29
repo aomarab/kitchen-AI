@@ -59,7 +59,7 @@ export function Header({ title, onBack, trailing, subtitle }: HeaderProps) {
         <View onLayout={measureSide('start')} style={{ minWidth: 44, alignItems: 'flex-start' }}>
           {onBack ? (
             <IconButton
-              icon="back"
+              icon="chevL"
               tone="plain"
               directional
               accessibilityLabel={t('common.back')}

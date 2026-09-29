@@ -339,7 +339,7 @@ export default function RecipeDetail() {
         }}
       >
         <IconButton
-          icon="back"
+          icon="chevL"
           directional
           tone={barBacked ? 'plain' : 'media'}
           accessibilityLabel={t('common.back')}

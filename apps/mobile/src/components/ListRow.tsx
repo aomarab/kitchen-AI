@@ -91,7 +91,7 @@ export function ListRow({
       ) : null}
       {trailing}
       {checked ? <Icon name="check" size={18} color={colors.primary} /> : null}
-      {showChevron ? <DirectionalIcon name="chevron" size={18} color={colors.control} /> : null}
+      {showChevron ? <DirectionalIcon name="chevR" size={18} color={colors.control} /> : null}
     </Animated.View>
   );
 

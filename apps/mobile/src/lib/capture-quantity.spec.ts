@@ -12,6 +12,11 @@ describe('capture quantity field parsing', () => {
     expect(parseQuantityFieldValue('2,5', 1)).toBe(2.5);
   });
 
+  it('accepts Eastern Arabic digits and the Arabic decimal separator on input', () => {
+    expect(parseQuantityFieldValue('٢٫٥', 1)).toBe(2.5);
+    expect(parseQuantityFieldValue('١٢', 1)).toBe(12);
+  });
+
   it('falls back for non-numeric input and clamps an explicit maximum', () => {
     expect(parseQuantityFieldValue('', 4)).toBe(4);
     expect(parseQuantityFieldValue('many', 4)).toBe(4);

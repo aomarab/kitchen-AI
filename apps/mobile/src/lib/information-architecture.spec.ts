@@ -168,6 +168,8 @@ describe('information architecture (spec §4)', () => {
     expect(board).toContain('planEntryStatus');
     expect(board).toContain('size={56}');
     expect(board).toContain('size={72}');
+    expect(board).toContain('<Badge tone="success" label={statusLabel} />');
+    expect(board).not.toContain('<Icon name="check" size={14} color={colors.success} />');
     expect(board).not.toContain('pressed ?');
     expect(board).not.toContain('<ListGroup');
 
@@ -320,11 +322,11 @@ describe('information architecture (spec §4)', () => {
     expect(checkbox, 'shopping checkbox Pressable is missing').toContain(
       'accessibilityRole="checkbox"',
     );
-    expect(checkbox, 'shopping checkbox touch target width is below 44pt').toMatch(
-      /(?:minWidth|width):\s*44/,
+    expect(checkbox, 'shopping checkbox touch target width is below 44pt').toContain(
+      'width: CHECKBOX_TARGET_SIZE',
     );
-    expect(checkbox, 'shopping checkbox touch target height is below 44pt').toMatch(
-      /(?:minHeight|height):\s*44/,
+    expect(checkbox, 'shopping checkbox touch target height is below 44pt').toContain(
+      'height: CHECKBOX_TARGET_SIZE',
     );
     expect(checkboxFile, 'shopping checkbox label should be injected by its row').toContain(
       'accessibilityLabel={label}',
@@ -1039,6 +1041,9 @@ describe('information architecture (spec §4)', () => {
     expect(cook).toContain(
       'accessibilityValue={{ min: 0, max: total, now: step + 1, text: progressLabel }}',
     );
+    expect(timerControl).toContain("t('mobile.recipe.stepTimerProgress')");
+    expect(timerControl).toContain('accessibilityLabel={progressLabel}');
+    expect(timerControl).toContain('accessibilityValue={{ min: 0, max: 100');
     expect(cook).toContain('<IconButton');
     expect(cook).toContain('label="M"');
     expect(cook).not.toContain('<OrbMascot');
@@ -1169,6 +1174,11 @@ describe('information architecture (spec §4)', () => {
     expect(signUp).toContain("t('mobile.auth.signUpTitle')");
     expect(signUp).not.toContain("t('mobile.auth.signUpTitle2')");
     expect(signUp).not.toContain("t('mobile.auth.signUpAccent')");
+    expect(signUp).toContain(
+      "accessibilityLabel={`${t(key)}, ${t('mobile.auth.passwordRuleUnmet')}`}",
+    );
+    expect(signUp).toContain('<Icon name="x" size={14} color={colors.danger} />');
+    expect(signUp).not.toContain('✕');
 
     const onboarding = read('app', '(auth)', 'onboarding.tsx');
     expect(onboarding).toContain('<SegmentedControl<Mode>');
@@ -1221,9 +1231,8 @@ describe('information architecture (spec §4)', () => {
     expect(timerCard).toContain('timerProgressValue');
     expect(timerCard).toContain('variant="numeralSmall"');
     expect(timerCard).toContain('<IconButton');
-    expect(timerCard).toContain("'timerPause'");
-    expect(timerCard).not.toContain("icon={paused ? 'play' : 'pause'}");
-    expect(timerCard).not.toContain('icon="pause"');
+    expect(timerCard).toContain("icon={paused ? 'play' : 'pause'}");
+    expect(timerCard).not.toContain("'timerPause'");
     expect(timerCard).toContain("'play'");
     expect(timerCard).toContain('icon="x"');
     expect(timerCard).toContain('timerCardAccessibilityLabel');
@@ -1273,6 +1282,8 @@ describe('information architecture (spec §4)', () => {
     expect(screen).toContain('kioskCardAccessibilityLabel');
     expect(screen).toContain('const titleAccessibilityLabel = kioskCardAccessibilityLabel');
     expect(screen).toContain('{householdName}');
+    expect(screen).toContain('KIOSK_PORTRAIT_CARD_MIN_HEIGHT = 142');
+    expect(screen).toContain("if (mode === 'portrait') return { flex: 0");
     expect(screen).toMatch(/<AppText variant=\{mode === 'tablet' \? 'numeral' : 'numeralSmall'\}>/);
     expect(screen).not.toContain('`${timer.label} · ${remaining}`');
     expect(screen).not.toContain("variant={mode === 'tablet' ? 'display' : 'numeralSmall'}");

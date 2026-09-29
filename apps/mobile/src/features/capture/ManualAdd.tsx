@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import type { Ingredient, Unit } from '@kitchen/contracts';
 import { AppText, Button, Chip, DateField, ListRow, SearchField, Toggle } from '../../components';
@@ -18,6 +19,7 @@ import { UnitSelectField } from './UnitSelectField';
 export function ManualAdd() {
   const { t, locale } = useFormat();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [term, setTerm] = useState('');
   const [selected, setSelected] = useState<Ingredient | null>(null);
@@ -158,6 +160,7 @@ export function ManualAdd() {
         style={{
           padding: spacing.gutter,
           paddingTop: spacing.sm,
+          paddingBottom: spacing.gutter + insets.bottom,
           gap: spacing.sm,
           borderTopWidth: 1,
           borderTopColor: colors.rowline,

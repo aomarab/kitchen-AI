@@ -258,9 +258,9 @@ list lock logout mail mic micOff minus moon more pause pencil person pin play pl
 scan search send settings share shuffle sliders sort star stop sun tablet text timer trash user
 userPlus users utensils video volume wifi wifiOff x zap`.
 
-During migration `IconName = GlyphName | LegacyIconName`, where `LEGACY_ICON_ALIASES` maps every
-old Ionicons key to a glyph. The sweep (C16) rewrites callers to glyph names and deletes the
-alias table and `@expo/vector-icons` use (except brand marks, below).
+C16 removed the migration aliases: `IconName = GlyphName | BrandIconName`, where brand marks are
+only `apple` and `google`. Callers now use glyph names directly; `LEGACY_ICON_ALIASES`,
+`LegacyIconName`, and `@expo/vector-icons` use were deleted except for those brand marks.
 
 | Legacy    | Glyph    | Legacy       | Glyph    | Legacy             | Glyph                  |
 | --------- | -------- | ------------ | -------- | ------------------ | ---------------------- |
@@ -283,12 +283,12 @@ alias table and `@expo/vector-icons` use (except brand marks, below).
 | stretch   | activity | sunrise      | sun      | timerPause         | pause                  |
 | screen    | tablet   | pause        | coffee   |                    |                        |
 
-Legacy `pause` is the wellness "break" (a cup), so it maps to `coffee`; the timer's pause control
-uses legacy `timerPause`, which maps to the `pause` glyph.
+During the C16 migration, the wellness "break" cup moved from legacy `pause` to `coffee`, and the
+timer pause control moved from legacy `timerPause` to `pause`. No caller uses legacy keys after
+C16.
 
 **Directional glyphs** mirror under RTL through `DirectionalIcon` (scaleX −1): `chevL chevR
-arrowL arrowR send logout` (and the legacy `chevron back arrowForward`). Everything else is
-symmetric in intent and never mirrors.
+arrowL arrowR send logout`. Everything else is symmetric in intent and never mirrors.
 
 **Brand marks** (`apple`, `google`) are not J glyphs: `OAuthButtons` keeps the official marks
 (Apple and Google branding rules), rendered at 18pt.

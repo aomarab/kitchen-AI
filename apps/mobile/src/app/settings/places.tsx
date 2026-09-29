@@ -91,7 +91,7 @@ function MoveDestinationRow({
           <AppText variant="body">{title}</AppText>
           <MoveDestinationSubtitle label={subtitle} />
         </View>
-        <DirectionalIcon name="chevron" size={18} color={colors.control} />
+        <DirectionalIcon name="chevR" size={18} color={colors.control} />
       </Animated.View>
     </Pressable>
   );

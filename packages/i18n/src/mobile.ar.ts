@@ -452,6 +452,7 @@ export const mobileAr: MobileMessages = {
       stepTimerRunning: 'المؤقت يعمل · {remaining}',
       stepTimerRunningStatus: 'المؤقت يعمل',
       stepTimerDone: 'انتهى المؤقت',
+      stepTimerProgress: 'تقدّم المؤقت',
       prev: 'السابق',
       next: 'التالي',
       finish: 'إنهاء',
@@ -780,6 +781,7 @@ export const mobileAr: MobileMessages = {
       onboardTitle2: 'جهّز',
       onboardAccent: 'بيتك.',
       continue: 'متابعة',
+      passwordRuleUnmet: 'غير مستوفى',
     },
     sync: {
       offlineBanner: 'غير متصل — تُحفظ التغييرات وستتم مزامنتها تلقائياً.',

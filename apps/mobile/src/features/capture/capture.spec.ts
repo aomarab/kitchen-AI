@@ -45,6 +45,15 @@ describe('capture screen source contract (G3b)', () => {
     expect(manualBranch).not.toContain('<CaptureChrome');
   });
 
+  it('adds bottom safe-area only to the pinned Manual add footer', () => {
+    const manual = read('features', 'capture', 'ManualAdd.tsx');
+    const route = read('app', 'capture', 'index.tsx');
+
+    expect(route).toContain("edges={['top']}");
+    expect(manual).toContain('useSafeAreaInsets()');
+    expect(manual).toContain('paddingBottom: spacing.gutter + insets.bottom');
+  });
+
   it('checks nothing-found before mapping other capture errors', () => {
     const source = read('features', 'capture', 'PhotoCapture.tsx');
 
@@ -178,6 +187,17 @@ describe('capture screen source contract (G3b)', () => {
     expect(source).not.toMatch(
       /<StatusBar style="light" \/>\s*<View style=\{\{ flex: 1 \}\}>\{children\}<\/View>/,
     );
+  });
+
+  it('uses the resolved theme for the non-media nothing-found status bar', () => {
+    const source = read('features', 'capture', 'PhotoCapture.tsx');
+    const start = source.lastIndexOf("if (flow === 'nothingFound')");
+    const end = source.indexOf('return (\n    <CaptureChrome', start);
+    const nothingFound = source.slice(start, end);
+
+    expect(source).toContain('const { colors, scrim, isDark } = useTheme();');
+    expect(nothingFound).toContain("<StatusBar style={isDark ? 'light' : 'dark'} />");
+    expect(nothingFound).not.toContain('<StatusBar style="dark" />');
   });
 
   it('draws the only J circle as a 76pt/60pt inverse shutter without press scaling', () => {

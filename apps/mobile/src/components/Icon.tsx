@@ -7,9 +7,8 @@ import {
   iconStrokeWidth,
   isBrandIconName,
   isFilledGlyphName,
-  resolveGlyphName,
   type BrandIconName,
-  type LegacyIconName,
+  type IconName,
 } from './glyphs/stroke';
 import { useTheme } from '../theme/useTheme';
 
@@ -20,7 +19,7 @@ const BRAND_IONICONS = {
   google: 'logo-google',
 } satisfies Record<BrandIconName, IoniconName>;
 
-export type IconName = GlyphName | LegacyIconName;
+export type { IconName };
 
 export interface IconProps {
   name: IconName;
@@ -46,7 +45,7 @@ export function Icon({ name, size = 18, color, style }: IconProps) {
     );
   }
 
-  const glyphName = resolveGlyphName(name);
+  const glyphName = name as GlyphName;
   const filled = isFilledGlyphName(name);
 
   return (

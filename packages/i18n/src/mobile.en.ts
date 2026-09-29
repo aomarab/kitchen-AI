@@ -354,6 +354,7 @@ export const mobileEn = {
       stepTimerRunning: 'Timer running · {remaining}',
       stepTimerRunningStatus: 'Timer running',
       stepTimerDone: 'Timer finished',
+      stepTimerProgress: 'Timer progress',
       prev: 'Back',
       next: 'Next',
       finish: 'Finish',
@@ -625,6 +626,7 @@ export const mobileEn = {
       onboardTitle2: 'Set up your',
       onboardAccent: 'household.',
       continue: 'Continue',
+      passwordRuleUnmet: 'Not met',
     },
     sync: {
       offlineBanner: 'Offline — changes are saved and will sync automatically.',

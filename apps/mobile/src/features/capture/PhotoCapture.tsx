@@ -195,7 +195,7 @@ function MediaPressable({
  */
 export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCaptureProps) {
   const { t, locale, dir, prefs } = useFormat();
-  const { colors, scrim } = useTheme();
+  const { colors, scrim, isDark } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const setSession = useCaptureStore((state) => state.setSession);
@@ -879,7 +879,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
           paddingBottom: spacing.gutter,
         }}
       >
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <View style={{ minHeight: 44, justifyContent: 'center' }}>
           <View style={{ position: 'absolute', start: -spacing.md, top: 0 }}>
             <IconButton

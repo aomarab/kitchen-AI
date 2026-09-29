@@ -5,6 +5,9 @@ import { usePressFeedback } from './press-feedback';
 import { radius } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
+export const CHECKBOX_TARGET_SIZE = 44;
+const CHECKBOX_VISUAL_SIZE = 22;
+
 export interface CheckboxProps {
   checked: boolean;
   accessibilityLabel: string;
@@ -39,8 +42,8 @@ export function Checkbox({
       testID={testID}
       style={[
         {
-          width: 44,
-          height: 44,
+          width: CHECKBOX_TARGET_SIZE,
+          height: CHECKBOX_TARGET_SIZE,
           alignItems: 'center',
           justifyContent: 'center',
         },
@@ -50,8 +53,8 @@ export function Checkbox({
       <Animated.View
         style={[
           {
-            width: 22,
-            height: 22,
+            width: CHECKBOX_VISUAL_SIZE,
+            height: CHECKBOX_VISUAL_SIZE,
             borderRadius: radius.none,
             borderWidth: checked ? 0 : 1.5,
             borderColor,

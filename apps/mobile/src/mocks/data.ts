@@ -484,7 +484,7 @@ const RECIPE_DEFS: RecipeDef[] = [
         locale: 'en',
       },
       {
-        youtubeId: 'ar12345chx',
+        youtubeId: 'ar12345chxZ',
         title: 'دجاج بالأرز سهل',
         channel: 'مطبخ سهل',
         thumbnailUrl: 'https://images.kitchenai.dev/videos/chicken-rice-2.jpg',

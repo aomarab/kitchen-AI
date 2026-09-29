@@ -1,5 +1,6 @@
 import { View } from 'react-native';
-import { AppText, Illustration } from '../../components';
+import { AppText } from '../../components/AppText';
+import { Illustration } from '../../components/Illustration';
 import { useFormat } from '../../hooks/useFormat';
 import { creditBalanceAccessibilityLabel, totalCredits, type BalanceLike } from '../../lib/credits';
 import { formatQty } from '../../lib/format';

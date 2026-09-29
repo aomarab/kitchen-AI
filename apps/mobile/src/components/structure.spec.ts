@@ -100,6 +100,14 @@ describe('Coral structure source guards', () => {
     expect(source).not.toContain('icon?: IconName');
   });
 
+  it('keeps the credits upsell path out of the components barrel require cycle', () => {
+    const balanceTile = read('../features/credits/BalanceTile.tsx');
+
+    expect(balanceTile).toContain("from '../../components/AppText'");
+    expect(balanceTile).toContain("from '../../components/Illustration'");
+    expect(balanceTile).not.toContain("from '../../components'");
+  });
+
   it('uses square avatars and an AccountButton press target around a 32pt avatar', () => {
     expect(read('Avatar.tsx')).toContain('size?: 32 | 40 | 56 | 80');
     expect(read('Avatar.tsx')).toContain('backgroundColor: colors.primarySoft');
@@ -190,7 +198,7 @@ describe('Coral structure source guards', () => {
     expect(credit).toContain('Icon name="coins"');
     expect(credit).toContain('mobile.home.creditsLeft');
     expect(credit).toContain('mobile.home.topUp');
-    expect(credit).toContain('<DirectionalIcon name="chevron"');
+    expect(credit).toContain('<DirectionalIcon name="chevR"');
     expect(credit).toContain('const trailing = onTopUp ? (');
     expect(credit).toContain('{trailing}');
     const auth = read('AuthLayout.tsx');

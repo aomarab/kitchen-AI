@@ -17,12 +17,21 @@ export function clampQuantityToStepperRules(
   return max === undefined ? lowerBounded : Math.min(max, lowerBounded);
 }
 
+const EASTERN_ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+
+function normalizeQuantityInput(text: string): string {
+  return text
+    .trim()
+    .replace(/[٠-٩]/g, (digit) => String(EASTERN_ARABIC_DIGITS.indexOf(digit)))
+    .replace(/[٫,]/g, '.');
+}
+
 export function parseQuantityFieldValue(
   text: string,
   fallback: number,
   rules: QuantityInputRules = CAPTURE_QUANTITY_RULES,
 ): number {
-  const normalized = text.trim().replace(',', '.');
+  const normalized = normalizeQuantityInput(text);
   if (normalized.length === 0) return fallback;
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed)) return fallback;
