@@ -22,7 +22,7 @@ export function UsageSummary({ usage }: UsageSummaryProps) {
     <View style={{ gap: spacing.md }}>
       <AppText variant="heading">{t('mobile.aiUsage.today')}</AppText>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md }}>
-        <AppText variant="title" style={{ flex: 1 }}>
+        <AppText variant="numeral" style={{ flex: 1 }}>
           {t('mobile.aiUsage.spentOfBudget', { spent: spentLabel, budget: budgetLabel })}
         </AppText>
         <AppText variant="caption" muted>

@@ -592,10 +592,28 @@ describe('information architecture (spec §4)', () => {
     expect(packCard).not.toContain('accessibilityRole="radio"');
   });
 
+  it('opens the out-of-credits sheet from generate plan without changing the footer action', () => {
+    const generate = read('app', 'generate-plan.tsx');
+    const panel = read('features', 'credits', 'OutOfCreditsPanel.tsx');
+
+    expect(generate).toContain('const [creditsSheetOpen, setCreditsSheetOpen] = useState(false);');
+    expect(generate).toContain('setCreditsSheetOpen(true);');
+    expect(generate).toContain("title={t('mobile.plans.generateCta')}");
+    expect(generate).not.toContain("affordable ? t('mobile.plans.generateCta')");
+    expect(generate).toContain('visible={creditsSheetOpen}');
+    expect(generate).toContain("title={t('mobile.credits.outOfCreditsTitle')}");
+    expect(generate).toContain('<OutOfCreditsPanel');
+    expect(generate).toContain('onGetMore={goBuyCredits}');
+    expect(generate).toContain('router.push(`/buy-credits?action=${action}`)');
+    expect(panel).toContain('onGetMore');
+    expect(panel).toContain("t('mobile.credits.getMore')");
+  });
+
   it('shares the credits balance tile and renders the balance plus usage breakdown (spec §9.7)', () => {
     const buyCredits = read('screens', 'BuyCreditsScreen.tsx');
     const aiUsage = read('app', 'ai-usage.tsx');
     const usageSummary = read('features', 'credits', 'UsageSummary.tsx');
+    const balanceTile = read('features', 'credits', 'BalanceTile.tsx');
 
     expect(buyCredits).toContain("from '../features/credits/BalanceTile'");
     expect(aiUsage).toContain("from '../features/credits/BalanceTile'");
@@ -616,7 +634,11 @@ describe('information architecture (spec §4)', () => {
     expect(usageSummary).toContain('usageCreditsFromUsd');
     expect(usageSummary).toContain('<Progress');
     expect(usageSummary).toContain("t('mobile.aiUsage.spentOfBudget'");
+    expect(usageSummary).toContain('variant="numeral"');
     expect(usageSummary).toContain("t('mobile.aiUsage.callsCount'");
+    expect(balanceTile).toContain('accessible');
+    expect(balanceTile).toContain('creditBalanceAccessibilityLabel');
+    expect(balanceTile).toContain('accessibilityLabel={accessibilityLabel}');
     expect(aiUsage).not.toContain('spentUsd');
   });
 

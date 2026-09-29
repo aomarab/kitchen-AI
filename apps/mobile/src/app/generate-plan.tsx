@@ -20,6 +20,7 @@ import {
   LoadingState,
 } from '../components';
 import { usePressFeedback } from '../components/press-feedback';
+import { OutOfCreditsPanel } from '../features/credits/OutOfCreditsPanel';
 import { useCredits } from '../hooks/credits';
 import { useFormat } from '../hooks/useFormat';
 import { isTerminal, useJob } from '../hooks/job';
@@ -132,16 +133,12 @@ function GenerateFooter({
   cost,
   balance,
   loading,
-  affordable,
   onSubmit,
-  onBuyCredits,
 }: {
   cost: string;
   balance: string | null;
   loading: boolean;
-  affordable: boolean;
   onSubmit: () => void;
-  onBuyCredits: () => void;
 }) {
   const { t } = useFormat();
   return (
@@ -155,9 +152,9 @@ function GenerateFooter({
         ) : null}
       </View>
       <Button
-        title={affordable ? t('mobile.plans.generateCta') : t('mobile.credits.getMore')}
+        title={t('mobile.plans.generateCta')}
         loading={loading}
-        onPress={affordable ? onSubmit : onBuyCredits}
+        onPress={onSubmit}
         style={{ flex: 1 }}
       />
     </View>
@@ -200,6 +197,7 @@ export default function GeneratePlan() {
   const [cuisines, setCuisines] = useState<Cuisine[]>([]);
   const [maxCook, setMaxCook] = useState<number | null>(null);
   const [maxCookOpen, setMaxCookOpen] = useState(false);
+  const [creditsSheetOpen, setCreditsSheetOpen] = useState(false);
 
   const generate = useGeneratePlan();
   const credits = useCredits();
@@ -231,11 +229,14 @@ export default function GeneratePlan() {
     }
   }, [job.data, router]);
 
-  const goBuyCredits = () => router.push(`/buy-credits?action=${action}`);
+  const goBuyCredits = () => {
+    setCreditsSheetOpen(false);
+    router.push(`/buy-credits?action=${action}`);
+  };
 
   const submit = async () => {
     if (!affordable) {
-      goBuyCredits();
+      setCreditsSheetOpen(true);
       return;
     }
     const started = await generate.mutateAsync({
@@ -259,9 +260,7 @@ export default function GeneratePlan() {
             cost={formattedPrice}
             balance={balance}
             loading={generate.isPending}
-            affordable={affordable}
             onSubmit={() => void submit()}
-            onBuyCredits={goBuyCredits}
           />
         )
       }
@@ -371,23 +370,6 @@ export default function GeneratePlan() {
               ))}
             </View>
           </Section>
-
-          {!affordable ? (
-            <View
-              accessibilityRole="alert"
-              style={{
-                borderWidth: StyleSheet.hairlineWidth,
-                borderColor: colors.cardEdge,
-                backgroundColor: colors.surfaceAlt,
-                padding: spacing.lg,
-                gap: spacing.sm,
-              }}
-            >
-              <AppText variant="bodyStrong">
-                {t('mobile.credits.needMore', { needed: formatQty(locale, shortfall, prefs) })}
-              </AppText>
-            </View>
-          ) : null}
         </View>
       )}
 
@@ -425,6 +407,19 @@ export default function GeneratePlan() {
             );
           })}
         </View>
+      </Sheet>
+      <Sheet
+        visible={creditsSheetOpen}
+        onClose={() => setCreditsSheetOpen(false)}
+        title={t('mobile.credits.outOfCreditsTitle')}
+      >
+        <OutOfCreditsPanel
+          needed={shortfall > 0 ? formatQty(locale, shortfall, prefs) : null}
+          cost={formatQty(locale, price, prefs)}
+          balance={balance}
+          onGetMore={goBuyCredits}
+          onCancel={() => setCreditsSheetOpen(false)}
+        />
       </Sheet>
     </Screen>
   );

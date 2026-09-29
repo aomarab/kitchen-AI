@@ -255,7 +255,7 @@ describe('recipe and cook Coral rhythm', () => {
       expect(aiUsage).toContain('footer={');
       expect(aiUsage).toContain('<UsageSummary');
       expect(usageSummary).toContain('<Progress');
-      expect(usageSummary).toContain('variant="title"');
+      expect(usageSummary).toContain('variant="numeral"');
       expect(usageSummary).not.toContain('formatUsd');
     });
 

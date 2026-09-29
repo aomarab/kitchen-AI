@@ -4,6 +4,10 @@ import { AppText } from './AppText';
 import { Button } from './Button';
 import { Icon, type IconName } from './Icon';
 import { Illustration, type IllustrationName } from './Illustration';
+import { OutOfCreditsPanel } from '../features/credits/OutOfCreditsPanel';
+import { useFormat } from '../hooks/useFormat';
+import { formatQty } from '../lib/format';
+import { insufficientCreditsDetails } from '../lib/credits';
 import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
@@ -147,7 +151,7 @@ export interface ErrorStateProps {
 }
 
 export function ErrorState({ error, onRetry, compact = false }: ErrorStateProps) {
-  const { t } = useLocale();
+  const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const outOfCredits = isInsufficientCredits(error);
   const retryable = isRetryable(error);
@@ -157,12 +161,28 @@ export function ErrorState({ error, onRetry, compact = false }: ErrorStateProps)
       ? { label: t('common.retry'), onPress: onRetry }
       : undefined;
 
+  if (outOfCredits) {
+    const details = insufficientCreditsDetails(error);
+    return (
+      <View style={compact ? COMPACT_CENTER : { ...CENTER, alignItems: 'stretch' }}>
+        <OutOfCreditsPanel
+          compact={compact}
+          title={t('mobile.credits.outOfCreditsTitle')}
+          needed={details.needed !== null ? formatQty(locale, details.needed, prefs) : null}
+          cost={details.required !== null ? formatQty(locale, details.required, prefs) : null}
+          balance={details.available !== null ? formatQty(locale, details.available, prefs) : null}
+          fallbackMessage={t(errorMessageKey(error))}
+          onGetMore={() => router.push('/buy-credits')}
+        />
+      </View>
+    );
+  }
+
   return (
     <EmptyState
       compact={compact}
-      illustration={outOfCredits ? 'coins' : undefined}
-      icon={outOfCredits ? undefined : 'alert'}
-      title={outOfCredits ? t('mobile.credits.outOfCreditsTitle') : t('mobile.common.error')}
+      icon="alert"
+      title={t('mobile.common.error')}
       message={t(errorMessageKey(error))}
       actionLabel={action && (outOfCredits || retryable || onRetry) ? action.label : undefined}
       onAction={action?.onPress}

@@ -16,8 +16,8 @@ export function LowBalanceNotice({ balance }: LowBalanceNoticeProps) {
   return (
     <Banner
       accessibilityRole="alert"
-      icon="coins"
-      iconColor="danger"
+      icon="alert"
+      iconColor="warn"
       message={t('mobile.credits.belowMonthly', {
         needed: formatQty(locale, costOf('plan.monthly'), prefs),
       })}

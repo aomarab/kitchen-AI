@@ -85,7 +85,10 @@ describe('Coral structure source guards', () => {
     expect(read('Banner.tsx')).toContain('Icon name={icon} size={18}');
     expect(read('OfflineBanner.tsx')).toContain('<Banner');
     expect(read('SyncFailuresBanner.tsx')).toContain('<Banner');
-    expect(read('../features/credits/LowBalanceNotice.tsx')).toContain('<Banner');
+    const lowBalance = read('../features/credits/LowBalanceNotice.tsx');
+    expect(lowBalance).toContain('<Banner');
+    expect(lowBalance).toContain('icon="alert"');
+    expect(lowBalance).toContain('iconColor="warn"');
   });
 
   it('turns shared states into Coral illustration and skeleton states', () => {
@@ -101,17 +104,12 @@ describe('Coral structure source guards', () => {
   it('keeps only the insufficient-credit ErrorState branch on the credits upsell path', () => {
     const source = read('States.tsx');
     expect(source).toContain('const outOfCredits = isInsufficientCredits(error);');
-    expect(source).toContain(
-      "? { label: t('mobile.credits.getMore'), onPress: () => router.push('/buy-credits') }",
-    );
-    expect(source).toContain("illustration={outOfCredits ? 'coins' : undefined}");
-    expect(source).toContain("icon={outOfCredits ? undefined : 'alert'}");
-    expect(source).toContain(
-      "title={outOfCredits ? t('mobile.credits.outOfCreditsTitle') : t('mobile.common.error')}",
-    );
-    expect(source).toContain(
-      'actionLabel={action && (outOfCredits || retryable || onRetry) ? action.label : undefined}',
-    );
+    expect(source).toContain("from '../features/credits/OutOfCreditsPanel'");
+    expect(source).toContain('<OutOfCreditsPanel');
+    expect(source).toContain("title={t('mobile.credits.outOfCreditsTitle')}");
+    expect(source).toContain("onGetMore={() => router.push('/buy-credits')}");
+    expect(source).toContain('fallbackMessage={t(errorMessageKey(error))}');
+    expect(source).toContain('insufficientCreditsDetails(error)');
   });
 
   it('uses square avatars and an AccountButton press target around a 32pt avatar', () => {
