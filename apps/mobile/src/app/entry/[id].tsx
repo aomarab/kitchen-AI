@@ -19,8 +19,14 @@ import {
 } from '../../components';
 import { usePressFeedback } from '../../components/press-feedback';
 import { useFormat } from '../../hooks/useFormat';
-import { usePlan, useRegeneratePlanEntry, useUpdatePlanEntry } from '../../hooks/plans';
+import {
+  usePlan,
+  usePlanCoverage,
+  useRegeneratePlanEntry,
+  useUpdatePlanEntry,
+} from '../../hooks/plans';
 import { formatDateL, formatMinutes, formatQty, hijriCaption } from '../../lib/format';
+import { planEntryHaveBadge, type PlanEntryHaveBadge } from '../../lib/plan-entry-have-badge';
 import { planEntryStatus } from '../../lib/plan-entry-status';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
@@ -56,20 +62,22 @@ function RecipeRow({
   slot,
   dateLabel,
   servingsLabel,
-  haveLabel,
+  haveBadge,
   onPress,
 }: {
   entry: MealPlanEntry;
   slot: string;
   dateLabel: string;
   servingsLabel: string;
-  haveLabel: string;
+  haveBadge: { tone: 'success' | 'warn'; label: string } | null;
   onPress: () => void;
 }) {
   const { colors } = useTheme();
   const pressFeedback = usePressFeedback();
   const recipe = entry.recipe;
-  const accessibilityLabel = `${recipe.title}, ${slot}, ${dateLabel}, ${servingsLabel}, ${haveLabel}`;
+  const accessibilityLabel = [recipe.title, slot, dateLabel, servingsLabel, haveBadge?.label]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <Pressable
@@ -105,7 +113,7 @@ function RecipeRow({
           <AppText variant="caption" muted numberOfLines={1}>
             {slot} · {dateLabel} · {servingsLabel}
           </AppText>
-          <Badge tone={entry.fullyCovered ? 'success' : 'warn'} label={haveLabel} />
+          {haveBadge ? <Badge tone={haveBadge.tone} label={haveBadge.label} /> : null}
         </View>
         <DirectionalIcon name="chevR" size={18} color={colors.control} />
       </Animated.View>
@@ -113,11 +121,36 @@ function RecipeRow({
   );
 }
 
+function haveBadgeLabel({
+  badge,
+  t,
+  locale,
+  prefs,
+}: {
+  badge: PlanEntryHaveBadge | null;
+  t: ReturnType<typeof useFormat>['t'];
+  locale: ReturnType<typeof useFormat>['locale'];
+  prefs: ReturnType<typeof useFormat>['prefs'];
+}): { tone: 'success' | 'warn'; label: string } | null {
+  if (!badge) return null;
+  if (badge.labelKey === 'mobile.home.allInKitchen') {
+    return { tone: badge.tone, label: t(badge.labelKey) };
+  }
+  return {
+    tone: badge.tone,
+    label: t(badge.labelKey, { count: badge.count }).replace(
+      String(badge.count),
+      formatQty(locale, badge.count, prefs),
+    ),
+  };
+}
+
 export default function EntryDetail() {
   const { t, locale, prefs, showHijri } = useFormat();
   const router = useRouter();
   const { id, planId } = useLocalSearchParams<{ id: string; planId?: string }>();
   const plan = usePlan(planId ?? null);
+  const coverage = usePlanCoverage(planId ?? null);
   const update = useUpdatePlanEntry(planId ?? '');
   const regenerate = useRegeneratePlanEntry(planId ?? '');
 
@@ -165,7 +198,12 @@ export default function EntryDetail() {
   );
   const minutes = recipe.prepMinutes + recipe.cookMinutes;
   const minutesLabel = minutesMessage({ t, locale, prefs, minutes });
-  const haveLabel = entry.fullyCovered ? t('mobile.home.allInKitchen') : statusLabel;
+  const haveBadge = haveBadgeLabel({
+    badge: planEntryHaveBadge(entry, coverage.isSuccess ? coverage.data : undefined),
+    t,
+    locale,
+    prefs,
+  });
   const setEntryState = (state: MealPlanEntryState) =>
     update.mutate({ entryId: entry.id, body: { state } });
 
@@ -191,12 +229,17 @@ export default function EntryDetail() {
           slot={slot}
           dateLabel={hijriLabel ? `${dateLabel} · ${hijriLabel}` : dateLabel}
           servingsLabel={servingsLabel}
-          haveLabel={haveLabel}
+          haveBadge={haveBadge}
           onPress={() => router.push(`/recipe/${recipe.id}`)}
         />
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label">{t('mobile.plans.status')}</AppText>
+          <AppText
+            variant="label"
+            accessibilityLabel={`${t('mobile.plans.status')} ${statusLabel}`}
+          >
+            {t('mobile.plans.status')}
+          </AppText>
           <SegmentedControl<MealPlanEntryState>
             value={entry.state}
             onChange={setEntryState}

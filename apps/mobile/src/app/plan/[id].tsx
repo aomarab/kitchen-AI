@@ -73,6 +73,12 @@ export default function PlanDetail() {
             onSelectDate={setSelectedDate}
             onOpenEntry={(entry) => router.push(`/entry/${entry.id}?planId=${plan.data.id}`)}
           />
+          <PlanTiles
+            plan={plan.data}
+            coverage={coverage.isSuccess ? coverage.data : undefined}
+            variant="shortfall"
+            onOpenShopping={() => router.push('/shopping')}
+          />
         </View>
       )}
     </Screen>

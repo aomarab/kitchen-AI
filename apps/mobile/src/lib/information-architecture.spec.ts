@@ -111,6 +111,20 @@ describe('information architecture (spec §4)', () => {
     for (const key of ['plans.daily', 'plans.weekly', 'plans.monthly']) {
       expect(plans, `Plans segmented control must use ${key}`).toContain(`t('${key}')`);
     }
+    const weeklyBranch =
+      plans.match(/view === 'week'\s*\? \(([\s\S]*?)\)\s*:\s*view === 'day'/)?.[1] ?? '';
+    expect(
+      weeklyBranch,
+      'Plans weekly branch must be explicit so frame order stays guarded',
+    ).not.toHaveLength(0);
+    expect(
+      weeklyBranch.indexOf('<PlanTiles'),
+      'Weekly frame order must put progress immediately after the segmented control',
+    ).toBeLessThan(weeklyBranch.indexOf('<DayChipStrip'));
+    expect(
+      weeklyBranch.indexOf('<DayChipStrip'),
+      'Weekly frame order must put the day strip before plan-day rows',
+    ).toBeLessThan(weeklyBranch.indexOf('<PlanBoard'));
 
     const tiles = read('features', 'plans', 'PlanTiles.tsx');
     expect(tiles, 'Plan progress is now a J summary block, not legacy Bento tiles').not.toContain(
@@ -163,6 +177,23 @@ describe('information architecture (spec §4)', () => {
     expect(generate).toContain('<QuantityStepper');
     expect(generate).toContain('<Progress');
     expect(generate).toContain('footer=');
+    expect(generate, 'Generate default servings must match the pre-C8 request body').toContain(
+      'const [servings, setServings] = useState(2)',
+    );
+    expect(generate, 'Generate default max cook time must remain omitted').toContain(
+      'const [maxCook, setMaxCook] = useState<number | null>(null)',
+    );
+
+    const detail = read('app', 'plan', '[id].tsx');
+    expect(detail).toContain('variant="shortfall"');
+    expect(
+      detail.indexOf('<PlanTiles'),
+      'Plan detail must render week progress before plan-day rows',
+    ).toBeLessThan(detail.indexOf('<PlanBoard'));
+    expect(
+      detail.indexOf('<PlanBoard'),
+      'Plan detail must render the shortfall line after plan-day rows',
+    ).toBeLessThan(detail.indexOf('variant="shortfall"'));
   });
 
   it('draws the avatar as a 44pt AccountButton around a 32pt J avatar', () => {
@@ -407,6 +438,9 @@ describe('information architecture (spec §4)', () => {
     ).not.toContain('<Tile');
     expect(entry).toContain('<SegmentedControl');
     expect(entry).toContain('value={entry.state}');
+    expect(entry).toContain('usePlanCoverage');
+    expect(entry).toContain('planEntryHaveBadge');
+    expect(entry).not.toContain("entry.fullyCovered ? t('mobile.home.allInKitchen') : statusLabel");
     expect(entry).toContain("value: 'planned'");
     expect(entry).toContain("value: 'cooked'");
     expect(entry).toContain("value: 'skipped'");

@@ -99,32 +99,74 @@ export default function Plans() {
           />
         ) : (
           <>
-            {view !== 'month' ? (
-              <DayChipStrip
-                plan={plan}
-                selectedDate={selectedDate}
-                onSelectDate={(date) => {
-                  setSelectedDate(date);
-                  setView('day');
-                }}
-              />
-            ) : null}
-
-            <PlanTiles
-              plan={plan}
-              coverage={coverage.isSuccess ? coverage.data : undefined}
-              variant={view === 'day' ? 'shortfall' : 'summary'}
-              onOpenShopping={openShopping}
-            />
-
-            <PlanBoard
-              plan={plan}
-              view={view}
-              selectedDate={selectedDate}
-              coverage={coverage.isSuccess ? coverage.data : undefined}
-              onSelectDate={setSelectedDate}
-              onOpenEntry={(entry) => router.push(`/entry/${entry.id}?planId=${plan.id}`)}
-            />
+            {view === 'week' ? (
+              <>
+                <PlanTiles
+                  plan={plan}
+                  coverage={coverage.isSuccess ? coverage.data : undefined}
+                  variant="summary"
+                  onOpenShopping={openShopping}
+                />
+                <DayChipStrip
+                  plan={plan}
+                  selectedDate={selectedDate}
+                  onSelectDate={(date) => {
+                    setSelectedDate(date);
+                    setView('day');
+                  }}
+                />
+                <PlanBoard
+                  plan={plan}
+                  view={view}
+                  selectedDate={selectedDate}
+                  coverage={coverage.isSuccess ? coverage.data : undefined}
+                  onSelectDate={setSelectedDate}
+                  onOpenEntry={(entry) => router.push(`/entry/${entry.id}?planId=${plan.id}`)}
+                />
+              </>
+            ) : view === 'day' ? (
+              <>
+                <DayChipStrip
+                  plan={plan}
+                  selectedDate={selectedDate}
+                  onSelectDate={(date) => {
+                    setSelectedDate(date);
+                    setView('day');
+                  }}
+                />
+                <PlanTiles
+                  plan={plan}
+                  coverage={coverage.isSuccess ? coverage.data : undefined}
+                  variant="shortfall"
+                  onOpenShopping={openShopping}
+                />
+                <PlanBoard
+                  plan={plan}
+                  view={view}
+                  selectedDate={selectedDate}
+                  coverage={coverage.isSuccess ? coverage.data : undefined}
+                  onSelectDate={setSelectedDate}
+                  onOpenEntry={(entry) => router.push(`/entry/${entry.id}?planId=${plan.id}`)}
+                />
+              </>
+            ) : (
+              <>
+                <PlanTiles
+                  plan={plan}
+                  coverage={coverage.isSuccess ? coverage.data : undefined}
+                  variant="summary"
+                  onOpenShopping={openShopping}
+                />
+                <PlanBoard
+                  plan={plan}
+                  view={view}
+                  selectedDate={selectedDate}
+                  coverage={coverage.isSuccess ? coverage.data : undefined}
+                  onSelectDate={setSelectedDate}
+                  onOpenEntry={(entry) => router.push(`/entry/${entry.id}?planId=${plan.id}`)}
+                />
+              </>
+            )}
           </>
         )}
       </View>

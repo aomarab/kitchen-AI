@@ -195,10 +195,10 @@ export default function GeneratePlan() {
 
   const [scope, setScope] = useState<PlanScope>('weekly');
   const [startsOn, setStartsOn] = useState(todayISODate());
-  const [servings, setServings] = useState(4);
+  const [servings, setServings] = useState(2);
   const [slots, setSlots] = useState<MealSlot[]>(['breakfast', 'lunch', 'dinner']);
   const [cuisines, setCuisines] = useState<Cuisine[]>([]);
-  const [maxCook, setMaxCook] = useState<number | null>(45);
+  const [maxCook, setMaxCook] = useState<number | null>(null);
   const [maxCookOpen, setMaxCookOpen] = useState(false);
 
   const generate = useGeneratePlan();
