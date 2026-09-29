@@ -35,7 +35,7 @@ export default function PlanDetail() {
       ) : plan.isError || !plan.data ? (
         <ErrorState error={plan.error} onRetry={() => void plan.refetch()} />
       ) : plan.data.entries.length === 0 ? (
-        <EmptyState icon="plans" title={t('plans.empty')} />
+        <EmptyState illustration="calendar" title={t('plans.empty')} />
       ) : (
         <View style={{ gap: spacing.md }}>
           <PlanTiles
@@ -48,9 +48,9 @@ export default function PlanDetail() {
             value={view}
             onChange={setView}
             options={[
-              { value: 'day', label: t('mobile.plans.day') },
-              { value: 'week', label: t('mobile.plans.week') },
-              { value: 'month', label: t('mobile.plans.month') },
+              { value: 'day', label: t('plans.daily') },
+              { value: 'week', label: t('plans.weekly') },
+              { value: 'month', label: t('plans.monthly') },
             ]}
           />
 
@@ -69,6 +69,7 @@ export default function PlanDetail() {
             plan={plan.data}
             view={view}
             selectedDate={selectedDate}
+            coverage={coverage.isSuccess ? coverage.data : undefined}
             onSelectDate={setSelectedDate}
             onOpenEntry={(entry) => router.push(`/entry/${entry.id}?planId=${plan.data.id}`)}
           />

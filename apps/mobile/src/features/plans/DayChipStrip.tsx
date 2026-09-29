@@ -1,13 +1,17 @@
 import { useMemo } from 'react';
-import { View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
 import type { MealPlan } from '@kitchen/contracts';
-import { AppText, Chip } from '../../components';
+import { AppText } from '../../components';
+import { usePressFeedback } from '../../components/press-feedback';
 import { useFormat } from '../../hooks/useFormat';
 import { todayISODate } from '../../lib/expiry';
 import { formatDateL } from '../../lib/format';
-import { planWeekDays } from '../../lib/plans';
-import { radius, spacing } from '../../theme';
+import { planWeekDays, type PlanWeekDay } from '../../lib/plans';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
+
+const DAY_CELL_WIDTH = 44;
+const DAY_CELL_HEIGHT = 60;
 
 export interface DayChipStripProps {
   plan: MealPlan;
@@ -16,62 +20,75 @@ export interface DayChipStripProps {
   onSelectDate: (date: string) => void;
 }
 
+function DayCell({
+  day,
+  onSelectDate,
+}: {
+  day: PlanWeekDay;
+  onSelectDate: (date: string) => void;
+}) {
+  const { t, locale } = useFormat();
+  const { colors } = useTheme();
+  const pressFeedback = usePressFeedback();
+  const date = `${day.date}T00:00:00`;
+  const weekday = formatDateL(locale, date, { weekday: 'short' });
+  const dayNumber = formatDateL(locale, date, { day: 'numeric' });
+  const selected = day.isSelected;
+  const textColor = selected ? colors.onFill : day.isToday ? colors.primaryText : colors.text;
+  const mutedColor = selected ? colors.onFill : day.isToday ? colors.primaryText : colors.textMuted;
+  const label = [
+    formatDateL(locale, date, { dateStyle: 'medium' }),
+    day.planned ? t('mobile.plans.dayPlanned') : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: day.isSelected }}
+      onPress={() => onSelectDate(day.date)}
+      {...pressFeedback.pressHandlers}
+      style={{ minHeight: 44, flex: 1, alignItems: 'center' }}
+    >
+      <Animated.View
+        style={[
+          {
+            width: DAY_CELL_WIDTH,
+            minHeight: DAY_CELL_HEIGHT,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            backgroundColor: selected ? colors.primary : 'transparent',
+          },
+          pressFeedback.animatedStyle,
+        ]}
+      >
+        <AppText variant="small" style={{ color: mutedColor }}>
+          {weekday}
+        </AppText>
+        <AppText variant="bodyStrong" style={{ color: textColor }}>
+          {dayNumber}
+        </AppText>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 export function DayChipStrip({
   plan,
   selectedDate,
   today = todayISODate(),
   onSelectDate,
 }: DayChipStripProps) {
-  const { t, locale } = useFormat();
-  const { colors } = useTheme();
   const days = useMemo(() => planWeekDays(plan, selectedDate, today), [plan, selectedDate, today]);
 
   return (
     <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-      {days.map((day) => {
-        const primary = day.isToday;
-        const labelColor = primary ? colors.onFill : day.isSelected ? colors.bg : colors.text;
-        const dotColor = primary ? colors.onFill : colors.primary;
-        const weekday = formatDateL(locale, day.date, { weekday: 'narrow' });
-        const dayNumber = formatDateL(locale, day.date, { day: 'numeric' });
-        const planned = day.planned ? t('mobile.plans.dayPlanned') : null;
-        const label = [weekday, dayNumber, planned].filter(Boolean).join(', ');
-
-        return (
-          <View key={day.date} style={{ flex: 1, minWidth: 0 }}>
-            <Chip
-              label={label}
-              accessibilityLabel={label}
-              accessibilityState={{ selected: day.isSelected }}
-              selected={day.isSelected}
-              tone={primary ? 'primary' : 'default'}
-              onPress={() => onSelectDate(day.date)}
-              style={{ minHeight: 56, paddingHorizontal: spacing.xs, alignItems: 'center' }}
-            >
-              <View style={{ alignItems: 'center', gap: 2 }}>
-                <AppText variant="caption" style={{ color: labelColor }}>
-                  {weekday}
-                </AppText>
-                <AppText variant="bodyStrong" style={{ color: labelColor }}>
-                  {dayNumber}
-                </AppText>
-                {day.planned ? (
-                  <View
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: radius.pill,
-                      backgroundColor: dotColor,
-                    }}
-                  />
-                ) : (
-                  <View style={{ width: 6, height: 6 }} />
-                )}
-              </View>
-            </Chip>
-          </View>
-        );
-      })}
+      {days.map((day) => (
+        <DayCell key={day.date} day={day} onSelectDate={onSelectDate} />
+      ))}
     </View>
   );
 }

@@ -1,28 +1,29 @@
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { View } from 'react-native';
-import type { MealSlot } from '@kitchen/contracts';
+import type { MealPlanEntry, MealPlanEntryState, MealSlot } from '@kitchen/contracts';
 import type { MessageKey } from '@kitchen/i18n';
 import {
-  Screen,
-  Header,
   AppText,
   Badge,
-  Bento,
   Button,
-  Card,
-  Chip,
-  QuantityStepper,
-  LoadingState,
-  ErrorState,
+  DirectionalIcon,
   EmptyState,
+  ErrorState,
+  Header,
+  ListRow,
+  LoadingState,
+  QuantityStepper,
   RecipeThumb,
-  Tile,
+  Screen,
+  SegmentedControl,
 } from '../../components';
+import { usePressFeedback } from '../../components/press-feedback';
 import { useFormat } from '../../hooks/useFormat';
-import { usePlan, useUpdatePlanEntry, useRegeneratePlanEntry } from '../../hooks/plans';
-import { formatMinutes, formatDateL, formatQty, hijriCaption } from '../../lib/format';
+import { usePlan, useRegeneratePlanEntry, useUpdatePlanEntry } from '../../hooks/plans';
+import { formatDateL, formatMinutes, formatQty, hijriCaption } from '../../lib/format';
 import { planEntryStatus } from '../../lib/plan-entry-status';
-import { radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
 const SLOT_KEY: Record<MealSlot, MessageKey> = {
   breakfast: 'plans.breakfast',
@@ -31,7 +32,86 @@ const SLOT_KEY: Record<MealSlot, MessageKey> = {
   snack: 'plans.snack',
 };
 
-const MINI_TILE_HEIGHT = 112;
+const ENTRY_ACTION_ROW_MIN_HEIGHT = 56;
+
+function minutesMessage({
+  t,
+  locale,
+  prefs,
+  minutes,
+}: {
+  t: ReturnType<typeof useFormat>['t'];
+  locale: ReturnType<typeof useFormat>['locale'];
+  prefs: ReturnType<typeof useFormat>['prefs'];
+  minutes: number;
+}) {
+  return t('mobile.plans.minutesValue', { minutes }).replace(
+    String(minutes),
+    formatMinutes(locale, minutes, prefs),
+  );
+}
+
+function RecipeRow({
+  entry,
+  slot,
+  dateLabel,
+  servingsLabel,
+  haveLabel,
+  onPress,
+}: {
+  entry: MealPlanEntry;
+  slot: string;
+  dateLabel: string;
+  servingsLabel: string;
+  haveLabel: string;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  const pressFeedback = usePressFeedback();
+  const recipe = entry.recipe;
+  const accessibilityLabel = `${recipe.title}, ${slot}, ${dateLabel}, ${servingsLabel}, ${haveLabel}`;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      {...pressFeedback.pressHandlers}
+    >
+      <Animated.View
+        style={[
+          {
+            minHeight: 92,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 14,
+            paddingVertical: 10,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: colors.rowline,
+          },
+          pressFeedback.animatedStyle,
+        ]}
+      >
+        <RecipeThumb
+          heroImageUrl={recipe.heroImageUrl}
+          dishKey={recipe.id}
+          title={recipe.title}
+          size={72}
+        />
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+          <AppText variant="bodyStrong" numberOfLines={2}>
+            {recipe.title}
+          </AppText>
+          <AppText variant="caption" muted numberOfLines={1}>
+            {slot} · {dateLabel} · {servingsLabel}
+          </AppText>
+          <Badge tone={entry.fullyCovered ? 'success' : 'warn'} label={haveLabel} />
+        </View>
+        <DirectionalIcon name="chevR" size={18} color={colors.control} />
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export default function EntryDetail() {
   const { t, locale, prefs, showHijri } = useFormat();
@@ -41,7 +121,7 @@ export default function EntryDetail() {
   const update = useUpdatePlanEntry(planId ?? '');
   const regenerate = useRegeneratePlanEntry(planId ?? '');
 
-  const entry = plan.data?.entries.find((e) => e.id === id);
+  const entry = plan.data?.entries.find((candidate) => candidate.id === id);
 
   if (plan.isLoading) {
     return (
@@ -63,7 +143,7 @@ export default function EntryDetail() {
     return (
       <Screen>
         <Header title={t('mobile.plans.entryTitle')} onBack={() => router.back()} />
-        <EmptyState icon="plans" title={t('errors.NOT_FOUND')} />
+        <EmptyState illustration="calendar" title={t('errors.NOT_FOUND')} />
       </Screen>
     );
   }
@@ -73,139 +153,95 @@ export default function EntryDetail() {
   const status = planEntryStatus(entry);
   const statusLabel = t(status.labelKey);
   const dateLabel = formatDateL(locale, entry.date, {
+    weekday: 'short',
     month: 'short',
     day: 'numeric',
   });
   const hijriLabel = hijriCaption(locale, `${entry.date}T00:00:00`, showHijri);
   const servings = formatQty(locale, entry.servings, prefs);
+  const servingsLabel = t('recipe.servings', { count: entry.servings }).replace(
+    String(entry.servings),
+    servings,
+  );
   const minutes = recipe.prepMinutes + recipe.cookMinutes;
-  const minutesLabel = t('recipe.cookTime', {
-    minutes: formatMinutes(locale, minutes, prefs),
-  });
-  const servingsAccessibility = `${t('mobile.plans.servings')} ${servings}`;
-  const decrementServings = () =>
-    update.mutate({ entryId: entry.id, body: { servings: Math.max(1, entry.servings - 1) } });
-  const incrementServings = () =>
-    update.mutate({ entryId: entry.id, body: { servings: entry.servings + 1 } });
+  const minutesLabel = minutesMessage({ t, locale, prefs, minutes });
+  const haveLabel = entry.fullyCovered ? t('mobile.home.allInKitchen') : statusLabel;
+  const setEntryState = (state: MealPlanEntryState) =>
+    update.mutate({ entryId: entry.id, body: { state } });
 
   return (
-    <Screen scroll>
+    <Screen
+      scroll
+      footer={
+        <View style={{ gap: spacing.sm }}>
+          <Button
+            title={t('mobile.recipe.startCooking')}
+            variant="secondary"
+            onPress={() => router.push(`/recipe/${recipe.id}/cook`)}
+          />
+          <Button title={t('mobile.plans.keepMeal')} onPress={() => router.back()} />
+        </View>
+      }
+    >
       <Header title={t('mobile.plans.entryTitle')} onBack={() => router.back()} />
 
-      <Card style={{ gap: spacing.lg, borderRadius: radius.xl }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <RecipeThumb
-            heroImageUrl={recipe.heroImageUrl}
-            dishKey={`${recipe.locale}:${recipe.title}`}
-            title={recipe.title}
-            accessibilityLabel={t('mobile.recipe.imageLabel', { title: recipe.title })}
-            style={{ width: 64, height: 64, borderRadius: radius.md }}
+      <View style={{ gap: spacing.xl }}>
+        <RecipeRow
+          entry={entry}
+          slot={slot}
+          dateLabel={hijriLabel ? `${dateLabel} · ${hijriLabel}` : dateLabel}
+          servingsLabel={servingsLabel}
+          haveLabel={haveLabel}
+          onPress={() => router.push(`/recipe/${recipe.id}`)}
+        />
+
+        <View style={{ gap: spacing.sm }}>
+          <AppText variant="label">{t('mobile.plans.status')}</AppText>
+          <SegmentedControl<MealPlanEntryState>
+            value={entry.state}
+            onChange={setEntryState}
+            options={[
+              { value: 'planned', label: t('plans.planned') },
+              { value: 'cooked', label: t('plans.cooked') },
+              { value: 'skipped', label: t('plans.skipped') },
+            ]}
           />
-          <View style={{ flex: 1 }}>
-            <AppText variant="display">{recipe.title}</AppText>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <AppText variant="label">{t('mobile.plans.servings')}</AppText>
             <AppText variant="caption" muted>
               {minutesLabel}
             </AppText>
           </View>
+          <QuantityStepper
+            value={entry.servings}
+            min={1}
+            onChange={(nextServings) =>
+              update.mutate({ entryId: entry.id, body: { servings: nextServings } })
+            }
+            label={servings}
+            accessibilityLabel={`${t('mobile.plans.servings')} ${servings}`}
+            accessible={false}
+            decrementLabel={t('mobile.common.decrease')}
+            incrementLabel={t('mobile.common.increase')}
+          />
         </View>
 
-        <Bento>
-          <Tile
-            span={2}
-            fill="surfaceAlt"
-            height={MINI_TILE_HEIGHT}
-            accessibilityRole="adjustable"
-            accessibilityLabel={servingsAccessibility}
-            actions={[
-              { name: 'increment', label: t('mobile.common.increase'), onPress: incrementServings },
-              { name: 'decrement', label: t('mobile.common.decrease'), onPress: decrementServings },
-            ]}
-          >
-            <View style={{ gap: spacing.sm }}>
-              <AppText variant="label" muted>
-                {t('mobile.plans.servings')}
-              </AppText>
-              <QuantityStepper
-                value={entry.servings}
-                min={1}
-                onChange={(nextServings) =>
-                  update.mutate({ entryId: entry.id, body: { servings: nextServings } })
-                }
-                label={servings}
-                accessibilityLabel={servingsAccessibility}
-                accessible={false}
-                decrementLabel={t('mobile.common.decrease')}
-                incrementLabel={t('mobile.common.increase')}
-              />
-            </View>
-          </Tile>
-          <Tile
-            fill="surfaceAlt"
-            height={MINI_TILE_HEIGHT}
-            accessibilityLabel={`${slot}, ${dateLabel}${hijriLabel ? `, ${hijriLabel}` : ''}`}
-          >
-            <View style={{ gap: spacing.sm }}>
-              <AppText variant="label" muted>
-                {slot}
-              </AppText>
-              <Chip label={dateLabel} variant="tag" />
-              {hijriLabel ? (
-                <AppText variant="caption" muted>
-                  {hijriLabel}
-                </AppText>
-              ) : null}
-            </View>
-          </Tile>
-          <Tile
-            fill="surfaceAlt"
-            height={MINI_TILE_HEIGHT}
-            weight={1.4}
-            accessibilityLabel={`${t('mobile.plans.status')} ${statusLabel}`}
-          >
-            <View style={{ gap: spacing.sm }}>
-              <AppText variant="label" muted>
-                {t('mobile.plans.status')}
-              </AppText>
-              <Badge tone={status.tone} label={statusLabel} />
-            </View>
-          </Tile>
-        </Bento>
-      </Card>
-
-      <Button
-        title={t('mobile.home.viewRecipe')}
-        onPress={() => router.push(`/recipe/${recipe.id}`)}
-      />
-      <Button
-        title={t('mobile.recipe.startCooking')}
-        variant="secondary"
-        icon="flame"
-        onPress={() => router.push(`/recipe/${recipe.id}/cook`)}
-      />
-      <Button
-        title={t('mobile.plans.changeMeal')}
-        variant="secondary"
-        icon="swap"
-        loading={regenerate.isPending}
-        onPress={() =>
-          regenerate.mutate({ entryId: entry.id, body: { excludeRecipeIds: [recipe.id] } })
-        }
-      />
-
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Button
-          title={t('plans.cooked')}
-          variant="secondary"
-          icon="check"
-          onPress={() => update.mutate({ entryId: entry.id, body: { state: 'cooked' } })}
-          style={{ flex: 1 }}
-        />
-        <Button
-          title={t('plans.skipped')}
-          variant="secondary"
-          onPress={() => update.mutate({ entryId: entry.id, body: { state: 'skipped' } })}
-          style={{ flex: 1 }}
-        />
+        <View>
+          <ListRow
+            title={t('mobile.plans.changeMeal')}
+            subtitle={regenerate.isPending ? t('mobile.plans.regenerating') : undefined}
+            icon="shuffle"
+            showChevron
+            style={{ minHeight: ENTRY_ACTION_ROW_MIN_HEIGHT }}
+            accessibilityState={{ busy: regenerate.isPending }}
+            onPress={() =>
+              regenerate.mutate({ entryId: entry.id, body: { excludeRecipeIds: [recipe.id] } })
+            }
+          />
+        </View>
       </View>
     </Screen>
   );

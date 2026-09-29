@@ -92,7 +92,7 @@ describe('mobile source sweep', () => {
     'ReviewList.tsx': { path: 'features/capture/ReviewList.tsx', pattern: /minHeight:\s*(\d+)/ },
     'DayChipStrip.tsx': {
       path: 'features/plans/DayChipStrip.tsx',
-      pattern: /minHeight:\s*(\d+)/,
+      pattern: /DAY_CELL_HEIGHT\s*=\s*(\d+)/,
     },
     'shopping.tsx': { path: 'app/(tabs)/shopping.tsx', pattern: /size=\{(\d+)\}/ },
     'AddItemField.tsx': {
@@ -113,7 +113,10 @@ describe('mobile source sweep', () => {
       path: 'app/item/[id].tsx',
       pattern: /ITEM_DETAIL_MIN_TOUCH_TARGET\s*=\s*(\d+)/,
     },
-    'entry/[id].tsx': { path: 'app/entry/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
+    'entry/[id].tsx': {
+      path: 'app/entry/[id].tsx',
+      pattern: /ENTRY_ACTION_ROW_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
     'screen.tsx': { path: 'app/screen.tsx', pattern: /MINI_CARD_ICON_SIZE\s*=\s*(\d+)/ },
     'wellness.tsx': { path: 'app/wellness.tsx', pattern: /NUDGE_ICON_SIZE\s*=\s*(\d+)/ },
     'WeekStrip.tsx': {

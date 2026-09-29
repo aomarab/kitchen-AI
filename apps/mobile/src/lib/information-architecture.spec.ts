@@ -98,24 +98,71 @@ describe('information architecture (spec §4)', () => {
     expect(read('components', 'TabHeader.tsx')).toContain('<AccountButton');
   });
 
-  it('keeps the Plan surfaces on the G7 Bento contract', () => {
+  it('keeps the Plan surfaces on the Coral agenda contract', () => {
     const plans = read('app', '(tabs)', 'plans.tsx');
     expect(plans).toContain('<DayChipStrip');
     expect(plans).toContain('<PlanTiles');
+    expect(plans).toContain('<PlanBoard');
+    expect(plans, 'Plans header action migrated off RoundButton').not.toContain('RoundButton');
+    expect(plans, 'Plans header must keep the generate action').toContain('<IconButton');
+    expect(plans, 'Plans empty state must use the J calendar illustration').toContain(
+      'illustration="calendar"',
+    );
+    for (const key of ['plans.daily', 'plans.weekly', 'plans.monthly']) {
+      expect(plans, `Plans segmented control must use ${key}`).toContain(`t('${key}')`);
+    }
 
     const tiles = read('features', 'plans', 'PlanTiles.tsx');
-    expect(tiles).toContain("'mobile.plans.cookedCaption'");
-    expect(tiles).toContain("'mobile.plans.toBuyCaption'");
-    expect(tiles).not.toContain('name="warning"');
+    expect(tiles, 'Plan progress is now a J summary block, not legacy Bento tiles').not.toContain(
+      '<Bento',
+    );
+    expect(
+      tiles,
+      'Plan progress is now a J summary block, not legacy Tile bridge props',
+    ).not.toContain('<Tile');
+    expect(tiles).toContain('function PlanSummaryBlock');
+    expect(tiles).toContain('function PlanShortfallLine');
+    expect(tiles).toContain('usePressFeedback()');
+    expect(tiles).toContain("'mobile.plans.addToList'");
+    expect(tiles).not.toMatch(/\b(tint|fill|compact)=/);
     expect(tiles).not.toContain('icon="warning"');
-    for (const key of ['mobile.plans.cookedCaption', 'mobile.plans.toBuyCaption']) {
+    for (const key of [
+      'mobile.plans.cookedCaption',
+      'mobile.plans.toBuyCaption',
+      'mobile.plans.addToList',
+    ]) {
       expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
       expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
     }
 
+    const strip = read('features', 'plans', 'DayChipStrip.tsx');
+    expect(strip).toContain('const DAY_CELL_WIDTH = 44');
+    expect(strip).toContain('const DAY_CELL_HEIGHT = 60');
+    expect(strip).toContain('accessibilityState={{ selected: day.isSelected }}');
+    expect(
+      strip,
+      'Plans day cells own selection; they should not inherit Chip styling',
+    ).not.toContain('<Chip');
+
+    const board = read('features', 'plans', 'PlanBoard.tsx');
+    expect(board).toContain('function PlanDayRow');
+    expect(board).toContain('function MealEntryRow');
+    expect(board).toContain('function EmptySlotRow');
+    expect(board).toContain('usePressFeedback()');
+    expect(board).toContain('planEntryStatus');
+    expect(board).toContain('size={56}');
+    expect(board).toContain('size={72}');
+    expect(board).not.toContain('pressed ?');
+    expect(board).not.toContain('<ListGroup');
+
     const generate = read('app', 'generate-plan.tsx');
-    expect(generate).toContain('<OrbMascot');
-    expect(generate).toContain('state="looking"');
+    expect(generate, 'Generate plan must retire the orb mascot').not.toContain('<OrbMascot');
+    expect(generate).toContain('<Avatar');
+    expect(generate).toContain('<DateField');
+    expect(generate).toContain('<SegmentedControl');
+    expect(generate).toContain('<QuantityStepper');
+    expect(generate).toContain('<Progress');
+    expect(generate).toContain('footer=');
   });
 
   it('draws the avatar as a 44pt AccountButton around a 32pt J avatar', () => {
@@ -346,32 +393,34 @@ describe('information architecture (spec §4)', () => {
     ).toContain('style={{ color: colors.danger }}');
   });
 
-  it('keeps Entry detail on shared Bento tiles and status semantics (spec §9.7)', () => {
+  it('keeps Entry detail on the Coral meal-sheet route contract (spec §9.7)', () => {
     const entry = read('app', 'entry', '[id].tsx');
     const board = read('features', 'plans', 'PlanBoard.tsx');
 
-    expect(entry, 'Entry mini tiles must use the shared Bento primitive').toContain('<Bento>');
     expect(
       entry,
-      'Entry mini tiles must use shared Tile, not a screen-local MiniTile',
-    ).not.toContain('MiniTile');
+      'Entry detail is now the J meal-sheet layout, not the old Bento mini tiles',
+    ).not.toContain('<Bento');
+    expect(
+      entry,
+      'Entry detail is now the J meal-sheet layout, not shared Tile mini cards',
+    ).not.toContain('<Tile');
+    expect(entry).toContain('<SegmentedControl');
+    expect(entry).toContain('value={entry.state}');
+    expect(entry).toContain("value: 'planned'");
+    expect(entry).toContain("value: 'cooked'");
+    expect(entry).toContain("value: 'skipped'");
+    expect(entry).toContain("t('mobile.plans.keepMeal')");
+    expect(entry).toContain("t('mobile.plans.changeMeal')");
+    expect(entry, 'Entry recipe row must keep the recipe detail route').toContain(
+      'router.push(`/recipe/${recipe.id}`)',
+    );
+    expect(entry, 'Entry must keep cook-mode navigation in a quiet secondary spot').toContain(
+      'router.push(`/recipe/${recipe.id}/cook`)',
+    );
     expect(entry, 'Entry status title must be a stable label, not badge copy').toContain(
       "t('mobile.plans.status')",
     );
-    const dateTile =
-      entry.match(/<Tile[\s\S]*?accessibilityLabel=\{`\$\{slot\}[\s\S]*?<\/Tile>/)?.[0] ?? '';
-    const statusTile =
-      entry.match(
-        /<Tile[\s\S]*?accessibilityLabel=\{`\$\{t\('mobile\.plans\.status'\)\}[\s\S]*?<\/Tile>/,
-      )?.[0] ?? '';
-    expect(
-      dateTile,
-      'Entry date tile must stay the narrower half because its chip is short',
-    ).not.toContain('weight={1.4}');
-    expect(
-      statusTile,
-      'Entry status tile must be the wider half so long badges stay one line',
-    ).toContain('weight={1.4}');
     expect(entry, 'Entry status must come from the shared helper').toContain('planEntryStatus');
     expect(entry, 'Entry Hijri caption must share the format eligibility helper').toContain(
       'hijriCaption(locale',
