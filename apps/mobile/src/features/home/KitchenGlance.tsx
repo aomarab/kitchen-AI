@@ -1,23 +1,12 @@
 import { useMemo } from 'react';
 import { View } from 'react-native';
-import type { InventoryItem, StorageLocation, StorageLocationType } from '@kitchen/contracts';
+import type { InventoryItem, StorageLocation } from '@kitchen/contracts';
 import type { MessageKey, Translator } from '@kitchen/i18n';
 import { AppText, Bento, SectionLabel, Tile } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { formatQty, locationLabel } from '../../lib/format';
-import { placeAccessibilityLabel, rankPlaces } from '../../lib/kitchen';
+import { placeAccessibilityLabel, placeIllustration, rankPlaces } from '../../lib/kitchen';
 import { spacing } from '../../theme';
-
-const PLACE_ILLUSTRATION: Record<
-  StorageLocationType,
-  'fridge' | 'freezer' | 'pantry' | 'spicerack'
-> = {
-  fridge: 'fridge',
-  freezer: 'freezer',
-  pantry: 'pantry',
-  spice_rack: 'spicerack',
-  other: 'pantry',
-};
 
 function countMessage(
   t: Translator,
@@ -47,7 +36,7 @@ function PlaceTile({
   return (
     <Tile
       variant="place"
-      illustration={PLACE_ILLUSTRATION[place.location.type]}
+      illustration={placeIllustration(place.location.type)}
       count={label}
       caption={countText}
       badgeLabel={soonBadge}

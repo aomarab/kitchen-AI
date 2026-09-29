@@ -259,6 +259,7 @@ describe('information architecture (spec §4)', () => {
 
   it('keeps Item detail on the append-only event-ledger contract (spec §9.7)', () => {
     const item = read('app', 'item', '[id].tsx');
+    const productReview = read('features', 'inventory', 'ProductReview.tsx');
 
     expect(item, 'Item detail must read household event history').toContain('useInventoryEvents');
     expect(item, 'Item detail must filter history through the pure helper').toContain(
@@ -271,19 +272,69 @@ describe('information architecture (spec §4)', () => {
       item,
       'The quantity stepper must still write corrected deltas to useAdjustQuantity, not updateInventoryItem',
     ).toContain("adjust.mutate({ itemId: item.id, delta, unit: item.unit, reason: 'corrected' })");
+    const updateBody = item.match(/update\.mutate\(\s*\{([\s\S]*?)\}\s*,\s*\{/);
+    expect(updateBody, 'Item detail must keep one updateInventoryItem save body').not.toBeNull();
     expect(
-      item,
-      'The variable-length expiry badge belongs in the body, not Header trailing',
-    ).not.toMatch(/<Header[\s\S]*?trailing=/);
-    expect(item, 'Item mini tiles must use the shared Bento primitive').toContain('<Bento>');
-    expect(item, 'Item mini tiles must use shared Tile, not a screen-local MiniTile').not.toContain(
-      'MiniTile',
+      updateBody?.[1] ?? '',
+      'Quantity must remain an append-only event and never enter the updateInventoryItem body',
+    ).not.toContain('quantity');
+    expect(item, 'J item detail keeps the pencil as the nav trailing action').toMatch(
+      /<Header[\s\S]*?trailing=\{[\s\S]*?<IconButton[\s\S]*?icon="pencil"/,
+    );
+    expect(item, 'J item detail renders fact rows, not the old Bento mini tiles').not.toContain(
+      '<Bento',
+    );
+    expect(item, 'J item detail renders fact rows, not shared Tile mini cards').not.toContain(
+      '<Tile',
+    );
+    expect(item, 'Quantity stays editable inline on the page').toContain('<QuantityStepper');
+    expect(item, 'Item footer keeps the remove action visible outside the edit sheet').toContain(
+      "title={t('inventory.deleteItem')}",
+    );
+    expect(item, 'C7 screens must migrate off deprecated Button danger aliases').not.toContain(
+      'variant="danger"',
     );
     expect(item, 'History loading must use the shared compact LoadingState').toContain(
       '<LoadingState compact',
     );
     expect(item, 'History errors must use the shared compact ErrorState').toMatch(
       /<ErrorState[\s\S]*?\bcompact\b/,
+    );
+    expect(item, 'Product review stays on the item page below History').toContain('<ProductReview');
+    expect(productReview, 'ProductReview is the J inline rate block, not a card').not.toContain(
+      '<Card',
+    );
+    expect(productReview).toContain('<StarRating');
+    expect(productReview).toContain('<Field');
+    expect(productReview, 'Review submission uses the J secondary outline button').toContain(
+      'variant="secondary"',
+    );
+    expect(productReview, 'The privacy caption remains visible').toContain(
+      "t('mobile.productReview.vendorNote')",
+    );
+  });
+
+  it('keeps Settings places on the Coral place-row contract', () => {
+    const places = read('app', 'settings', 'places.tsx');
+
+    expect(places).toContain("t('mobile.places.entryHint')");
+    expect(places, 'Place rows must render J place drawings').toContain('<Illustration');
+    expect(places, 'Place rows and move sheet must share the Home place art mapping').toContain(
+      'placeIllustration(',
+    );
+    expect(
+      places,
+      'Rename and remove controls are icon buttons in the row trailing area',
+    ).toContain('<IconButton');
+    expect(places, 'C7 must move places off deprecated grouped rows').not.toContain('grouped');
+    expect(places, 'C7 must move places off generic location glyph rows').not.toContain(
+      'icon="location"',
+    );
+    expect(places, 'Occupied removal must still ask for a move destination').toContain(
+      "t('mobile.places.moveTitle')",
+    );
+    expect(places, 'Move rows keep the destructive move-and-remove label').toContain(
+      "t('mobile.places.moveHere')",
     );
   });
 
@@ -401,7 +452,7 @@ describe('information architecture (spec §4)', () => {
     expect(addField).toContain('autoCapitalize="none"');
   });
 
-  it('keeps Kitchen wired to the G2 screen contract', () => {
+  it('keeps Kitchen wired to the Coral screen contract', () => {
     const kitchen = read('app', '(tabs)', 'kitchen.tsx');
 
     expect(kitchen, "Kitchen's add button must open manual capture").toContain(
@@ -417,54 +468,47 @@ describe('information architecture (spec §4)', () => {
     expect(kitchen).not.toContain('From scan');
     expect(kitchen).not.toMatch(/provenance/i);
     expect(kitchen).not.toMatch(/sourceLabel|sourceKey/);
-    expect(kitchen).toMatch(
-      /<RoundButton[\s\S]*icon=\{searchOpen \? 'close' : 'search'\}[\s\S]*accessibilityLabel=\{searchLabel\}/,
-    );
-    expect(kitchen).toMatch(/<RoundButton[\s\S]*icon="plus"[\s\S]*accessibilityLabel=\{addLabel\}/);
+    expect(kitchen, 'Kitchen header action migrated off RoundButton').not.toContain('RoundButton');
+    expect(kitchen, 'Kitchen header must keep the add action').toContain('<IconButton');
+    expect(kitchen, 'Kitchen header must keep the account affordance').toContain('<AccountButton');
+    expect(kitchen, 'J search is the 44pt SearchField below the header').toContain('<SearchField');
 
-    const compactPlaceTile =
-      kitchen.match(/function CompactPlaceContent[\s\S]*?function MiniItemCard/)?.[0] ?? '';
-    expect(compactPlaceTile, 'compact place tiles must use numeral counts').toContain(
-      'variant="numeral"',
+    const placeTile = kitchen.match(/function PlaceTile[\s\S]*?function SortSheet/)?.[0] ?? '';
+    const placeGrid = kitchen.match(/<Bento[\s\S]*?\{useFirstItems\.length > 0/)?.[0] ?? '';
+    expect(placeGrid, 'Kitchen places must use the J two-column tile primitive').toContain(
+      'variant="tiles"',
     );
-    expect(
-      compactPlaceTile,
-      'place tiles grow with Dynamic Type instead of truncating count or label text',
-    ).not.toContain('numberOfLines');
-
-    const placeGrid = kitchen.match(/<Bento>[\s\S]*?\{useFirstItems\.length > 0/)?.[0] ?? '';
-    expect(placeGrid, 'Kitchen places must keep the lead tile in column one').toContain(
-      'renderPlaceTile(places[0], 0, false)',
-    );
-    expect(placeGrid, 'Kitchen places must stack every non-lead place in column two').toContain(
-      'places.slice(1).map((place, index) => renderPlaceTile(place, index + 1, true))',
+    expect(placeTile, 'Kitchen place tiles must be J place tiles').toContain('variant="place"');
+    expect(placeTile, 'Kitchen place tiles must share the Home place art mapping').toContain(
+      'placeIllustration(ranked.location.type)',
     );
     expect(
       placeGrid,
-      'Kitchen places must not strand places after the stacked column',
-    ).not.toContain('places.slice(3)');
+      'Kitchen place tiles must not use deprecated tint/fill/compact bridge props',
+    ).not.toMatch(/\b(tint|fill|compact)=/);
 
-    const miniItemCard =
-      kitchen.match(/function MiniItemCard[\s\S]*?function SectionHeading/)?.[0] ?? '';
-    expect(miniItemCard, 'Kitchen mini item cards must be thin Tile wrappers').toContain('<Tile');
-    expect(
-      miniItemCard,
-      'Kitchen mini item cards must not render hand-styled Pressable cards',
-    ).not.toContain('<Pressable');
-    expect(
-      miniItemCard,
-      'Kitchen mini item cards must preserve the three-across width on Tile',
-    ).toContain('style={{ width: MINI_CARD_WIDTH }}');
-    expect(miniItemCard, 'Kitchen mini item names and status must not truncate').not.toContain(
-      'numberOfLines',
+    expect(kitchen, 'Use-first and all-items rows must reuse the shared item row').toContain(
+      '<InventoryItemRow',
+    );
+    expect(kitchen, 'Kitchen item rows must use the generalized metadata helper').toContain(
+      'inventoryItemRowMeta(t, locale, item,',
+    );
+    expect(kitchen, 'Kitchen item rows must use the generalized timing helper').toContain(
+      'inventoryItemRowWhen(t, locale, item, prefs, now)',
+    );
+    expect(kitchen, 'Kitchen item rows must use the generalized badge helper').toContain(
+      'inventoryItemRowBadge(t, item, now)',
+    );
+    expect(kitchen, 'Kitchen item rows must use the shared food-art helper').toContain(
+      'inventoryItemRowFoodIcon(item)',
     );
     expect(kitchen, 'Kitchen use-first status must use the short visible days-left copy').toContain(
-      'formatDaysLeft(t, locale, item.expiresAt, prefs, now)',
+      'inventoryItemRowWhen(t, locale, item, prefs, now)',
     );
     expect(
       kitchen,
       'Kitchen use-first accessibility labels must keep the full expiry sentence',
-    ).toContain('accessibilityText: formatExpiryLabel(t, locale, item.expiresAt, prefs, now)');
+    ).toContain('formatExpiryLabel(t, locale, item.expiresAt, prefs, now)');
   });
 
   it('keeps Home on the Coral dashboard contract', () => {
@@ -587,7 +631,7 @@ describe('information architecture (spec §4)', () => {
     expect(
       useSoonSection,
       'Home use-soon visible statuses must use short days-left copy',
-    ).toContain('homeInventoryItemWhen(t, locale, item, prefs)');
+    ).toContain('inventoryItemRowWhen(t, locale, item, prefs)');
     expect(useSoonSection, 'Home use-soon rows must render the shared inventory row').toContain(
       '<InventoryItemRow',
     );
@@ -608,7 +652,7 @@ describe('information architecture (spec §4)', () => {
       'variant="caption"',
     );
     expect(useSoonSection, 'Home use-soon metadata must keep quantity and location').toContain(
-      'homeInventoryItemMeta(t, locale, item, location, prefs)',
+      'inventoryItemRowMeta(t, locale, item, { location, prefs })',
     );
     expect(inventoryRow, 'Home use-soon rows must use worded status badges').toContain('<Badge');
 

@@ -2,10 +2,10 @@ import type { InventoryItem, StorageLocation } from '@kitchen/contracts';
 import type { Translator } from '@kitchen/i18n';
 import { describe, expect, it } from 'vitest';
 import {
-  homeInventoryExpiryBadge,
-  homeInventoryItemFoodIcon,
-  homeInventoryItemMeta,
-  homeInventoryItemWhen,
+  inventoryItemRowBadge,
+  inventoryItemRowFoodIcon,
+  inventoryItemRowMeta,
+  inventoryItemRowWhen,
 } from './inventory-row';
 
 const t: Translator = ((key: string, params?: Record<string, unknown>) => {
@@ -38,21 +38,27 @@ const location = {
 
 describe('inventory row helpers', () => {
   it('builds the shared item-row meta line from quantity and location', () => {
-    expect(homeInventoryItemMeta(t, 'en', item, location)).toBe('0.8 kg · Fridge');
+    expect(inventoryItemRowMeta(t, 'en', item, { location })).toBe('0.8 kg · Fridge');
+  });
+
+  it('can omit location when a place filter already says where the rows live', () => {
+    expect(inventoryItemRowMeta(t, 'en', item, { location, includeLocation: false })).toBe(
+      '0.8 kg',
+    );
   });
 
   it('maps expiry into worded badge status and compact timing', () => {
-    expect(homeInventoryExpiryBadge(t, item, new Date('2026-09-29T12:00:00Z'))).toEqual({
+    expect(inventoryItemRowBadge(t, item, new Date('2026-09-29T12:00:00Z'))).toEqual({
       label: 'Expiring',
       tone: 'warn',
     });
-    expect(homeInventoryItemWhen(t, 'en', item, {}, new Date('2026-09-29T12:00:00Z'))).toBe(
+    expect(inventoryItemRowWhen(t, 'en', item, {}, new Date('2026-09-29T12:00:00Z'))).toBe(
       '1 left',
     );
   });
 
   it('keeps the food art item-driven instead of Home-specific', () => {
-    expect(homeInventoryItemFoodIcon(item)).toEqual({
+    expect(inventoryItemRowFoodIcon(item)).toEqual({
       label: 'Yogurt',
       nameEn: 'Yogurt',
       nameAr: 'لبن',

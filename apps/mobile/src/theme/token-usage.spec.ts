@@ -109,7 +109,10 @@ describe('mobile source sweep', () => {
     },
     'recipe/[id]/index.tsx': { path: 'app/recipe/[id]/index.tsx', pattern: /height:\s*(\d+)/ },
     'recipe/[id]/cook.tsx': { path: 'app/recipe/[id]/cook.tsx', pattern: /height:\s*(\d+)/ },
-    'item/[id].tsx': { path: 'app/item/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
+    'item/[id].tsx': {
+      path: 'app/item/[id].tsx',
+      pattern: /ITEM_DETAIL_MIN_TOUCH_TARGET\s*=\s*(\d+)/,
+    },
     'entry/[id].tsx': { path: 'app/entry/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
     'screen.tsx': { path: 'app/screen.tsx', pattern: /MINI_CARD_ICON_SIZE\s*=\s*(\d+)/ },
     'wellness.tsx': { path: 'app/wellness.tsx', pattern: /NUDGE_ICON_SIZE\s*=\s*(\d+)/ },

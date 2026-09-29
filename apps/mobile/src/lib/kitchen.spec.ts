@@ -7,6 +7,7 @@ import {
   parseSection,
   parseSort,
   placeCaption,
+  placeIllustration,
   placeTint,
   rankPlaces,
   useFirst,
@@ -167,8 +168,18 @@ describe('EXPIRY_TONE', () => {
       today: 'danger',
       soon: 'warn',
       ok: 'success',
-      none: 'neutral',
+      none: 'muted',
     });
+  });
+});
+
+describe('placeIllustration', () => {
+  it('uses the shared J place art, with other places falling back to pantry', () => {
+    expect(placeIllustration('fridge')).toBe('fridge');
+    expect(placeIllustration('freezer')).toBe('freezer');
+    expect(placeIllustration('pantry')).toBe('pantry');
+    expect(placeIllustration('spice_rack')).toBe('spicerack');
+    expect(placeIllustration('other')).toBe('pantry');
   });
 });
 

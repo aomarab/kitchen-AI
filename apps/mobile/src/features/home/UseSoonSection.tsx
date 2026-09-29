@@ -6,10 +6,10 @@ import { InventoryItemRow } from '../inventory/InventoryItemRow';
 import { useFormat } from '../../hooks/useFormat';
 import { itemName } from '../../lib/format';
 import {
-  homeInventoryExpiryBadge,
-  homeInventoryItemFoodIcon,
-  homeInventoryItemMeta,
-  homeInventoryItemWhen,
+  inventoryItemRowBadge,
+  inventoryItemRowFoodIcon,
+  inventoryItemRowMeta,
+  inventoryItemRowWhen,
 } from '../../lib/inventory-row';
 import { spacing } from '../../theme';
 
@@ -46,13 +46,13 @@ export function UseSoonSection({
           items.map((item) => {
             const name = itemName(locale, item);
             const location = byLocation.get(item.locationId);
-            const meta = homeInventoryItemMeta(t, locale, item, location, prefs);
-            const when = homeInventoryItemWhen(t, locale, item, prefs);
-            const badge = homeInventoryExpiryBadge(t, item);
+            const meta = inventoryItemRowMeta(t, locale, item, { location, prefs });
+            const when = inventoryItemRowWhen(t, locale, item, prefs);
+            const badge = inventoryItemRowBadge(t, item);
             return (
               <InventoryItemRow
                 key={item.id}
-                item={homeInventoryItemFoodIcon(item)}
+                item={inventoryItemRowFoodIcon(item)}
                 name={name}
                 meta={meta}
                 badgeLabel={badge?.label}

@@ -12,7 +12,14 @@ type InventoryRowItem = Pick<InventoryItem, 'expiresAt' | 'label' | 'quantity'> 
 
 type InventoryRowLocation = Pick<StorageLocation, 'name' | 'type'>;
 
-export function homeInventoryExpiryBadge(
+export interface InventoryRowMetaOptions {
+  location?: InventoryRowLocation;
+  brand?: string | null;
+  includeLocation?: boolean;
+  prefs?: NumeralPrefs;
+}
+
+export function inventoryItemRowBadge(
   t: Translator,
   item: Pick<InventoryItem, 'expiresAt'>,
   now: Date = new Date(),
@@ -26,19 +33,20 @@ export function homeInventoryExpiryBadge(
   return null;
 }
 
-export function homeInventoryItemMeta(
+export function inventoryItemRowMeta(
   t: Translator,
   locale: Locale,
   item: Pick<InventoryRowItem, 'quantity' | 'unit'>,
-  location: InventoryRowLocation | undefined,
-  prefs: NumeralPrefs = {},
+  { location, brand, includeLocation = true, prefs = {} }: InventoryRowMetaOptions = {},
 ): string {
   const quantity = formatMeasure(t, locale, item.quantity, item.unit, prefs);
-  const place = location ? locationLabel(t, location) : t('common.loading');
-  return `${quantity} · ${place}`;
+  const details = [quantity];
+  if (includeLocation) details.push(location ? locationLabel(t, location) : t('common.loading'));
+  else if (brand) details.push(brand);
+  return details.join(' · ');
 }
 
-export function homeInventoryItemWhen(
+export function inventoryItemRowWhen(
   t: Translator,
   locale: Locale,
   item: Pick<InventoryItem, 'expiresAt'>,
@@ -48,7 +56,7 @@ export function homeInventoryItemWhen(
   return formatDaysLeft(t, locale, item.expiresAt, prefs, now);
 }
 
-export function homeInventoryItemFoodIcon(item: InventoryRowItem) {
+export function inventoryItemRowFoodIcon(item: InventoryRowItem) {
   return {
     label: item.label,
     nameEn: item.ingredient.canonicalNameEn,

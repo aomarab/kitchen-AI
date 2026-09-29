@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import type { Locale, Translator } from '@kitchen/i18n';
 import { FEEDBACK_MESSAGE_MAX } from '@kitchen/contracts';
-import { AppText, Button, Card, Field, StarRating } from '../../components';
+import { AppText, Button, Field, StarRating } from '../../components';
 import { useProductFeedback, useSubmitProductFeedback } from '../../hooks/inventory';
 import { errorMessageKey } from '../../lib/errors';
 import { spacing } from '../../theme';
@@ -14,14 +14,6 @@ export interface ProductReviewProps {
   t: Translator;
 }
 
-/**
- * Rate the product an item is, for the brand that makes it.
- *
- * Deliberately not part of the edit card above it. Everything there is about
- * *your copy* of the food — where it is, when it expires — and saving it is a
- * correction. This is about the product itself and it leaves the household, so
- * it gets its own card, its own button, and a sentence saying where it goes.
- */
 export function ProductReview({ itemId, locale, t }: ProductReviewProps) {
   const { colors } = useTheme();
   const summary = useProductFeedback(itemId);
@@ -41,7 +33,6 @@ export function ProductReview({ itemId, locale, t }: ProductReviewProps) {
       { rating, message: message.trim() ? message.trim() : undefined, locale },
       {
         onSuccess: () => {
-          // Drop the drafts so the card follows the server's copy from here on.
           setDraftRating(null);
           setDraftMessage(null);
         },
@@ -50,20 +41,22 @@ export function ProductReview({ itemId, locale, t }: ProductReviewProps) {
   };
 
   return (
-    <Card style={{ gap: spacing.md }}>
-      <AppText variant="label" muted>
-        {t('mobile.productReview.title')}
-      </AppText>
-
+    <View style={{ gap: spacing.md, paddingTop: spacing.xs }}>
       <View style={{ gap: spacing.xs }}>
-        <AppText>{t('mobile.productReview.prompt')}</AppText>
-        <StarRating
-          value={rating}
-          onChange={setDraftRating}
-          labelFor={(value) => t('mobile.productReview.star', { value })}
-          disabled={submit.isPending}
-        />
+        <AppText variant="heading" accessibilityRole="header">
+          {t('mobile.productReview.title')}
+        </AppText>
+        <AppText variant="caption" muted>
+          {t('mobile.productReview.prompt')}
+        </AppText>
       </View>
+
+      <StarRating
+        value={rating}
+        onChange={setDraftRating}
+        labelFor={(value) => t('mobile.productReview.star', { value })}
+        disabled={submit.isPending}
+      />
 
       <Field
         label={t('mobile.productReview.messageLabel')}
@@ -74,17 +67,17 @@ export function ProductReview({ itemId, locale, t }: ProductReviewProps) {
         multiline
       />
 
-      <AppText variant="caption" muted>
-        {t('mobile.productReview.vendorNote')}
-      </AppText>
-
       <Button
         title={mine ? t('mobile.productReview.update') : t('mobile.productReview.submit')}
-        icon="star"
+        variant="secondary"
         disabled={rating < 1 || !changed}
         loading={submit.isPending}
         onPress={send}
       />
+
+      <AppText variant="caption" muted>
+        {t('mobile.productReview.vendorNote')}
+      </AppText>
 
       {submit.isError ? (
         <AppText variant="caption" style={{ color: colors.danger }}>
@@ -105,6 +98,6 @@ export function ProductReview({ itemId, locale, t }: ProductReviewProps) {
             })
           : t('mobile.productReview.othersNone')}
       </AppText>
-    </Card>
+    </View>
   );
 }

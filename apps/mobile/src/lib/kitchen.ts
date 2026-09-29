@@ -1,6 +1,12 @@
-import type { InventoryItem, ListInventoryQuery, StorageLocation } from '@kitchen/contracts';
+import type {
+  InventoryItem,
+  ListInventoryQuery,
+  StorageLocation,
+  StorageLocationType,
+} from '@kitchen/contracts';
 import type { MessageKey, Translator } from '@kitchen/i18n';
 import type { BadgeTone } from '../components/Badge';
+import type { IllustrationName } from '../components/glyphs/illustration-paths';
 import { byExpiryUrgency, expiryStatus, isExpiringSoon, type ExpiryStatus } from './expiry';
 import { isSeededLocationName, locationLabel } from './format';
 import type { TintName } from '../theme';
@@ -19,7 +25,7 @@ export const EXPIRY_TONE: Record<ExpiryStatus, BadgeTone> = {
   today: 'danger',
   soon: 'warn',
   ok: 'success',
-  none: 'neutral',
+  none: 'muted',
 };
 
 const SORTS = new Set<KitchenSort>(['expiry', 'name', 'recent']);
@@ -64,6 +70,12 @@ export function rankPlaces(
 export function placeTint(rank: number): Extract<TintName, 'butter' | 'sage' | 'apricot'> {
   const index = ((Math.trunc(rank) % PLACE_TINTS.length) + PLACE_TINTS.length) % PLACE_TINTS.length;
   return PLACE_TINTS[index]!;
+}
+
+export function placeIllustration(type: StorageLocationType): IllustrationName {
+  if (type === 'spice_rack') return 'spicerack';
+  if (type === 'fridge' || type === 'freezer' || type === 'pantry') return type;
+  return 'pantry';
 }
 
 export function useFirst<T extends Pick<InventoryItem, 'expiresAt'>>(
