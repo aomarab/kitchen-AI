@@ -469,25 +469,56 @@ describe('information architecture (spec §4)', () => {
 
   it('keeps Home on the Coral dashboard contract', () => {
     const home = read('app', '(tabs)', 'home.tsx');
+    const assistantSearch = read('features', 'home', 'AssistantSearchButton.tsx');
+    const tonightCard = read('features', 'home', 'TonightRecipeCard.tsx');
+    const noPlanCard = read('features', 'home', 'NoPlanCard.tsx');
+    const quickActions = read('features', 'home', 'QuickActions.tsx');
+    const useSoonSection = read('features', 'home', 'UseSoonSection.tsx');
+    const weekSection = read('features', 'home', 'WeekSection.tsx');
+    const kitchenGlance = read('features', 'home', 'KitchenGlance.tsx');
+    const inventoryRow = read('features', 'inventory', 'InventoryItemRow.tsx');
+    const homeOwned = [
+      home,
+      assistantSearch,
+      tonightCard,
+      noPlanCard,
+      quickActions,
+      useSoonSection,
+      weekSection,
+      kitchenGlance,
+      inventoryRow,
+    ].join('\n');
 
     expect(home).toContain('padded={false}');
     expect(home).toContain('<TabHeader');
     expect(home).toContain('icon="bell"');
     expect(home).toContain("router.push('/settings/notifications')");
-    expect(home).toContain('function AssistantSearchButton');
-    expect(home).toContain('usePressFeedback()');
+    expect(home).toContain('<AssistantSearchButton');
+    expect(assistantSearch).toContain('usePressFeedback()');
     expect(home).toContain("router.push('/assistant')");
-    expect(home).not.toContain('<SearchField');
-    expect(home).not.toContain('<OrbMascot');
-    expect(home).not.toContain('<RoundButton');
-    expect(home).not.toContain('tint=');
-    expect(home).not.toContain('tintNamed');
-    expect(home).not.toContain('radius.pill');
-    expect(home).not.toContain('pressed ?');
-    expect(home).not.toContain('transform: [{ scale');
+    expect(assistantSearch).not.toContain('<SearchField');
+    expect(homeOwned).not.toContain('<OrbMascot');
+    expect(homeOwned).not.toContain('<RoundButton');
+    expect(homeOwned).not.toContain('tint=');
+    expect(homeOwned).not.toContain('tintNamed');
+    expect(homeOwned).not.toContain('radius.pill');
+    expect(homeOwned).not.toContain('pressed ?');
+    expect(homeOwned).not.toContain('transform: [{ scale');
     expect(home).not.toContain('StatTiles');
     expect(existsSync(join(SRC, 'features', 'home', 'StatTiles.tsx'))).toBe(false);
-    expect(existsSync(join(SRC, 'features', 'home', 'KitchenGlance.tsx'))).toBe(false);
+    expect(existsSync(join(SRC, 'features', 'home', 'KitchenGlance.tsx'))).toBe(true);
+    for (const inlineComponent of [
+      'function AssistantSearchButton',
+      'function TonightRecipeCard',
+      'function NoPlanCard',
+      'function QuickActions',
+      'function UseSoonSection',
+      'function WeekSection',
+      'function PlaceTile',
+      'function KitchenGlanceSection',
+    ]) {
+      expect(home, `Home route still owns ${inlineComponent}`).not.toContain(inlineComponent);
+    }
 
     for (const route of [
       '/recipe/',
@@ -503,20 +534,31 @@ describe('information architecture (spec §4)', () => {
       expect(home, `Home no longer routes to ${route}`).toContain(route);
     }
 
-    const tonightCard =
-      home.match(/function TonightRecipeCard[\s\S]*?function NoPlanCard/)?.[0] ?? '';
     expect(tonightCard, 'Tonight recipe must keep the recipe detail route').toContain(
-      'router.push(`/recipe/${entry.recipe.id}`)',
+      'onOpenRecipe',
     );
-    expect(tonightCard, 'Tonight recipe must keep cook-mode navigation').toContain(
-      'router.push(`/recipe/${entry.recipe.id}/cook`)',
-    );
+    expect(tonightCard, 'Tonight recipe must keep cook-mode navigation').toContain('onCookRecipe');
     expect(tonightCard, 'Tonight recipe must use the J full-bleed recipe photo').toContain(
       'size={196}',
     );
+    for (const [name, value] of [
+      ['RECIPE_CARD_BODY_PADDING_TOP', 16],
+      ['RECIPE_CARD_BODY_PADDING_HORIZONTAL', 16],
+      ['RECIPE_CARD_BODY_PADDING_BOTTOM', 18],
+      ['RECIPE_CARD_BODY_GAP', 6],
+      ['RECIPE_CARD_ACTIONS_PADDING_TOP', 10],
+    ]) {
+      expect(tonightCard, `Tonight recipe ${name} drifted from spec §8`).toContain(
+        `const ${name} = ${value}`,
+      );
+    }
+    expect(tonightCard).toContain('paddingTop: RECIPE_CARD_BODY_PADDING_TOP');
+    expect(tonightCard).toContain('paddingHorizontal: RECIPE_CARD_BODY_PADDING_HORIZONTAL');
+    expect(tonightCard).toContain('paddingBottom: RECIPE_CARD_BODY_PADDING_BOTTOM');
+    expect(tonightCard).toContain('gap: RECIPE_CARD_BODY_GAP');
+    expect(tonightCard).toContain('paddingTop: RECIPE_CARD_ACTIONS_PADDING_TOP');
     expect(tonightCard, 'Tonight recipe actions must be compact J buttons').toContain('size="S"');
 
-    const noPlanCard = home.match(/function NoPlanCard[\s\S]*?function QuickActions/)?.[0] ?? '';
     expect(noPlanCard, 'No-plan state must use the J calendar EmptyState').toContain(
       'illustration="calendar"',
     );
@@ -525,8 +567,16 @@ describe('information architecture (spec §4)', () => {
       "costOf('plan.daily')",
     );
 
-    const useSoonSection =
-      home.match(/function UseSoonSection[\s\S]*?function WeekSection/)?.[0] ?? '';
+    expect(quickActions).toContain('variant="quickAction"');
+    expect(quickActions.match(/\bcount=\{/g) ?? []).toHaveLength(3);
+    expect(
+      quickActions,
+      'Quick actions must use caption labels, not bodyStrong overrides',
+    ).not.toContain('variant="bodyStrong"');
+    expect(quickActions, 'Quick actions should let Tile render the caption tier').not.toContain(
+      '<AppText',
+    );
+
     expect(
       useSoonSection,
       'Home use-soon rows must be J item rows, not a squeezed scroller',
@@ -537,40 +587,53 @@ describe('information architecture (spec §4)', () => {
     expect(
       useSoonSection,
       'Home use-soon visible statuses must use short days-left copy',
-    ).toContain('formatDaysLeft(t, locale, item.expiresAt, prefs)');
-    expect(
-      useSoonSection,
-      'Home use-soon item rows must show food art at the J row size',
-    ).toContain('size={56}');
-    expect(useSoonSection, 'Home use-soon metadata must keep quantity and location').toContain(
-      'formatMeasure(t, locale, item.quantity, item.unit, prefs)',
+    ).toContain('homeInventoryItemWhen(t, locale, item, prefs)');
+    expect(useSoonSection, 'Home use-soon rows must render the shared inventory row').toContain(
+      '<InventoryItemRow',
     );
-    expect(useSoonSection, 'Home use-soon rows must use worded status badges').toContain('<Badge');
+    expect(inventoryRow, 'Item rows must keep spec §8 vertical padding').toContain(
+      'paddingVertical: 10',
+    );
+    expect(inventoryRow, 'Item rows must keep spec §8 gap').toContain('gap: 14');
+    expect(inventoryRow, 'Item rows must keep the flat rowline').toContain(
+      'borderBottomColor: colors.rowline',
+    );
+    expect(inventoryRow, 'Home use-soon item rows must show food art at the J row size').toContain(
+      'size={56}',
+    );
+    expect(inventoryRow, 'Item rows must keep the bodyStrong name').toContain(
+      'variant="bodyStrong"',
+    );
+    expect(inventoryRow, 'Item rows must keep the caption meta line').toContain(
+      'variant="caption"',
+    );
+    expect(useSoonSection, 'Home use-soon metadata must keep quantity and location').toContain(
+      'homeInventoryItemMeta(t, locale, item, location, prefs)',
+    );
+    expect(inventoryRow, 'Home use-soon rows must use worded status badges').toContain('<Badge');
 
-    const weekSection = home.match(/function WeekSection[\s\S]*?function PlaceTile/)?.[0] ?? '';
     expect(weekSection, 'Home week block must be the J Progress plus day strip').toContain(
       '<Progress',
     );
     expect(weekSection, 'Home week block must render the owned WeekStrip').toContain('<WeekStrip');
 
-    const glanceSection =
-      home.match(/function PlaceTile[\s\S]*?export default function Home/)?.[0] ?? '';
-    expect(glanceSection, 'Home glance must rank real household places').toContain('rankPlaces');
-    expect(glanceSection, 'Home glance must render J place tiles').toContain('variant="place"');
-    expect(glanceSection, 'Home glance must keep the full kitchen route').toContain(
+    expect(kitchenGlance, 'Home glance must rank real household places').toContain('rankPlaces');
+    expect(kitchenGlance, 'Home glance must render J place tiles').toContain('variant="place"');
+    expect(home, 'Home glance must keep the full kitchen route').toContain(
       "router.push('/kitchen')",
     );
   });
 
   it('keeps the Home cook action as a recipe action, not a mirrored direction glyph', () => {
     const home = read('app', '(tabs)', 'home.tsx');
-    expect(home).toContain('router.push(`/recipe/${entry.recipe.id}/cook`)');
+    expect(home).toContain('router.push(`/recipe/${recipeId}/cook`)');
+    expect(home).toContain('onCookRecipe={() => cookRecipe(tonight.recipe.id)}');
     expect(home).not.toContain('<DirectionalIcon name="play"');
   });
 
   it('keeps the empty Tonight state at the populated Tonight card height', () => {
-    const home = read('app', '(tabs)', 'home.tsx');
-    expect(home).toMatch(
+    const noPlanCard = read('features', 'home', 'NoPlanCard.tsx');
+    expect(noPlanCard).toMatch(
       /NO_PLAN_CARD_MIN_HEIGHT\s*=\s*270[\s\S]*?function NoPlanCard[\s\S]*?minHeight:\s*NO_PLAN_CARD_MIN_HEIGHT/,
     );
   });

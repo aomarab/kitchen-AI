@@ -45,8 +45,8 @@ describe('mobile source sweep', () => {
       pattern: /minHeight:\s*multiline \? 132 : (\d+)/,
     },
     'Header.tsx': { path: 'components/Header.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'home.tsx': {
-      path: 'app/(tabs)/home.tsx',
+    'AssistantSearchButton.tsx': {
+      path: 'features/home/AssistantSearchButton.tsx',
       pattern: /ASSISTANT_SEARCH_TARGET_HEIGHT\s*=\s*(\d+)/,
     },
     'IconButton.tsx': {

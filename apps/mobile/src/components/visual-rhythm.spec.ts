@@ -122,12 +122,13 @@ describe('screen rhythm', () => {
 
 describe('home screen palette', () => {
   const source = read('../app/(tabs)/home.tsx');
+  const weekSection = read('../features/home/WeekSection.tsx');
 
   it('renders the Home week progress through the shared Coral progress primitive', () => {
-    expect(source).not.toMatch(/backgroundColor:\s*colors\.accent/);
-    expect(source).not.toContain('WeekProgressBar');
-    expect(source).toContain('<Progress');
-    expect(source).toContain('<WeekStrip');
+    expect(`${source}\n${weekSection}`).not.toMatch(/backgroundColor:\s*colors\.accent/);
+    expect(`${source}\n${weekSection}`).not.toContain('WeekProgressBar');
+    expect(weekSection).toContain('<Progress');
+    expect(weekSection).toContain('<WeekStrip');
   });
 
   it('does not mark the Home action tiles with a drill-down chevron', () => {

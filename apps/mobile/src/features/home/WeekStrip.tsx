@@ -10,6 +10,7 @@ import { spacing } from '../../theme';
 const DAY_CELL_HEIGHT = 60;
 const DAY_CELL_WIDTH = 44;
 
+// Home's strip is non-selectable: today uses primaryText; selected cells live in Plans.
 function DayCell({ bar, today }: { bar: DayBar; today: string }) {
   const { t, locale } = useFormat();
   const router = useRouter();
