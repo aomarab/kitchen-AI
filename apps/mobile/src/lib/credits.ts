@@ -1,6 +1,9 @@
-import { CREDIT_COSTS, creditActionSchema, type CreditAction } from '@kitchen/contracts';
-
-const CREDIT_COST_BASIS_USD = 0.0045;
+import {
+  CREDIT_COST_BASIS_USD,
+  CREDIT_COSTS,
+  creditActionSchema,
+  type CreditAction,
+} from '@kitchen/contracts';
 
 /**
  * The subset of a `CreditBalance` the gating maths needs. Kept structural so

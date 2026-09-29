@@ -21,9 +21,17 @@ export const creditActionSchema = z.enum([
 export type CreditAction = z.infer<typeof creditActionSchema>;
 
 /**
- * Credits per action. One credit is roughly $0.0045 of model cost, so these
- * track the real cost ratio: a monthly plan costs ~51x a pantry scan, and a
- * flat "one credit per action" price would be insolvent at that spread.
+ * Internal model-cost basis in USD for one credit. Action prices in
+ * `CREDIT_COSTS` are denominated in this value, while store packs decide what a
+ * credit sells for.
+ */
+export const CREDIT_COST_BASIS_USD = 0.0045;
+
+/**
+ * Credits per action. One credit is roughly `CREDIT_COST_BASIS_USD` of model
+ * cost, so these track the real cost ratio: a monthly plan costs ~51x a pantry
+ * scan, and a flat "one credit per action" price would be insolvent at that
+ * spread.
  *
  * See spec §3. Change these only with the cost table in `ai.constants.ts`.
  */
@@ -43,8 +51,9 @@ export const CREDIT_COSTS: Record<CreditAction, number> = {
   // the rates move far enough to invalidate any conclusion below.
   //
   // As modelled: a 2-minute exchange with the assistant speaking half of it
-  // costs ~$0.0996, which is 22.1 credits at the table's $0.0045 basis, rounded
-  // up to 25. Two consequences are deliberate and must not be quietly "fixed":
+  // costs ~$0.0996, which is 22.1 credits at the table's
+  // CREDIT_COST_BASIS_USD basis, rounded up to 25. Two consequences are
+  // deliberate and must not be quietly "fixed":
   //   - a long session is under-charged, which is why the client secret's TTL is
   //     at the provider floor (see REALTIME_SECRET_TTL_SEC) — one mint buys one
   //     connection, and staying longer is the only thing we cannot meter. The

@@ -117,8 +117,8 @@ Non-obvious system rules:
   choke-point: budget check before the call, schema-guarded provider call with one repair retry,
   usage recorded after. A service that calls a provider directly bypasses cost control and output
   validation — always route through the gateway.
-- **AI is paid for in credits, not requests.** `CREDIT_COSTS` / `FREE_MONTHLY_GRANT` live in
-  `packages/contracts/src/credits.ts` because prices are contract, not server detail. A household
+- **AI is paid for in credits, not requests.** `CREDIT_COST_BASIS_USD` / `CREDIT_COSTS` /
+  `FREE_MONTHLY_GRANT` live in `packages/contracts/src/credits.ts` because prices are contract, not server detail. A household
   has two buckets — a free grant that resets each calendar month and a purchased balance that never
   expires (Apple Guideline 3.1.1) — and free is always spent first. `CreditsService.spend` locks the
   balance row `FOR UPDATE`; that lock is required for split correctness, not an optimisation. Spends

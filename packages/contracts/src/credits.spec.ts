@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CREDIT_COST_BASIS_USD,
   CREDIT_COSTS,
   CREDIT_PACKS,
   FREE_MONTHLY_GRANT,
@@ -25,6 +26,12 @@ describe('credit contracts', () => {
       'plan.regenerateEntry': 2,
       'assistant.session': 25,
     });
+  });
+
+  it('denominates credit costs in the shared USD cost basis', () => {
+    expect(CREDIT_COST_BASIS_USD).toBe(0.0045);
+    expect(CREDIT_COST_BASIS_USD).toBeGreaterThan(0);
+    expect(CREDIT_COSTS['assistant.session'] * CREDIT_COST_BASIS_USD).toBeCloseTo(0.1125, 10);
   });
 
   it('grants 150 free credits a month', () => {

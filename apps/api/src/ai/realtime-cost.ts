@@ -1,4 +1,4 @@
-import { CREDIT_COSTS, CREDIT_PACKS } from '@kitchen/contracts';
+import { CREDIT_COST_BASIS_USD, CREDIT_COSTS, CREDIT_PACKS } from '@kitchen/contracts';
 
 /**
  * What a live assistant session actually costs, and what that means for its
@@ -101,12 +101,7 @@ export function creditRevenueUsd(): number {
   return pack.priceUsd / pack.credits;
 }
 
-/**
- * The internal cost basis the credit table was built on: one credit is roughly
- * this much model cost. Every other price in `CREDIT_COSTS` is a measured
- * action cost divided by this number.
- */
-export const CREDIT_COST_BASIS_USD = 0.0045;
+export { CREDIT_COST_BASIS_USD };
 
 /**
  * How long a session can run before its charge stops covering it.
