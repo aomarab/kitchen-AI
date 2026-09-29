@@ -992,6 +992,7 @@ export const mobileAr: MobileMessages = {
       addToInventory: 'إضافة',
       end: 'إنهاء',
       modeText: 'نص',
+      modeTextHint: 'اكتب واقرأ الردود',
       modeVoice: 'صوت',
       modeLive: 'مباشر',
       modeTitle: 'الوضع',

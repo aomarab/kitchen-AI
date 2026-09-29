@@ -609,6 +609,54 @@ describe('information architecture (spec §4)', () => {
     expect(panel).toContain("t('mobile.credits.getMore')");
   });
 
+  it('keeps Assistant on the Coral text, voice, live and review contracts', () => {
+    const route = read('app', 'assistant.tsx');
+    const screen = read('features', 'assistant', 'LiveAssistantScreen.tsx');
+    const header = read('features', 'assistant', 'AssistantHeader.tsx');
+    const composer = read('features', 'assistant', 'Composer.tsx');
+    const modeSheet = read('features', 'assistant', 'ModeSheet.tsx');
+    const bubble = read('features', 'assistant', 'Bubble.tsx');
+
+    expect(route).toContain('initialMode="text"');
+    expect(header).toContain('<Avatar');
+    expect(header).toContain('assistantHeaderAccessibilityLabel');
+    expect(header).not.toContain('OrbMascot');
+    expect(header).not.toContain('RoundButton');
+    expect(header).not.toContain('tintNamed');
+
+    expect(screen).toContain('const demoBanner =');
+    expect(screen).toContain('isMock && !isLiveSurface ?');
+    expect(screen).toContain('{demoBanner}');
+    expect(screen.indexOf('{demoBanner}')).toBeLessThan(
+      screen.indexOf("mode === 'live' && !cameraReady"),
+    );
+    expect(screen).toContain('function AssistantStarterPrompt');
+    expect(screen).toContain('function VoiceAssistantPanel');
+    expect(screen).toContain('function DetectionOverlay');
+    expect(screen).toContain('function SessionPausedOverlay');
+    expect(screen).toContain('<ReviewList');
+    expect(screen).toContain('source="assistant"');
+    expect(screen).toContain('detectionsToSession(detections)');
+    expect(screen).toContain('create.mutate');
+    expect(screen).not.toContain('useAdjustQuantity');
+    expect(screen).not.toContain('<Chip');
+    expect(screen).not.toContain('RecipeThumb');
+
+    expect(composer).toContain('borderTopColor: colors.rowline');
+    expect(composer).toContain('backgroundColor: colors.surfaceAlt');
+    expect(composer).toContain('icon="sliders"');
+    expect(composer).not.toContain('RoundButton');
+
+    expect(modeSheet).toContain('<ListRow');
+    expect(modeSheet).toContain('assistantModeAccessibilityLabel');
+    expect(modeSheet).not.toContain('<SegmentedControl');
+    expect(modeSheet).not.toContain('<ToggleRow');
+
+    expect(bubble).toContain('maxWidth: 290');
+    expect(bubble).toContain('backgroundColor: mine ? colors.inverse : colors.surfaceAlt');
+    expect(bubble).not.toContain('OrbMascot');
+  });
+
   it('shares the credits balance tile and renders the balance plus usage breakdown (spec §9.7)', () => {
     const buyCredits = read('screens', 'BuyCreditsScreen.tsx');
     const aiUsage = read('app', 'ai-usage.tsx');

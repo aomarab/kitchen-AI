@@ -151,6 +151,10 @@ describe('mobile source sweep', () => {
       path: 'features/settings/AssistantPersonaPicker.tsx',
       pattern: /PERSONA_OPTION_MIN_HEIGHT\s*=\s*(\d+)/,
     },
+    'LiveAssistantScreen.tsx': {
+      path: 'features/assistant/LiveAssistantScreen.tsx',
+      pattern: /ASSISTANT_PROMPT_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {

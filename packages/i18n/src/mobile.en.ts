@@ -822,6 +822,7 @@ export const mobileEn = {
       addToInventory: 'Add',
       end: 'End',
       modeText: 'Text',
+      modeTextHint: 'Type and read replies',
       modeVoice: 'Voice',
       modeLive: 'Live',
       modeTitle: 'Mode',
