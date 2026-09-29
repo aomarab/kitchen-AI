@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { palettes } from '../theme/palettes';
 import { contrast } from '../theme/contrast';
-import { badgeTone, progressTone, resolveBadgeTone, type BadgeToneName } from './status-tones';
+import { badgeTone, progressTone, type BadgeToneName } from './status-tones';
 import {
   BENTO_QUICK_ACTION_COLUMNS,
   BENTO_QUICK_ACTION_GAP,
@@ -19,22 +19,9 @@ const SRC = __dirname;
 const read = (relative: string) => readFileSync(join(SRC, relative), 'utf8');
 
 describe('Coral status tones', () => {
-  it('maps deprecated badge aliases to the closest J status word colour', () => {
-    expect(resolveBadgeTone('info')).toBe('primary');
-    expect(resolveBadgeTone('neutral')).toBe('muted');
-  });
-
   it.each(['light', 'dark'] as const)('keeps badge words readable in %s mode', (mode) => {
     const colors = palettes.coral[mode].colors;
-    const tones: BadgeToneName[] = [
-      'success',
-      'warn',
-      'danger',
-      'muted',
-      'neutral',
-      'primary',
-      'info',
-    ];
+    const tones: BadgeToneName[] = ['success', 'warn', 'danger', 'muted', 'primary'];
     for (const tone of tones) {
       const resolved = badgeTone(colors, tone);
       expect(resolved.dotSize).toBe(6);
@@ -110,6 +97,7 @@ describe('Coral structure source guards', () => {
     expect(source).toContain("onGetMore={() => router.push('/buy-credits')}");
     expect(source).toContain('fallbackMessage={t(errorMessageKey(error))}');
     expect(source).toContain('insufficientCreditsDetails(error)');
+    expect(source).not.toContain('icon?: IconName');
   });
 
   it('uses square avatars and an AccountButton press target around a 32pt avatar', () => {
@@ -163,6 +151,14 @@ describe('Coral structure source guards', () => {
       expect(source).not.toContain('scale: pressed');
       expect(source).not.toContain('pressed ? 0.92');
     }
+  });
+
+  it('keeps Card and Tile off deleted bridge props', () => {
+    const card = read('Card.tsx');
+    const tile = read('Tile.tsx');
+    expect(card).not.toMatch(/\b(tone|tint|gradient|contentStyle)\?:/);
+    expect(tile).not.toMatch(/\b(tint|fill|compact)\?:/);
+    expect(tile).not.toContain('gradientHero');
   });
 
   it('uses plate illustrations for recipe placeholders without recipe-thumb tones', () => {

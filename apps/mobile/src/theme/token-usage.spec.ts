@@ -27,6 +27,29 @@ function sourceFiles(): string[] {
  */
 const LINE_HEIGHT_ALLOWED = [join('theme', 'index.ts'), join('components', 'AppText.tsx')];
 
+function lineNumberFor(content: string, index: number): number {
+  return content.slice(0, index).split('\n').length;
+}
+
+function borderRadiusViolations(content: string, file: string): string[] {
+  const out: string[] = [];
+  for (const match of content.matchAll(/borderRadius\s*:\s*([^,\n}\]]+)/g)) {
+    const value = match[1]!.trim();
+    if (value === '0' || value === 'radius.none') continue;
+    if (value === 'radius.shutter' && file === join('features', 'capture', 'Shutter.tsx')) {
+      continue;
+    }
+    out.push(`${file}:${lineNumberFor(content, match.index ?? 0)} borderRadius ${value}`);
+  }
+  return out;
+}
+
+function uppercaseTransformViolations(content: string, file: string): string[] {
+  return [...content.matchAll(/textTransform\s*:\s*['"]uppercase['"]/g)].map(
+    (match) => `${file}:${lineNumberFor(content, match.index ?? 0)} textTransform uppercase`,
+  );
+}
+
 describe('mobile source sweep', () => {
   /**
    * Apple requires a 44pt minimum touch target and Android 48dp. A regex sweep
@@ -39,7 +62,6 @@ describe('mobile source sweep', () => {
   const TOUCH_TARGETS: Record<string, { path: string; pattern: RegExp }> = {
     'Button.tsx': { path: 'components/Button.tsx', pattern: /minHeight:\s*(\d+)/ },
     'Checkbox.tsx': { path: 'components/Checkbox.tsx', pattern: /height:\s*(\d+)/ },
-    'Fab.tsx': { path: 'components/Fab.tsx', pattern: /height:\s*(\d+)/ },
     'Field.tsx': {
       path: 'components/Field.tsx',
       pattern: /minHeight:\s*multiline \? 132 : (\d+)/,
@@ -57,11 +79,6 @@ describe('mobile source sweep', () => {
       path: 'components/QuantityStepper.tsx',
       pattern: /STEPPER_TARGET_SIZE\s*=\s*(\d+)/,
     },
-    // The visual circle is 36-40pt; the Pressable around it is what is measured.
-    'RoundButton.tsx': {
-      path: 'components/RoundButton.tsx',
-      pattern: /ROUND_BUTTON_TARGET_SIZE\s*=\s*(\d+)/,
-    },
     'SearchField.tsx': { path: 'components/SearchField.tsx', pattern: /minHeight:\s*(\d+)/ },
     'SegmentedControl.tsx': {
       path: 'components/SegmentedControl.tsx',
@@ -69,7 +86,7 @@ describe('mobile source sweep', () => {
     },
     'StarRating.tsx': { path: 'components/StarRating.tsx', pattern: /minHeight:\s*(\d+)/ },
     'TabBar.tsx': { path: 'components/TabBar.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'Tile.tsx': { path: 'components/Tile.tsx', pattern: /COMPACT_TILE_MIN_HEIGHT\s*=\s*(\d+)/ },
+    'Tile.tsx': { path: 'components/Tile.tsx', pattern: /QUICK_ACTION_MIN_HEIGHT\s*=\s*(\d+)/ },
     'Toggle.tsx': { path: 'components/Toggle.tsx', pattern: /height:\s*(\d+)/ },
     'ToggleRow.tsx': {
       path: 'components/ToggleRow.tsx',
@@ -197,6 +214,74 @@ describe('mobile source sweep', () => {
         'and the text clips at large Dynamic Type sizes. Use a typography ' +
         `variant instead. Offending files: ${offenders.join(', ')}`,
     ).toEqual([]);
+  });
+
+  it('keeps Coral source square except the camera shutter', () => {
+    const offenders = sourceFiles().flatMap((file) =>
+      borderRadiusViolations(readFileSync(file, 'utf8'), relative(SRC, file)),
+    );
+
+    expect(
+      offenders,
+      'J Coral is square everywhere. Use radius.none/0, and reserve ' +
+        `radius.shutter for features/capture/Shutter.tsx only. Offenders: ${offenders.join(', ')}`,
+    ).toEqual([]);
+  });
+
+  it('catches literal, token and computed border-radius violations', () => {
+    const fixture = [
+      'const size = 40;',
+      'const styles = {',
+      '  literal: { borderRadius: 8 },',
+      '  token: { borderRadius: radius.md },',
+      '  computed: { borderRadius: size / 2 },',
+      '  allowedToken: { borderRadius: radius.none },',
+      '  allowedLiteral: { borderRadius: 0 },',
+      '};',
+    ].join('\n');
+
+    expect(borderRadiusViolations(fixture, join('components', 'Fake.tsx'))).toEqual([
+      `${join('components', 'Fake.tsx')}:3 borderRadius 8`,
+      `${join('components', 'Fake.tsx')}:4 borderRadius radius.md`,
+      `${join('components', 'Fake.tsx')}:5 borderRadius size / 2`,
+    ]);
+    expect(
+      borderRadiusViolations(
+        'const ok = { borderRadius: radius.shutter };',
+        join('features', 'capture', 'Shutter.tsx'),
+      ),
+    ).toEqual([]);
+    expect(
+      borderRadiusViolations(
+        'const bad = { borderRadius: radius.shutter };',
+        join('components', 'Fake.tsx'),
+      ),
+    ).toEqual([`${join('components', 'Fake.tsx')}:1 borderRadius radius.shutter`]);
+  });
+
+  it('never uppercases text through styles', () => {
+    const offenders = sourceFiles().flatMap((file) =>
+      uppercaseTransformViolations(readFileSync(file, 'utf8'), relative(SRC, file)),
+    );
+
+    expect(
+      offenders,
+      'J Coral uses sentence case in every locale. Do not set textTransform: ' +
+        `'uppercase'. Offenders: ${offenders.join(', ')}`,
+    ).toEqual([]);
+  });
+
+  it('catches single- and double-quoted uppercase text transforms', () => {
+    const fixture = [
+      "const a = { textTransform: 'uppercase' };",
+      'const b = { textTransform: "uppercase" };',
+      "const ok = { textTransform: 'none' };",
+    ].join('\n');
+
+    expect(uppercaseTransformViolations(fixture, join('components', 'Fake.tsx'))).toEqual([
+      `${join('components', 'Fake.tsx')}:1 textTransform uppercase`,
+      `${join('components', 'Fake.tsx')}:2 textTransform uppercase`,
+    ]);
   });
 
   /**

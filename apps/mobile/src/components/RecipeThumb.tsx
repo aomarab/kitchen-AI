@@ -8,14 +8,13 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Illustration } from './Illustration';
+import { plateSize, recipeThumbBranch, type RecipeThumbSize } from './recipe-thumb-state';
 import { useTheme } from '../theme/useTheme';
 
-export type RecipeThumbSize = 56 | 72 | 196;
+export type { RecipeThumbSize } from './recipe-thumb-state';
 
 export interface RecipeThumbProps {
   heroImageUrl: string | null;
-  /** @deprecated J: removed in C16. Placeholder art no longer varies by dish. */
-  dishKey: string;
   title: string;
   accessibilityLabel?: string;
   resizeMode?: ImageResizeMode;
@@ -23,15 +22,6 @@ export interface RecipeThumbProps {
   onImageLoad?: () => void;
   onImageError?: () => void;
   style?: StyleProp<ViewStyle>;
-}
-
-function recipeThumbBranch(heroImageUrl: string | null | undefined, imageFailed = false) {
-  return heroImageUrl && !imageFailed ? 'image' : 'placeholder';
-}
-
-function plateSize(size: RecipeThumbSize): number {
-  if (size === 196) return 72;
-  return Math.round(size * 0.72);
 }
 
 export function RecipeThumb({
@@ -94,5 +84,3 @@ export function RecipeThumb({
     </View>
   );
 }
-
-export const recipeThumbState = { recipeThumbBranch, plateSize };

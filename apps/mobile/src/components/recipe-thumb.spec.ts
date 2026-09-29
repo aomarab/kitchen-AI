@@ -1,54 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { palettes } from '../theme/palettes';
-
-import {
-  RECIPE_THUMB_TONE_TOKENS,
-  recipeThumbBranch,
-  recipeThumbToneForDish,
-} from './recipe-thumb-tones';
+import { recipeThumbBranch } from './recipe-thumb-state';
 
 const source = () => readFileSync(join(__dirname, 'RecipeThumb.tsx'), 'utf8');
-const colors = palettes.coral.light.colors;
-
-describe('recipe thumb tone selection', () => {
-  it('is deterministic for a given dish key', () => {
-    const repeated = Array.from({ length: 64 }, () => recipeThumbToneForDish('dish-2'));
-
-    expect(repeated).toEqual(Array.from({ length: 64 }, () => 'warnSoft'));
-  });
-
-  it('keeps known dish keys on their approved tones', () => {
-    expect(recipeThumbToneForDish('dish-0')).toBe('primarySoft');
-    expect(recipeThumbToneForDish('dish-1')).toBe('successSoft');
-    expect(recipeThumbToneForDish('dish-2')).toBe('warnSoft');
-    expect(recipeThumbToneForDish('dish-3')).toBe('accentSoft');
-    expect(recipeThumbToneForDish('شاورما دجاج')).toBe('accentSoft');
-  });
-
-  it('only returns palette token names that exist in the mobile theme', () => {
-    const allowed = new Set<string>(RECIPE_THUMB_TONE_TOKENS);
-    const sampled = ['dish-0', 'dish-1', 'dish-2', 'dish-3', 'chicken-kabsa', 'شاورما دجاج'].map(
-      (key) => recipeThumbToneForDish(key),
-    );
-
-    expect(new Set(sampled)).toEqual(allowed);
-    for (const token of RECIPE_THUMB_TONE_TOKENS) {
-      expect(colors[token], `${token} must resolve through theme/palettes.ts`).toEqual(
-        expect.any(String),
-      );
-    }
-    for (const token of sampled) {
-      expect(allowed.has(token), `${token} must be one of the approved recipe thumb tones`).toBe(
-        true,
-      );
-      expect(colors[token], `${token} must be a real theme color token`).toEqual(
-        expect.any(String),
-      );
-    }
-  });
-});
 
 describe('recipe thumb branch selection', () => {
   it('uses the placeholder when the API has no hero image', () => {

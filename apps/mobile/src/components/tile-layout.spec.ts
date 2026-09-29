@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  BENTO_GUTTER,
   BENTO_QUICK_ACTION_COLUMNS,
   BENTO_QUICK_ACTION_GAP,
   BENTO_TILE_COLUMNS,
@@ -18,7 +17,6 @@ describe('bento grid (spec §8)', () => {
   it('uses the J tile and quick-action grid gaps', () => {
     expect(BENTO_TILE_COLUMNS).toBe(2);
     expect(BENTO_TILE_GAP).toBe(16);
-    expect(BENTO_GUTTER).toBe(BENTO_TILE_GAP);
     expect(BENTO_QUICK_ACTION_COLUMNS).toBe(3);
     expect(BENTO_QUICK_ACTION_GAP).toBe(10);
     expect(bentoGap('tiles')).toBe(16);

@@ -8,8 +8,6 @@ export interface ToggleRowProps {
   hint?: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
-  /** @deprecated J: removed in C16. Rows are flat in every group. */
-  grouped?: boolean;
 }
 
 /** Labelled switch row used across Settings. */

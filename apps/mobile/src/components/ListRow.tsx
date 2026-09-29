@@ -30,8 +30,6 @@ export interface ListRowProps {
   accessibilityHint?: string;
   accessibilityRole?: AccessibilityRole;
   accessibilityState?: AccessibilityState;
-  /** @deprecated J: removed in C16. Rows are flat in every group. */
-  grouped?: boolean;
   /** Tints the title; used for destructive rows. Defaults to the text colour. */
   titleColor?: ColorToken;
   style?: ViewStyle;

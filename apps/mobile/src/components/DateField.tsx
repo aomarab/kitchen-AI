@@ -119,7 +119,7 @@ export function DateField({
               if (date) commit(date);
             }}
           />
-          <Button title={doneLabel} icon="check" onPress={() => setOpen(false)} />
+          <Button title={doneLabel} leadingIcon="check" onPress={() => setOpen(false)} />
         </Sheet>
       ) : null}
     </View>

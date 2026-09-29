@@ -482,6 +482,35 @@ only where the frame introduces copy with no key.
 | Wellness nudges `161:4326`                                                                                                                  | `wellness.tsx`                                                                          | nudge Cards with `droplet` / `activity` / `sun`, ToggleRows                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Kitchen screen `161:4424`, wide `161:4497`, tablet `161:4554`                                                                               | `screen.tsx`                                                                            | kiosk: large clock `numeral`, tonight card, timers, use-soon rows; wide/tablet = 2–3 columns                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
+### §9.1 Implementation notes
+
+- Welcome/auth: password reveal controls and six-box invite entry were omitted; the existing auth
+  fields and single invite-code field remain.
+- Home: the offline banner remains the existing global banner rather than a duplicate Home-local
+  banner; the assistant search row opens `/assistant` and does not add separate mic behavior.
+- Kitchen/item/places: item quantity stays on the page as an append-only adjustment; item history
+  does not invent unavailable source prose; unit/location editing keeps existing chip selection.
+- Plans: “Suggest another” and “Change meal” are one regenerate action; shortfall “Add to list”
+  keeps the existing navigation-to-shopping behavior; default meal slots remain
+  Breakfast/Lunch/Dinner.
+- Shop: the purchased-section “Clear” / bulk missing action was omitted because no existing
+  plan-specific bulk-add or clear behavior was present.
+- Capture/review: the review row uses plain location meta rather than a place chip; the barcode
+  flash slot was added; receipt credit-quote sample copy was omitted because no quote behavior
+  exists.
+- Recipe/cook: recipe hero height follows the frame at 280pt, not the 260pt note; bookmark/share,
+  cook pause/stop and cooked-sheet stars were omitted because no existing behavior or contract field
+  supports them.
+- Account/settings: Twemoji attribution is no longer visible; Household “Leave household” and
+  feedback category chips were omitted because the existing mobile flows/contracts do not expose
+  them.
+- Credits: out-of-credits appears as a sheet over Generate plan by user ruling; the shared
+  `OutOfCreditsPanel` is also reused inline by `ErrorState`.
+- Assistant: add-spotted keeps the richer existing `ReviewList`; captions remain in Voice/Live
+  controls, and live mode uses the real camera/permission gate rather than a static mock photo.
+- Timers/wellness/kiosk: timer +1 minute remains; inline wellness reminder toggles and new
+  recipe/inventory kiosk queries were not invented where existing behavior/data was absent.
+
 ## §10 RTL and Arabic
 
 F §11 stays: logical style keys only (`marginStart`, `paddingEnd`, `start`/`end` — ESLint

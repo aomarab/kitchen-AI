@@ -162,8 +162,9 @@ Non-obvious system rules:
 
 Colour, radius and tracking resolve from exactly two files: `apps/web/src/app/globals.css`
 (`@theme inline` Tailwind v4 tokens) and `apps/mobile/src/theme/` (`palettes.ts` for colour — one
-Apricot palette in light and dark, where `onFill` is ink on the coral, never white — and `index.ts`
-for radius, spacing and type). Components reference
+Coral palette in light and dark, where `onFill` is white on coral per
+`2026-09-28-mobile-coral-redesign-design.md` — and `index.ts` for square radius (`none`, plus the
+camera-only `shutter` exception), spacing and type: Tajawal text with Outfit numerals). Components reference
 tokens by name. Three guard tests keep it honest and must not be relaxed to make a change pass:
 
 - `apps/web/src/app/palette.test.ts` + `apps/mobile/src/theme/palette.spec.ts` parse the token files

@@ -178,7 +178,6 @@ export default function RecipeDetail() {
         <View style={{ height: HERO_HEIGHT, position: 'relative' }}>
           <RecipeThumb
             heroImageUrl={data.heroImageUrl}
-            dishKey={`${data.locale}:${data.title}`}
             title={data.title}
             accessibilityLabel={t('mobile.recipe.imageLabel', { title: data.title })}
             onImageLoad={() => setHeroImageLoaded(true)}

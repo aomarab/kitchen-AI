@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { resolveThemeMode, shadowFor, tintIn, tintNamed } from './index';
+import { resolveThemeMode, shadowFor } from './index';
 import { NATIVE_SWITCH_THUMB, palettes, type Palette, type ThemeMode } from './palettes';
 import { contrast } from './contrast';
-import {
-  RECIPE_THUMB_TONE_FOREGROUNDS,
-  RECIPE_THUMB_TONE_TOKENS,
-} from '../components/recipe-thumb-tones';
 
 const AA_TEXT = 4.5;
 const AA_NON_TEXT = 3;
@@ -14,13 +10,6 @@ const AA_NON_TEXT = 3;
 const SURFACES = ['bg', 'surface', 'surfaceAlt'] as const;
 
 const STATUSES = ['success', 'warn', 'danger'] as const;
-
-// The recipe placeholder picks one of these pairs by hashing the dish key, so
-// every pair must be legible — a tone cannot be added without a partner that
-// clears the bar.
-const RECIPE_THUMB_PAIRS = RECIPE_THUMB_TONE_TOKENS.map(
-  (tone) => [RECIPE_THUMB_TONE_FOREGROUNDS[tone], tone] as const,
-);
 
 /**
  * Both modes face the identical bar. Appearance follows the phone by default,
@@ -35,7 +24,7 @@ const ALL: readonly (readonly [string, Palette])[] = (
 );
 
 describe.each(ALL)('%s palette', (_name, palette) => {
-  const { colors, tints, gradientHero, scrim } = palette;
+  const { colors, scrim } = palette;
 
   it.each(['text', 'textMuted'] as const)('%s reads on every surface', (token) => {
     for (const surface of SURFACES) {
@@ -44,19 +33,6 @@ describe.each(ALL)('%s palette', (_name, palette) => {
         `${token} on ${surface}`,
       ).toBeGreaterThanOrEqual(AA_TEXT);
     }
-  });
-
-  it('accent reads on every surface', () => {
-    for (const surface of SURFACES) {
-      expect(
-        contrast(colors.accent, colors[surface]),
-        `accent on ${surface}`,
-      ).toBeGreaterThanOrEqual(AA_TEXT);
-    }
-  });
-
-  it.each(RECIPE_THUMB_PAIRS)('placeholder glyph %s reads on %s', (fg, bg) => {
-    expect(contrast(colors[fg], colors[bg]), `${fg} on ${bg}`).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 
   /**
@@ -103,10 +79,10 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     },
   );
 
-  it('the selected credit pack edge separates from a plain tile', () => {
+  it('the selected credit pack edge separates from a soft surface', () => {
     expect(
-      contrast(colors.primary, tintNamed(tints, 'plain').bg),
-      'primary selected edge on plain tile',
+      contrast(colors.primary, colors.surfaceAlt),
+      'primary selected edge on surfaceAlt',
     ).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 
@@ -354,82 +330,11 @@ describe.each(ALL)('%s palette', (_name, palette) => {
   });
 
   /**
-   * The tinted cards are the reference's main device, and they are the easiest
-   * place for contrast to rot: a designer nudges a fill lighter, the label
-   * stays, and the pair silently drops below AA. Each tint therefore ships with
-   * its own foreground, and all three text colours that can land on it are
-   * asserted.
+   * J light cards intentionally share the page fill, so either the edge or the
+   * shadow must carry card separation. `surfaceAlt` and borders still need to
+   * separate by fill distance because they do not always have a shadow.
    */
-  describe('card tints', () => {
-    it.each(tints)('$name carries its own foreground', (tint) => {
-      expect(contrast(tint.fg, tint.bg), `${tint.name} fg`).toBeGreaterThanOrEqual(AA_TEXT);
-    });
-
-    it.each(tints)('$name carries review status text', (tint) => {
-      for (const status of STATUSES) {
-        expect(
-          contrast(colors[status], tint.bg),
-          `${status} on ${tint.name}`,
-        ).toBeGreaterThanOrEqual(AA_TEXT);
-      }
-    });
-
-    it.each(tints)('$name reads with the standard text colours', (tint) => {
-      expect(contrast(colors.text, tint.bg), `${tint.name} text`).toBeGreaterThanOrEqual(AA_TEXT);
-      expect(contrast(colors.textMuted, tint.bg), `${tint.name} muted`).toBeGreaterThanOrEqual(
-        AA_TEXT,
-      );
-    });
-  });
-
-  /**
-   * A gradient is not two colours, it is every colour between them — and the
-   * interpolated middle can be lighter than either endpoint. Checking only the
-   * declared stops is the trap here, so this samples the ramp densely.
-   */
-  describe('hero gradient', () => {
-    const INVERSE_FOREGROUNDS = [
-      ['textInverse', colors.textInverse],
-      ['textInverseMuted', colors.textInverseMuted],
-      ['primaryInverse', colors.primaryInverse],
-    ] as const;
-
-    function sampleRamp(): string[] {
-      const toRgb = (hex: string) =>
-        [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
-      const stops = gradientHero.map(toRgb);
-      const out: string[] = [];
-      for (let seg = 0; seg < stops.length - 1; seg += 1) {
-        const [a, b] = [stops[seg]!, stops[seg + 1]!];
-        for (let step = 0; step <= 40; step += 1) {
-          const t = step / 40;
-          const mixed = a.map((channel, i) => Math.round(channel + (b[i]! - channel) * t));
-          out.push(`#${mixed.map((c) => c.toString(16).padStart(2, '0')).join('')}`);
-        }
-      }
-      return out;
-    }
-
-    it.each(INVERSE_FOREGROUNDS)('%s clears AA across the whole ramp', (_token, fg) => {
-      for (const stop of sampleRamp()) {
-        expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(AA_TEXT);
-      }
-    });
-  });
-
-  /**
-   * Contrast guards alone cannot catch a tint that has collapsed into the
-   * background: a card filled with almost exactly `bg` still passes every text
-   * pair, because its foregrounds are unchanged — it simply stops reading as a
-   * card. That happened for real when the ground moved to lavender and the
-   * lavender tint landed 5.0 away from it.
-   *
-   * Euclidean RGB distance is a coarse proxy for perceptibility, but it is the
-   * right shape of check here: butter, sage and apricot separate from the ground by
-   * hue rather than lightness, so a luminance-only rule would wrongly demand
-   * they get darker.
-   */
-  describe('cards and tints stay distinguishable from the ground', () => {
+  describe('cards stay distinguishable from the ground', () => {
     const MIN_DISTANCE = 12;
 
     function distance(a: string, b: string): number {
@@ -437,12 +342,6 @@ describe.each(ALL)('%s palette', (_name, palette) => {
       const [x, y] = [toRgb(a), toRgb(b)];
       return Math.hypot(...x.map((c, i) => c - y[i]!));
     }
-
-    it.each(tints)('$name is visibly separate from bg', (tint) => {
-      expect(distance(tint.bg, colors.bg), `${tint.name} vs bg`).toBeGreaterThanOrEqual(
-        MIN_DISTANCE,
-      );
-    });
 
     it('a card is visibly separate from the page', () => {
       const shadow = shadowFor(palette).card;
@@ -499,30 +398,6 @@ it('media tokens are identical in light and dark', () => {
   for (const token of MEDIA) {
     expect(palettes.coral.dark.colors[token], token).toBe(palettes.coral.light.colors[token]);
   }
-});
-
-describe('named tints', () => {
-  const { tints } = palettes.coral.light;
-
-  it.each(['plain', 'butter', 'sage', 'apricot'] as const)('%s exists', (name) => {
-    expect(tintNamed(tints, name).name).toBe(name);
-  });
-});
-
-describe('tint rotation', () => {
-  const { tints } = palettes.coral.light;
-
-  it('rotates without repeating a neighbour', () => {
-    for (let i = 0; i < tints.length * 2; i += 1) {
-      expect(tintIn(tints, i).name, `index ${i}`).not.toBe(tintIn(tints, i + 1).name);
-    }
-  });
-
-  it('wraps negative and fractional indices back into the tuple', () => {
-    expect(tintIn(tints, -1).name).toBe(tints[tints.length - 1]!.name);
-    expect(tintIn(tints, -tints.length).name).toBe(tints[0]!.name);
-    expect(tintIn(tints, 1.7).name).toBe(tints[1]!.name);
-  });
 });
 
 describe('resolving the mode from the preference', () => {

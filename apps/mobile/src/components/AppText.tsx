@@ -13,7 +13,7 @@ export interface AppTextProps extends TextProps {
 
 /**
  * The only text primitive in the app. It applies the locale-aware typography
- * scale (Arabic gets a taller line-height per spec §7) and pulls colours from
+ * scale (Arabic gets a taller line-height per spec §6) and pulls colours from
  * the theme so no screen sets raw font sizes or hex values.
  */
 export function AppText({ variant = 'body', color, center, muted, style, ...rest }: AppTextProps) {

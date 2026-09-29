@@ -93,8 +93,6 @@ export interface EmptyStateProps {
   title: string;
   message?: string;
   illustration?: IllustrationName;
-  /** @deprecated J: removed in C16. Use `illustration`; legacy icons render inside the same 88pt box. */
-  icon?: IconName;
   actionLabel?: string;
   onAction?: () => void;
   compact?: boolean;
@@ -103,12 +101,56 @@ export interface EmptyStateProps {
 export function EmptyState({
   title,
   message,
-  illustration,
-  icon = illustration ? undefined : 'bag',
+  illustration = 'bag',
   actionLabel,
   onAction,
   compact = false,
 }: EmptyStateProps) {
+  const contentStyle = compact ? COMPACT_CENTER : CENTER;
+  return (
+    <View style={contentStyle}>
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={{
+          width: ILLUSTRATION_BOX_SIZE,
+          height: ILLUSTRATION_BOX_SIZE,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Illustration name={illustration} size={ILLUSTRATION_BOX_SIZE} />
+      </View>
+      <AppText variant="title" center accessibilityRole="header">
+        {title}
+      </AppText>
+      {message ? (
+        <AppText muted center>
+          {message}
+        </AppText>
+      ) : null}
+      {actionLabel && onAction ? (
+        <Button title={actionLabel} onPress={onAction} fullWidth={false} />
+      ) : null}
+    </View>
+  );
+}
+
+function IconState({
+  title,
+  message,
+  icon,
+  actionLabel,
+  onAction,
+  compact,
+}: {
+  title: string;
+  message?: string;
+  icon: IconName;
+  actionLabel?: string;
+  onAction?: () => void;
+  compact: boolean;
+}) {
   const { colors } = useTheme();
   const contentStyle = compact ? COMPACT_CENTER : CENTER;
   return (
@@ -123,11 +165,7 @@ export function EmptyState({
           justifyContent: 'center',
         }}
       >
-        {illustration ? (
-          <Illustration name={illustration} size={ILLUSTRATION_BOX_SIZE} />
-        ) : icon ? (
-          <Icon name={icon} size={44} color={colors.textMuted} />
-        ) : null}
+        <Icon name={icon} size={44} color={colors.textMuted} />
       </View>
       <AppText variant="title" center accessibilityRole="header">
         {title}
@@ -179,7 +217,7 @@ export function ErrorState({ error, onRetry, compact = false }: ErrorStateProps)
   }
 
   return (
-    <EmptyState
+    <IconState
       compact={compact}
       icon="alert"
       title={t('mobile.common.error')}

@@ -29,19 +29,18 @@ import { Icon, type IconName } from './Icon';
 import { Illustration, type IllustrationName } from './Illustration';
 import { usePressFeedback } from './press-feedback';
 import {
-  BENTO_GUTTER,
+  BENTO_TILE_GAP,
   bentoGap,
   bentoRowLayout,
   type BentoLayoutDescriptor,
   type BentoVariant,
   type TileSpan,
 } from './tile-layout';
-import { spacing, type TintName } from '../theme';
+import { spacing } from '../theme';
 import { scrimGradient } from '../theme/scrim';
 import { useTheme } from '../theme/useTheme';
 
 export type { TileSpan } from './tile-layout';
-export type TileTint = TintName | 'photo';
 export type TileVariant = 'place' | 'quickAction';
 
 export interface TileProps {
@@ -49,12 +48,6 @@ export interface TileProps {
   span?: TileSpan;
   /** Read by `Bento`: relative width within a packed row. Defaults to 1. */
   weight?: number;
-  /** @deprecated J: removed in C16. J tiles are surface/card or quick-action surfaceAlt. */
-  tint?: TileTint;
-  /** @deprecated J: removed in C16. `surfaceAlt` maps to the quick-action surface. */
-  fill?: 'tint' | 'surfaceAlt';
-  /** @deprecated J: removed in C16. Use `variant="quickAction"` for dense action cells. */
-  compact?: boolean;
   variant?: TileVariant;
   image?: ImageSourcePropType;
   /** Photo tiles keep their legibility scrim unless a caller deliberately opts out. */
@@ -85,23 +78,18 @@ const InBento = createContext(false);
 const photoImageStyle: ImageStyle = { width: '100%', height: '100%' };
 const PLACE_TILE_MIN_HEIGHT = 158;
 const QUICK_ACTION_MIN_HEIGHT = 80;
-const COMPACT_TILE_MIN_HEIGHT = 80;
 
 function bentoLayoutStyle(layout: BentoLayoutDescriptor): ViewStyle {
   if ('width' in layout) return { width: layout.width, minWidth: 0 };
   return { flex: layout.flex, flexBasis: 0, minWidth: 0 };
 }
 
-function tileMinHeight(variant: TileVariant | undefined, compact: boolean): number {
+function tileMinHeight(variant: TileVariant | undefined): number {
   if (variant === 'quickAction') return QUICK_ACTION_MIN_HEIGHT;
-  if (compact) return COMPACT_TILE_MIN_HEIGHT;
   return PLACE_TILE_MIN_HEIGHT;
 }
 
 export function Tile({
-  tint = 'plain',
-  fill: fillMode = 'tint',
-  compact = false,
   variant,
   image,
   scrim = true,
@@ -122,20 +110,20 @@ export function Tile({
   style,
   testID,
 }: TileProps) {
-  const { colors, gradientHero, shadow, scrim: scrimToken } = useTheme();
+  const { colors, shadow, scrim: scrimToken } = useTheme();
   const inBento = useContext(InBento);
   const pressFeedback = usePressFeedback();
-  const photo = tint === 'photo';
   const quickAction = variant === 'quickAction';
   const [imageFailed, setImageFailed] = useState(false);
-  const hasPhotoImage = photo && image && !imageFailed;
-  const showPhotoFallback = photo && (!image || imageFailed);
-  const fill = photo
-    ? colors.surfaceInverse
-    : quickAction || fillMode === 'surfaceAlt'
-      ? colors.surfaceAlt
-      : colors.surface;
-  const ink = photo ? { color: colors.textInverse } : undefined;
+  const hasPhotoImage = !!image && !imageFailed;
+  const showPhotoFallback = !!image && imageFailed;
+  const fill =
+    hasPhotoImage || showPhotoFallback
+      ? colors.surfaceInverse
+      : quickAction
+        ? colors.surfaceAlt
+        : colors.surface;
+  const ink = hasPhotoImage ? { color: colors.textInverse } : undefined;
   const accessibilityActions = actions?.map(({ name, label }) => ({ name, label }));
   const onAccessibilityAction = actions
     ? (event: AccessibilityActionEvent) => {
@@ -148,13 +136,17 @@ export function Tile({
   }, [image]);
 
   const container: ViewStyle = {
-    minHeight: height ?? tileMinHeight(variant, compact),
+    minHeight: height ?? tileMinHeight(variant),
     padding: quickAction ? spacing.md : spacing.lg,
     gap: quickAction ? spacing.sm : 10,
-    borderWidth: quickAction || photo ? 0 : 1,
+    borderWidth: quickAction || hasPhotoImage || showPhotoFallback ? 0 : 1,
     borderColor: colors.cardEdge,
     backgroundColor: fill,
-    ...(photo ? { overflow: 'hidden' } : quickAction ? null : shadow.card),
+    ...(hasPhotoImage || showPhotoFallback
+      ? { overflow: 'hidden' }
+      : quickAction
+        ? null
+        : shadow.card),
     ...(inBento ? { flex: 1 } : null),
   };
 
@@ -166,7 +158,7 @@ export function Tile({
     <Icon
       name={icon}
       size={quickAction ? 24 : 24}
-      color={photo ? colors.textInverse : colors.text}
+      color={hasPhotoImage ? colors.textInverse : colors.text}
     />
   ) : null;
 
@@ -189,12 +181,21 @@ export function Tile({
         </>
       ) : null}
       {showPhotoFallback ? (
-        <LinearGradient
-          colors={gradientHero as unknown as readonly [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+        <View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.surfaceAlt,
+            },
+          ]}
+        >
+          <Illustration name="plate" size={44} />
+        </View>
       ) : null}
       {art || corner ? (
         <View
@@ -217,7 +218,7 @@ export function Tile({
         </AppText>
       ) : null}
       {caption ? (
-        <AppText variant="caption" muted={!photo} style={ink}>
+        <AppText variant="caption" muted={!hasPhotoImage} style={ink}>
           {caption}
         </AppText>
       ) : null}
@@ -325,5 +326,7 @@ export interface BentoColumnProps {
 
 /** Stacks tiles in one half of a row; they split its height evenly. */
 export function BentoColumn({ children }: BentoColumnProps) {
-  return <View style={{ flex: 1, flexBasis: 0, minWidth: 0, gap: BENTO_GUTTER }}>{children}</View>;
+  return (
+    <View style={{ flex: 1, flexBasis: 0, minWidth: 0, gap: BENTO_TILE_GAP }}>{children}</View>
+  );
 }

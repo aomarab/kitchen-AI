@@ -2,35 +2,13 @@ import type { PaletteColors } from '../theme/palettes';
 
 /**
  * Coral button tones (spec §8). Kept free of React Native so the palette
- * guards can check every fill and label pair without a renderer, the same way
- * `recipe-thumb-tones.ts` does for the placeholder.
+ * guards can check every fill and label pair without a renderer.
  */
-export const BUTTON_VARIANTS = [
-  'primary',
-  'secondary',
-  'ghost',
-  'destructive',
-  'inverse',
-  /** @deprecated J: removed in C16 */
-  'soft',
-  /** @deprecated J: removed in C16 */
-  'danger',
-  /** @deprecated J: removed in C16 */
-  'media',
-] as const;
+export const BUTTON_VARIANTS = ['primary', 'secondary', 'ghost', 'destructive', 'inverse'] as const;
 
 export type ButtonVariant = (typeof BUTTON_VARIANTS)[number];
 export type ButtonToneName = 'default' | 'danger';
 export type JButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive' | 'inverse';
-
-export const DEPRECATED_BUTTON_VARIANT_ALIASES = {
-  /** @deprecated J: removed in C16 */
-  soft: 'secondary',
-  /** @deprecated J: removed in C16 */
-  danger: 'destructive',
-  /** @deprecated J: removed in C16 */
-  media: 'inverse',
-} as const satisfies Record<Exclude<ButtonVariant, JButtonVariant>, JButtonVariant>;
 
 export interface ButtonTone {
   fill: string;
@@ -44,13 +22,6 @@ export interface ButtonTone {
 export interface ButtonToneOptions {
   tone?: ButtonToneName;
   disabled?: boolean;
-}
-
-export function resolveButtonVariant(variant: ButtonVariant): JButtonVariant {
-  return (
-    DEPRECATED_BUTTON_VARIANT_ALIASES[variant as keyof typeof DEPRECATED_BUTTON_VARIANT_ALIASES] ??
-    variant
-  );
 }
 
 export function buttonTone(
@@ -68,18 +39,7 @@ export function buttonTone(
     };
   }
 
-  if (variant === 'media') {
-    return {
-      fill: colors.textInverse,
-      pressedFill: colors.textInverse,
-      label: colors.onPrimaryInverse,
-      border: colors.textInverse,
-      borderWidth: 0,
-    };
-  }
-
-  const resolved = resolveButtonVariant(variant);
-  switch (resolved) {
+  switch (variant) {
     case 'primary':
       return {
         fill: colors.primary,
@@ -123,10 +83,6 @@ export function buttonTone(
   }
 }
 
-/**
- * `IconButton` is the J name for the square icon primitive. `RoundButton`
- * keeps accepting its old tones as aliases until C16.
- */
 export const ICON_BUTTON_TONES = [
   'plain',
   'surface',
@@ -138,47 +94,14 @@ export const ICON_BUTTON_TONES = [
 
 export type IconButtonTone = (typeof ICON_BUTTON_TONES)[number];
 
-export const ROUND_BUTTON_TONES = [
-  ...ICON_BUTTON_TONES,
-  /** @deprecated J: removed in C16 */
-  'sunk',
-  /** @deprecated J: removed in C16 */
-  'primary',
-  /** @deprecated J: removed in C16 */
-  'soft',
-  /** @deprecated J: removed in C16 */
-  'mediaLight',
-] as const;
-
-export type RoundButtonTone = (typeof ROUND_BUTTON_TONES)[number];
-
-export const DEPRECATED_ROUND_BUTTON_TONE_ALIASES = {
-  /** @deprecated J: removed in C16 */
-  sunk: 'surface',
-  /** @deprecated J: removed in C16 */
-  primary: 'coral',
-  /** @deprecated J: removed in C16 */
-  soft: 'surface',
-  /** @deprecated J: removed in C16 */
-  mediaLight: 'media',
-} as const satisfies Record<Exclude<RoundButtonTone, IconButtonTone>, IconButtonTone>;
-
-export interface RoundButtonColors {
+export interface IconButtonColors {
   fill: string;
   glyph: string;
   border: string;
   borderWidth: 0 | 1;
 }
 
-export function resolveRoundButtonTone(tone: RoundButtonTone): IconButtonTone {
-  return (
-    DEPRECATED_ROUND_BUTTON_TONE_ALIASES[
-      tone as keyof typeof DEPRECATED_ROUND_BUTTON_TONE_ALIASES
-    ] ?? tone
-  );
-}
-
-export function iconButtonTone(colors: PaletteColors, tone: IconButtonTone): RoundButtonColors {
+export function iconButtonTone(colors: PaletteColors, tone: IconButtonTone): IconButtonColors {
   switch (tone) {
     case 'plain':
       return { fill: 'transparent', glyph: colors.text, border: 'transparent', borderWidth: 0 };
@@ -208,8 +131,4 @@ export function iconButtonTone(colors: PaletteColors, tone: IconButtonTone): Rou
         borderWidth: 0,
       };
   }
-}
-
-export function roundButtonTone(colors: PaletteColors, tone: RoundButtonTone): RoundButtonColors {
-  return iconButtonTone(colors, resolveRoundButtonTone(tone));
 }

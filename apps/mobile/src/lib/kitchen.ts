@@ -9,7 +9,6 @@ import type { BadgeTone } from '../components/Badge';
 import type { IllustrationName } from '../components/glyphs/illustration-paths';
 import { byExpiryUrgency, expiryStatus, isExpiringSoon, type ExpiryStatus } from './expiry';
 import { isSeededLocationName, locationLabel } from './format';
-import type { TintName } from '../theme';
 
 export type KitchenSort = NonNullable<ListInventoryQuery['sort']>;
 export type KitchenSection = 'justAdded';
@@ -29,12 +28,6 @@ export const EXPIRY_TONE: Record<ExpiryStatus, BadgeTone> = {
 };
 
 const SORTS = new Set<KitchenSort>(['expiry', 'name', 'recent']);
-const PLACE_TINTS: readonly Extract<TintName, 'butter' | 'sage' | 'apricot'>[] = [
-  'butter',
-  'sage',
-  'apricot',
-];
-
 export function rankPlaces(
   items: readonly Pick<InventoryItem, 'locationId' | 'expiresAt'>[],
   locations: readonly StorageLocation[],
@@ -65,11 +58,6 @@ export function rankPlaces(
         labelOf(a.location).localeCompare(labelOf(b.location)) ||
         a.location.id.localeCompare(b.location.id),
     );
-}
-
-export function placeTint(rank: number): Extract<TintName, 'butter' | 'sage' | 'apricot'> {
-  const index = ((Math.trunc(rank) % PLACE_TINTS.length) + PLACE_TINTS.length) % PLACE_TINTS.length;
-  return PLACE_TINTS[index]!;
 }
 
 export function placeIllustration(type: StorageLocationType): IllustrationName {

@@ -37,7 +37,6 @@ export function TonightRecipeCard({
     >
       <RecipeThumb
         heroImageUrl={entry.recipe.heroImageUrl}
-        dishKey={entry.recipe.difficulty}
         title={entry.recipe.title}
         size={196}
         style={{ width: '100%', height: 196 }}

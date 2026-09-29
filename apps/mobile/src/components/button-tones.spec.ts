@@ -1,14 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  BUTTON_VARIANTS,
-  ICON_BUTTON_TONES,
-  ROUND_BUTTON_TONES,
-  buttonTone,
-  iconButtonTone,
-  resolveButtonVariant,
-  resolveRoundButtonTone,
-  roundButtonTone,
-} from './button-tones';
+import { BUTTON_VARIANTS, ICON_BUTTON_TONES, buttonTone, iconButtonTone } from './button-tones';
 import { palettes, type ThemeMode } from '../theme/palettes';
 import { contrast } from '../theme/contrast';
 
@@ -18,9 +9,9 @@ const AA_NON_TEXT = 3;
 describe.each(['light', 'dark'] as ThemeMode[])('button tones, coral %s', (mode) => {
   const { colors } = palettes.coral[mode];
 
-  it('offers exactly the Coral bridge variants', () => {
+  it('offers exactly the Coral variants', () => {
     expect([...BUTTON_VARIANTS].sort()).toEqual(
-      ['danger', 'destructive', 'ghost', 'inverse', 'media', 'primary', 'secondary', 'soft'].sort(),
+      ['destructive', 'ghost', 'inverse', 'primary', 'secondary'].sort(),
     );
   });
 
@@ -65,30 +56,6 @@ describe.each(['light', 'dark'] as ThemeMode[])('button tones, coral %s', (mode)
       border: colors.surfaceAlt,
     });
     expect(contrast(tone.label, tone.fill), 'disabled label').toBeGreaterThanOrEqual(AA_TEXT);
-  });
-
-  it('maps deprecated button variants to J variants', () => {
-    expect(resolveButtonVariant('soft')).toBe('secondary');
-    expect(resolveButtonVariant('danger')).toBe('destructive');
-    expect(resolveButtonVariant('media')).toBe('inverse');
-  });
-
-  it.each(ROUND_BUTTON_TONES)('the %s round button carries a readable glyph', (name) => {
-    const tone = roundButtonTone(colors, name);
-    const ground =
-      tone.fill === 'transparent'
-        ? colors.bg
-        : tone.fill.startsWith('rgba')
-          ? colors.surfaceInverse
-          : tone.fill;
-    expect(contrast(tone.glyph, ground), name).toBeGreaterThanOrEqual(AA_TEXT);
-  });
-
-  it('maps deprecated round button tones to J icon button tones', () => {
-    expect(resolveRoundButtonTone('sunk')).toBe('surface');
-    expect(resolveRoundButtonTone('primary')).toBe('coral');
-    expect(resolveRoundButtonTone('soft')).toBe('surface');
-    expect(resolveRoundButtonTone('mediaLight')).toBe('media');
   });
 
   it.each(ICON_BUTTON_TONES)('%s icon buttons carry a readable glyph', (name) => {

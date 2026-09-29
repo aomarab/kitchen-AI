@@ -100,12 +100,7 @@ function RecipeRow({
           pressFeedback.animatedStyle,
         ]}
       >
-        <RecipeThumb
-          heroImageUrl={recipe.heroImageUrl}
-          dishKey={recipe.id}
-          title={recipe.title}
-          size={72}
-        />
+        <RecipeThumb heroImageUrl={recipe.heroImageUrl} title={recipe.title} size={72} />
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
           <AppText variant="bodyStrong" numberOfLines={2}>
             {recipe.title}

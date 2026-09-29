@@ -1,5 +1,5 @@
 import type { Locale } from '@kitchen/i18n';
-import type { Palette, ThemeMode, Tint, TintName } from './palettes';
+import type { Palette, ThemeMode } from './palettes';
 
 /**
  * Design tokens. Kept flat and dependency-free so any component can pull colours,
@@ -9,15 +9,7 @@ import type { Palette, ThemeMode, Tint, TintName } from './palettes';
  */
 
 export { paletteFor, palettes } from './palettes';
-export type {
-  Palette,
-  PaletteColors,
-  Scrim,
-  Tint,
-  TintName,
-  ThemeMode,
-  ColorToken,
-} from './palettes';
+export type { Palette, PaletteColors, Scrim, ThemeMode, ColorToken } from './palettes';
 export {
   ThemeModeOverride,
   themeModeWithOverride,
@@ -34,18 +26,8 @@ export const spacing = {
   xxl: 32,
 } as const;
 
-/**
- * Coral is square: every existing radius token resolves to 0. `shutter` is the
- * single explicit exception for the camera control's physical-circle metaphor.
- */
 export const radius = {
   none: 0,
-  xs: 0,
-  sm: 0,
-  md: 0,
-  lg: 0,
-  xl: 0,
-  pill: 0,
   shutter: 999,
 } as const;
 
@@ -276,26 +258,4 @@ export function resolveThemeMode(
 ): ThemeMode {
   if (preference !== 'system') return preference;
   return systemScheme === 'dark' ? 'dark' : 'light';
-}
-
-/**
- * Rotates the tints down a list so adjacent cards never repeat. Negative
- * indices wrap forwards rather than falling off the front of the tuple.
- *
- * Kept as a free function taking the tuple, so the palette guard can exercise
- * the wrapping arithmetic without standing up a React renderer.
- */
-export function tintIn(tints: readonly Tint[], index: number): Tint {
-  const count = tints.length;
-  const wrapped = ((Math.trunc(index) % count) + count) % count;
-  return tints[wrapped] ?? tints[0]!;
-}
-
-/**
- * The tint with a fixed role, such as the butter count tile or the sage plan
- * tile (spec §5.3). Rotation (`tintIn`) is for lists; a tile whose colour means
- * something asks for it by name.
- */
-export function tintNamed(tints: readonly Tint[], name: TintName): Tint {
-  return tints.find((tint) => tint.name === name) ?? tints[0]!;
 }

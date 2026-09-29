@@ -3,17 +3,8 @@ import { radius, shadowFor, spacing } from './index';
 import { palettes } from './palettes';
 
 describe('Coral foundation tokens', () => {
-  it('squares every existing radius while exposing J exceptions', () => {
-    expect(radius).toMatchObject({
-      none: 0,
-      xs: 0,
-      sm: 0,
-      md: 0,
-      lg: 0,
-      xl: 0,
-      pill: 0,
-      shutter: 999,
-    });
+  it('keeps only the square radius and camera shutter exception', () => {
+    expect(radius).toEqual({ none: 0, shutter: 999 });
   });
 
   it('adds the J page gutter without changing the existing spacing ladder', () => {

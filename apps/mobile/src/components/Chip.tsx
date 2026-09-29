@@ -80,7 +80,7 @@ export function Chip({
             backgroundColor: tone.fill,
           },
           onPress ? pressFeedback.animatedStyle : null,
-          tag ? { minHeight: 24, paddingHorizontal: spacing.sm, borderRadius: radius.xs } : null,
+          tag ? { minHeight: 24, paddingHorizontal: spacing.sm, borderRadius: radius.none } : null,
           style,
         ]}
       >

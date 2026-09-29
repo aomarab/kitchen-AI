@@ -50,7 +50,7 @@ export function YoutubePlayer({
     <View
       style={{
         aspectRatio: 16 / 9,
-        borderRadius: radius.md,
+        borderRadius: radius.none,
         overflow: 'hidden',
         backgroundColor: '#000',
       }}

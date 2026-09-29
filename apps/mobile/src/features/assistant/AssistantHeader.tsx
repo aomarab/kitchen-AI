@@ -291,8 +291,8 @@ export function LockedVoiceOverlay({
         edges={['bottom']}
         style={{
           backgroundColor: colors.surface,
-          borderTopStartRadius: radius.xl,
-          borderTopEndRadius: radius.xl,
+          borderTopStartRadius: radius.none,
+          borderTopEndRadius: radius.none,
           ...shadow.raised,
         }}
       >

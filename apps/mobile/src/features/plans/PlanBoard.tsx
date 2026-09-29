@@ -171,7 +171,6 @@ function PlanDayRow({
         </View>
         <RecipeThumb
           heroImageUrl={entry.recipe.heroImageUrl}
-          dishKey={entry.recipe.id}
           title={entry.recipe.title}
           size={56}
         />
@@ -237,7 +236,6 @@ function MealEntryRow({
       >
         <RecipeThumb
           heroImageUrl={entry.recipe.heroImageUrl}
-          dishKey={entry.recipe.id}
           title={entry.recipe.title}
           size={72}
         />

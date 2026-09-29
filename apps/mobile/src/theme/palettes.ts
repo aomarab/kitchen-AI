@@ -4,19 +4,9 @@
  *
  * - `primary` is the coral fill; `primaryText` is the same hue darkened until
  *   it passes as text on white, `surfaceAlt` and `primarySoft`.
- * - J keeps old F members only as deprecated bridge tokens until C16, so
- *   untouched screens compile while their groups migrate away from them.
  * - The `*Inverse` group is the media surface: camera, photos, video and the
  *   live assistant. It is shared by light and dark modes.
  */
-
-export type TintName = 'plain' | 'butter' | 'sage' | 'apricot';
-
-export interface Tint {
-  readonly bg: string;
-  readonly fg: string;
-  readonly name: TintName;
-}
 
 export interface PaletteColors {
   readonly bg: string;
@@ -33,15 +23,9 @@ export interface PaletteColors {
   readonly primaryPressed: string;
   readonly primaryArt: string;
   readonly primarySoft: string;
-  /** @deprecated J: removed in C16 */
-  readonly switchTrackOff: string;
   readonly onFill: string;
   readonly onDanger: string;
   readonly onSuccess: string;
-  /** @deprecated J: removed in C16 */
-  readonly accent: string;
-  /** @deprecated J: removed in C16 */
-  readonly accentSoft: string;
   readonly warn: string;
   /** Media-safe warning dot for inverse chips where dark-mode `warn` is too light. */
   readonly warnInverse: string;
@@ -80,10 +64,6 @@ export interface Scrim {
 
 export interface Palette {
   readonly colors: PaletteColors;
-  /** @deprecated J: removed in C16 */
-  readonly tints: readonly Tint[];
-  /** @deprecated J: removed in C16 */
-  readonly gradientHero: readonly string[];
   readonly scrim: Scrim;
   readonly shadowColor: string;
   readonly shadowScale: number;
@@ -106,9 +86,6 @@ const MEDIA = {
   warnInverse: '#A56300',
   mediaButton: 'rgba(0,0,0,0.45)',
 } as const;
-
-/** @deprecated J: removed in C16 */
-const MEDIA_RAMP = ['#111111', '#1A1A1A', '#2A2A2D'] as const;
 
 const SCRIM: Scrim = {
   rgb: '#000000',
@@ -136,12 +113,9 @@ const coralLightColors: PaletteColors = {
   primaryText: '#CC2E36',
   primaryArt: '#F5424B',
   primarySoft: '#FDECEC',
-  switchTrackOff: '#8A8A8F',
   onFill: '#FFFFFF',
   onDanger: '#FFFFFF',
   onSuccess: '#FFFFFF',
-  accent: '#1A7F37',
-  accentSoft: '#EAF5EC',
   success: '#1A7F37',
   successSoft: '#EAF5EC',
   warn: '#9A5B00',
@@ -171,12 +145,9 @@ const coralDarkColors: PaletteColors = {
   primaryText: '#FF6B70',
   primaryArt: '#FF6B70',
   primarySoft: '#2A1415',
-  switchTrackOff: '#7C7C82',
   onFill: '#FFFFFF',
   onDanger: '#111111',
   onSuccess: '#111111',
-  accent: '#4CC76A',
-  accentSoft: '#13261A',
   success: '#4CC76A',
   successSoft: '#13261A',
   warn: '#E0A040',
@@ -193,13 +164,6 @@ const coralDarkColors: PaletteColors = {
 
 const coralLight: Palette = {
   colors: coralLightColors,
-  tints: [
-    { bg: coralLightColors.surfaceAlt, fg: coralLightColors.text, name: 'plain' },
-    { bg: coralLightColors.surfaceAlt, fg: coralLightColors.text, name: 'butter' },
-    { bg: coralLightColors.surfaceAlt, fg: coralLightColors.text, name: 'sage' },
-    { bg: coralLightColors.surfaceAlt, fg: coralLightColors.text, name: 'apricot' },
-  ],
-  gradientHero: MEDIA_RAMP,
   scrim: SCRIM,
   shadowColor: '#1A1A1A',
   shadowScale: 1,
@@ -207,13 +171,6 @@ const coralLight: Palette = {
 
 const coralDark: Palette = {
   colors: coralDarkColors,
-  tints: [
-    { bg: coralDarkColors.surfaceAlt, fg: coralDarkColors.text, name: 'plain' },
-    { bg: coralDarkColors.surfaceAlt, fg: coralDarkColors.text, name: 'butter' },
-    { bg: coralDarkColors.surfaceAlt, fg: coralDarkColors.text, name: 'sage' },
-    { bg: coralDarkColors.surfaceAlt, fg: coralDarkColors.text, name: 'apricot' },
-  ],
-  gradientHero: MEDIA_RAMP,
   scrim: SCRIM,
   shadowColor: '#000000',
   shadowScale: 0,

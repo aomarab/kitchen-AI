@@ -9,7 +9,6 @@ import {
   parseSort,
   placeCaption,
   placeIllustration,
-  placeTint,
   rankPlaces,
   useFirst,
 } from './kitchen';
@@ -88,20 +87,6 @@ describe('rankPlaces', () => {
     expect(ranked.map((place) => [place.location.id, place.count])).toEqual([
       ['a', 1],
       ['b', 0],
-    ]);
-  });
-});
-
-describe('placeTint', () => {
-  it('rotates butter, sage and apricot from rank 0', () => {
-    expect(Array.from({ length: 7 }, (_, rank) => placeTint(rank))).toEqual([
-      'butter',
-      'sage',
-      'apricot',
-      'butter',
-      'sage',
-      'apricot',
-      'butter',
     ]);
   });
 });

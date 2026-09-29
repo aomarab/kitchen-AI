@@ -19,7 +19,7 @@ describe('borderless buttons align to the content margin', () => {
     // A ghost button paints neither fill nor border, so `paddingHorizontal`
     // only offsets its label from the margin. On the home screen that put
     // "See all" 16pt inside the right edge of every card beneath it.
-    expect(source).toMatch(/paddingHorizontal:\s*resolvedVariant === 'ghost'\s*\?\s*0\s*:/);
+    expect(source).toMatch(/paddingHorizontal:\s*variant === 'ghost'\s*\?\s*0\s*:/);
   });
 
   it('keeps the touch target legal without that padding', () => {
@@ -84,15 +84,6 @@ describe('surfaces', () => {
       expect(source).not.toContain('pressed ? 0.92');
     },
   );
-
-  it('keeps deprecated gradient cards to a single content padding box', () => {
-    const source = read('./Card.tsx');
-    const baseBlock = source.match(/const base: ViewStyle = \{[\s\S]*?\n {2}\};/)?.[0] ?? '';
-
-    expect(baseBlock).toContain('padding: gradient ? 0 : spacing.lg');
-    expect(source).toContain('style={[{ padding: spacing.lg, gap: spacing.sm }, contentStyle]}');
-    expect(source.match(/contentStyle/g) ?? []).toHaveLength(3);
-  });
 
   it('a sheet floats on the sheet shadow and closes through a plain 44pt icon button', () => {
     const source = read('./Sheet.tsx');
@@ -371,17 +362,15 @@ describe('account and settings Coral rhythm', () => {
 });
 
 describe('G1 primitive extensions', () => {
-  it('lets Tile replace the icon with a leading slot, fall back to ember and expose actions', () => {
+  it('lets Tile replace the icon with a leading slot, photo fallback and expose actions', () => {
     const source = read('./Tile.tsx');
     expect(source).toContain('leading?: ReactNode');
-    expect(source).toContain("fill?: 'tint' | 'surfaceAlt'");
-    expect(source).toContain('compact?: boolean');
     expect(source).toContain('variant?: TileVariant');
     expect(source).toContain('const PLACE_TILE_MIN_HEIGHT = 158');
     expect(source).toContain('const QUICK_ACTION_MIN_HEIGHT = 80');
     expect(source).toContain('function tileMinHeight');
     expect(source).toContain('padding: quickAction ? spacing.md : spacing.lg');
-    expect(source).toContain("quickAction || fillMode === 'surfaceAlt'");
+    expect(source).toContain('backgroundColor: colors.surfaceAlt');
     expect(source).toContain('accessibilityRole?: AccessibilityRole');
     expect(source).toContain('accessibilityState?: AccessibilityState');
     expect(source).toContain('accessibilityActions');
@@ -389,8 +378,7 @@ describe('G1 primitive extensions', () => {
     expect(source).toContain('imageFailed');
     expect(source).toContain('onError={() => setImageFailed(true)}');
     expect(source).toContain('showPhotoFallback');
-    expect(source).toMatch(/showPhotoFallback\s*=\s*photo && \(!image \|\| imageFailed\)/);
-    expect(source).toContain('gradientHero');
+    expect(source).toMatch(/showPhotoFallback\s*=\s*!!image && imageFailed/);
     const fallbackBlock = source.match(/\{showPhotoFallback \? \([\s\S]*?\) : null\}/)?.[0] ?? '';
     expect(fallbackBlock).not.toContain('scrimGradient');
   });
@@ -402,14 +390,9 @@ describe('G1 primitive extensions', () => {
     expect(source).toContain('variant="display"');
   });
 
-  it('keeps a 48pt IconButton target for the Tonight play control through the RoundButton adapter', () => {
+  it('keeps a 48pt IconButton target for the Tonight play control', () => {
     const iconButton = read('./IconButton.tsx');
     expect(iconButton).toContain('36 | 44 | 48');
     expect(iconButton).toContain('const targetSize = size === 48 ? 48 : ICON_BUTTON_TARGET_SIZE');
-
-    const source = read('./RoundButton.tsx');
-    expect(source).toContain('36 | 40 | 44 | 48');
-    expect(source).toContain('ROUND_BUTTON_TARGET_SIZE = 44');
-    expect(source).toContain('const mappedSize = size === 40 ? 44 : size');
   });
 });

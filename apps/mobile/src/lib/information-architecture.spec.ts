@@ -214,7 +214,7 @@ describe('information architecture (spec §4)', () => {
     const row = read('components', 'ListRow.tsx');
     expect(row).toMatch(/minHeight:\s*56/);
     expect(row).toContain('borderBottomColor: colors.rowline');
-    expect(row).toContain('/** @deprecated J: removed in C16. Rows are flat in every group. */');
+    expect(row).not.toContain('grouped?:');
   });
 
   it('keeps Account and Settings on the Coral account contract (spec §9)', () => {

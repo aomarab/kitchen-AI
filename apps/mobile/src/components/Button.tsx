@@ -1,11 +1,6 @@
 import { ActivityIndicator, Animated, Pressable, type ViewStyle } from 'react-native';
 import { AppText } from './AppText';
-import {
-  buttonTone,
-  resolveButtonVariant,
-  type ButtonToneName,
-  type ButtonVariant,
-} from './button-tones';
+import { buttonTone, type ButtonToneName, type ButtonVariant } from './button-tones';
 import { DirectionalIcon } from './DirectionalIcon';
 import { Icon, type IconName } from './Icon';
 import { usePressFeedback } from './press-feedback';
@@ -23,7 +18,6 @@ export interface ButtonProps {
   tone?: ButtonToneName;
   size?: ButtonSize;
   leadingIcon?: IconName;
-  icon?: IconName;
   trailingIcon?: IconName;
   /** A trailing arrow ("Get started →"). Mirrors in RTL. */
   arrow?: boolean;
@@ -41,7 +35,6 @@ export function Button({
   tone: toneName = 'default',
   size = 'L',
   leadingIcon,
-  icon,
   trailingIcon,
   arrow,
   loading,
@@ -53,11 +46,10 @@ export function Button({
   const { colors } = useTheme();
   const isDisabled = disabled || loading;
   const tone = buttonTone(colors, variant, { tone: toneName, disabled: isDisabled });
-  const resolvedVariant = resolveButtonVariant(variant);
   const compact = size === 'S';
   const height = compact ? 36 : 44;
   const labelVariant = compact ? 'buttonSmall' : 'button';
-  const firstIcon = leadingIcon ?? icon;
+  const firstIcon = leadingIcon;
   const lastIcon = trailingIcon;
   const pressFeedback = usePressFeedback();
   const animatedFill =
@@ -94,7 +86,7 @@ export function Button({
             alignItems: 'center',
             justifyContent: 'center',
             gap: spacing.sm,
-            paddingHorizontal: resolvedVariant === 'ghost' ? 0 : compact ? 14 : 20,
+            paddingHorizontal: variant === 'ghost' ? 0 : compact ? 14 : 20,
             borderRadius: radius.none,
             backgroundColor: animatedFill,
             borderWidth: tone.borderWidth,

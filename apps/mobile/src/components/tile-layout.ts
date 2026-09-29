@@ -4,8 +4,6 @@ export const BENTO_TILE_GAP = 16;
 /** The J quick-action grid: three columns with a 10pt gutter. */
 export const BENTO_QUICK_ACTION_COLUMNS = 3;
 export const BENTO_QUICK_ACTION_GAP = 10;
-/** @deprecated J: removed in C16. Use `bentoGap('tiles')`. */
-export const BENTO_GUTTER = BENTO_TILE_GAP;
 
 export type BentoVariant = 'tiles' | 'quickActions';
 export type TileSpan = 1 | 2 | 3;
