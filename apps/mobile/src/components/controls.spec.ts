@@ -123,11 +123,28 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, coral %s', (mode
   });
 
   it('star tones use filled Coral and empty control strokes', () => {
-    expect(starTone(colors, true)).toMatchObject({ glyph: colors.primary, icon: 'star' });
-    expect(starTone(colors, false)).toMatchObject({ glyph: colors.control, icon: 'star' });
+    expect(starTone(colors, true)).toMatchObject({
+      glyph: colors.primary,
+      icon: 'star',
+      filled: true,
+    });
+    expect(starTone(colors, false)).toMatchObject({
+      glyph: colors.control,
+      icon: 'star',
+      filled: false,
+    });
     expect(contrast(starTone(colors, false).glyph, colors.bg), 'empty star').toBeGreaterThanOrEqual(
       AA_NON_TEXT,
     );
+  });
+
+  it('StarRating passes the explicit fill state to the glyph, not an alias', () => {
+    const source = read('./StarRating.tsx');
+
+    expect(source).toContain(
+      '<Icon name={tone.icon} size={20} color={tone.glyph} filled={tone.filled} />',
+    );
+    expect(source).not.toContain('starOutline');
   });
 });
 

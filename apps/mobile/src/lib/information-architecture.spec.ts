@@ -1043,7 +1043,7 @@ describe('information architecture (spec §4)', () => {
     );
     expect(timerControl).toContain("t('mobile.recipe.stepTimerProgress')");
     expect(timerControl).toContain('accessibilityLabel={progressLabel}');
-    expect(timerControl).toContain('accessibilityValue={{ min: 0, max: 100');
+    expect(timerControl).not.toContain('accessibilityValue={{ min: 0, max: 100');
     expect(cook).toContain('<IconButton');
     expect(cook).toContain('label="M"');
     expect(cook).not.toContain('<OrbMascot');

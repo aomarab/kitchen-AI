@@ -26,9 +26,10 @@ export interface IconProps {
   size?: number;
   color?: ColorValue;
   style?: StyleProp<TextStyle>;
+  filled?: boolean;
 }
 
-export function Icon({ name, size = 18, color, style }: IconProps) {
+export function Icon({ name, size = 18, color, style, filled }: IconProps) {
   const { colors } = useTheme();
   const iconColor = color ?? colors.text;
 
@@ -46,7 +47,7 @@ export function Icon({ name, size = 18, color, style }: IconProps) {
   }
 
   const glyphName = name as GlyphName;
-  const filled = isFilledGlyphName(name);
+  const shouldFill = filled ?? isFilledGlyphName(name);
 
   return (
     <Svg
@@ -65,7 +66,7 @@ export function Icon({ name, size = 18, color, style }: IconProps) {
           strokeWidth={iconStrokeWidth(size)}
           strokeLinecap="round"
           strokeLinejoin="round"
-          fill={filled ? iconColor : 'none'}
+          fill={shouldFill ? iconColor : 'none'}
         />
       ))}
     </Svg>

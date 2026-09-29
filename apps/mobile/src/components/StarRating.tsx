@@ -41,7 +41,7 @@ export function StarRating({ value, onChange, labelFor, disabled }: StarRatingPr
               justifyContent: 'center',
             }}
           >
-            <Icon name={tone.icon} size={20} color={tone.glyph} />
+            <Icon name={tone.icon} size={20} color={tone.glyph} filled={tone.filled} />
           </Pressable>
         );
       })}

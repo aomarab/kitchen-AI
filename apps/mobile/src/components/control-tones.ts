@@ -91,6 +91,6 @@ export function toggleTone(colors: PaletteColors, value: boolean): { track: stri
 export function starTone(
   colors: PaletteColors,
   filled: boolean,
-): { glyph: string; icon: Extract<IconName, 'star'> } {
-  return { glyph: filled ? colors.primary : colors.control, icon: 'star' };
+): { glyph: string; icon: Extract<IconName, 'star'>; filled: boolean } {
+  return { glyph: filled ? colors.primary : colors.control, icon: 'star', filled };
 }

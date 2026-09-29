@@ -82,7 +82,6 @@ export function CookTimerPanel({
         value={progress}
         tone={finished ? 'idle' : 'active'}
         accessibilityLabel={progressLabel}
-        accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}
       />
       {projected ? null : (
         <Button
