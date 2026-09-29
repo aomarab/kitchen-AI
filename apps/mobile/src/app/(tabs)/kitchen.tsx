@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, ScrollView, View, type LayoutChangeEvent } from 'react-native';
+import { Animated, FlatList, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { InventoryItem } from '@kitchen/contracts';
 import {
@@ -43,8 +43,10 @@ import {
 } from '../../lib/inventory-row';
 import { spacing } from '../../theme';
 import { useTabBarClearance } from '../../components/TabBar';
+import { usePressFeedback } from '../../components/press-feedback';
 
 const SORT_OPTIONS: readonly KitchenSort[] = ['expiry', 'name', 'recent'];
+const KITCHEN_TOP_STACK_GAP = spacing.md;
 
 type RankedPlace = ReturnType<typeof rankPlaces>[number];
 
@@ -70,23 +72,32 @@ function SectionHeading({
   title,
   actionLabel,
   onAction,
-  onLayout,
 }: {
   title: string;
   actionLabel?: string;
   onAction?: () => void;
-  onLayout?: (event: LayoutChangeEvent) => void;
 }) {
+  const pressFeedback = usePressFeedback();
+
   return (
-    <View
-      onLayout={onLayout}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}
-    >
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
       <AppText variant="heading" accessibilityRole="header" style={{ flex: 1 }}>
         {title}
       </AppText>
       {actionLabel && onAction ? (
-        <Button title={actionLabel} variant="ghost" fullWidth={false} onPress={onAction} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+          onPress={onAction}
+          {...pressFeedback.pressHandlers}
+          style={{ minHeight: 44, justifyContent: 'center' }}
+        >
+          <Animated.View style={pressFeedback.animatedStyle}>
+            <AppText variant="label" color="primaryText">
+              {actionLabel}
+            </AppText>
+          </Animated.View>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -183,7 +194,6 @@ export default function Kitchen() {
   const [locationId, setLocationId] = useState<string | undefined>(params.locationId);
   const [sort, setSort] = useState<KitchenSort>(() => parseSort(params.sort) ?? 'expiry');
   const [sortOpen, setSortOpen] = useState(false);
-  const [allItemsY, setAllItemsY] = useState<number | null>(null);
   const [justAddedY, setJustAddedY] = useState<number | null>(null);
 
   const locationsQuery = useLocations();
@@ -239,16 +249,6 @@ export default function Kitchen() {
     setLocationId(undefined);
     router.setParams({ locationId: undefined });
   };
-  const seeAllUseFirst = () => {
-    setSort('expiry');
-    if (locationId) clearPlace();
-    if (allItemsY !== null) {
-      listRef.current?.scrollToOffset({
-        offset: Math.max(0, allItemsY - spacing.lg),
-        animated: true,
-      });
-    }
-  };
   const refresh = () => {
     void snapshotQuery.refetch();
     void inventory.refetch();
@@ -300,7 +300,7 @@ export default function Kitchen() {
   const sortLabel = t(`mobile.kitchen.sort.${sort}`);
 
   const content = (
-    <View style={{ paddingBottom: clearance, gap: spacing.xl }}>
+    <View style={{ paddingBottom: clearance, gap: selectedLocation ? 0 : KITCHEN_TOP_STACK_GAP }}>
       {selectedLocation ? (
         <Header
           title={locationLabel(t, selectedLocation)}
@@ -331,7 +331,6 @@ export default function Kitchen() {
                 flexDirection: 'row',
                 gap: spacing.sm,
                 paddingHorizontal: spacing.gutter,
-                paddingVertical: spacing.xs,
               }}
             >
               <Chip
@@ -350,13 +349,14 @@ export default function Kitchen() {
                 <Chip
                   key={place.location.id}
                   label={locationLabel(t, place.location)}
-                  count={place.count}
-                  countAccessibilityLabel={formattedCountMessage(
+                  accessibilityLabel={placeAccessibilityLabel({
                     t,
-                    'inventory.itemCount',
-                    place.count,
-                    formatQty(locale, place.count, prefs),
-                  )}
+                    caption: locationLabel(t, place.location),
+                    count: place.count,
+                    formattedCount: formatQty(locale, place.count, prefs),
+                    soon: place.soon,
+                    formattedSoon: formatQty(locale, place.soon, prefs),
+                  })}
                   selected={locationId === place.location.id}
                   onPress={() => openPlace(place.location.id)}
                 />
@@ -379,7 +379,7 @@ export default function Kitchen() {
         </>
       )}
 
-      <View style={{ paddingHorizontal: spacing.gutter, gap: spacing.xl }}>
+      <View style={{ paddingHorizontal: spacing.gutter, gap: selectedLocation ? 0 : spacing.xl }}>
         {selectedLocation && selectedSummary ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
             <AppText variant="caption" muted style={{ flex: 1 }}>
@@ -393,8 +393,8 @@ export default function Kitchen() {
           <View style={{ gap: spacing.sm }}>
             <SectionHeading
               title={t('mobile.kitchen.useFirst')}
-              actionLabel={selectedLocation ? undefined : t('mobile.home.seeAll')}
-              onAction={selectedLocation ? undefined : seeAllUseFirst}
+              actionLabel={selectedLocation ? undefined : t('mobile.kitchen.sortAction')}
+              onAction={selectedLocation ? undefined : () => setSortOpen(true)}
             />
             <View>
               {useFirstItems.map((item) => renderInventoryItemRow(item, !selectedLocation))}
@@ -414,10 +414,7 @@ export default function Kitchen() {
           </View>
         ) : null}
 
-        <View
-          style={{ gap: spacing.sm }}
-          onLayout={(event) => setAllItemsY(event.nativeEvent.layout.y)}
-        >
+        <View style={{ gap: spacing.sm }}>
           <SectionHeading
             title={t('mobile.kitchen.allItems')}
             actionLabel={selectedLocation ? undefined : t('mobile.kitchen.sortBy')}

@@ -299,6 +299,7 @@ export const mobileAr: MobileMessages = {
     kitchen: {
       searchPlaceholder: 'ابحث في مطبخك',
       sortBy: 'ترتيب',
+      sortAction: 'ترتيب',
       filter: 'تصفية',
       sort: {
         expiry: 'الصلاحية',

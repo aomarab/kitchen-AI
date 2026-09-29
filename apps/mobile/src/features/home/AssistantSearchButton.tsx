@@ -32,7 +32,7 @@ export function AssistantSearchButton({ label, onPress }: { label: string; onPre
           pressFeedback.animatedStyle,
         ]}
       >
-        <Icon name="search" size={20} color={colors.textMuted} />
+        <Icon name="chat" size={20} color={colors.textMuted} />
         <AppText variant="body" color="textMuted" style={{ flex: 1 }}>
           {t('mobile.home.greeting')}
         </AppText>

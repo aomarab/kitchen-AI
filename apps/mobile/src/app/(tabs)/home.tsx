@@ -98,6 +98,9 @@ export default function Home() {
   const creditsText = formatQty(locale, credits, prefs);
   const greetingName =
     !meQuery.isLoading && !meQuery.isError ? firstName(meQuery.data?.displayName) : null;
+  const greetingTitle = greetingName
+    ? `${t('mobile.home.greetingLead')} ${greetingName}`
+    : t('mobile.home.greeting');
   const weekday = formatWeekday(locale, now);
   const dayPartCaption = t(dayPartMessageKey(dayPart(now)), { weekday });
   const expiring = expiringQuery.data?.items ?? [];
@@ -193,8 +196,7 @@ export default function Home() {
     >
       <TabHeader
         caption={dayPartCaption}
-        title={greetingName ? t('mobile.home.greetingLead') : t('mobile.home.greeting')}
-        titleAccent={greetingName ?? undefined}
+        title={greetingTitle}
         action={
           <IconButton
             accessibilityLabel={t('mobile.settings.notifications')}
@@ -237,7 +239,6 @@ export default function Home() {
         <UseSoonSection
           items={expiringPreview}
           locations={locationsQuery.data ?? []}
-          countLabel={expiringCountLabel}
           accessibilityLabel={useSoonAccessibilityLabel}
           onSeeAll={openUseSoon}
         />

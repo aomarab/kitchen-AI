@@ -130,15 +130,17 @@ export function Tile({
         actions.find((action) => action.name === event.nativeEvent.actionName)?.onPress();
       }
     : undefined;
+  const baseHeight = height ?? tileMinHeight(variant);
+  const pressableStyle: ViewStyle | undefined = inBento ? { flex: 1 } : undefined;
 
   useEffect(() => {
     setImageFailed(false);
   }, [image]);
 
   const container: ViewStyle = {
-    minHeight: height ?? tileMinHeight(variant),
+    ...(quickAction ? { minHeight: baseHeight } : { height: baseHeight }),
     padding: quickAction ? spacing.md : spacing.lg,
-    gap: quickAction ? spacing.sm : 10,
+    gap: spacing.sm,
     borderWidth: quickAction || hasPhotoImage || showPhotoFallback ? 0 : 1,
     borderColor: colors.cardEdge,
     backgroundColor: fill,
@@ -210,7 +212,6 @@ export function Tile({
           {corner}
         </View>
       ) : null}
-      {quickAction ? null : <View style={{ flex: 1 }} />}
       {children}
       {count !== undefined ? (
         <AppText variant={quickAction ? 'caption' : 'bodyStrong'} style={ink}>
@@ -251,6 +252,7 @@ export function Tile({
       onAccessibilityAction={onAccessibilityAction}
       onPress={onPress}
       {...pressFeedback.pressHandlers}
+      style={pressableStyle}
       testID={testID}
     >
       <Animated.View style={[container, pressFeedback.animatedStyle, style]}>{body}</Animated.View>

@@ -233,6 +233,7 @@ export const mobileEn = {
     kitchen: {
       searchPlaceholder: 'Search your kitchen',
       sortBy: 'Sort',
+      sortAction: 'Sort',
       filter: 'Filter',
       sort: {
         expiry: 'Expiry',

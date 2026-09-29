@@ -23,7 +23,7 @@ export function CreditBalance({ balance, onTopUp, style }: CreditBalanceProps) {
   const label = `${total} ${t('mobile.home.creditsLeft')}`;
   const trailing = onTopUp ? (
     <>
-      <AppText variant="label" color="primaryText">
+      <AppText variant="label" color="textMuted">
         {t('mobile.home.topUp')}
       </AppText>
       <DirectionalIcon name="chevR" size={18} color={colors.control} />

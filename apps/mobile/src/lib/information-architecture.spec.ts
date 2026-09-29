@@ -750,6 +750,15 @@ describe('information architecture (spec §4)', () => {
     expect(kitchen).not.toMatch(/sourceLabel|sourceKey/);
     expect(kitchen, 'Kitchen header action migrated off RoundButton').not.toContain('RoundButton');
     expect(kitchen, 'Kitchen header must keep the add action').toContain('<IconButton');
+    expect(kitchen, 'Kitchen vertical rhythm must use the compact Figma stack gap').toContain(
+      'KITCHEN_TOP_STACK_GAP = spacing.md',
+    );
+    expect(kitchen, 'Kitchen fridge view must not inherit overview-only vertical gaps').toContain(
+      'gap: selectedLocation ? 0 : KITCHEN_TOP_STACK_GAP',
+    );
+    expect(kitchen, 'Kitchen chips must remove extra vertical padding').not.toContain(
+      'paddingVertical: spacing.xs',
+    );
     expect(
       read('components', 'TabHeader.tsx'),
       'TabHeader owns the account affordance for every tab',
@@ -767,6 +776,24 @@ describe('information architecture (spec §4)', () => {
     expect(placeTile, 'Kitchen place tiles must be J place tiles').toContain('variant="place"');
     expect(placeTile, 'Kitchen place tiles must share the Home place art mapping').toContain(
       'placeIllustration(ranked.location.type)',
+    );
+    const placeChipStart = kitchen.indexOf('{places.map((place) => (');
+    const placeChipEnd = kitchen.indexOf('{places.length > 0 ?', placeChipStart);
+    const placeChips =
+      placeChipStart >= 0 && placeChipEnd > placeChipStart
+        ? kitchen.slice(placeChipStart, placeChipEnd)
+        : '';
+    expect(placeChips, 'Place chips keep only labels; All is the only counted chip').not.toContain(
+      'count={place.count}',
+    );
+    expect(placeChips, 'Place chips must still announce item and soon counts').toContain(
+      'accessibilityLabel={placeAccessibilityLabel',
+    );
+    expect(kitchen, 'Use-first trailing action must open the Sort sheet').toContain(
+      "actionLabel={selectedLocation ? undefined : t('mobile.kitchen.sortAction')}",
+    );
+    expect(kitchen, 'Use-first action must no longer scroll to All items').not.toContain(
+      'seeAllUseFirst',
     );
     expect(
       placeGrid,
@@ -827,6 +854,18 @@ describe('information architecture (spec §4)', () => {
     expect(home).toContain("router.push('/settings/notifications')");
     expect(home).toContain('<AssistantSearchButton');
     expect(assistantSearch).toContain('usePressFeedback()');
+    expect(assistantSearch, 'Home assistant search uses the chat glyph from the frame').toContain(
+      'name="chat"',
+    );
+    expect(assistantSearch, 'Home assistant search must not use a magnifier glyph').not.toContain(
+      'name="search"',
+    );
+    expect(home, 'Home greeting is one ink title, not a coral-accent name').toContain(
+      'const greetingTitle = greetingName',
+    );
+    expect(home, 'Home must not pass the greeting name through the accent slot').not.toContain(
+      'titleAccent={greetingName',
+    );
     expect(home).toContain("router.push('/assistant')");
     expect(home, 'Home must keep labelled chat/voice/live assistant shortcuts').toContain(
       '<AssistantModeShortcuts',
@@ -959,6 +998,10 @@ describe('information architecture (spec §4)', () => {
     expect(useSoonSection, 'Home use-soon metadata must keep quantity and location').toContain(
       'inventoryItemRowMeta(t, locale, item, { location, prefs })',
     );
+    expect(
+      useSoonSection,
+      'Home use-soon section must not render the extra count caption after the rows',
+    ).not.toContain('countLabel');
     expect(inventoryRow, 'Home use-soon rows must use worded status badges').toContain('<Badge');
 
     expect(weekSection, 'Home week block must be the J Progress plus day strip').toContain(

@@ -16,13 +16,11 @@ import { spacing } from '../../theme';
 export function UseSoonSection({
   items,
   locations,
-  countLabel,
   accessibilityLabel,
   onSeeAll,
 }: {
   items: readonly InventoryItem[];
   locations: readonly StorageLocation[];
-  countLabel: string;
   accessibilityLabel: string;
   onSeeAll: () => void;
 }) {
@@ -64,16 +62,6 @@ export function UseSoonSection({
           })
         )}
       </View>
-      {items.length > 0 ? (
-        <AppText
-          variant="caption"
-          color="textMuted"
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        >
-          {countLabel}
-        </AppText>
-      ) : null}
     </View>
   );
 }

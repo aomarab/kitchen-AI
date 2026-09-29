@@ -198,6 +198,7 @@ describe('Coral structure source guards', () => {
     expect(credit).toContain('Icon name="coins"');
     expect(credit).toContain('mobile.home.creditsLeft');
     expect(credit).toContain('mobile.home.topUp');
+    expect(credit).toContain('color="textMuted"');
     expect(credit).toContain('<DirectionalIcon name="chevR"');
     expect(credit).toContain('const trailing = onTopUp ? (');
     expect(credit).toContain('{trailing}');
