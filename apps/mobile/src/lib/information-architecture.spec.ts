@@ -574,25 +574,28 @@ describe('information architecture (spec §4)', () => {
 
   it('keeps the credits purchase route on the store purchase path (spec §9.7)', () => {
     const buyCredits = read('screens', 'BuyCreditsScreen.tsx');
+    const packCard = read('features', 'credits', 'CreditPackCard.tsx');
 
     expect(buyCredits).toContain("import { buyCredits } from '../lib/purchase';");
     expect(buyCredits).toContain('<BalanceTile');
     expect(buyCredits).toContain('<LowBalanceNotice');
-    expect(buyCredits).toContain('accessibilityRole="radio"');
-    expect(buyCredits).toContain(
-      'accessibilityState={{ checked: selected, disabled: busyProduct !== null }}',
-    );
-    expect(buyCredits).toContain('disabled: busyProduct !== null');
-    expect(buyCredits).toMatch(
-      /style=\{selected \? \{ borderWidth: 2, borderColor: colors\.primary \} : undefined\}/,
-    );
-    expect(buyCredits).not.toContain('borderWidth: selected ? 2 : undefined');
-    expect(buyCredits).not.toContain('borderColor: selected ? colors.primary : undefined');
+    expect(buyCredits).toContain('<CreditPackCard');
+    expect(buyCredits).toContain('onBuy={(productId) => void onBuy(productId)}');
+    expect(buyCredits).toContain('busyProduct === pack.productId');
+    expect(buyCredits).toContain('disabled={busyProduct !== null}');
+    expect(buyCredits).not.toContain('<Bento');
+    expect(buyCredits).not.toContain('<Tile');
+    expect(packCard).toContain('pack.productId');
+    expect(packCard).toContain('CREDIT_PACK_ILLUSTRATION_SIZE = 56');
+    expect(packCard).toContain('<Button');
+    expect(packCard).toContain("t('mobile.credits.packSubtitle'");
+    expect(packCard).not.toContain('accessibilityRole="radio"');
   });
 
-  it('shares the credits balance tile and renders the balance breakdown (spec §9.7)', () => {
+  it('shares the credits balance tile and renders the balance plus usage breakdown (spec §9.7)', () => {
     const buyCredits = read('screens', 'BuyCreditsScreen.tsx');
     const aiUsage = read('app', 'ai-usage.tsx');
+    const usageSummary = read('features', 'credits', 'UsageSummary.tsx');
 
     expect(buyCredits).toContain("from '../features/credits/BalanceTile'");
     expect(aiUsage).toContain("from '../features/credits/BalanceTile'");
@@ -600,15 +603,21 @@ describe('information architecture (spec §4)', () => {
     expect(aiUsage).toContain("from '../features/credits/LowBalanceNotice'");
     expect(aiUsage).toContain('<BalanceTile');
     expect(aiUsage).toContain('<LowBalanceNotice');
+    expect(aiUsage).toContain('useAiUsage');
+    expect(aiUsage).toContain('<UsageSummary');
+    expect(aiUsage).toContain('footer={');
+    expect(aiUsage).toContain("title={t('mobile.credits.buy')}");
     expect(aiUsage).toContain('<ListGroup');
     expect(aiUsage.match(/<ListRow/g) ?? []).toHaveLength(2);
     expect(aiUsage).toContain("title={t('mobile.credits.free')}");
     expect(aiUsage).toContain("title={t('mobile.credits.paid')}");
     expect(aiUsage).toContain("t('mobile.credits.resets'");
     expect(aiUsage).toContain("router.push('/buy-credits')");
-    expect(aiUsage).not.toContain('useAiUsage');
+    expect(usageSummary).toContain('usageCreditsFromUsd');
+    expect(usageSummary).toContain('<Progress');
+    expect(usageSummary).toContain("t('mobile.aiUsage.spentOfBudget'");
+    expect(usageSummary).toContain("t('mobile.aiUsage.callsCount'");
     expect(aiUsage).not.toContain('spentUsd');
-    expect(aiUsage).not.toContain('usage-summary');
   });
 
   it('keeps sticky footer and toast geometry above the floating tab bar', () => {

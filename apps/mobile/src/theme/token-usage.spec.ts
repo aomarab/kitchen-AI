@@ -77,7 +77,11 @@ describe('mobile source sweep', () => {
     },
     'BalanceTile.tsx': {
       path: 'features/credits/BalanceTile.tsx',
-      pattern: /BALANCE_ORB_SIZE\s*=\s*(\d+)/,
+      pattern: /BALANCE_TILE_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
+    'CreditPackCard.tsx': {
+      path: 'features/credits/CreditPackCard.tsx',
+      pattern: /CREDIT_PACK_ACTION_MIN_HEIGHT\s*=\s*(\d+)/,
     },
     'ArPins.tsx': { path: 'features/capture/ArPins.tsx', pattern: /minHeight:\s*(\d+)/ },
     'Shutter.tsx': {

@@ -98,6 +98,22 @@ describe('Coral structure source guards', () => {
     expect(source).toContain('SKELETON_SMALL_BAR_HEIGHT = 10');
   });
 
+  it('keeps only the insufficient-credit ErrorState branch on the credits upsell path', () => {
+    const source = read('States.tsx');
+    expect(source).toContain('const outOfCredits = isInsufficientCredits(error);');
+    expect(source).toContain(
+      "? { label: t('mobile.credits.getMore'), onPress: () => router.push('/buy-credits') }",
+    );
+    expect(source).toContain("illustration={outOfCredits ? 'coins' : undefined}");
+    expect(source).toContain("icon={outOfCredits ? undefined : 'alert'}");
+    expect(source).toContain(
+      "title={outOfCredits ? t('mobile.credits.outOfCreditsTitle') : t('mobile.common.error')}",
+    );
+    expect(source).toContain(
+      'actionLabel={action && (outOfCredits || retryable || onRetry) ? action.label : undefined}',
+    );
+  });
+
   it('uses square avatars and an AccountButton press target around a 32pt avatar', () => {
     expect(read('Avatar.tsx')).toContain('size?: 32 | 40 | 56 | 80');
     expect(read('Avatar.tsx')).toContain('backgroundColor: colors.primarySoft');

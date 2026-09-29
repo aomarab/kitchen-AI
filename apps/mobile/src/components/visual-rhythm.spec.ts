@@ -234,6 +234,42 @@ describe('recipe and cook Coral rhythm', () => {
     expect(stepRow).toContain('borderBottomColor: colors.rowline');
   });
 
+  describe('credits Coral rhythm', () => {
+    const aiUsage = read('../app/ai-usage.tsx');
+    const buyCredits = read('../screens/BuyCreditsScreen.tsx');
+    const balanceTile = read('../features/credits/BalanceTile.tsx');
+    const packCard = read('../features/credits/CreditPackCard.tsx');
+    const usageSummary = read('../features/credits/UsageSummary.tsx');
+
+    it('draws the credit balance as a flat Coral surface with the coins illustration', () => {
+      expect(balanceTile).toContain('BALANCE_TILE_MIN_HEIGHT = 100');
+      expect(balanceTile).toContain('BALANCE_ILLUSTRATION_SIZE = 56');
+      expect(balanceTile).toContain('backgroundColor: colors.surfaceAlt');
+      expect(balanceTile).toContain('Illustration name="coins"');
+      expect(balanceTile).not.toContain('OrbMascot');
+      expect(balanceTile).not.toContain('<Tile');
+      expect(balanceTile).not.toContain('tint=');
+    });
+
+    it('keeps the credits screen footer CTA and usage progress in J primitives', () => {
+      expect(aiUsage).toContain('footer={');
+      expect(aiUsage).toContain('<UsageSummary');
+      expect(usageSummary).toContain('<Progress');
+      expect(usageSummary).toContain('variant="title"');
+      expect(usageSummary).not.toContain('formatUsd');
+    });
+
+    it('renders credit packs as full-width cards with an in-card buy action, not bento radio tiles', () => {
+      expect(buyCredits).toContain('<CreditPackCard');
+      expect(buyCredits).not.toContain('<Bento');
+      expect(buyCredits).not.toContain('<Tile');
+      expect(packCard).toContain('Card');
+      expect(packCard).toContain('padding: CREDIT_PACK_CARD_PADDING');
+      expect(packCard).toContain('CREDIT_PACK_ILLUSTRATION_SIZE = 56');
+      expect(packCard).toContain('fullWidth={false}');
+    });
+  });
+
   it('keeps the cooked sheet as an action sheet with the original mutation trigger', () => {
     expect(cookedSheet).not.toContain('<StarRating');
     expect(cookedSheet).toContain('deductInventory: true');

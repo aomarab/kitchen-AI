@@ -1,5 +1,7 @@
 import { CREDIT_COSTS, type CreditAction } from '@kitchen/contracts';
 
+const CREDIT_COST_BASIS_USD = 0.0045;
+
 /**
  * The subset of a `CreditBalance` the gating maths needs. Kept structural so
  * callers can pass the full balance from the API or a hand-built pair, and so
@@ -49,4 +51,13 @@ export function creditsShort(balance: BalanceLike, action: CreditAction): number
  */
 export function displayPrice(storePrice: string | null, fallbackPrice: string): string {
   return storePrice ?? fallbackPrice;
+}
+
+/**
+ * The legacy usage route reports provider spend in USD. Credits are the unit a
+ * household understands, so the mobile usage surface converts that spend back
+ * through the same basis the credit contract uses.
+ */
+export function usageCreditsFromUsd(spentUsd: number): number {
+  return Math.round((spentUsd / CREDIT_COST_BASIS_USD) * 100) / 100;
 }

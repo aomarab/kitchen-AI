@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { CREDIT_COSTS } from '@kitchen/contracts';
-import { canAfford, costOf, creditsShort, displayPrice, totalCredits } from './credits';
+import {
+  canAfford,
+  costOf,
+  creditsShort,
+  displayPrice,
+  totalCredits,
+  usageCreditsFromUsd,
+} from './credits';
 
 const balance = {
   freeBalance: 10,
@@ -92,5 +99,13 @@ describe('displayPrice', () => {
     // Only `null` means "no store price"; an empty string is still a store
     // answer, so `??` (not `||`) must be used.
     expect(displayPrice('', 'US$4.99')).toBe('');
+  });
+});
+
+describe('usageCreditsFromUsd', () => {
+  it('converts the legacy usage budget dollars into user-facing credits', () => {
+    expect(usageCreditsFromUsd(0)).toBe(0);
+    expect(usageCreditsFromUsd(0.0045)).toBe(1);
+    expect(usageCreditsFromUsd(0.42)).toBe(93.33);
   });
 });

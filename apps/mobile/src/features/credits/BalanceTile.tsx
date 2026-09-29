@@ -1,29 +1,45 @@
-import { Tile } from '../../components/Tile';
-import { OrbMascot } from '../../components/OrbMascot';
+import { View } from 'react-native';
+import { AppText, Illustration } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { totalCredits, type BalanceLike } from '../../lib/credits';
 import { formatQty } from '../../lib/format';
+import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 
-export const BALANCE_ORB_SIZE = 56;
+export const BALANCE_TILE_MIN_HEIGHT = 100;
+export const BALANCE_ILLUSTRATION_SIZE = 56;
 
 export interface BalanceTileProps {
   balance: BalanceLike & { freeGrant: number };
+  label?: string;
 }
 
-/** Butter balance tile shared by the credit purchase and usage screens (spec §9.7). */
-export function BalanceTile({ balance }: BalanceTileProps) {
+/** Flat Coral balance tile shared by the credit purchase and usage screens. */
+export function BalanceTile({ balance, label }: BalanceTileProps) {
   const { t, locale, prefs } = useFormat();
+  const { colors } = useTheme();
   const total = formatQty(locale, totalCredits(balance), prefs);
-  const balanceLabel = t('mobile.credits.balanceLabel');
-  const totalLine = t('mobile.credits.packCredits', { credits: total });
+  const balanceLabel = label ?? t('mobile.credits.balanceLabel');
 
   return (
-    <Tile
-      tint="butter"
-      leading={<OrbMascot size={BALANCE_ORB_SIZE} state="idle" accessible={false} />}
-      count={total}
-      caption={balanceLabel}
-      accessibilityLabel={`${balanceLabel}: ${totalLine}`}
-    />
+    <View
+      style={{
+        minHeight: BALANCE_TILE_MIN_HEIGHT,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xl,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.lg,
+        backgroundColor: colors.surfaceAlt,
+      }}
+    >
+      <Illustration name="coins" size={BALANCE_ILLUSTRATION_SIZE} />
+      <View style={{ gap: spacing.xs, flex: 1 }}>
+        <AppText variant="numeral">{total}</AppText>
+        <AppText variant="caption" muted>
+          {balanceLabel}
+        </AppText>
+      </View>
+    </View>
   );
 }
