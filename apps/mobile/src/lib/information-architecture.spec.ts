@@ -294,8 +294,12 @@ describe('information architecture (spec §4)', () => {
     expect(row, 'shopping row must pass a sentence label to the checkbox').toContain(
       'accessibilityLabel',
     );
-    expect(row, 'purchased shopping rows should be struck through').toContain(
-      "textDecorationLine: 'line-through'",
+    expect(row, 'J purchased shopping rows dim text without a strike-through').not.toContain(
+      'textDecorationLine',
+    );
+    expect(row, 'J shopping rows use the body tier for item names').toContain('variant="body"');
+    expect(row, 'J shopping rows separate with a rowline').toContain(
+      'borderBottomColor: colors.rowline',
     );
     expect(checkbox, 'unchecked shopping checkbox ring must use the control token').toContain(
       'colors.control',
@@ -332,6 +336,15 @@ describe('information architecture (spec §4)', () => {
     expect(shopping, 'Shop mutations should surface failures').toContain('onError');
     expect(shopping, 'Shop must not send free-text names to addShoppingItems').not.toMatch(
       /items:\s*\[\s*\{[\s\S]*?(?:name|label|rawName)\s*:/,
+    );
+    expect(shopping, 'Shop header action migrated off RoundButton').not.toContain('RoundButton');
+    expect(shopping, 'Shop header must keep the share action').toContain('<IconButton');
+    expect(shopping, 'Shop empty state must use the J bag illustration').toContain(
+      'illustration="bag"',
+    );
+    expect(shopping, 'Shop content must sit inside the J page gutter').toContain('padded={false}');
+    expect(shopping, 'Shop rows are domain rows, not legacy grouped card rows').not.toContain(
+      '<ListGroup',
     );
   });
 
@@ -541,6 +554,16 @@ describe('information architecture (spec §4)', () => {
     expect(addField).toContain('resolveFontFamily');
     expect(addField).toContain('autoCorrect={false}');
     expect(addField).toContain('autoCapitalize="none"');
+    expect(addField, 'Shop add button migrated off RoundButton').not.toContain('RoundButton');
+    expect(addField, 'Shop add action uses the J coral IconButton').toContain('<IconButton');
+    expect(addField).toContain('tone="coral"');
+    expect(addField, 'Shop add field must stay square').toContain('borderRadius: radius.none');
+    expect(addField, 'Shop suggestion rows use animated press feedback').toContain(
+      'usePressFeedback()',
+    );
+    expect(addField, 'Shop suggestion rows must not switch style on pressed').not.toContain(
+      'pressed ?',
+    );
   });
 
   it('keeps Kitchen wired to the Coral screen contract', () => {

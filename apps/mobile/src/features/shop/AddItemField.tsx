@@ -1,8 +1,9 @@
 import { Fragment } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Animated, Pressable, TextInput, View } from 'react-native';
 import type { Ingredient } from '@kitchen/contracts';
 import type { Locale } from '@kitchen/i18n';
-import { AppText, Card, FoodIcon, RoundButton } from '../../components';
+import { AppText, Card, FoodIcon, IconButton } from '../../components';
+import { usePressFeedback } from '../../components/press-feedback';
 import { ingredientName } from '../../lib/format';
 import { useLocale } from '../../lib/locale';
 import { resolveFontFamily, useFontStore } from '../../lib/fonts';
@@ -32,6 +33,51 @@ function iconItem(ingredient: Ingredient) {
   };
 }
 
+function SuggestionRow({
+  ingredient,
+  locale,
+  submitting,
+  onChoose,
+}: {
+  ingredient: Ingredient;
+  locale: Locale;
+  submitting: boolean;
+  onChoose: (ingredient: Ingredient) => void;
+}) {
+  const pressFeedback = usePressFeedback();
+  const name = ingredientName(locale, ingredient);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={name}
+      accessibilityState={{ busy: submitting }}
+      disabled={submitting}
+      onPress={() => onChoose(ingredient)}
+      {...pressFeedback.pressHandlers}
+    >
+      <Animated.View
+        style={[
+          {
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.lg,
+          },
+          submitting ? { opacity: 0.5 } : pressFeedback.animatedStyle,
+        ]}
+      >
+        <FoodIcon item={iconItem(ingredient)} size={36} />
+        <AppText variant="bodyStrong" style={{ flex: 1 }}>
+          {name}
+        </AppText>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 export function AddItemField({
   term,
   locale,
@@ -58,16 +104,15 @@ export function AddItemField({
     <View style={{ gap: spacing.xs }}>
       <View
         style={{
-          minHeight: 56,
+          minHeight: 48,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: spacing.sm,
-          borderRadius: radius.pill,
+          gap: spacing.xs,
+          borderRadius: radius.none,
           borderWidth: 1,
           borderColor: colors.border,
-          backgroundColor: colors.surface,
-          paddingVertical: spacing.sm,
-          paddingHorizontal: spacing.sm,
+          backgroundColor: colors.bg,
+          paddingHorizontal: 14,
         }}
       >
         <TextInput
@@ -90,12 +135,12 @@ export function AddItemField({
             paddingVertical: 0,
           }}
         />
-        <RoundButton
+        <IconButton
           icon="plus"
           size={44}
-          tone="primary"
+          tone="coral"
           accessibilityLabel={addLabel}
-          accessibilityState={{ disabled: addDisabled, busy: submitting }}
+          accessibilityState={{ busy: submitting }}
           disabled={addDisabled}
           onPress={onAddAction}
         />
@@ -105,7 +150,6 @@ export function AddItemField({
         <Card style={{ padding: 0, gap: 0, overflow: 'hidden' }}>
           {hasSuggestions
             ? suggestions.map((ingredient, index) => {
-                const name = ingredientName(locale, ingredient);
                 return (
                   <Fragment key={ingredient.id}>
                     {index > 0 ? (
@@ -117,27 +161,12 @@ export function AddItemField({
                         }}
                       />
                     ) : null}
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={name}
-                      accessibilityState={{ busy: submitting }}
-                      disabled={submitting}
-                      onPress={() => onChoose(ingredient)}
-                      style={({ pressed }) => ({
-                        minHeight: 44,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: spacing.md,
-                        paddingVertical: spacing.sm,
-                        paddingHorizontal: spacing.lg,
-                        opacity: pressed ? 0.85 : 1,
-                      })}
-                    >
-                      <FoodIcon item={iconItem(ingredient)} size={36} />
-                      <AppText variant="bodyStrong" style={{ flex: 1 }}>
-                        {name}
-                      </AppText>
-                    </Pressable>
+                    <SuggestionRow
+                      ingredient={ingredient}
+                      locale={locale}
+                      submitting={submitting}
+                      onChoose={onChoose}
+                    />
                   </Fragment>
                 );
               })

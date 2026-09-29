@@ -6,9 +6,8 @@ import {
   AppText,
   EmptyState,
   ErrorState,
-  ListGroup,
+  IconButton,
   LoadingState,
-  RoundButton,
   Screen,
   TabHeader,
 } from '../../components';
@@ -158,6 +157,7 @@ export default function Shopping() {
   return (
     <Screen
       scroll
+      padded={false}
       tabBar
       refreshing={list.isRefetching}
       onRefresh={() => void list.refetch()}
@@ -174,9 +174,9 @@ export default function Shopping() {
         title={t('shopping.title')}
         action={
           shareMessage ? (
-            <RoundButton
+            <IconButton
               icon="share"
-              tone="surface"
+              tone="plain"
               size={44}
               accessibilityLabel={t('mobile.shop.share')}
               onPress={shareList}
@@ -185,43 +185,49 @@ export default function Shopping() {
         }
       />
 
-      <AddItemField
-        term={term}
-        locale={locale}
-        suggestions={suggestions}
-        placeholder={t('mobile.shop.addPlaceholder')}
-        addLabel={t('mobile.shop.add')}
-        noMatchLabel={t('mobile.shop.noMatch')}
-        showNoMatch={showNoMatch}
-        actionEnabled={addAction.enabled}
-        submitting={addItems.isPending}
-        onTermChange={setTerm}
-        onAddAction={addExactMatch}
-        onChoose={addIngredient}
-      />
+      <View
+        style={{
+          paddingHorizontal: spacing.gutter,
+          paddingBottom: spacing.gutter,
+          gap: spacing.xl,
+        }}
+      >
+        <AddItemField
+          term={term}
+          locale={locale}
+          suggestions={suggestions}
+          placeholder={t('mobile.shop.addPlaceholder')}
+          addLabel={t('mobile.shop.add')}
+          noMatchLabel={t('mobile.shop.noMatch')}
+          showNoMatch={showNoMatch}
+          actionEnabled={addAction.enabled}
+          submitting={addItems.isPending}
+          onTermChange={setTerm}
+          onAddAction={addExactMatch}
+          onChoose={addIngredient}
+        />
 
-      {list.isLoading ? (
-        <LoadingState />
-      ) : list.isError ? (
-        <ErrorState error={list.error} onRetry={() => void list.refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState icon="basket" title={t('shopping.empty')} />
-      ) : (
-        <View style={{ gap: spacing.lg }}>
-          {unpurchasedItems.length > 0 ? (
-            <ListGroup>{renderRows(unpurchasedItems)}</ListGroup>
-          ) : null}
+        {list.isLoading ? (
+          <LoadingState />
+        ) : list.isError ? (
+          <ErrorState error={list.error} onRetry={() => void list.refetch()} />
+        ) : items.length === 0 ? (
+          <EmptyState illustration="bag" title={t('shopping.empty')} />
+        ) : (
+          <View style={{ gap: spacing.xl }}>
+            {unpurchasedItems.length > 0 ? <View>{renderRows(unpurchasedItems)}</View> : null}
 
-          {purchasedItems.length > 0 ? (
-            <View style={{ gap: spacing.sm }}>
-              <AppText variant="heading" muted accessibilityRole="header">
-                {t('shopping.purchased')}
-              </AppText>
-              <ListGroup>{renderRows(purchasedItems)}</ListGroup>
-            </View>
-          ) : null}
-        </View>
-      )}
+            {purchasedItems.length > 0 ? (
+              <View style={{ gap: spacing.sm }}>
+                <AppText variant="heading" accessibilityRole="header">
+                  {t('shopping.purchased')}
+                </AppText>
+                <View>{renderRows(purchasedItems)}</View>
+              </View>
+            ) : null}
+          </View>
+        )}
+      </View>
     </Screen>
   );
 }

@@ -138,6 +138,31 @@ describe('home screen palette', () => {
   });
 });
 
+describe('shop screen rhythm', () => {
+  const source = read('../app/(tabs)/shopping.tsx');
+  const addField = read('../features/shop/AddItemField.tsx');
+  const row = read('../features/shop/ShoppingRow.tsx');
+
+  it('lets the TabHeader own the top inset and keeps content on the J gutter', () => {
+    expect(source).toContain('padded={false}');
+    expect(source).toContain('paddingHorizontal: spacing.gutter');
+    expect(source).toContain('gap: spacing.xl');
+  });
+
+  it('draws shopping rows as flat J rows, not padded cards', () => {
+    expect(row).toContain('paddingVertical: 12');
+    expect(row).toContain('gap: 14');
+    expect(row).toContain('borderBottomWidth: 1');
+    expect(row).toContain('borderBottomColor: colors.rowline');
+  });
+
+  it('keeps the add field square and on the J 48pt field rhythm', () => {
+    expect(addField).toContain('minHeight: 48');
+    expect(addField).toContain('borderRadius: radius.none');
+    expect(addField).toContain('paddingHorizontal: 14');
+  });
+});
+
 describe('G1 primitive extensions', () => {
   it('lets Tile replace the icon with a leading slot, fall back to ember and expose actions', () => {
     const source = read('./Tile.tsx');
