@@ -346,6 +346,12 @@ describe('information architecture (spec §4)', () => {
     expect(shopping, 'Shop rows are domain rows, not legacy grouped card rows').not.toContain(
       '<ListGroup',
     );
+    expect(shopping, 'Shop must render the frame To buy group label').toContain(
+      "t('mobile.home.statShopping')",
+    );
+    expect(shopping, 'Shop To buy label must include the unpurchased count').toContain(
+      'unpurchasedCountText',
+    );
   });
 
   it('keeps Item detail on the append-only event-ledger contract (spec §9.7)', () => {
@@ -555,8 +561,11 @@ describe('information architecture (spec §4)', () => {
     expect(addField).toContain('autoCorrect={false}');
     expect(addField).toContain('autoCapitalize="none"');
     expect(addField, 'Shop add button migrated off RoundButton').not.toContain('RoundButton');
-    expect(addField, 'Shop add action uses the J coral IconButton').toContain('<IconButton');
-    expect(addField).toContain('tone="coral"');
+    expect(addField, 'Shop add action uses the J inverse IconButton').toContain('<IconButton');
+    expect(addField).toContain('tone="inverse"');
+    expect(addField, 'Shop add field uses the frame surfaceAlt fill').toContain(
+      'backgroundColor: colors.surfaceAlt',
+    );
     expect(addField, 'Shop add field must stay square').toContain('borderRadius: radius.none');
     expect(addField, 'Shop suggestion rows use animated press feedback').toContain(
       'usePressFeedback()',

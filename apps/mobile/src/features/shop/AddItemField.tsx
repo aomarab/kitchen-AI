@@ -104,41 +104,46 @@ export function AddItemField({
     <View style={{ gap: spacing.xs }}>
       <View
         style={{
-          minHeight: 48,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: spacing.xs,
-          borderRadius: radius.none,
-          borderWidth: 1,
-          borderColor: colors.border,
-          backgroundColor: colors.bg,
-          paddingHorizontal: 14,
+          gap: spacing.sm,
         }}
       >
-        <TextInput
-          value={term}
-          onChangeText={onTermChange}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
-          autoCorrect={false}
-          autoCapitalize="none"
-          onSubmitEditing={addDisabled ? undefined : onAddAction}
-          returnKeyType="done"
+        <View
           style={{
             flex: 1,
             minHeight: 44,
-            color: colors.text,
-            fontSize: 16,
-            fontFamily,
-            textAlign: 'auto',
-            writingDirection: dir,
-            paddingVertical: 0,
+            justifyContent: 'center',
+            borderRadius: radius.none,
+            backgroundColor: colors.surfaceAlt,
+            paddingHorizontal: 14,
           }}
-        />
+        >
+          <TextInput
+            value={term}
+            onChangeText={onTermChange}
+            placeholder={placeholder}
+            placeholderTextColor={colors.textMuted}
+            autoCorrect={false}
+            autoCapitalize="none"
+            onSubmitEditing={addDisabled ? undefined : onAddAction}
+            returnKeyType="done"
+            style={{
+              flex: 1,
+              minHeight: 44,
+              color: colors.text,
+              fontSize: 16,
+              fontFamily,
+              textAlign: 'auto',
+              writingDirection: dir,
+              paddingVertical: 0,
+            }}
+          />
+        </View>
         <IconButton
           icon="plus"
           size={44}
-          tone="coral"
+          tone="inverse"
           accessibilityLabel={addLabel}
           accessibilityState={{ busy: submitting }}
           disabled={addDisabled}

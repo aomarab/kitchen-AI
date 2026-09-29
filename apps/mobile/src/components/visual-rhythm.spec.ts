@@ -156,8 +156,11 @@ describe('shop screen rhythm', () => {
     expect(row).toContain('borderBottomColor: colors.rowline');
   });
 
-  it('keeps the add field square and on the J 48pt field rhythm', () => {
-    expect(addField).toContain('minHeight: 48');
+  it('keeps the add strip as a separate 44pt field and inverse plus button', () => {
+    expect(addField).toContain('gap: spacing.sm');
+    expect(addField).toContain('minHeight: 44');
+    expect(addField).toContain('backgroundColor: colors.surfaceAlt');
+    expect(addField).toContain('tone="inverse"');
     expect(addField).toContain('borderRadius: radius.none');
     expect(addField).toContain('paddingHorizontal: 14');
   });

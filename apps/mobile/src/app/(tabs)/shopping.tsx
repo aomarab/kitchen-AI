@@ -41,6 +41,20 @@ function itemSentence(name: string, measure: string, purchased: boolean, purchas
   return purchased ? `${name}, ${measure}, ${purchasedLabel}` : `${name}, ${measure}`;
 }
 
+function ShopSectionHeading({ title, countText }: { title: string; countText?: string }) {
+  const accessibilityLabel = countText ? `${title}, ${countText}` : title;
+  return (
+    <AppText variant="heading" accessibilityRole="header" accessibilityLabel={accessibilityLabel}>
+      {title}
+      {countText ? (
+        <AppText variant="heading" color="textMuted">
+          {` · ${countText}`}
+        </AppText>
+      ) : null}
+    </AppText>
+  );
+}
+
 export default function Shopping() {
   const { t, locale, prefs } = useFormat();
   const list = useShoppingList();
@@ -119,6 +133,7 @@ export default function Shopping() {
   };
 
   const purchasedCountText = formatQty(locale, purchasedIds.length, prefs);
+  const unpurchasedCountText = formatQty(locale, unpurchasedItems.length, prefs);
   const moveTitle =
     purchasedIds.length > 0
       ? countMessage(
@@ -215,13 +230,19 @@ export default function Shopping() {
           <EmptyState illustration="bag" title={t('shopping.empty')} />
         ) : (
           <View style={{ gap: spacing.xl }}>
-            {unpurchasedItems.length > 0 ? <View>{renderRows(unpurchasedItems)}</View> : null}
+            {unpurchasedItems.length > 0 ? (
+              <View style={{ gap: spacing.sm }}>
+                <ShopSectionHeading
+                  title={t('mobile.home.statShopping')}
+                  countText={unpurchasedCountText}
+                />
+                <View>{renderRows(unpurchasedItems)}</View>
+              </View>
+            ) : null}
 
             {purchasedItems.length > 0 ? (
               <View style={{ gap: spacing.sm }}>
-                <AppText variant="heading" accessibilityRole="header">
-                  {t('shopping.purchased')}
-                </AppText>
+                <ShopSectionHeading title={t('shopping.purchased')} />
                 <View>{renderRows(purchasedItems)}</View>
               </View>
             ) : null}
