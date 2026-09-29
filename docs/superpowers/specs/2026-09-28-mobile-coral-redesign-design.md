@@ -493,6 +493,9 @@ only where the frame introduces copy with no key.
   search-style row alone did not read as the way into the chat, and Live mode had no entry at all.
 - Kitchen/item/places: item quantity stays on the page as an append-only adjustment; item history
   does not invent unavailable source prose; unit/location editing keeps existing chip selection.
+- Kitchen: By user ruling (2026-09-29), the “Use these first” header action is a coral “Sort”
+  control that opens the existing sort sheet, replacing the previous see-all scroll behavior to
+  match the Kitchen frame.
 - Plans: “Suggest another” and “Change meal” are one regenerate action; shortfall “Add to list”
   keeps the existing navigation-to-shopping behavior; default meal slots remain
   Breakfast/Lunch/Dinner.
