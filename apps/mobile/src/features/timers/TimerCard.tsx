@@ -85,7 +85,7 @@ export function TimerCard({
                 onPress={() => onAction({ action: 'extend', seconds: 60 })}
               />
               <IconButton
-                icon={paused ? 'play' : 'pause'}
+                icon={paused ? 'play' : 'timerPause'}
                 tone="surface"
                 accessibilityLabel={paused ? t('mobile.timers.resume') : t('mobile.timers.pause')}
                 disabled={busy}

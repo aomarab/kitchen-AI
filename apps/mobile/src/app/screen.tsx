@@ -103,10 +103,8 @@ export default function KitchenScreen() {
   const householdName =
     householdsQuery.data?.find((household) => household.id === activeHouseholdId)?.name ??
     screenTitle;
-  const titleAccessibilityLabel =
-    householdName === screenTitle
-      ? screenTitle
-      : kioskCardAccessibilityLabel([screenTitle, householdName]);
+  const householdCaption = householdName === screenTitle ? null : householdName;
+  const titleAccessibilityLabel = kioskCardAccessibilityLabel([screenTitle, householdCaption]);
   const planLabel = t('mobile.screen.planLabel');
   const heroEyebrow = hasAnyNudge(settings) ? planLabel : t('mobile.screen.planIdleLabel');
   const nudgeMessage = nudge ? t(nudge.messageKey as 'reminders.break.body') : null;
@@ -184,13 +182,18 @@ export default function KitchenScreen() {
         {isPortrait ? (
           <>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-              <AppText
-                variant="bodyStrong"
+              <View
+                accessible
                 accessibilityLabel={titleAccessibilityLabel}
-                style={{ flex: 1 }}
+                style={{ flex: 1, gap: spacing.xs }}
               >
-                {screenTitle}
-              </AppText>
+                <AppText variant="bodyStrong">{screenTitle}</AppText>
+                {householdCaption ? (
+                  <AppText variant="caption" muted>
+                    {householdName}
+                  </AppText>
+                ) : null}
+              </View>
               <IconButton
                 icon="x"
                 tone="plain"
@@ -211,7 +214,7 @@ export default function KitchenScreen() {
         ) : isWide ? (
           <View style={{ flex: 1, flexDirection: 'row', gap: spacing.xxl }}>
             <View style={{ width: 240, justifyContent: 'space-between', gap: spacing.xxl }}>
-              <KioskClock time={timeLabel} date={dateLabel} />
+              <KioskClock time={timeLabel} date={dateLabel} caption={householdCaption} />
               {exitButton}
             </View>
             <View style={{ flex: 1, gap: spacing.md }}>
@@ -254,7 +257,7 @@ export default function KitchenScreen() {
           <>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xl }}>
               <View style={{ flex: 1 }}>
-                <KioskClock time={timeLabel} date={dateLabel} />
+                <KioskClock time={timeLabel} date={dateLabel} caption={householdCaption} />
               </View>
               {exitButton}
             </View>
@@ -266,13 +269,28 @@ export default function KitchenScreen() {
   );
 }
 
-function KioskClock({ time, date }: { time: string; date: string }) {
+function KioskClock({
+  time,
+  date,
+  caption,
+}: {
+  time: string;
+  date: string;
+  caption?: string | null;
+}) {
   return (
     <View style={{ gap: spacing.lg }}>
       <AppText variant="numeral">{time}</AppText>
-      <AppText variant="heading" muted>
-        {date}
-      </AppText>
+      <View style={{ gap: spacing.xs }}>
+        <AppText variant="heading" muted>
+          {date}
+        </AppText>
+        {caption ? (
+          <AppText variant="caption" muted>
+            {caption}
+          </AppText>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -385,22 +403,17 @@ function KioskTimerCard({
 }) {
   const { t } = useFormat();
   const remaining = timer ? formatRemaining(timer.remainingSec) : null;
-  const title = timer
-    ? mode === 'tablet'
-      ? remaining
-      : `${timer.label} · ${remaining}`
-    : t('mobile.screen.timerEmpty');
+  const title = timer ? timer.label : t('mobile.screen.timerEmpty');
   const caption = timer
     ? mode === 'tablet'
       ? `${timer.label} · ${durationLabel}`
       : durationLabel
     : null;
-  const accessibilityLabel = kioskCardAccessibilityLabel([
-    t('mobile.screen.timerLabel'),
-    title,
-    caption,
-    t('mobile.screen.timersCta'),
-  ]);
+  const accessibilityLabel = kioskCardAccessibilityLabel(
+    timer && mode === 'tablet'
+      ? [t('mobile.screen.timerLabel'), remaining, caption, t('mobile.screen.timersCta')]
+      : [t('mobile.screen.timerLabel'), title, remaining, caption, t('mobile.screen.timersCta')],
+  );
 
   return (
     <KioskCard style={mode === 'tablet' ? { minHeight: KIOSK_TABLET_CARD_MIN_HEIGHT } : null}>
@@ -409,7 +422,16 @@ function KioskTimerCard({
           <AppText variant="eyebrow" muted>
             {t('mobile.screen.timerLabel')}
           </AppText>
-          <AppText variant={timer && mode === 'tablet' ? 'numeral' : 'title'}>{title}</AppText>
+          {timer ? (
+            <>
+              {mode === 'tablet' ? null : <AppText variant="title">{title}</AppText>}
+              <AppText variant={mode === 'tablet' ? 'numeral' : 'numeralSmall'}>
+                {remaining}
+              </AppText>
+            </>
+          ) : (
+            <AppText variant="title">{title}</AppText>
+          )}
           {caption ? (
             <AppText variant="caption" muted>
               {caption}
@@ -461,7 +483,7 @@ function KioskHydrationCard({
           <AppText variant="eyebrow" muted>
             {label}
           </AppText>
-          <AppText variant={mode === 'tablet' ? 'display' : 'numeralSmall'}>{value}</AppText>
+          <AppText variant={mode === 'tablet' ? 'numeral' : 'numeralSmall'}>{value}</AppText>
         </View>
         <View style={{ flexGrow: 1 }} />
         <Progress value={progress} accessibilityLabel={accessibilityLabel} />

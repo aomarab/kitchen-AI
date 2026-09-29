@@ -37,4 +37,14 @@ describe('C15 screen accessibility labels', () => {
       'Water goal today, 5 of 8 cups',
     );
   });
+
+  it('keeps wellness hydration labels in visual order', () => {
+    expect(
+      kioskCardAccessibilityLabel([
+        'Water',
+        '5 of 8 cups',
+        'Counts cups you marked as done, not reminders sent.',
+      ]),
+    ).toBe('Water, 5 of 8 cups, Counts cups you marked as done, not reminders sent.');
+  });
 });

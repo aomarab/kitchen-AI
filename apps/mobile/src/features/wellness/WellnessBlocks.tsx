@@ -2,7 +2,10 @@ import { View } from 'react-native';
 import { hydrationCupsDrunk, type ReminderSettings } from '@kitchen/contracts';
 import { AppText, Button, Card, Icon, Progress } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
-import { wellnessNudgeAccessibilityLabel } from '../../lib/screen-accessibility';
+import {
+  kioskCardAccessibilityLabel,
+  wellnessNudgeAccessibilityLabel,
+} from '../../lib/screen-accessibility';
 import { hydrationFraction, minutesSinceFired, type NudgeRow } from '../../lib/wellness';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
@@ -24,16 +27,14 @@ export function HydrationSummaryCard({
     count: hydrationCupsDrunk(occurrences),
     goal: settings.hydrationGoalCups,
   });
+  const title = t('mobile.wellness.hydrationTitle');
+  const hint = t('mobile.wellness.hydrationHint');
+  const accessibilityLabel = kioskCardAccessibilityLabel([title, progressText, hint]);
+  const progressAccessibilityLabel = kioskCardAccessibilityLabel([title, progressText]);
 
   return (
     <Card style={{ backgroundColor: colors.surfaceAlt }}>
-      <View
-        accessible
-        accessibilityLabel={`${t('mobile.wellness.hydrationTitle')}, ${progressText}, ${t(
-          'mobile.wellness.hydrationHint',
-        )}`}
-        style={{ gap: spacing.md }}
-      >
+      <View accessible accessibilityLabel={accessibilityLabel} style={{ gap: spacing.md }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
           <View
             accessibilityElementsHidden
@@ -49,17 +50,14 @@ export function HydrationSummaryCard({
           </View>
           <View style={{ flex: 1, minWidth: 0, gap: spacing.xs }}>
             <AppText variant="eyebrow" muted>
-              {t('mobile.wellness.hydrationTitle')}
+              {title}
             </AppText>
             <AppText variant="numeralSmall">{progressText}</AppText>
           </View>
         </View>
-        <Progress
-          value={fraction}
-          accessibilityLabel={`${t('mobile.wellness.hydrationTitle')}, ${progressText}`}
-        />
+        <Progress value={fraction} accessibilityLabel={progressAccessibilityLabel} />
         <AppText variant="caption" muted>
-          {t('mobile.wellness.hydrationHint')}
+          {hint}
         </AppText>
       </View>
     </Card>

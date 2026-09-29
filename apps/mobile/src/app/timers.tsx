@@ -30,7 +30,6 @@ export default function Timers() {
   const tick = useTimerTick(hasRunningTimer(timers, new Date()));
   const ordered = sortTimers(timers, tick);
   const busy = update.isPending || remove.isPending;
-  const showFooter = !timersQuery.isLoading && !timersQuery.isError && ordered.length > 0;
 
   return (
     <>
@@ -39,13 +38,11 @@ export default function Timers() {
         refreshing={timersQuery.isRefetching}
         onRefresh={() => void timersQuery.refetch()}
         footer={
-          showFooter ? (
-            <Button
-              title={t('mobile.timers.newTimer')}
-              leadingIcon="plus"
-              onPress={() => setSheetOpen(true)}
-            />
-          ) : undefined
+          <Button
+            title={t('mobile.timers.newTimer')}
+            leadingIcon="plus"
+            onPress={() => setSheetOpen(true)}
+          />
         }
       >
         <Header title={t('mobile.timers.title')} onBack={() => router.back()} />
@@ -62,8 +59,6 @@ export default function Timers() {
             illustration="timer"
             title={t('mobile.timers.empty')}
             message={t('mobile.timers.emptyHint')}
-            actionLabel={t('mobile.timers.newTimer')}
-            onAction={() => setSheetOpen(true)}
           />
         ) : (
           <View style={{ gap: spacing.md }}>

@@ -1192,7 +1192,9 @@ describe('information architecture (spec §4)', () => {
     const newTimerSheet = read('features', 'timers', 'NewTimerSheet.tsx');
 
     expect(timers).toContain('<NewTimerSheet');
-    expect(timers).toContain('footer={');
+    expect(timers).toMatch(/footer=\{\s*<Button/);
+    expect(timers).not.toContain('showFooter');
+    expect(timers).not.toContain('!timersQuery.isLoading && !timersQuery.isError');
     expect(timers).toContain('illustration="timer"');
     expect(timers).not.toContain('<Tile');
     expect(timers).not.toContain('RoundButton');
@@ -1201,7 +1203,9 @@ describe('information architecture (spec §4)', () => {
     expect(timerCard).toContain('timerProgressValue');
     expect(timerCard).toContain('variant="numeralSmall"');
     expect(timerCard).toContain('<IconButton');
-    expect(timerCard).toContain("'pause'");
+    expect(timerCard).toContain("'timerPause'");
+    expect(timerCard).not.toContain("icon={paused ? 'play' : 'pause'}");
+    expect(timerCard).not.toContain('icon="pause"');
     expect(timerCard).toContain("'play'");
     expect(timerCard).toContain('icon="x"');
     expect(timerCard).toContain('timerCardAccessibilityLabel');
@@ -1228,6 +1232,7 @@ describe('information architecture (spec §4)', () => {
     expect(blocks).toContain('name="droplet"');
     expect(blocks).toContain('<Progress');
     expect(blocks).toContain('variant="numeralSmall"');
+    expect(blocks).toContain('kioskCardAccessibilityLabel');
     expect(blocks).toContain('wellnessNudgeAccessibilityLabel');
     expect(blocks).toContain('variant="inverse"');
     expect(blocks).toContain('leadingIcon="settings"');
@@ -1247,6 +1252,11 @@ describe('information architecture (spec §4)', () => {
     expect(screen).toContain('<KioskTimerCard');
     expect(screen).toContain('<KioskHydrationCard');
     expect(screen).toContain('kioskCardAccessibilityLabel');
+    expect(screen).toContain('const titleAccessibilityLabel = kioskCardAccessibilityLabel');
+    expect(screen).toContain('{householdName}');
+    expect(screen).toMatch(/<AppText variant=\{mode === 'tablet' \? 'numeral' : 'numeralSmall'\}>/);
+    expect(screen).not.toContain('`${timer.label} · ${remaining}`');
+    expect(screen).not.toContain("variant={mode === 'tablet' ? 'display' : 'numeralSmall'}");
     expect(screen).toContain("router.push('/timers')");
     expect(screen).toContain("router.push('/wellness')");
     expect(screen).toContain("t('mobile.screen.rotateHint')");
