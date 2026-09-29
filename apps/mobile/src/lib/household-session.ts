@@ -12,6 +12,13 @@ export interface NextHouseholdMembershipState {
 }
 
 export type HouseholdLeaveDestination = '/home' | '/onboarding';
+export type HouseholdSaveAction = 'invalid' | 'noop' | 'save';
+
+export function householdSaveAction(draftName: string, currentName: string): HouseholdSaveAction {
+  const trimmed = draftName.trim();
+  if (trimmed.length === 0) return 'invalid';
+  return trimmed === currentName ? 'noop' : 'save';
+}
 
 export function membershipAfterLeavingHousehold(
   state: HouseholdMembershipState,

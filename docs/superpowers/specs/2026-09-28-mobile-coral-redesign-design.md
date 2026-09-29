@@ -530,7 +530,11 @@ only where the frame introduces copy with no key.
   Account frame governs the sign-out treatment, so Sign out is an outlined danger button rather
   than the earlier table's ghost danger wording. By user ruling (2026-09-29), Household exposes the
   existing `leaveHousehold` route behind a destructive confirmation, clears or switches the active
-  household on success, and routes household-less users to the existing create/join onboarding.
+  household on success, and routes household-less users to the existing create/join onboarding. By
+  user ruling (2026-09-29), Preferences Save remains enabled: it commits a pending typed allergy
+  before returning, and with no pending change it simply returns. By user ruling (2026-09-29),
+  Notifications lead-time and reminder-time rows open their choices in a Sheet instead of expanding
+  inline, and the screen ends with the enabled-reminders caption.
   Feedback category chips remain omitted because the existing mobile flow does not expose them.
 - Credits: out-of-credits appears as a sheet over Generate plan by user ruling; the shared
   `OutOfCreditsPanel` is also reused inline by `ErrorState`.

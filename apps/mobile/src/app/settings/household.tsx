@@ -23,7 +23,11 @@ import {
   useUpdateHousehold,
   useRotateInviteCode,
 } from '../../hooks/profile';
-import { leaveHouseholdErrorKey, routeAfterHouseholdLeave } from '../../lib/household-session';
+import {
+  householdSaveAction,
+  leaveHouseholdErrorKey,
+  routeAfterHouseholdLeave,
+} from '../../lib/household-session';
 import { useAuthStore } from '../../stores/auth';
 import { useToastStore } from '../../stores/toast';
 import { spacing } from '../../theme';
@@ -69,10 +73,11 @@ export default function Household() {
   }
 
   const draftName = name ?? household.name;
-  const canSave = draftName.trim() !== household.name && draftName.trim().length > 0;
+  const saveAction = householdSaveAction(draftName, household.name);
   const save = () => {
     const trimmed = draftName.trim();
-    if (!canSave || trimmed.length === 0) {
+    if (saveAction === 'invalid') return;
+    if (saveAction === 'noop') {
       router.back();
       return;
     }
@@ -113,6 +118,7 @@ export default function Household() {
             title={t('common.save')}
             leadingIcon="check"
             style={{ flex: 1 }}
+            disabled={saveAction === 'invalid' || update.isPending}
             loading={update.isPending}
             onPress={save}
           />

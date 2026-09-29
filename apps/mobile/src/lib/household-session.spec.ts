@@ -1,10 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError, NetworkError } from '@kitchen/api-client';
 import {
+  householdSaveAction,
   leaveHouseholdErrorKey,
   membershipAfterLeavingHousehold,
   routeAfterHouseholdLeave,
 } from './household-session';
+
+describe('householdSaveAction', () => {
+  it('rejects blank or whitespace-only names without routing away', () => {
+    expect(householdSaveAction('', 'Home Kitchen')).toBe('invalid');
+    expect(householdSaveAction('   ', 'Home Kitchen')).toBe('invalid');
+  });
+
+  it('treats unchanged names, including trimmed drafts, as a back-only noop', () => {
+    expect(householdSaveAction('Home Kitchen', 'Home Kitchen')).toBe('noop');
+    expect(householdSaveAction('  Home Kitchen  ', 'Home Kitchen')).toBe('noop');
+  });
+
+  it('saves a non-blank changed name', () => {
+    expect(householdSaveAction('Family Kitchen', 'Home Kitchen')).toBe('save');
+  });
+});
 
 describe('membershipAfterLeavingHousehold', () => {
   it('switches to the next household when the active one is left', () => {
