@@ -1,11 +1,26 @@
 import { useEffect, type ReactNode } from 'react';
-import { ScrollView, View, useWindowDimensions } from 'react-native';
+import {
+  ScrollView,
+  View,
+  useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useRouter } from 'expo-router';
-import { formatRemaining } from '@kitchen/contracts';
-import { AppText, Button, Card, Icon, LoadingState, ErrorState } from '../components';
+import { formatRemaining, type CookingTimer } from '@kitchen/contracts';
+import {
+  AppText,
+  Button,
+  Card,
+  ErrorState,
+  Icon,
+  IconButton,
+  LoadingState,
+  Progress,
+} from '../components';
 import { useFormat } from '../hooks/useFormat';
 import { useHouseholds } from '../hooks/profile';
 import {
@@ -14,45 +29,35 @@ import {
   useReminderSettings,
 } from '../hooks/reminders';
 import { useTimers } from '../hooks/timers';
-import { useTimerTick } from '../lib/timers';
-import { useAuthStore } from '../stores/auth';
+import { formatDateL, formatMinutes } from '../lib/format';
 import {
   activeNudge,
   featuredTimer,
   hasAnyNudge,
   hydrationProgressText,
-  kioskOrientation,
+  kioskLayoutMode,
   needsTick,
   wellnessPlanLines,
 } from '../lib/screen';
-import { formatDateL } from '../lib/format';
-import { radius, spacing } from '../theme';
+import { kioskCardAccessibilityLabel } from '../lib/screen-accessibility';
+import { useTimerTick } from '../lib/timers';
+import { timerDurationMinutes, timerProgressValue } from '../lib/timer-card';
+import { hydrationFraction } from '../lib/wellness';
+import { useAuthStore } from '../stores/auth';
+import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
-const MINI_CARD_ICON_SIZE = 48;
+export const KIOSK_EXIT_TARGET_SIZE = 44;
+const KIOSK_CARD_MIN_HEIGHT = 182;
+const KIOSK_TABLET_CARD_MIN_HEIGHT = 518;
 
 /**
- * The kitchen kiosk: the phone propped against the backsplash while you cook
- * (kitchen companion spec — Feature 1).
- *
- * It shows nothing it cannot source. The wellness plan comes from
- * `SCHEDULED_REMINDER_TYPES`, the nudge from the same `pendingNudge` the web
- * kiosk reads, the countdown from a real `cooking_timers` row. This screen was
- * held back until those engines existed precisely so it would not have to
- * invent any of them.
- *
- * Two behaviours are the point of it being a *kiosk* rather than another list:
- *
- * - `useKeepAwake` holds the display on. A screen that sleeps after 30 seconds
- *   is not something you glance at with wet hands.
- * - It is the only screen allowed to rotate. `app.json` locks the app to
- *   portrait, which is right everywhere else and wrong here: a phone on its
- *   side against a wall is the shape this view was designed for. The lock is
- *   restored on the way out, so nothing else inherits landscape.
+ * The kitchen kiosk keeps the display awake and temporarily unlocks rotation;
+ * it only renders data sourced by the existing reminder and timer engines.
  */
 export default function KitchenScreen() {
   useKeepAwake();
-  const { t, locale } = useFormat();
+  const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const { colors } = useTheme();
   const { width, height } = useWindowDimensions();
@@ -70,9 +75,6 @@ export default function KitchenScreen() {
   useEffect(() => {
     void ScreenOrientation.unlockAsync();
     return () => {
-      // Restoring the app-wide lock is not cleanup politeness: leaving the
-      // orientation unlocked would let every screen pushed after this one
-      // rotate into a layout none of them were built for.
       void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
     };
   }, []);
@@ -94,188 +96,376 @@ export default function KitchenScreen() {
   const nudge = activeNudge(occurrences);
   const planLines = wellnessPlanLines(settings, t);
   const timer = featuredTimer(timers, tick);
-  const isLandscape = kioskOrientation(width, height) === 'landscape';
+  const mode = kioskLayoutMode(width, height);
+  const isWide = mode === 'wide';
+  const isPortrait = mode === 'portrait';
+  const screenTitle = t('mobile.screen.title');
+  const householdName =
+    householdsQuery.data?.find((household) => household.id === activeHouseholdId)?.name ??
+    screenTitle;
+  const titleAccessibilityLabel =
+    householdName === screenTitle
+      ? screenTitle
+      : kioskCardAccessibilityLabel([screenTitle, householdName]);
   const planLabel = t('mobile.screen.planLabel');
   const heroEyebrow = hasAnyNudge(settings) ? planLabel : t('mobile.screen.planIdleLabel');
   const nudgeMessage = nudge ? t(nudge.messageKey as 'reminders.break.body') : null;
   const heroMessage =
     nudgeMessage ?? (planLines.length > 0 ? planLines.join(', ') : t('mobile.screen.planIdle'));
-  const householdName =
-    householdsQuery.data?.find((household) => household.id === activeHouseholdId)?.name ??
-    t('mobile.screen.title');
+  const timeLabel = formatDateL(locale, tick, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const dateLabel = formatDateL(locale, tick, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+  const exit = () => router.back();
 
-  const heroText = (
-    <View
-      accessible
-      accessibilityLabel={`${heroEyebrow}, ${heroMessage}`}
-      style={{ gap: spacing.sm }}
-    >
-      <AppText variant="label" style={{ color: colors.textInverseMuted }}>
-        {heroEyebrow}
-      </AppText>
-      {nudgeMessage ? (
-        <AppText variant="title" style={{ color: colors.textInverse }}>
-          {nudgeMessage}
-        </AppText>
-      ) : planLines.length > 0 ? (
-        planLines.map((line) => (
-          <AppText key={line} variant="heading" style={{ color: colors.textInverse }}>
-            {line}
-          </AppText>
-        ))
-      ) : (
-        <AppText variant="body" style={{ color: colors.textInverseMuted }}>
-          {heroMessage}
-        </AppText>
-      )}
-    </View>
-  );
-
-  const hero = (
-    <Card
-      gradient
-      style={{
-        flex: isLandscape ? 1.4 : undefined,
-        borderRadius: radius.xl,
-      }}
-      contentStyle={{
-        flex: isLandscape ? 1 : undefined,
-        gap: spacing.lg,
-        padding: spacing.xl,
-        borderRadius: radius.xl,
-        justifyContent: 'center',
-      }}
-    >
-      {nudge ? (
-        <View style={{ gap: spacing.lg, alignItems: 'flex-start' }}>
-          {heroText}
-          <Button
-            title={t('mobile.screen.nudgeAcknowledge')}
-            variant="media"
-            disabled={acknowledge.isPending}
-            onPress={() => acknowledge.mutate(nudge.id)}
-          />
-        </View>
-      ) : planLines.length > 0 ? (
-        heroText
-      ) : (
-        <View style={{ gap: spacing.lg, alignItems: 'flex-start' }}>
-          {heroText}
-          <Button
-            title={t('mobile.screen.planIdleCta')}
-            variant="media"
-            onPress={() => router.push('/settings/reminders')}
-          />
-        </View>
-      )}
-    </Card>
+  const exitButton = (
+    <Button
+      title={t('mobile.screen.exit')}
+      variant="ghost"
+      size="S"
+      leadingIcon="x"
+      fullWidth={false}
+      style={{ minHeight: KIOSK_EXIT_TARGET_SIZE }}
+      onPress={exit}
+    />
   );
 
   const cards = (
-    <View style={{ flex: isLandscape ? 1 : undefined, gap: spacing.lg }}>
-      <MiniCard
-        icon="clock"
-        tone="primary"
-        label={timer ? timer.label : t('mobile.screen.timerLabel')}
-        value={timer ? formatRemaining(timer.remainingSec) : t('mobile.screen.timerEmpty')}
-        onPress={() => router.push('/timers')}
+    <>
+      <KioskPlanCard
+        mode={mode}
+        eyebrow={heroEyebrow}
+        message={heroMessage}
+        planLines={planLines}
+        nudgeActive={!!nudge}
+        busy={acknowledge.isPending}
+        onAcknowledge={() => {
+          if (nudge) acknowledge.mutate(nudge.id);
+        }}
+        onSettings={() => router.push('/settings/reminders')}
       />
-      <MiniCard
-        icon="water"
-        tone="accent"
+      <KioskTimerCard
+        mode={mode}
+        timer={timer}
+        durationLabel={
+          timer
+            ? t('mobile.recipe.minutesValue', {
+                minutes: formatMinutes(locale, timerDurationMinutes(timer), prefs),
+              })
+            : null
+        }
+        onTimers={() => router.push('/timers')}
+      />
+      <KioskHydrationCard
+        mode={mode}
+        progress={hydrationFraction(occurrences, settings)}
         label={t('mobile.screen.hydrationLabel')}
         value={hydrationProgressText(occurrences, settings, t)}
         onPress={() => router.push('/wellness')}
       />
-    </View>
+    </>
   );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-          paddingHorizontal: spacing.xl,
-          paddingVertical: spacing.md,
-        }}
-      >
-        <AppText variant="display">
-          {formatDateL(locale, tick, { hour: '2-digit', minute: '2-digit' })}
-        </AppText>
-        <AppText variant="label" muted style={{ flex: 1 }} numberOfLines={1}>
-          {householdName}
-        </AppText>
-        <Button title={t('mobile.screen.exit')} variant="ghost" onPress={() => router.back()} />
-      </View>
-
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          gap: spacing.lg,
-          paddingHorizontal: spacing.xl,
-          paddingBottom: spacing.xl,
+          padding: isPortrait ? spacing.gutter : spacing.xxl,
+          gap: isPortrait ? spacing.xl : spacing.xxl,
         }}
       >
-        <View style={{ flex: 1, gap: spacing.lg, flexDirection: isLandscape ? 'row' : 'column' }}>
-          {hero}
-          {cards}
-        </View>
+        {isPortrait ? (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <AppText
+                variant="bodyStrong"
+                accessibilityLabel={titleAccessibilityLabel}
+                style={{ flex: 1 }}
+              >
+                {screenTitle}
+              </AppText>
+              <IconButton
+                icon="x"
+                tone="plain"
+                size={KIOSK_EXIT_TARGET_SIZE}
+                accessibilityLabel={t('mobile.screen.exit')}
+                onPress={exit}
+              />
+            </View>
+            <KioskClock time={timeLabel} date={dateLabel} />
+            <View style={{ gap: spacing.md }}>{cards}</View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Icon name="refresh" size={16} color={colors.textMuted} />
+              <AppText variant="caption" muted>
+                {t('mobile.screen.rotateHint')}
+              </AppText>
+            </View>
+          </>
+        ) : isWide ? (
+          <View style={{ flex: 1, flexDirection: 'row', gap: spacing.xxl }}>
+            <View style={{ width: 240, justifyContent: 'space-between', gap: spacing.xxl }}>
+              <KioskClock time={timeLabel} date={dateLabel} />
+              {exitButton}
+            </View>
+            <View style={{ flex: 1, gap: spacing.md }}>
+              <KioskPlanCard
+                mode={mode}
+                eyebrow={heroEyebrow}
+                message={heroMessage}
+                planLines={planLines}
+                nudgeActive={!!nudge}
+                busy={acknowledge.isPending}
+                onAcknowledge={() => {
+                  if (nudge) acknowledge.mutate(nudge.id);
+                }}
+                onSettings={() => router.push('/settings/reminders')}
+              />
+              <View style={{ flex: 1, flexDirection: 'row', gap: spacing.md }}>
+                <KioskTimerCard
+                  mode={mode}
+                  timer={timer}
+                  durationLabel={
+                    timer
+                      ? t('mobile.recipe.minutesValue', {
+                          minutes: formatMinutes(locale, timerDurationMinutes(timer), prefs),
+                        })
+                      : null
+                  }
+                  onTimers={() => router.push('/timers')}
+                />
+                <KioskHydrationCard
+                  mode={mode}
+                  progress={hydrationFraction(occurrences, settings)}
+                  label={t('mobile.screen.hydrationLabel')}
+                  value={hydrationProgressText(occurrences, settings, t)}
+                  onPress={() => router.push('/wellness')}
+                />
+              </View>
+            </View>
+          </View>
+        ) : (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xl }}>
+              <View style={{ flex: 1 }}>
+                <KioskClock time={timeLabel} date={dateLabel} />
+              </View>
+              {exitButton}
+            </View>
+            <View style={{ flex: 1, flexDirection: 'row', gap: spacing.gutter }}>{cards}</View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function MiniCard({
-  icon,
-  tone,
-  label,
-  value,
+function KioskClock({ time, date }: { time: string; date: string }) {
+  return (
+    <View style={{ gap: spacing.lg }}>
+      <AppText variant="numeral">{time}</AppText>
+      <AppText variant="heading" muted>
+        {date}
+      </AppText>
+    </View>
+  );
+}
+
+function KioskCard({
+  children,
+  style,
   onPress,
+  accessibilityLabel,
 }: {
-  icon: 'clock' | 'water';
-  tone: 'primary' | 'accent';
-  label: string;
-  value: string;
-  onPress: () => void;
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  onPress?: () => void;
+  accessibilityLabel?: string;
 }) {
-  const { colors } = useTheme();
   return (
     <Card
-      accessibilityLabel={`${label} ${value}`}
       onPress={onPress}
-      style={{
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.lg,
-        padding: spacing.xl,
-        borderRadius: radius.lg,
-      }}
+      accessibilityLabel={accessibilityLabel}
+      style={[
+        {
+          flex: 1,
+          minHeight: KIOSK_CARD_MIN_HEIGHT,
+        },
+        style,
+      ]}
     >
-      <View
-        style={{
-          width: MINI_CARD_ICON_SIZE,
-          height: MINI_CARD_ICON_SIZE,
-          borderRadius: radius.md,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: tone === 'primary' ? colors.primarySoft : colors.accentSoft,
-        }}
-      >
-        <Icon
-          name={icon}
-          size={24}
-          color={tone === 'primary' ? colors.primaryText : colors.accent}
+      {children}
+    </Card>
+  );
+}
+
+function KioskPlanCard({
+  mode,
+  eyebrow,
+  message,
+  planLines,
+  nudgeActive,
+  busy,
+  onAcknowledge,
+  onSettings,
+}: {
+  mode: 'portrait' | 'wide' | 'tablet';
+  eyebrow: string;
+  message: string;
+  planLines: readonly string[];
+  nudgeActive: boolean;
+  busy: boolean;
+  onAcknowledge: () => void;
+  onSettings: () => void;
+}) {
+  const { t } = useFormat();
+  const hasPlan = planLines.length > 0;
+  const planAccessibilityLabel = kioskCardAccessibilityLabel([
+    eyebrow,
+    nudgeActive || !hasPlan ? message : planLines.join(', '),
+    nudgeActive ? t('mobile.screen.nudgeAcknowledge') : null,
+  ]);
+  return (
+    <KioskCard style={mode === 'tablet' ? { minHeight: KIOSK_TABLET_CARD_MIN_HEIGHT } : null}>
+      <View style={{ flex: 1, gap: spacing.lg }}>
+        <View accessible accessibilityLabel={planAccessibilityLabel} style={{ gap: spacing.md }}>
+          <AppText variant="eyebrow" muted>
+            {eyebrow}
+          </AppText>
+          {nudgeActive || !hasPlan ? (
+            <AppText variant={mode === 'tablet' ? 'display' : 'title'}>{message}</AppText>
+          ) : (
+            planLines.map((line) => (
+              <AppText key={line} variant={mode === 'tablet' ? 'title' : 'heading'}>
+                {line}
+              </AppText>
+            ))
+          )}
+        </View>
+        <View style={{ flexGrow: 1 }} />
+        {nudgeActive ? (
+          <Button
+            title={t('mobile.screen.nudgeAcknowledge')}
+            variant="inverse"
+            size="S"
+            fullWidth={false}
+            disabled={busy}
+            onPress={onAcknowledge}
+          />
+        ) : hasPlan ? null : (
+          <Button
+            title={t('mobile.screen.planIdleCta')}
+            variant="secondary"
+            size="S"
+            fullWidth={false}
+            onPress={onSettings}
+          />
+        )}
+      </View>
+    </KioskCard>
+  );
+}
+
+function KioskTimerCard({
+  mode,
+  timer,
+  durationLabel,
+  onTimers,
+}: {
+  mode: 'portrait' | 'wide' | 'tablet';
+  timer: CookingTimer | null;
+  durationLabel: string | null;
+  onTimers: () => void;
+}) {
+  const { t } = useFormat();
+  const remaining = timer ? formatRemaining(timer.remainingSec) : null;
+  const title = timer
+    ? mode === 'tablet'
+      ? remaining
+      : `${timer.label} · ${remaining}`
+    : t('mobile.screen.timerEmpty');
+  const caption = timer
+    ? mode === 'tablet'
+      ? `${timer.label} · ${durationLabel}`
+      : durationLabel
+    : null;
+  const accessibilityLabel = kioskCardAccessibilityLabel([
+    t('mobile.screen.timerLabel'),
+    title,
+    caption,
+    t('mobile.screen.timersCta'),
+  ]);
+
+  return (
+    <KioskCard style={mode === 'tablet' ? { minHeight: KIOSK_TABLET_CARD_MIN_HEIGHT } : null}>
+      <View style={{ flex: 1, gap: spacing.lg }}>
+        <View accessible accessibilityLabel={accessibilityLabel} style={{ gap: spacing.md }}>
+          <AppText variant="eyebrow" muted>
+            {t('mobile.screen.timerLabel')}
+          </AppText>
+          <AppText variant={timer && mode === 'tablet' ? 'numeral' : 'title'}>{title}</AppText>
+          {caption ? (
+            <AppText variant="caption" muted>
+              {caption}
+            </AppText>
+          ) : null}
+        </View>
+        {timer && mode === 'tablet' ? (
+          <Progress
+            value={timerProgressValue(timer)}
+            tone={timer.status === 'paused' ? 'paused' : 'active'}
+            accessibilityLabel={accessibilityLabel}
+          />
+        ) : null}
+        <View style={{ flexGrow: 1 }} />
+        <Button
+          title={t('mobile.screen.timersCta')}
+          variant="secondary"
+          size="S"
+          fullWidth={false}
+          onPress={onTimers}
         />
       </View>
-      <View style={{ flex: 1, gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {label}
-        </AppText>
-        <AppText variant="title">{value}</AppText>
+    </KioskCard>
+  );
+}
+
+function KioskHydrationCard({
+  mode,
+  label,
+  value,
+  progress,
+  onPress,
+}: {
+  mode: 'portrait' | 'wide' | 'tablet';
+  label: string;
+  value: string;
+  progress: number;
+  onPress: () => void;
+}) {
+  const accessibilityLabel = kioskCardAccessibilityLabel([label, value]);
+  return (
+    <KioskCard
+      onPress={onPress}
+      accessibilityLabel={accessibilityLabel}
+      style={mode === 'tablet' ? { minHeight: KIOSK_TABLET_CARD_MIN_HEIGHT } : null}
+    >
+      <View style={{ flex: 1, gap: spacing.lg }}>
+        <View style={{ gap: spacing.md }}>
+          <AppText variant="eyebrow" muted>
+            {label}
+          </AppText>
+          <AppText variant={mode === 'tablet' ? 'display' : 'numeralSmall'}>{value}</AppText>
+        </View>
+        <View style={{ flexGrow: 1 }} />
+        <Progress value={progress} accessibilityLabel={accessibilityLabel} />
       </View>
-    </Card>
+    </KioskCard>
   );
 }

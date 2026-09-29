@@ -137,8 +137,11 @@ describe('mobile source sweep', () => {
       path: 'app/entry/[id].tsx',
       pattern: /ENTRY_ACTION_ROW_MIN_HEIGHT\s*=\s*(\d+)/,
     },
-    'screen.tsx': { path: 'app/screen.tsx', pattern: /MINI_CARD_ICON_SIZE\s*=\s*(\d+)/ },
-    'wellness.tsx': { path: 'app/wellness.tsx', pattern: /NUDGE_ICON_SIZE\s*=\s*(\d+)/ },
+    'screen.tsx': { path: 'app/screen.tsx', pattern: /KIOSK_EXIT_TARGET_SIZE\s*=\s*(\d+)/ },
+    'wellness.tsx': {
+      path: 'features/wellness/WellnessBlocks.tsx',
+      pattern: /WELLNESS_ACTION_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
     'WeekStrip.tsx': {
       path: 'features/home/WeekStrip.tsx',
       pattern: /DAY_CELL_HEIGHT\s*=\s*(\d+)/,

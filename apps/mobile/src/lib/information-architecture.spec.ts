@@ -1186,63 +1186,88 @@ describe('information architecture (spec §4)', () => {
     }
   });
 
-  it('keeps Timers on butter tiles with tabular numeral countdowns (spec §9.7)', () => {
+  it('keeps Timers on the Coral timer-card and new-timer sheet contract (spec §9)', () => {
     const timers = read('app', 'timers.tsx');
-    const runningTile = timers.match(/<Tile[\s\S]*?tint="butter"[\s\S]*?<\/Tile>/)?.[0] ?? '';
+    const timerCard = read('features', 'timers', 'TimerCard.tsx');
+    const newTimerSheet = read('features', 'timers', 'NewTimerSheet.tsx');
 
-    expect(timers, 'Running timers must use the shared Tile primitive').toContain('<Tile');
-    expect(timers, 'Running timers should use the butter tint').toContain('tint="butter"');
+    expect(timers).toContain('<NewTimerSheet');
+    expect(timers).toContain('footer={');
+    expect(timers).toContain('illustration="timer"');
+    expect(timers).not.toContain('<Tile');
+    expect(timers).not.toContain('RoundButton');
+    expect(timers).not.toMatch(/\b(tint|fill|compact)=/);
+    expect(timerCard).toContain('<Progress');
+    expect(timerCard).toContain('timerProgressValue');
+    expect(timerCard).toContain('variant="numeralSmall"');
+    expect(timerCard).toContain('<IconButton');
+    expect(timerCard).toContain("'pause'");
+    expect(timerCard).toContain("'play'");
+    expect(timerCard).toContain('icon="x"');
+    expect(timerCard).toContain('timerCardAccessibilityLabel');
     expect(
-      runningTile,
-      'The running timer Tile is one accessibility element, so its visible controls must be exposed through Tile actions.',
-    ).toContain('actions={timerActions}');
-    expect(timers, 'Countdowns must render through the numeral typography variant').toContain(
-      'variant="numeral"',
-    );
-    expect(timers, 'Timer controls must stay as individually focusable RoundButtons').toContain(
-      '<RoundButton',
-    );
+      timerCard,
+      'The kept +1 minute action must remain visible because it existed before C15.',
+    ).toContain("title={t('mobile.timers.addMinute')}");
     expect(
-      timers,
-      'The timer pause control must not use Icon name "pause", which is the wellness coffee-break glyph.',
-    ).not.toMatch(/\bicon\s*(?:=|:)\s*['"]pause['"]/);
-    expect(
-      timers,
-      'The add-minute control must visibly say +1 instead of a bare plus glyph.',
-    ).toContain("visibleLabel: '+1'");
-    expect(
-      timers,
-      'The add-minute label must remain the accessible label even though the visible affordance is compact.',
-    ).toContain('accessibilityLabel={control.label}');
+      newTimerSheet,
+      'New timer duration must use the J stepper and keep preset chips.',
+    ).toContain('<QuantityStepper');
+    expect(newTimerSheet).toContain('<Chip');
+    expect(newTimerSheet).toContain('durationSec: minutes * 60');
+    expect(newTimerSheet).toContain('const [minutes, setMinutes] = useState<number>(5)');
   });
 
-  it('keeps the smart screen hero on the shared ember Card (spec §9.7)', () => {
-    const screen = read('app', 'screen.tsx');
-    const heroOpening = screen.slice(
-      screen.indexOf('<Card'),
-      screen.indexOf('>', screen.indexOf('<Card')) + 1,
-    );
+  it('keeps Wellness on the Coral nudge-row contract (spec §9)', () => {
+    const wellness = read('app', 'wellness.tsx');
+    const blocks = read('features', 'wellness', 'WellnessBlocks.tsx');
 
-    expect(screen, 'Smart screen must render the hero with the shared gradient Card').toMatch(
-      /<Card[\s\S]*?\bgradient\b/,
-    );
-    expect(screen, 'Smart screen must not draw its own gradient outside Card').not.toContain(
-      '<LinearGradient',
-    );
-    expect(screen, 'Smart screen must not read gradientHero outside Card').not.toContain(
-      'gradientHero',
-    );
+    expect(wellness).toContain('<HydrationSummaryCard');
+    expect(wellness).toContain('<NudgeList');
+    expect(wellness).toContain('illustration="bell"');
+    expect(blocks).toContain('name="droplet"');
+    expect(blocks).toContain('<Progress');
+    expect(blocks).toContain('variant="numeralSmall"');
+    expect(blocks).toContain('wellnessNudgeAccessibilityLabel');
+    expect(blocks).toContain('variant="inverse"');
+    expect(blocks).toContain('leadingIcon="settings"');
+    expect(blocks).not.toContain('tintNamed');
+    expect(blocks).not.toContain('radius.pill');
+    expect(blocks).not.toContain('colors.accent');
+  });
+
+  it('keeps the smart screen on the Coral kiosk card contract (spec §9)', () => {
+    const screen = read('app', 'screen.tsx');
+
+    expect(screen).toContain('kioskLayoutMode(width, height)');
+    expect(screen).toContain("mode === 'tablet'");
+    expect(screen).toContain("mode === 'wide'");
+    expect(screen).toContain('variant="numeral"');
+    expect(screen).toContain('<KioskPlanCard');
+    expect(screen).toContain('<KioskTimerCard');
+    expect(screen).toContain('<KioskHydrationCard');
+    expect(screen).toContain('kioskCardAccessibilityLabel');
+    expect(screen).toContain("router.push('/timers')");
+    expect(screen).toContain("router.push('/wellness')");
+    expect(screen).toContain("t('mobile.screen.rotateHint')");
+    expect(screen).toContain('useKeepAwake()');
+    expect(screen).toContain('void ScreenOrientation.unlockAsync()');
+    expect(screen).toContain('useHouseholds()');
+    expect(screen).toContain('useAuthStore');
+    expect(screen).toContain('useTimerTick(needsTick(timers, new Date()))');
+    expect(screen).not.toContain('gradient');
+    expect(screen).not.toContain('LinearGradient');
+    expect(screen).not.toContain('gradientHero');
+    expect(screen).not.toContain('tintNamed');
+    expect(screen).not.toContain('colors.accent');
     expect(
       screen,
-      'The smart screen hero must no longer paint a flat inverse surface',
-    ).not.toContain('backgroundColor: colors.surfaceInverse');
+      'Kiosk cards should be square Coral cards, not deprecated gradient/tint bridges.',
+    ).not.toMatch(/\b(tint|fill|compact)=/);
     expect(
-      heroOpening,
-      'The hero container must not be accessible, or its nested buttons can be hidden from assistive tech.',
-    ).not.toContain('accessible');
-    expect(screen, "The hero's accessibility label must stay on its text group").toContain(
-      'accessibilityLabel={`${heroEyebrow}, ${heroMessage}`}',
-    );
+      screen,
+      'The active nudge card text group should keep its label off the nested Done button.',
+    ).toContain('accessibilityLabel={planAccessibilityLabel}');
   });
 
   it('keeps capture result retake in the fixed trailing icon slot', () => {
