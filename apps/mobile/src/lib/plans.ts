@@ -35,6 +35,11 @@ export interface PlanProgress {
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const PLAN_SCOPE_VIEW = {
+  daily: 'day',
+  weekly: 'week',
+  monthly: 'month',
+} as const;
 
 function utcDay(value: string): number {
   const [year, month, day] = value.split('-').map(Number);
@@ -81,4 +86,23 @@ export function planProgress(
     cookedTileSpan: toBuy === null ? 2 : 1,
     coverageRatio: coverage?.coverageRatio ?? null,
   };
+}
+
+export function planCookedStatValue(cooked: string, total: string, ofConnector: string): string {
+  return `${cooked} ${ofConnector} ${total}`;
+}
+
+export function shouldShowPlanDateColumn(
+  entries: readonly { readonly date: string }[],
+  index: number,
+): boolean {
+  const entry = entries[index];
+  if (!entry) return false;
+  return index === 0 || entries[index - 1]?.date !== entry.date;
+}
+
+export function planViewForScope(
+  scope: keyof typeof PLAN_SCOPE_VIEW,
+): (typeof PLAN_SCOPE_VIEW)[typeof scope] {
+  return PLAN_SCOPE_VIEW[scope];
 }

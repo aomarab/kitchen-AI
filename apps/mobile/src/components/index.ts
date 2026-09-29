@@ -37,6 +37,7 @@ export { SearchField } from './SearchField';
 export { SegmentedControl } from './SegmentedControl';
 export { Sheet } from './Sheet';
 export { StarRating } from './StarRating';
+export { Stat } from './Stat';
 export { EmptyState, ErrorState, LoadingState } from './States';
 export { Bento, BentoColumn, Tile } from './Tile';
 export { Toggle } from './Toggle';

@@ -110,6 +110,12 @@ describe('information architecture (spec §4)', () => {
     expect(plans, 'Plans empty state must use the J calendar illustration').toContain(
       'illustration="calendar"',
     );
+    expect(plans, 'Plans tab owns B3 job polling').toContain('useJob(activeGeneration?.jobId');
+    expect(plans, 'Plans tab clears active generation on success').toContain('finishSuccess()');
+    expect(plans, 'Plans tab invalidates plan queries after generation').toContain(
+      "invalidateQueries({ queryKey: ['plans'] })",
+    );
+    expect(plans, 'Plans tab shows the in-tab generating state').toContain('<GeneratingPlanState');
     for (const key of ['plans.daily', 'plans.weekly', 'plans.monthly']) {
       expect(plans, `Plans segmented control must use ${key}`).toContain(`t('${key}')`);
     }
@@ -136,10 +142,13 @@ describe('information architecture (spec §4)', () => {
       tiles,
       'Plan progress is now a J summary block, not legacy Tile bridge props',
     ).not.toContain('<Tile');
-    expect(tiles).toContain('function PlanSummaryBlock');
+    expect(tiles).toContain('<Stat');
+    expect(read('components', 'index.ts')).toContain('export { Stat }');
     expect(tiles).toContain('function PlanShortfallLine');
     expect(tiles).toContain('usePressFeedback()');
     expect(tiles).toContain("'mobile.plans.addToList'");
+    expect(tiles).toContain('planCookedStatValue');
+    expect(translate('en', 'mobile.plans.cookedCaption' as never)).toBe('cooked');
     expect(tiles).not.toMatch(/\b(tint|fill|compact)=/);
     expect(tiles).not.toContain('icon="warning"');
     for (const key of [
@@ -168,19 +177,36 @@ describe('information architecture (spec §4)', () => {
     expect(board).toContain('planEntryStatus');
     expect(board).toContain('size={56}');
     expect(board).toContain('size={72}');
-    expect(board).toContain('<Badge tone="success" label={statusLabel} />');
-    expect(board).not.toContain('<Icon name="check" size={14} color={colors.success} />');
+    expect(board).toContain('minHeight: 80');
+    expect(board).toContain('paddingVertical: 4');
+    expect(board).toContain('showDate={shouldShowPlanDateColumn');
+    expect(board).toContain('<Icon name="check" size={14} color={colors.success} />');
+    expect(board).toContain('style={{ color: colors.success, flexShrink: 1 }}');
     expect(board).not.toContain('pressed ?');
     expect(board).not.toContain('<ListGroup');
 
     const generate = read('app', 'generate-plan.tsx');
+    const planGeneration = read('features', 'plans', 'GeneratingPlanState.tsx');
+    const planStore = read('stores', 'plan-generation.ts');
     expect(generate, 'Generate plan must retire the orb mascot').not.toContain('<OrbMascot');
-    expect(generate).toContain('<Avatar');
+    expect(generate, 'Generating moved into the Plans tab by user ruling B3').not.toContain(
+      'useJob',
+    );
+    expect(generate, 'Generate records the plan job in the Plans-tab store').toContain(
+      'startGeneration(started.id, scope)',
+    );
+    expect(generate, 'Generate returns to the Plans tab after the job starts').toContain(
+      "router.replace('/plans')",
+    );
     expect(generate).toContain('<DateField');
     expect(generate).toContain('<SegmentedControl');
     expect(generate).toContain('<QuantityStepper');
-    expect(generate).toContain('<Progress');
     expect(generate).toContain('footer=');
+    expect(planGeneration).toContain('<Illustration name="pot" size={64} />');
+    expect(planGeneration).toContain('<Progress');
+    expect(planGeneration).toContain('<LoadingState rows={3} compact');
+    expect(planGeneration).not.toContain('<Avatar');
+    expect(planStore).toContain('finishFailure');
     expect(generate, 'Generate default servings must match the pre-C8 request body').toContain(
       'const [servings, setServings] = useState(2)',
     );

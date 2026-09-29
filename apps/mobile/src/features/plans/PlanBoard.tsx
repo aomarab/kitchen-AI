@@ -8,7 +8,7 @@ import { useFormat } from '../../hooks/useFormat';
 import { todayISODate } from '../../lib/expiry';
 import { formatDateL, formatMinutes, formatQty, localizedName } from '../../lib/format';
 import { planEntryStatus } from '../../lib/plan-entry-status';
-import { planWeekDays } from '../../lib/plans';
+import { planWeekDays, shouldShowPlanDateColumn } from '../../lib/plans';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
@@ -114,11 +114,13 @@ function coverageText({
 function PlanDayRow({
   entry,
   today,
+  showDate,
   coverage,
   onPress,
 }: {
   entry: MealPlanEntry;
   today: string;
+  showDate: boolean;
   coverage?: PlanCoverage | null;
   onPress: () => void;
 }) {
@@ -162,12 +164,16 @@ function PlanDayRow({
         ]}
       >
         <View style={{ width: 40, alignItems: 'flex-start', gap: 2 }}>
-          <AppText variant="small" color={isToday ? 'primaryText' : 'textMuted'}>
-            {formatDateL(locale, date, { weekday: 'short' })}
-          </AppText>
-          <AppText variant="heading" color={isToday ? 'primaryText' : 'text'}>
-            {formatDateL(locale, date, { day: 'numeric' })}
-          </AppText>
+          {showDate ? (
+            <>
+              <AppText variant="small" color={isToday ? 'primaryText' : 'textMuted'}>
+                {formatDateL(locale, date, { weekday: 'short' })}
+              </AppText>
+              <AppText variant="heading" color={isToday ? 'primaryText' : 'text'}>
+                {formatDateL(locale, date, { day: 'numeric' })}
+              </AppText>
+            </>
+          ) : null}
         </View>
         <RecipeThumb
           heroImageUrl={entry.recipe.heroImageUrl}
@@ -180,10 +186,14 @@ function PlanDayRow({
           </AppText>
           {isCooked ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <AppText variant="caption" numberOfLines={1} style={{ color: colors.textMuted }}>
-                {`${slot} · ${minutesLabel} ·`}
+              <Icon name="check" size={14} color={colors.success} />
+              <AppText
+                variant="caption"
+                numberOfLines={1}
+                style={{ color: colors.success, flexShrink: 1 }}
+              >
+                {caption}
               </AppText>
-              <Badge tone="success" label={statusLabel} />
             </View>
           ) : (
             <AppText variant="caption" numberOfLines={1} style={{ color: colors.textMuted }}>
@@ -225,11 +235,11 @@ function MealEntryRow({
       <Animated.View
         style={[
           {
-            minHeight: 92,
+            minHeight: 80,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 14,
-            paddingVertical: 10,
+            paddingVertical: 4,
             borderBottomWidth: 1,
             borderBottomColor: colors.rowline,
           },
@@ -460,11 +470,12 @@ export function PlanBoard({
           <AppText muted>{t('mobile.home.tonightEmpty')}</AppText>
         ) : (
           sections.flatMap((section) =>
-            section.entries.map((entry) => (
+            section.entries.map((entry, index) => (
               <PlanDayRow
                 key={entry.id}
                 entry={entry}
                 today={today}
+                showDate={shouldShowPlanDateColumn(section.entries, index)}
                 coverage={coverage}
                 onPress={() => onOpenEntry(entry)}
               />
@@ -505,11 +516,12 @@ export function PlanBoard({
         </View>
       ))}
       <View>
-        {dayEntries.map((entry) => (
+        {dayEntries.map((entry, index) => (
           <PlanDayRow
             key={entry.id}
             entry={entry}
             today={today}
+            showDate={shouldShowPlanDateColumn(dayEntries, index)}
             coverage={coverage}
             onPress={() => onOpenEntry(entry)}
           />

@@ -360,7 +360,7 @@ export const mobileAr: MobileMessages = {
       month: 'شهر',
       ofConnector: 'من',
       cookedOf: 'تم طهي {done} من {total}',
-      cookedCaption: 'من أصل {total} وجبة مطبوخة',
+      cookedCaption: 'طُهيت',
       toBuy: '{count} للشراء',
       toBuyCaption: 'للشراء',
       addToList: 'إضافة إلى القائمة',

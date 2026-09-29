@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { planProgress, planWeekDays } from './plans';
+import {
+  planCookedStatValue,
+  planProgress,
+  planViewForScope,
+  planWeekDays,
+  shouldShowPlanDateColumn,
+} from './plans';
 
 const plan = {
   startsOn: '2026-09-28',
@@ -72,6 +78,34 @@ describe('planProgress', () => {
       toBuy: 2,
       cookedTileSpan: 1,
       coverageRatio: 0.5,
+    });
+  });
+
+  describe('plan stat and row helpers', () => {
+    it('renders the cooked stat value without repeating the total in the caption', () => {
+      expect(planCookedStatValue('3', '21', 'of')).toBe('3 of 21');
+      expect(planCookedStatValue('٣', '٢١', 'من')).toBe('٣ من ٢١');
+    });
+
+    it('shows the date column only on the first row for each day', () => {
+      const entries = [
+        { date: '2026-09-29', slot: 'breakfast' },
+        { date: '2026-09-29', slot: 'lunch' },
+        { date: '2026-09-30', slot: 'dinner' },
+      ] as const;
+
+      expect(entries.map((_, index) => shouldShowPlanDateColumn(entries, index))).toEqual([
+        true,
+        false,
+        true,
+      ]);
+      expect(shouldShowPlanDateColumn(entries, -1)).toBe(false);
+    });
+
+    it('maps a generation scope back to the Plans segmented view', () => {
+      expect(planViewForScope('daily')).toBe('day');
+      expect(planViewForScope('weekly')).toBe('week');
+      expect(planViewForScope('monthly')).toBe('month');
     });
   });
 

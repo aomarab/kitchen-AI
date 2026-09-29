@@ -23,7 +23,17 @@ export function Card({ children, onPress, accessibilityLabel, style }: CardProps
     ...shadow.card,
   };
 
-  if (!onPress) return <View style={[base, style]}>{children}</View>;
+  if (!onPress) {
+    return (
+      <View
+        accessible={!!accessibilityLabel}
+        accessibilityLabel={accessibilityLabel}
+        style={[base, style]}
+      >
+        {children}
+      </View>
+    );
+  }
   return (
     <Pressable
       accessibilityRole="button"

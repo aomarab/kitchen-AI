@@ -1,10 +1,10 @@
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
 import type { MealPlan, PlanCoverage } from '@kitchen/contracts';
-import { AppText, Icon } from '../../components';
+import { AppText, Icon, Stat } from '../../components';
 import { usePressFeedback } from '../../components/press-feedback';
 import { useFormat } from '../../hooks/useFormat';
 import { formatPercent, formatQty } from '../../lib/format';
-import { planProgress } from '../../lib/plans';
+import { planCookedStatValue, planProgress } from '../../lib/plans';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
@@ -16,40 +16,6 @@ export interface PlanTilesProps {
   onOpenShopping: () => void;
   showCoverageCaption?: boolean;
   variant?: PlanTilesVariant;
-}
-
-function PlanSummaryBlock({
-  value,
-  caption,
-  accessibilityLabel,
-}: {
-  value: string;
-  caption: string;
-  accessibilityLabel: string;
-}) {
-  const { colors, shadow } = useTheme();
-  return (
-    <View
-      accessible
-      accessibilityLabel={accessibilityLabel}
-      style={{
-        flex: 1,
-        minHeight: 86,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: colors.cardEdge,
-        backgroundColor: colors.surface,
-        padding: spacing.lg,
-        justifyContent: 'center',
-        gap: spacing.xs,
-        ...shadow.card,
-      }}
-    >
-      <AppText variant="numeralSmall">{value}</AppText>
-      <AppText variant="caption" muted>
-        {caption}
-      </AppText>
-    </View>
-  );
 }
 
 function PlanShortfallLine({
@@ -100,55 +66,6 @@ function PlanShortfallLine({
   );
 }
 
-function PlanShoppingSummaryBlock({
-  value,
-  caption,
-  accessibilityLabel,
-  disabled,
-  onPress,
-}: {
-  value: string;
-  caption: string;
-  accessibilityLabel: string;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  const { colors, shadow } = useTheme();
-  const pressFeedback = usePressFeedback();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      {...pressFeedback.pressHandlers}
-      style={{ flex: 1 }}
-    >
-      <Animated.View
-        style={[
-          {
-            minHeight: 86,
-            borderWidth: StyleSheet.hairlineWidth,
-            borderColor: colors.cardEdge,
-            backgroundColor: colors.surface,
-            padding: spacing.lg,
-            justifyContent: 'center',
-            gap: spacing.xs,
-            ...shadow.card,
-          },
-          disabled ? null : pressFeedback.animatedStyle,
-        ]}
-      >
-        <AppText variant="numeralSmall">{value}</AppText>
-        <AppText variant="caption" muted>
-          {caption}
-        </AppText>
-      </Animated.View>
-    </Pressable>
-  );
-}
-
 export function PlanTiles({
   plan,
   coverage,
@@ -160,9 +77,9 @@ export function PlanTiles({
   const progress = planProgress(plan, coverage);
   const cooked = formatQty(locale, progress.cooked, prefs);
   const total = formatQty(locale, progress.total, prefs);
-  const cookedValue = `${cooked} ${t('mobile.plans.ofConnector')} ${total}`;
+  const cookedValue = planCookedStatValue(cooked, total, t('mobile.plans.ofConnector'));
   const cookedLabel = t('mobile.plans.cookedOf', { done: cooked, total });
-  const cookedCaption = t('mobile.plans.cookedCaption', { total });
+  const cookedCaption = t('mobile.plans.cookedCaption');
   const coverageLabel =
     showCoverageCaption && progress.coverageRatio !== null
       ? `${t('plans.coverage')} ${formatPercent(locale, progress.coverageRatio, prefs)}`
@@ -172,22 +89,20 @@ export function PlanTiles({
   if (variant === 'shortfall') {
     return <PlanShortfallLine count={progress.toBuy ?? 0} onOpenShopping={onOpenShopping} />;
   }
-
   return (
     <View style={{ flexDirection: 'row', gap: spacing.lg }}>
-      <PlanSummaryBlock
+      <Stat
         value={cookedValue}
-        caption={coverageLabel ? `${cookedCaption} · ${coverageLabel}` : cookedCaption}
+        label={coverageLabel ? `${cookedCaption} · ${coverageLabel}` : cookedCaption}
         accessibilityLabel={coverageLabel ? `${cookedLabel}, ${coverageLabel}` : cookedLabel}
       />
-      <PlanShoppingSummaryBlock
+      <Stat
         value={toBuyCount ?? formatQty(locale, 0, prefs)}
-        caption={t('mobile.plans.toBuyCaption')}
+        label={t('mobile.plans.toBuyCaption')}
         accessibilityLabel={t('mobile.plans.toBuy', {
           count: formatQty(locale, progress.toBuy ?? 0, prefs),
         })}
-        disabled={progress.toBuy === null}
-        onPress={onOpenShopping}
+        onPress={progress.toBuy === null ? undefined : onOpenShopping}
       />
     </View>
   );

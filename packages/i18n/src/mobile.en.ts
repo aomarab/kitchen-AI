@@ -276,7 +276,7 @@ export const mobileEn = {
       month: 'Month',
       ofConnector: 'of',
       cookedOf: '{done} of {total} cooked',
-      cookedCaption: 'of {total} cooked',
+      cookedCaption: 'cooked',
       toBuy: '{count} to buy',
       toBuyCaption: 'to buy',
       addToList: 'Add to list',
