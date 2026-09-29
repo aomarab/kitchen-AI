@@ -219,6 +219,11 @@ describe('recipe and cook Coral rhythm', () => {
     expect(metaRow).toContain('borderBottomColor: colors.rowline');
     expect(metaRow).toContain('paddingVertical: spacing.md');
     expect(ingredientRow).toContain('RECIPE_INGREDIENT_ROW_MIN_HEIGHT = 44');
+    expect(ingredientRow).toContain('recipeIngredientAccessibilityLabel');
+    expect(ingredientRow).toContain('recipeIngredientStatusKey');
+    expect(ingredientRow).toContain('accessible');
+    expect(ingredientRow).toContain('accessibilityLabel={accessibilityLabel}');
+    expect(ingredientRow).toContain('t(recipeIngredientStatusKey(ingredient))');
     expect(ingredientRow).toContain('width: 72');
     expect(ingredientRow).toContain('name={statusIcon}');
     expect(stepRow).toContain('STEP_NUMBER_BOX_SIZE = 28');

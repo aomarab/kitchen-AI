@@ -4,6 +4,10 @@ import { AppText, Icon, type IconName } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { formatMeasure, ingredientName } from '../../lib/format';
 import { scaleQuantityForServings } from '../../lib/recipe';
+import {
+  recipeIngredientAccessibilityLabel,
+  recipeIngredientStatusKey,
+} from '../../lib/recipe-ingredient-row';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
@@ -24,7 +28,14 @@ export function RecipeIngredientRow({
   const { colors } = useTheme();
   const scaledQuantity = scaleQuantityForServings(ingredient.quantity, baseServings, servings);
   const quantity = formatMeasure(t, locale, scaledQuantity, ingredient.unit, prefs);
+  const visibleQuantity = signed ? `− ${quantity}` : quantity;
   const name = ingredientName(locale, ingredient.ingredient);
+  const statusLabel = t(recipeIngredientStatusKey(ingredient));
+  const accessibilityLabel = recipeIngredientAccessibilityLabel({
+    quantity: visibleQuantity,
+    name,
+    statusLabel,
+  });
   const statusIcon: IconName = ingredient.inStock ? 'check' : ingredient.shortfall ? 'alert' : 'x';
   const statusColor = ingredient.inStock
     ? colors.success
@@ -34,6 +45,8 @@ export function RecipeIngredientRow({
 
   return (
     <View
+      accessible
+      accessibilityLabel={accessibilityLabel}
       style={{
         minHeight: RECIPE_INGREDIENT_ROW_MIN_HEIGHT,
         flexDirection: 'row',
@@ -45,7 +58,7 @@ export function RecipeIngredientRow({
       }}
     >
       <AppText variant="bodyStrong" style={{ width: 72 }} numberOfLines={1}>
-        {signed ? `− ${quantity}` : quantity}
+        {visibleQuantity}
       </AppText>
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <AppText numberOfLines={1}>{name}</AppText>
