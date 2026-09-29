@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -20,14 +20,14 @@ import {
 import { PlanBoard, type PlanView } from '../../features/plans/PlanBoard';
 import { PlanTiles } from '../../features/plans/PlanTiles';
 import { useCredits } from '../../hooks/credits';
-import { isTerminal, useJob } from '../../hooks/job';
+import { useJob } from '../../hooks/job';
 import { useFormat } from '../../hooks/useFormat';
 import { usePlanCoverage, usePlans } from '../../hooks/plans';
 import { costOf, totalCredits } from '../../lib/credits';
 import { todayISODate } from '../../lib/expiry';
 import { formatQty } from '../../lib/format';
 import { planViewForScope } from '../../lib/plans';
-import { usePlanGenerationStore } from '../../stores/plan-generation';
+import { derivePlanGenerationView, usePlanGenerationStore } from '../../stores/plan-generation';
 import { spacing } from '../../theme';
 
 export default function Plans() {
@@ -45,17 +45,36 @@ export default function Plans() {
   const plans = usePlans();
   const credits = useCredits();
   const generationJob = useJob(activeGeneration?.jobId ?? null);
+  const generationView = useMemo(
+    () =>
+      derivePlanGenerationView({
+        active: activeGeneration,
+        failure: generationFailure,
+        job: generationJob.data,
+        // Transient network failures stay in React Query's retry cycle; isError means polling has
+        // settled and the stale id should become a visible Retry state.
+        queryError: generationJob.isError ? generationJob.error : null,
+      }),
+    [
+      activeGeneration,
+      generationFailure,
+      generationJob.data,
+      generationJob.error,
+      generationJob.isError,
+    ],
+  );
   const plan = plans.data?.[0];
   const coverage = usePlanCoverage(plan?.id ?? null);
   const isEmpty = !plan || plan.entries.length === 0;
-  const openGenerate = () => router.push('/generate-plan');
+  const openGenerate = () => {
+    if (activeGeneration) return;
+    router.push('/generate-plan');
+  };
   const openShopping = () => router.push('/shopping');
-  const effectiveView = activeGeneration
-    ? planViewForScope(activeGeneration.scope)
-    : generationFailure
-      ? planViewForScope(generationFailure.scope)
-      : view;
-  const generating = !!activeGeneration && !isTerminal(generationJob.data);
+  const generationScope =
+    activeGeneration?.scope ??
+    (generationView.kind === 'failed' ? generationView.failure.scope : null);
+  const effectiveView = generationScope ? planViewForScope(generationScope) : view;
   const contentBottomPadding =
     effectiveView === 'day' ? spacing.gutter + tabBarClearance : spacing.gutter;
   const weeklyCost = costOf('plan.weekly');
@@ -70,26 +89,14 @@ export default function Plans() {
 
   useEffect(() => {
     if (!activeGeneration) return;
-    if (generationJob.data?.status === 'done') {
+    if (generationView.kind === 'done') {
       finishSuccess();
       void qc.invalidateQueries({ queryKey: ['plans'] });
-      if (generationJob.data.resultRef?.kind === 'meal_plan') {
-        router.replace(`/plan/${generationJob.data.resultRef.id}`);
-      }
-    } else if (generationJob.data?.status === 'failed') {
-      finishFailure(generationJob.data.error);
+      router.replace(`/plan/${generationView.planId}`);
+    } else if (generationView.kind === 'failed') {
+      finishFailure(generationView.failure.error);
     }
-  }, [
-    activeGeneration,
-    finishFailure,
-    finishSuccess,
-    generationJob.data?.error,
-    generationJob.data?.resultRef?.id,
-    generationJob.data?.resultRef?.kind,
-    generationJob.data?.status,
-    qc,
-    router,
-  ]);
+  }, [activeGeneration, finishFailure, finishSuccess, generationView, qc, router]);
 
   const retryGeneration = () => {
     clearFailure();
@@ -115,6 +122,7 @@ export default function Plans() {
               icon="plus"
               tone="plain"
               accessibilityLabel={t('plans.generate')}
+              disabled={!!activeGeneration}
               onPress={openGenerate}
             />
           ) : undefined
@@ -140,10 +148,10 @@ export default function Plans() {
           ]}
         />
 
-        {generating ? (
-          <GeneratingPlanState progress={generationJob.data?.progress ?? 0.42} />
-        ) : generationFailure ? (
-          <PlanGenerationFailedState failure={generationFailure} onRetry={retryGeneration} />
+        {generationView.kind === 'generating' ? (
+          <GeneratingPlanState progress={generationView.progress} />
+        ) : generationView.kind === 'failed' ? (
+          <PlanGenerationFailedState failure={generationView.failure} onRetry={retryGeneration} />
         ) : plans.isLoading ? (
           <LoadingState />
         ) : plans.isError ? (
