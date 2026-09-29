@@ -39,7 +39,7 @@ export default function Account() {
       <AccountHero
         name={profileName}
         email={user?.email}
-        profileHint={t('mobile.more.profile')}
+        profileHint={user ? t('mobile.more.profile') : undefined}
         onPress={() => router.push('/profile')}
       />
 

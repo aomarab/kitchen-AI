@@ -298,6 +298,9 @@ describe('account and settings Coral rhythm', () => {
 
     expect(notifications).toContain('function ChoiceRows');
     expect(notifications).toContain('accessibilityRole="radio"');
+    expect(notifications).toContain('accessibilityLabelFor?: (value: T) => string');
+    expect(notifications).toContain('accessibilityLabel={accessibilityLabelFor?.(option)}');
+    expect(notifications).toContain("`${t('mobile.settings.reminderTime')}: ${hourLabel(hour)}`");
     expect(notifications).not.toContain('<Card');
     expect(notifications).not.toContain('grouped');
 

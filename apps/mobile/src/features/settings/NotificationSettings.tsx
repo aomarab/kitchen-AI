@@ -19,6 +19,7 @@ interface ChoiceRowsProps<T extends number> {
   options: readonly T[];
   value: T;
   labelFor: (value: T) => string;
+  accessibilityLabelFor?: (value: T) => string;
   selectedLabel: string;
   onChange: (value: T) => void;
 }
@@ -27,6 +28,7 @@ function ChoiceRows<T extends number>({
   options,
   value,
   labelFor,
+  accessibilityLabelFor,
   selectedLabel,
   onChange,
 }: ChoiceRowsProps<T>) {
@@ -43,6 +45,7 @@ function ChoiceRows<T extends number>({
             trailing={selected ? <Icon name="check" size={20} color={colors.primaryText} /> : null}
             accessibilityRole="radio"
             accessibilityState={{ checked: selected }}
+            accessibilityLabel={accessibilityLabelFor?.(option)}
             onPress={() => onChange(option)}
           />
         );
@@ -210,6 +213,9 @@ export function NotificationSettings() {
           options={HOUR_CHOICES}
           value={reminderHour}
           labelFor={hourLabel}
+          accessibilityLabelFor={(hour) =>
+            `${t('mobile.settings.reminderTime')}: ${hourLabel(hour)}`
+          }
           selectedLabel={t('mobile.notifications.timeSelected')}
           onChange={setReminderHour}
         />
