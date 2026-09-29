@@ -31,7 +31,7 @@ Answer every content question **None**:
 
 Then the capability questions:
 
-- **Unrestricted Web Access — No.** The app *does* embed a WebView
+- **Unrestricted Web Access — No.** The app _does_ embed a WebView
   (`react-native-webview`) in `apps/mobile/src/components/YoutubePlayer.tsx`, so
   this answer rests on how that WebView is constrained, not on its absence. The
   WebView exists solely to play YouTube recipe videos inline, and navigation
@@ -39,8 +39,10 @@ Then the capability questions:
   navigation request passes through
   `onShouldStartLoadWithRequest={(request) => isAllowedEmbedUrl(request.url)}`,
   and `isAllowedEmbedUrl` (`apps/mobile/src/lib/youtube.ts`) cancels any URL
-  outside `YOUTUBE_EMBED_ORIGINS` (`youtube-nocookie.com` and `youtube.com`), so
-  the user cannot browse to an arbitrary page. The video is reached only by a
+  outside `YOUTUBE_EMBED_ORIGINS` (`youtube-nocookie.com` and `youtube.com`)
+  other than the player page itself (exactly `EMBED_BASE_URL`, the app's
+  `https://<bundle-id>` identity, which serves nothing else), so the user
+  cannot browse to an arbitrary page. The video is reached only by a
   specific video id obtained from the YouTube Data API
   (`apps/api/src/ai/clients/http-youtube.client.ts`); the id never comes from
   the model. The embed is a locked-down video player, not a general-purpose
@@ -72,7 +74,7 @@ Interactive-elements / miscellaneous section:
 
 - **Users interact / shares info** — the account collects email and name and the
   app uploads kitchen photos; this is disclosed in `data-safety.md`, but none of
-  it is shared *between users*.
+  it is shared _between users_.
 - **Shares user-generated content with other users — No**, for the same reason
   as Apple's UGC answer: feedback is private to us.
 - **Unrestricted internet access — No**, for the same reason as Apple's: the

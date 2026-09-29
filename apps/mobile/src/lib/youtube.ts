@@ -16,6 +16,26 @@ export function isValidYoutubeId(value: string): boolean {
   return YOUTUBE_ID.test(value);
 }
 
+/**
+ * The document origin the player page is loaded under: the app's own identity.
+ *
+ * YouTube only plays an embed that identifies who is embedding it, via the
+ * `Referer` of the frame request (YouTube API Services, Required Minimum
+ * Functionality). For a page a WebView loads from a string, the documented
+ * identity is the base URL, in the form `https://<app-id>`. Both wrong answers
+ * are refused with an error card instead of the video:
+ *
+ * - no origin at all (navigating straight to the embed URL, or `about:blank`)
+ *   is error 153, "player configuration error";
+ * - an origin that claims to be `https://www.youtube.com` is error 152,
+ *   because YouTube knows it is not embedding itself. This constant used to be
+ *   exactly that, and every video failed.
+ *
+ * It is the iOS bundle identifier, which is also the Android package, so one
+ * value identifies the app on both platforms. The spec pins it to app.json.
+ */
+export const EMBED_BASE_URL = 'https://com.abedomar.kitchenai';
+
 /** The only origins the embed WebView may navigate to. */
 export const YOUTUBE_EMBED_ORIGINS = [
   'https://www.youtube-nocookie.com',
@@ -43,22 +63,12 @@ export const WEBVIEW_ORIGIN_WHITELIST = ['http://*', 'https://*'];
 export function isAllowedEmbedUrl(url: string): boolean {
   // WebViews navigate to about:blank internally; blocking it breaks the embed.
   if (url === 'about:blank') return true;
+  // The player document itself, loaded from a string under EMBED_BASE_URL.
+  // Only that exact document — nothing is served from this origin, so there is
+  // nowhere else on it to go.
+  if (url === EMBED_BASE_URL || url === `${EMBED_BASE_URL}/`) return true;
   return YOUTUBE_EMBED_ORIGINS.some((origin) => url === origin || url.startsWith(`${origin}/`));
 }
-
-/**
- * The document origin the player page is loaded under.
- *
- * YouTube rejects an embed whose request carries no usable `Referer` with a
- * player configuration error (153, and its 152 siblings). Pointing a WebView
- * straight at the embed URL does exactly that: WKWebView has no document to
- * derive a referrer from, so the player refuses to start. Loading our own page
- * *under a real https origin* gives it one.
- *
- * It has to be youtube.com specifically, because the page loads YouTube's own
- * `iframe_api` — see {@link buildEmbedHtml}.
- */
-export const EMBED_BASE_URL = 'https://www.youtube.com';
 
 /** What the player page reports back over `postMessage`. */
 export type EmbedMessage = { type: 'ready' } | { type: 'error'; code: string };
@@ -96,13 +106,11 @@ export function watchOnYoutubeUrl(youtubeId: string): string | null {
 /**
  * The player document for {@link EMBED_BASE_URL}.
  *
- * The player is built by YouTube's own `iframe_api`, loaded from the same
- * origin as this document, rather than by hand-writing an `<iframe>` at an
- * embed URL. That is what actually settles the configuration errors: the API
- * script stamps the frame with the `origin` and `widget_referrer` the player
- * validates, and it agrees with the document it is running in — a hand-written
- * frame pointed at a *different* YouTube host (`youtube-nocookie.com`) is
- * cross-origin to its own page and gets refused.
+ * The player is built by YouTube's own `iframe_api` rather than by
+ * hand-writing an `<iframe>` at an embed URL. The API script stamps the frame
+ * with the `origin` and `widget_referrer` the player validates, and both are
+ * set to the document's own origin so the identity YouTube is told and the
+ * `Referer` it receives agree.
  *
  * The page also reports back: `onError` from the player carries YouTube's
  * numeric reason, which is otherwise invisible from the native side and leaves
@@ -138,7 +146,7 @@ export function buildEmbedHtml(
       width: '100%',
       height: '100%',
       videoId: '${youtubeId}',
-      playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, origin: '${EMBED_BASE_URL}' },
+      playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, origin: '${EMBED_BASE_URL}', widget_referrer: '${EMBED_BASE_URL}' },
       events: {
         onReady: function (event) { event.target.playVideo(); post({ type: 'ready' }); },
         onError: function (event) { post({ type: 'error', code: String(event.data) }); }
