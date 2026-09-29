@@ -431,6 +431,11 @@ interface RecipeDef {
   videos: RecipeVideo[];
 }
 
+// Real, embeddable cooking videos, so mock mode shows actual food photography and
+// "Watch how" plays. As in the API, the hero image is the first video's thumbnail
+// (recipe media resolution spec).
+const ytThumb = (youtubeId: string) => `https://i.ytimg.com/vi/${youtubeId}/maxresdefault.jpg`;
+
 const RECIPE_DEFS: RecipeDef[] = [
   {
     id: mockId('4ec1'),
@@ -439,7 +444,7 @@ const RECIPE_DEFS: RecipeDef[] = [
     prepMinutes: 15,
     cookMinutes: 35,
     servings: 4,
-    heroImageUrl: 'https://images.kitchenai.dev/recipes/chicken-rice.jpg',
+    heroImageUrl: ytThumb('jJ-mbESTK1A'),
     nutrition: { calories: 540, proteinG: 38, carbsG: 60, fatG: 14, fiberG: 3 },
     title: { en: 'Chicken & Rice', ar: 'دجاج بالأرز' },
     description: {
@@ -476,19 +481,19 @@ const RECIPE_DEFS: RecipeDef[] = [
     ],
     videos: [
       {
-        youtubeId: 'dQw4w9WgXcQ',
-        title: 'One-Pot Chicken and Rice',
-        channel: 'Kitchen Basics',
-        thumbnailUrl: 'https://images.kitchenai.dev/videos/chicken-rice-1.jpg',
-        durationSeconds: 612,
+        youtubeId: 'jJ-mbESTK1A',
+        title: 'One Pot Chicken and Rice',
+        channel: 'The Dinner Bite',
+        thumbnailUrl: ytThumb('jJ-mbESTK1A'),
+        durationSeconds: 214,
         locale: 'en',
       },
       {
-        youtubeId: 'ar12345chxZ',
-        title: 'دجاج بالأرز سهل',
-        channel: 'مطبخ سهل',
-        thumbnailUrl: 'https://images.kitchenai.dev/videos/chicken-rice-2.jpg',
-        durationSeconds: 540,
+        youtubeId: 'SNVy3IlrnA8',
+        title: 'رز مبهر بالدجاج (بالطريقة الأسبانية) - Arroz Con Pollo',
+        channel: "Omar's Cooking - عمر في المطبخ",
+        thumbnailUrl: ytThumb('SNVy3IlrnA8'),
+        durationSeconds: 186,
         locale: 'ar',
       },
     ],
@@ -500,7 +505,7 @@ const RECIPE_DEFS: RecipeDef[] = [
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 3,
-    heroImageUrl: 'https://images.kitchenai.dev/recipes/shakshuka.jpg',
+    heroImageUrl: ytThumb('618QsMaVXp8'),
     nutrition: { calories: 320, proteinG: 18, carbsG: 16, fatG: 20, fiberG: 4 },
     title: { en: 'Shakshuka', ar: 'شكشوكة' },
     description: {
@@ -534,11 +539,11 @@ const RECIPE_DEFS: RecipeDef[] = [
     ],
     videos: [
       {
-        youtubeId: 'shk123video',
-        title: 'Perfect Shakshuka',
-        channel: 'Brunch Club',
-        thumbnailUrl: 'https://images.kitchenai.dev/videos/shakshuka-1.jpg',
-        durationSeconds: 388,
+        youtubeId: '618QsMaVXp8',
+        title: 'Shakshuka - Eggs in Tomato Sauce Recipe',
+        channel: 'Home Cooking Adventure',
+        thumbnailUrl: ytThumb('618QsMaVXp8'),
+        durationSeconds: 212,
         locale: 'en',
       },
     ],
@@ -550,7 +555,7 @@ const RECIPE_DEFS: RecipeDef[] = [
     prepMinutes: 15,
     cookMinutes: 40,
     servings: 4,
-    heroImageUrl: 'https://images.kitchenai.dev/recipes/lemon-potatoes.jpg',
+    heroImageUrl: ytThumb('CevwTBbLW70'),
     nutrition: { calories: 280, proteinG: 6, carbsG: 44, fatG: 10, fiberG: 5 },
     title: { en: 'Lemon Herb Potatoes', ar: 'بطاطس بالليمون والأعشاب' },
     description: {
@@ -580,7 +585,16 @@ const RECIPE_DEFS: RecipeDef[] = [
       { key: 'oliveoil', quantity: 40, unit: 'ml', inStock: true },
       { key: 'salt', quantity: 6, unit: 'g', inStock: true },
     ],
-    videos: [],
+    videos: [
+      {
+        youtubeId: 'CevwTBbLW70',
+        title: 'Greek Lemon Potatoes',
+        channel: 'RecipeTin Eats',
+        thumbnailUrl: ytThumb('CevwTBbLW70'),
+        durationSeconds: 73,
+        locale: 'en',
+      },
+    ],
   },
 ];
 
