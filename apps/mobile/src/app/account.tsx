@@ -1,8 +1,9 @@
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
-import { AppText, Avatar, Button, Header, ListGroup, ListRow, Screen } from '../components';
+import { AppText, Button, Header, ListGroup, ListRow, Screen, SectionLabel } from '../components';
 import type { IconName } from '../components';
+import { AccountHero } from '../features/account/AccountHero';
 import { useCredits } from '../hooks/credits';
 import { useFormat } from '../hooks/useFormat';
 import { totalCredits } from '../lib/credits';
@@ -11,12 +12,6 @@ import { formatQty } from '../lib/format';
 import { useAuthStore } from '../stores/auth';
 import { spacing } from '../theme';
 
-/**
- * Account (spec §4.2), behind the avatar on every tab header. It holds every
- * row the retired More tab held, in white group cards: who you are, then the
- * household, the kitchen tools and the preferences. Shop is a tab now, so it
- * has no row here.
- */
 export default function Account() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
@@ -25,10 +20,10 @@ export default function Account() {
   const credits = useCredits();
   const version = Constants.expoConfig?.version ?? '1.0.0';
   const balance = credits.data ? formatQty(locale, totalCredits(credits.data), prefs) : undefined;
+  const profileName = user?.displayName ?? t('mobile.more.profile');
 
   const row = (title: string, icon: IconName, href: string, value?: string) => (
     <ListRow
-      grouped
       title={title}
       icon={icon}
       value={value}
@@ -41,48 +36,51 @@ export default function Account() {
     <Screen scroll>
       <Header title={t('mobile.account.title')} onBack={() => router.back()} />
 
-      <ListGroup>
-        <ListRow
-          grouped
-          title={user?.displayName ?? t('mobile.more.profile')}
-          subtitle={user?.email}
-          leading={<Avatar name={user?.displayName} />}
-          accessibilityHint={user ? t('mobile.more.profile') : undefined}
-          showChevron
-          onPress={() => router.push('/profile')}
-        />
-      </ListGroup>
+      <AccountHero
+        name={profileName}
+        email={user?.email}
+        profileHint={t('mobile.more.profile')}
+        onPress={() => router.push('/profile')}
+      />
 
-      <ListGroup>
-        {row(t('mobile.more.household'), 'household', '/settings/household')}
-        {row(t('mobile.more.credits'), 'wallet', '/ai-usage', balance)}
-      </ListGroup>
+      <View style={{ gap: spacing.sm }}>
+        <SectionLabel>{t('mobile.account.kitchenSection')}</SectionLabel>
+        <ListGroup>
+          {row(t('mobile.more.profile'), 'sliders', '/profile')}
+          {row(t('mobile.more.household'), 'users', '/settings/household')}
+          {row(t('mobile.more.credits'), 'coins', '/ai-usage', balance)}
+        </ListGroup>
+      </View>
 
-      <ListGroup>
-        {row(t('mobile.screen.entry'), 'screen', '/screen')}
-        {row(t('mobile.timers.entry'), 'clock', '/timers')}
-        {row(t('mobile.wellness.entry'), 'sunrise', '/wellness')}
-      </ListGroup>
+      <View style={{ gap: spacing.sm }}>
+        <SectionLabel>{t('mobile.account.toolsSection')}</SectionLabel>
+        <ListGroup>
+          {row(t('mobile.screen.entry'), 'tablet', '/screen')}
+          {row(t('mobile.timers.entry'), 'timer', '/timers')}
+          {row(t('mobile.wellness.entry'), 'activity', '/wellness')}
+        </ListGroup>
+      </View>
 
-      <ListGroup>
-        {row(t('mobile.more.notifications'), 'bell', '/settings/notifications')}
-        {row(t('mobile.more.settings'), 'settings', '/settings')}
-      </ListGroup>
+      <View style={{ gap: spacing.sm }}>
+        <SectionLabel>{t('mobile.account.appSection')}</SectionLabel>
+        <ListGroup>
+          {row(t('mobile.more.notifications'), 'bell', '/settings/notifications')}
+          {row(t('mobile.more.settings'), 'settings', '/settings')}
+        </ListGroup>
+      </View>
 
-      <View style={{ gap: spacing.xs }}>
+      <View style={{ gap: spacing.lg }}>
         <Button
           title={t('mobile.more.signOut')}
           variant="ghost"
+          tone="danger"
+          leadingIcon="logout"
           onPress={() => {
             void signOut().then(() => resetToSignIn(router));
           }}
         />
-        <AppText variant="caption" muted center>
+        <AppText variant="small" muted center>
           {t('mobile.more.appVersion', { version })}
-        </AppText>
-        {/* Required by the CC-BY licence the bundled item artwork ships under. */}
-        <AppText variant="caption" muted center>
-          {t('mobile.more.iconCredit')}
         </AppText>
       </View>
     </Screen>

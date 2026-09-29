@@ -37,10 +37,12 @@ const ACCOUNT_KEYS = [
   'mobile.more.settings',
   'mobile.more.signOut',
   'mobile.more.appVersion',
-  'mobile.more.iconCredit',
   'mobile.screen.entry',
   'mobile.timers.entry',
   'mobile.wellness.entry',
+  'mobile.account.kitchenSection',
+  'mobile.account.toolsSection',
+  'mobile.account.appSection',
 ];
 
 describe('information architecture (spec §4)', () => {
@@ -215,7 +217,24 @@ describe('information architecture (spec §4)', () => {
     expect(row).toContain('/** @deprecated J: removed in C16. Rows are flat in every group. */');
   });
 
-  it('keeps Account and Settings rows on the grouped G10 contract (spec §9.7)', () => {
+  it('keeps Account and Settings on the Coral account contract (spec §9)', () => {
+    const account = read('app', 'account.tsx');
+    expect(account, 'Account keeps the profile row action').toContain("router.push('/profile')");
+    expect(account, 'Account keeps the household row').toContain("'/settings/household'");
+    expect(account, 'Account keeps the credits row').toContain("'/ai-usage'");
+    expect(account, 'Account keeps the kitchen-screen row').toContain("'/screen'");
+    expect(account, 'Account keeps the cooking-timers row').toContain("'/timers'");
+    expect(account, 'Account keeps the wellness row').toContain("'/wellness'");
+    expect(account, 'Account keeps the notification row').toContain("'/settings/notifications'");
+    expect(account, 'Account keeps the settings row').toContain("'/settings'");
+    expect(account, 'Account keeps the exact sign-out flow').toContain('resetToSignIn(router)');
+    expect(
+      account,
+      'Account rows should be flat J rows, not deprecated grouped rows',
+    ).not.toContain('grouped');
+    expect(account).toContain('<AccountHero');
+    expect(account).toContain('tone="danger"');
+
     const themePicker = read('features', 'settings', 'ThemePicker.tsx');
     expect(themePicker, 'ThemePicker must use the shared segmented control').toContain(
       '<SegmentedControl',
@@ -228,15 +247,28 @@ describe('information architecture (spec §4)', () => {
     expect(settings, 'Settings navigation groups should use shared ListGroup columns').toContain(
       '<ListGroup',
     );
-    const rows = settings.match(/<ListRow[\s\S]*?\/>/g) ?? [];
-    expect(rows.length, 'Settings should render navigation rows').toBeGreaterThan(0);
-    for (const row of rows) {
-      expect(row, `Settings navigation row is not grouped:\n${row}`).toContain('grouped');
+    expect(
+      settings,
+      'Settings rows should be flat J rows, not deprecated grouped rows',
+    ).not.toContain('grouped');
+    expect(settings, 'Settings keeps the language switch action on screen').toContain(
+      'chooseLocale(nextLocale)',
+    );
+    expect(settings, 'Settings keeps the appearance persistence').toContain('<ThemePicker');
+    for (const href of [
+      '/settings/notifications',
+      '/settings/places',
+      '/settings/reminders',
+      '/settings/assistant',
+      '/settings/feedback',
+      '/settings/delete-account',
+    ]) {
+      expect(settings, `Settings lost ${href}`).toContain(`'${href}'`);
     }
 
     const deleteAccount = read('app', 'settings', 'delete-account.tsx');
     expect(deleteAccount, 'Delete account must keep the destructive CTA tone').toContain(
-      'variant="danger"',
+      'variant="destructive"',
     );
 
     const toggleRow = read('components', 'ToggleRow.tsx');
@@ -256,6 +288,14 @@ describe('information architecture (spec §4)', () => {
     );
 
     const household = read('app', 'settings', 'household.tsx');
+    expect(household, 'Household members should render with J Avatars').toContain('<Avatar');
+    expect(household, 'Household must keep the existing Share path for invite codes').toContain(
+      'Share.share({ message: household.inviteCode })',
+    );
+    expect(
+      household,
+      'Household rows should be flat J rows, not deprecated grouped rows',
+    ).not.toContain('grouped');
     const inviteActions =
       household.match(
         /t\('household\.shareInvite'\)[\s\S]*?t\('mobile\.settings\.newInviteCode'\)/,
@@ -263,13 +303,12 @@ describe('information architecture (spec §4)', () => {
     expect(inviteActions, 'Household invite actions should render in order').toContain(
       "t('mobile.settings.newInviteCode')",
     );
-    expect(inviteActions, 'Household invite actions must stack, not share one row').not.toContain(
+    expect(inviteActions, 'Household invite actions should sit in the frame row').toContain(
       "flexDirection: 'row'",
     );
-    expect(
-      inviteActions,
-      'Household invite buttons must be full-width, not half-width',
-    ).not.toContain('flex: 1');
+    expect(inviteActions, 'Household invite buttons keep intrinsic width').toContain(
+      'fullWidth={false}',
+    );
   });
 
   it('keeps inline tab controls named and inside safe areas (spec §12)', () => {

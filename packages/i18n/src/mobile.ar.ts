@@ -484,6 +484,9 @@ export const mobileAr: MobileMessages = {
     },
     account: {
       title: 'الحساب',
+      kitchenSection: 'المطبخ',
+      toolsSection: 'الأدوات',
+      appSection: 'التطبيق',
     },
     more: {
       title: 'المزيد',
@@ -501,6 +504,7 @@ export const mobileAr: MobileMessages = {
     settings: {
       title: 'الإعدادات',
       appearance: 'المظهر',
+      kitchenSection: 'المطبخ',
       theme: 'اللون',
       themeHint: 'يغيّر لون التمييز في التطبيق كلّه.',
       themeViolet: 'بنفسجي',
@@ -561,6 +565,9 @@ export const mobileAr: MobileMessages = {
         many: 'تم ضبط {count} تنبيهاً.',
         other: 'تم ضبط {count} تنبيه.',
       }),
+    },
+    profile: {
+      addAllergy: 'إضافة حساسية',
     },
     notifications: {
       expiryTitle: 'استخدمه قبل أن يفسد',
@@ -677,6 +684,7 @@ export const mobileAr: MobileMessages = {
       morningHint: 'تحية بداية اليوم.',
       hydrationLabel: 'تذكيرات الترطيب',
       hydrationHint: 'تذكير بشرب الماء.',
+      howOftenTitle: 'معدل التكرار',
       cadenceTitle: 'تكرار الفترات',
       stretchCadenceTitle: 'تكرار التمدد',
       cadenceEvery: plural('minutes', {

@@ -380,6 +380,9 @@ export const mobileEn = {
     },
     account: {
       title: 'Account',
+      kitchenSection: 'Kitchen',
+      toolsSection: 'Tools',
+      appSection: 'App',
     },
     more: {
       title: 'More',
@@ -397,6 +400,7 @@ export const mobileEn = {
     settings: {
       title: 'Settings',
       appearance: 'Appearance',
+      kitchenSection: 'Kitchen',
       theme: 'Colour',
       themeHint: 'Changes the accent colour across the whole app.',
       themeViolet: 'Violet',
@@ -451,6 +455,9 @@ export const mobileEn = {
         one: '1 reminder is set.',
         other: '{count} reminders are set.',
       }),
+    },
+    profile: {
+      addAllergy: 'Add an allergy',
     },
     notifications: {
       expiryTitle: 'Use it before it goes',
@@ -540,6 +547,7 @@ export const mobileEn = {
       morningHint: 'A start-of-day hello.',
       hydrationLabel: 'Hydration reminders',
       hydrationHint: 'A reminder to drink water.',
+      howOftenTitle: 'How often',
       cadenceTitle: 'Break frequency',
       stretchCadenceTitle: 'Stretch frequency',
       cadenceEvery: plural('minutes', { one: 'Every minute', other: 'Every {minutes} min' }),

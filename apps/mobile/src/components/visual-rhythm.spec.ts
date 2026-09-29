@@ -254,6 +254,83 @@ describe('recipe and cook Coral rhythm', () => {
   });
 });
 
+describe('account and settings Coral rhythm', () => {
+  const account = read('../app/account.tsx');
+  const accountHero = read('../features/account/AccountHero.tsx');
+  const profile = read('../app/profile.tsx');
+  const settings = read('../app/settings/index.tsx');
+  const household = read('../app/settings/household.tsx');
+  const notifications = read('../features/settings/NotificationSettings.tsx');
+  const reminders = read('../app/settings/reminders.tsx');
+  const assistant = read('../features/settings/AssistantPersonaPicker.tsx');
+  const feedback = read('../app/settings/feedback.tsx');
+  const deleteAccount = read('../app/settings/delete-account.tsx');
+
+  it('draws Account as a flat Coral settings list with a 56pt avatar hero', () => {
+    expect(account).toContain('<AccountHero');
+    expect(accountHero).toContain('ACCOUNT_HERO_MIN_HEIGHT = 80');
+    expect(accountHero).toContain('size={56}');
+    expect(account).toContain('variant="ghost"');
+    expect(account).toContain('tone="danger"');
+    expect(account).not.toContain('grouped');
+    expect(account).not.toContain('variant="danger"');
+  });
+
+  it('keeps Preferences controls flat with a sticky primary Save action', () => {
+    expect(profile).toContain('footer={');
+    expect(profile).toContain('saveAllergy');
+    expect(profile).toContain('<QuantityStepper');
+    expect(profile).toContain('<Chip');
+    expect(profile).not.toContain('<Card');
+    expect(profile).not.toContain('grouped');
+  });
+
+  it('keeps Settings, Household, Notifications and Reminders on square rows', () => {
+    expect(settings).toContain('<ThemePicker');
+    expect(settings).toContain('chooseLocale(nextLocale)');
+    expect(settings).not.toContain('<Card');
+    expect(settings).not.toContain('grouped');
+
+    expect(household).toContain('footer={');
+    expect(household).toContain('backgroundColor: colors.surfaceAlt');
+    expect(household).toContain('<Avatar');
+    expect(household).not.toContain('grouped');
+
+    expect(notifications).toContain('function ChoiceRows');
+    expect(notifications).toContain('accessibilityRole="radio"');
+    expect(notifications).not.toContain('<Card');
+    expect(notifications).not.toContain('grouped');
+
+    expect(reminders).toContain('function SettingStepperRow');
+    expect(reminders).toContain('function QuietHourRow');
+    expect(reminders).not.toContain('<Card');
+    expect(reminders).not.toContain('grouped');
+  });
+
+  it('uses bordered persona cards and labels every visible persona field', () => {
+    expect(assistant).toContain('PERSONA_OPTION_MIN_HEIGHT = 84');
+    expect(assistant).toContain('assistantPersonaAccessibilityLabel');
+    expect(assistant).toContain('borderWidth: isSelected ? 1.5 : 1');
+    expect(assistant).toContain('accessibilityRole="radio"');
+    expect(assistant).not.toContain('<ListRow');
+    expect(assistant).not.toContain('grouped');
+  });
+
+  it('keeps feedback and deletion as footer actions with the original mutations', () => {
+    expect(feedback).toContain('footer={');
+    expect(feedback).toContain('StarRating');
+    expect(feedback).toContain('submit.mutate');
+    expect(feedback).toContain('illustration="check"');
+    expect(feedback).not.toContain('<Card');
+
+    expect(deleteAccount).toContain('footer={');
+    expect(deleteAccount).toContain('matchesDeleteConfirmation');
+    expect(deleteAccount).toContain('variant="destructive"');
+    expect(deleteAccount).not.toContain('variant="danger"');
+    expect(deleteAccount).not.toContain('borderRadius: radius.sm');
+  });
+});
+
 describe('G1 primitive extensions', () => {
   it('lets Tile replace the icon with a leading slot, fall back to ember and expose actions', () => {
     const source = read('./Tile.tsx');

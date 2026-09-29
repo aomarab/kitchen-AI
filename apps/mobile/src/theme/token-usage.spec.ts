@@ -139,6 +139,14 @@ describe('mobile source sweep', () => {
       path: 'features/home/WeekStrip.tsx',
       pattern: /DAY_CELL_HEIGHT\s*=\s*(\d+)/,
     },
+    'AccountHero.tsx': {
+      path: 'features/account/AccountHero.tsx',
+      pattern: /ACCOUNT_HERO_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
+    'AssistantPersonaPicker.tsx': {
+      path: 'features/settings/AssistantPersonaPicker.tsx',
+      pattern: /PERSONA_OPTION_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {
