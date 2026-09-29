@@ -336,6 +336,14 @@ describe('information architecture (spec §4)', () => {
     expect(places, 'Move rows keep the destructive move-and-remove label').toContain(
       "t('mobile.places.moveHere')",
     );
+    expect(
+      places,
+      'Move rows must render the destructive move-and-remove subtitle in danger text',
+    ).toContain('function MoveDestinationSubtitle');
+    expect(
+      places,
+      'Move rows must not rely on ListRow muted subtitle styling for the destructive action',
+    ).toContain('style={{ color: colors.danger }}');
   });
 
   it('keeps Entry detail on shared Bento tiles and status semantics (spec §9.7)', () => {

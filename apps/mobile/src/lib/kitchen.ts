@@ -109,6 +109,23 @@ export function parseSection(value: unknown): KitchenSection | undefined {
   return value === 'justAdded' ? 'justAdded' : undefined;
 }
 
+export function kitchenInventoryQuery({
+  query,
+  locationId,
+  sort,
+}: {
+  query: string;
+  locationId?: string;
+  sort: KitchenSort;
+}): Partial<ListInventoryQuery> {
+  const visibleQuery = query.trim();
+  return {
+    q: locationId ? undefined : visibleQuery || undefined,
+    locationId,
+    sort,
+  };
+}
+
 export function placeCaption(t: Translator, location: StorageLocation): string {
   if (isSeededLocationName(location)) {
     return t(`mobile.kitchen.inType.${location.type}` as MessageKey);

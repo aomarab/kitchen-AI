@@ -27,6 +27,7 @@ import { formatExpiryLabel, formatQty, itemName, locationLabel } from '../../lib
 import {
   countMessage,
   justAdded,
+  kitchenInventoryQuery,
   parseSection,
   parseSort,
   placeAccessibilityLabel,
@@ -191,7 +192,7 @@ export default function Kitchen() {
 
   const locationsQuery = useLocations();
   const snapshotQuery = useInventorySnapshot();
-  const inventory = useInventory({ q: query || undefined, locationId, sort });
+  const inventory = useInventory(kitchenInventoryQuery({ query, locationId, sort }));
 
   const snapshotItems = snapshotQuery.data?.items ?? [];
   const locations = locationsQuery.data ?? [];

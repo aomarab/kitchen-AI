@@ -4,6 +4,7 @@ import { createTranslator } from '@kitchen/i18n';
 import {
   EXPIRY_TONE,
   justAdded,
+  kitchenInventoryQuery,
   parseSection,
   parseSort,
   placeCaption,
@@ -158,6 +159,26 @@ describe('parseSection', () => {
     expect(parseSection('justAdded')).toBe('justAdded');
     expect(parseSection('useFirst')).toBeUndefined();
     expect(parseSection(['justAdded'])).toBeUndefined();
+  });
+});
+
+describe('kitchenInventoryQuery', () => {
+  it('keeps visible search filtering on the all-kitchen view', () => {
+    expect(kitchenInventoryQuery({ query: ' parsley ', sort: 'expiry' })).toEqual({
+      q: 'parsley',
+      locationId: undefined,
+      sort: 'expiry',
+    });
+  });
+
+  it('drops the hidden search filter in drill-in place views', () => {
+    expect(
+      kitchenInventoryQuery({ query: 'parsley', locationId: 'fridge-id', sort: 'name' }),
+    ).toEqual({
+      q: undefined,
+      locationId: 'fridge-id',
+      sort: 'name',
+    });
   });
 });
 

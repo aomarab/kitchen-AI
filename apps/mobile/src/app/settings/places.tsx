@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { StorageLocation, StorageLocationType } from '@kitchen/contracts';
 import { storageLocationTypeSchema } from '@kitchen/contracts';
@@ -7,6 +7,7 @@ import {
   AppText,
   Button,
   Chip,
+  DirectionalIcon,
   ErrorState,
   Field,
   Header,
@@ -25,6 +26,7 @@ import {
   useLocations,
   useUpdateLocation,
 } from '../../hooks/inventory';
+import { usePressFeedback } from '../../components/press-feedback';
 import { locationLabel } from '../../lib/format';
 import { placeIllustration } from '../../lib/kitchen';
 import { countByLocation, planLocationRemoval } from '../../lib/places';
@@ -37,6 +39,62 @@ type Editing = { location: StorageLocation } | { location: null };
 
 function PlaceArt({ type, size = 44 }: { type: StorageLocationType; size?: number }) {
   return <Illustration name={placeIllustration(type)} size={size} />;
+}
+
+function MoveDestinationSubtitle({ label }: { label: string }) {
+  const { colors } = useTheme();
+  return (
+    <AppText variant="caption" style={{ color: colors.danger }}>
+      {label}
+    </AppText>
+  );
+}
+
+function MoveDestinationRow({
+  destination,
+  title,
+  subtitle,
+  accessibilityLabel,
+  onPress,
+}: {
+  destination: StorageLocation;
+  title: string;
+  subtitle: string;
+  accessibilityLabel: string;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  const pressFeedback = usePressFeedback();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      {...pressFeedback.pressHandlers}
+    >
+      <Animated.View
+        style={[
+          {
+            minHeight: 56,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 14,
+            paddingVertical: spacing.md,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: colors.rowline,
+          },
+          pressFeedback.animatedStyle,
+        ]}
+      >
+        <PlaceArt type={destination.type} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <AppText variant="body">{title}</AppText>
+          <MoveDestinationSubtitle label={subtitle} />
+        </View>
+        <DirectionalIcon name="chevron" size={18} color={colors.control} />
+      </Animated.View>
+    </Pressable>
+  );
 }
 
 export default function Places() {
@@ -207,12 +265,12 @@ export default function Places() {
         ) : (
           <View>
             {destinations.map((destination) => (
-              <ListRow
+              <MoveDestinationRow
                 key={destination.id}
-                leading={<PlaceArt type={destination.type} />}
                 title={locationLabel(t, destination)}
+                destination={destination}
                 subtitle={t('mobile.places.moveHere')}
-                showChevron
+                accessibilityLabel={`${locationLabel(t, destination)}, ${t('mobile.places.moveHere')}`}
                 onPress={() =>
                   removing &&
                   remove.mutate(
