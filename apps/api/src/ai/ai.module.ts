@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { Redis } from 'ioredis';
-import { ENV, type Env } from '../config/env.js';
+import { ENV, type Env, youtubeMock } from '../config/env.js';
 import { StorageModule } from '../storage/storage.module.js';
 import { CreditsModule } from '../credits/credits.module.js';
 import { ProfilesModule } from '../profiles/profiles.module.js';
@@ -105,7 +105,8 @@ export function createAiProvider(env: Env): AiProvider {
  * barcode lookup, receipt parsing, the three-stage meal planner, recipe/video
  * endpoints, shopping, jobs and usage. Providers are selected by `env.AI_MOCK`:
  * when true, all external calls (OpenAI, YouTube, Open Food Facts) resolve to
- * recorded fixtures so the whole system runs offline and free.
+ * recorded fixtures so the whole system runs offline and free. `YOUTUBE_MOCK`
+ * can override that for YouTube alone (see `youtubeMock`).
  *
  * INTEGRATION POINT (coordinator): import this module in `app.module.ts`. It
  * assumes an auth guard has populated `request.user.id` and that the
@@ -149,7 +150,7 @@ export function createAiProvider(env: Env): AiProvider {
       provide: YOUTUBE_CLIENT,
       inject: [ENV],
       useFactory: (env: Env) =>
-        env.AI_MOCK ? new MockYoutubeClient() : new HttpYoutubeClient(env.YOUTUBE_API_KEY),
+        youtubeMock(env) ? new MockYoutubeClient() : new HttpYoutubeClient(env.YOUTUBE_API_KEY),
     },
     {
       provide: REALTIME_SESSION_PROVIDER,

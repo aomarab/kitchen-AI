@@ -104,7 +104,8 @@ Non-obvious system rules:
   Stage C is the correctness core — it gets the heaviest test coverage.
 - **AI providers swap on `env.AI_MOCK`** in `src/ai/ai.module.ts` (OpenAI, YouTube, Open Food Facts,
   embeddings each have a Mock* and an Http*/OpenAi* implementation behind a DI token in
-  `ai.constants.ts`). New external calls follow the same port/adapter shape.
+  `ai.constants.ts`). New external calls follow the same port/adapter shape. YouTube alone can be
+  overridden with `YOUTUBE_MOCK` (resolve it through `youtubeMock(env)`, never `env.AI_MOCK`).
 - **Tiers pick a model; pricing follows the model, not the tier.** `OPERATION_TIER` maps an
   `AiOperation` to `cheap` / `vision` / `planning`, but cost is resolved per served model
   (`resolveModelRate` in `ai.constants.ts`) because the `vision` tier can route to a second vendor:

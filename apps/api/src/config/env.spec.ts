@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { corsOrigins, loadEnv } from './env.js';
+import { corsOrigins, loadEnv, youtubeMock } from './env.js';
 
 const base = {
   DATABASE_URL: 'postgres://u:p@localhost:5432/kitchen',
@@ -65,6 +65,23 @@ describe('environment contract', () => {
 
   it('allows a keyless environment while AI is mocked', () => {
     expect(loadEnv({ ...prodBase }).AI_MOCK).toBe(true);
+  });
+
+  it('keeps YouTube on AI_MOCK when YOUTUBE_MOCK is unset or empty', () => {
+    expect(youtubeMock(loadEnv({ ...base }))).toBe(true);
+    expect(youtubeMock(loadEnv({ ...base, YOUTUBE_MOCK: '' }))).toBe(true);
+    expect(youtubeMock(loadEnv({ ...base, AI_MOCK: 'false' }))).toBe(false);
+  });
+
+  it('lets YOUTUBE_MOCK override AI_MOCK in either direction', () => {
+    expect(
+      youtubeMock(loadEnv({ ...base, YOUTUBE_MOCK: 'false', YOUTUBE_API_KEY: 'yt-key' })),
+    ).toBe(false);
+    expect(youtubeMock(loadEnv({ ...base, AI_MOCK: 'false', YOUTUBE_MOCK: 'true' }))).toBe(true);
+  });
+
+  it('refuses live YouTube without a key, even in development', () => {
+    expect(() => loadEnv({ ...base, YOUTUBE_MOCK: 'false' })).toThrow(/YOUTUBE_API_KEY/);
   });
 
   it('defaults to the mock payment verifier, so the API boots with no RevenueCat account', () => {

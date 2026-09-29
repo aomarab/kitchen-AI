@@ -57,6 +57,8 @@ pnpm install
 cp .env.example .env
 #   AI_MOCK=true is the default, so no OpenAI key is needed to run locally.
 #   Set OPENAI_API_KEY and YOUTUBE_API_KEY when you want live AI + videos.
+#   YOUTUBE_MOCK=false + YOUTUBE_API_KEY gives real recipe videos and photos
+#   while AI stays mocked (YouTube quota only, no OpenAI spend).
 
 # 3. Start infrastructure (PostgreSQL 17 + pgvector, Redis, MinIO)
 pnpm infra:up

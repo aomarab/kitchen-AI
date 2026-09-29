@@ -109,6 +109,16 @@ const envSchema = z.object({
   AI_DAILY_BUDGET_USD: z.coerce.number().nonnegative().default(2),
 
   YOUTUBE_API_KEY: z.string().default(''),
+  /**
+   * Overrides AI_MOCK for YouTube alone; unset or empty follows AI_MOCK. With
+   * `YOUTUBE_MOCK=false` and `AI_MOCK=true`, recipes get real dish videos and
+   * hero thumbnails while every paid model call stays mocked — YouTube costs
+   * quota, not money. Resolve it through {@link youtubeMock}.
+   */
+  YOUTUBE_MOCK: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((value) => (value === 'true' ? true : value === 'false' ? false : undefined)),
   OPEN_FOOD_FACTS_URL: z.string().url().default('https://world.openfoodfacts.org'),
 
   /**
@@ -160,6 +170,15 @@ const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
         message: 'must be at least 32 characters in production',
       });
     }
+  }
+  // An explicit opt-in to live YouTube with no key would 403 every search and
+  // quietly degrade every recipe to the placeholder, so refuse it in any mode.
+  if (env.YOUTUBE_MOCK === false && env.YOUTUBE_API_KEY.trim() === '') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['YOUTUBE_API_KEY'],
+      message: 'is required when YOUTUBE_MOCK is false',
+    });
   }
   if (env.NODE_ENV === 'production' && !env.AI_MOCK && env.OPENAI_API_KEY.trim() === '') {
     ctx.addIssue({
@@ -245,6 +264,11 @@ export function corsOrigins(env: Env): string[] | true {
     .map((o) => o.trim())
     .filter(Boolean);
   return list.length > 0 ? list : true;
+}
+
+/** Whether YouTube runs on fixtures: `YOUTUBE_MOCK` when set, otherwise AI_MOCK. */
+export function youtubeMock(env: Env): boolean {
+  return env.YOUTUBE_MOCK ?? env.AI_MOCK;
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
