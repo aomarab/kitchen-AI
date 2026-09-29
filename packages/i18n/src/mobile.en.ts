@@ -98,6 +98,12 @@ export const mobileEn = {
         one: '{cooked} of 1 meal cooked',
         other: '{cooked} of {planned} meals cooked',
       }),
+      askMamaChat: 'Chat',
+      askMamaVoice: 'Voice',
+      askMamaLive: 'Live',
+      askMamaChatLabel: 'Chat with Mama',
+      askMamaVoiceLabel: 'Talk to Mama',
+      askMamaLiveLabel: 'Live chat with Mama using your camera',
     },
     permissions: {
       cameraTitle: 'Camera access needed',

@@ -13,10 +13,10 @@ describe('assistant screen guards', () => {
     expect(source).toContain('source="assistant"');
   });
 
-  it('opens the standalone assistant route in text mode', () => {
+  it('opens the standalone assistant route in the requested mode, text by default', () => {
     const source = read('app', 'assistant.tsx');
 
-    expect(source).toContain('initialMode="text"');
+    expect(source).toContain('initialMode={assistantModeFromParam(params.mode)}');
   });
 
   it('renders the demo banner from an isMock value outside mode branches', () => {

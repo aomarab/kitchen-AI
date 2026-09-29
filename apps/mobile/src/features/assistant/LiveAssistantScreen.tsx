@@ -15,6 +15,7 @@ import { formatMeasure, localizedName } from '../../lib/format';
 import { api } from '../../lib/api';
 import { OpenAiRealtimeAssistantClient } from '../../lib/assistant/openai-realtime';
 import { detectionsToSession } from '../../lib/assistant/detections';
+import { ASSISTANT_MODES, type AssistantMode } from '../../lib/assistant/mode';
 import { appendTranscriptTurn, groupTurns, showStarters } from '../../lib/assistant/transcript';
 import {
   assistantDetectionAccessibilityLabel,
@@ -74,9 +75,9 @@ import { Waveform } from './Waveform';
  * screen opens a locked **Voice** session). `createClient` is an injection seam
  * (default: the real adapter), the same port shape used across the app.
  */
-export type AssistantMode = 'text' | 'voice' | 'live';
+export type { AssistantMode };
 
-const MODES: AssistantMode[] = ['text', 'voice', 'live'];
+const MODES = ASSISTANT_MODES;
 export const ASSISTANT_PROMPT_MIN_HEIGHT = 48;
 const DETECTION_CORNER_LENGTH = 18;
 const DETECTION_CORNER_THICKNESS = 3;

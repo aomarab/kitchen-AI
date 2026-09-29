@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { MessageKey, Translator } from '@kitchen/i18n';
 import { CreditBalance, IconButton, Screen, TabHeader } from '../../components';
+import { AssistantModeShortcuts } from '../../features/home/AssistantModeShortcuts';
 import { AssistantSearchButton } from '../../features/home/AssistantSearchButton';
 import { KitchenGlanceSection } from '../../features/home/KitchenGlance';
 import { NoPlanCard } from '../../features/home/NoPlanCard';
@@ -35,6 +36,7 @@ import {
   weekProgress,
 } from '../../lib/home';
 import { totalCredits } from '../../lib/credits';
+import type { AssistantMode } from '../../lib/assistant/mode';
 import { spacing } from '../../theme';
 
 const EMPTY_CREDIT_BALANCE = { freeBalance: 0, paidBalance: 0, freeGrant: 0 };
@@ -120,6 +122,7 @@ export default function Home() {
   const topUp = () => router.push('/buy-credits');
   const generatePlan = () => router.push('/generate-plan');
   const openAssistant = () => router.push('/assistant');
+  const openAssistantMode = (mode: AssistantMode) => router.push(`/assistant?mode=${mode}`);
   const openNotifications = () => router.push('/settings/notifications');
   const openRecipe = (recipeId: string) => router.push(`/recipe/${recipeId}`);
   const cookRecipe = (recipeId: string) => router.push(`/recipe/${recipeId}/cook`);
@@ -209,7 +212,10 @@ export default function Home() {
           gap: spacing.xl,
         }}
       >
-        <AssistantSearchButton label={mamaLabel} onPress={openAssistant} />
+        <View style={{ gap: spacing.md }}>
+          <AssistantSearchButton label={mamaLabel} onPress={openAssistant} />
+          <AssistantModeShortcuts onOpen={openAssistantMode} />
+        </View>
 
         {tonight && tonightMinutesLabel && tonightServingsLabel ? (
           <TonightRecipeCard

@@ -487,7 +487,10 @@ only where the frame introduces copy with no key.
 - Welcome/auth: password reveal controls and six-box invite entry were omitted; the existing auth
   fields and single invite-code field remain.
 - Home: the offline banner remains the existing global banner rather than a duplicate Home-local
-  banner; the assistant search row opens `/assistant` and does not add separate mic behavior.
+  banner; the assistant search row opens `/assistant` and does not add separate mic behavior. By
+  user ruling, labelled **Chat / Voice / Live** shortcut buttons (`AssistantModeShortcuts`,
+  `secondary` size S) sit directly under that row and open `/assistant?mode=text|voice|live`: the
+  search-style row alone did not read as the way into the chat, and Live mode had no entry at all.
 - Kitchen/item/places: item quantity stays on the page as an append-only adjustment; item history
   does not invent unavailable source prose; unit/location editing keeps existing chip selection.
 - Plans: “Suggest another” and “Change meal” are one regenerate action; shortfall “Add to list”

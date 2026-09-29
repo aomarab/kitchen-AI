@@ -923,6 +923,10 @@ caption with an info icon: "Nothing is saved until you add it" (new `mobile.revi
 
 Text and Voice modes **follow the theme**. Live mode stays a media surface.
 
+**Entry.** The route takes `?mode=text|voice|live` and opens in that mode; a missing or unknown value
+opens Text, which needs no microphone or camera permission (`lib/assistant/mode.ts`). Home links to
+all three (Coral spec §9.1 notes).
+
 **Header:**
 
 - back

@@ -626,7 +626,7 @@ describe('information architecture (spec §4)', () => {
     const modeSheet = read('features', 'assistant', 'ModeSheet.tsx');
     const bubble = read('features', 'assistant', 'Bubble.tsx');
 
-    expect(route).toContain('initialMode="text"');
+    expect(route).toContain('initialMode={assistantModeFromParam(params.mode)}');
     expect(header).toContain('<Avatar');
     expect(header).toContain('assistantHeaderAccessibilityLabel');
     expect(header).not.toContain('OrbMascot');
@@ -800,6 +800,7 @@ describe('information architecture (spec §4)', () => {
   it('keeps Home on the Coral dashboard contract', () => {
     const home = read('app', '(tabs)', 'home.tsx');
     const assistantSearch = read('features', 'home', 'AssistantSearchButton.tsx');
+    const assistantShortcuts = read('features', 'home', 'AssistantModeShortcuts.tsx');
     const tonightCard = read('features', 'home', 'TonightRecipeCard.tsx');
     const noPlanCard = read('features', 'home', 'NoPlanCard.tsx');
     const quickActions = read('features', 'home', 'QuickActions.tsx');
@@ -810,6 +811,7 @@ describe('information architecture (spec §4)', () => {
     const homeOwned = [
       home,
       assistantSearch,
+      assistantShortcuts,
       tonightCard,
       noPlanCard,
       quickActions,
@@ -826,6 +828,13 @@ describe('information architecture (spec §4)', () => {
     expect(home).toContain('<AssistantSearchButton');
     expect(assistantSearch).toContain('usePressFeedback()');
     expect(home).toContain("router.push('/assistant')");
+    expect(home, 'Home must keep labelled chat/voice/live assistant shortcuts').toContain(
+      '<AssistantModeShortcuts',
+    );
+    expect(home).toContain('router.push(`/assistant?mode=${mode}`)');
+    for (const mode of ["mode: 'text'", "mode: 'voice'", "mode: 'live'"]) {
+      expect(assistantShortcuts).toContain(mode);
+    }
     expect(assistantSearch).not.toContain('<SearchField');
     expect(homeOwned).not.toContain('<OrbMascot');
     expect(homeOwned).not.toContain('<RoundButton');

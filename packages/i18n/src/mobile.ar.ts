@@ -116,6 +116,12 @@ export const mobileAr: MobileMessages = {
         many: 'طُهيت {cooked} من {planned} وجبة',
         other: 'طُهيت {cooked} من {planned} وجبة',
       }),
+      askMamaChat: 'دردشة',
+      askMamaVoice: 'صوت',
+      askMamaLive: 'مباشر',
+      askMamaChatLabel: 'دردش مع ماما',
+      askMamaVoiceLabel: 'تحدّث مع ماما',
+      askMamaLiveLabel: 'دردشة مباشرة مع ماما عبر الكاميرا',
     },
     permissions: {
       cameraTitle: 'نحتاج إذن الكاميرا',
