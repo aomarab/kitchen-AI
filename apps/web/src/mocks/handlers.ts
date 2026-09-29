@@ -63,6 +63,15 @@ function mockIngredientId(name: string): string {
 }
 
 const u = (path: string) => `${API_URL}${path}`;
+const INVITE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function randomInviteCode(): string {
+  let code = '';
+  for (let i = 0; i < 10; i += 1) {
+    code += INVITE_CODE_ALPHABET[Math.floor(Math.random() * INVITE_CODE_ALPHABET.length)];
+  }
+  return code;
+}
 
 /** Matches the API's `encodeCursor`/`decodeCursor`: base64url, unpadded. */
 const encodeMockCursor = (offset: number) =>
@@ -241,7 +250,7 @@ export const handlers = [
     return HttpResponse.json(db.household);
   }),
   http.post(u('/households/:id/invite-code'), async () => {
-    db.household = { ...db.household, inviteCode: uuid().slice(0, 6).toUpperCase() };
+    db.household = { ...db.household, inviteCode: randomInviteCode() };
     return HttpResponse.json(db.household);
   }),
   http.delete(u('/households/:id/members/me'), async () => HttpResponse.json({ ok: true })),

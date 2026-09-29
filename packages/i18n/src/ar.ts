@@ -80,6 +80,7 @@ export const ar: Messages = {
     timerNotPaused: 'هذا المؤقّت غير متوقّف مؤقتًا.',
     timerTooLong: 'لا يمكن أن يتجاوز المؤقّت اثنتي عشرة ساعة.',
     reminderNotFound: 'هذا التذكير لم يعد موجودًا.',
+    tooManyAttempts: 'محاولات كثيرة جدًا. يرجى الانتظار قبل المحاولة مرة أخرى.',
   },
 
   // Copy taken from the approved prototype `03-wellness-settings.html`, which

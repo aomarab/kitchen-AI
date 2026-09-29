@@ -60,7 +60,7 @@ export const webEn = {
       joinTab: 'Join with a code',
       createCta: 'Create household',
       joinCta: 'Join household',
-      inviteCodePlaceholder: '6-character code',
+      inviteCodePlaceholder: '6- to 10-character code',
       emailPlaceholder: 'you@example.com',
       demoNote: 'Demo build — any details are accepted and served from local mock data.',
     },

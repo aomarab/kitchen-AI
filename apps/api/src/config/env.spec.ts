@@ -29,6 +29,12 @@ describe('environment contract', () => {
     expect(loadEnv({ ...base }).API_PORT).toBe(3333);
   });
 
+  it('trusts no proxy unless a hop count is configured', () => {
+    expect(loadEnv({ ...base }).TRUST_PROXY_HOPS).toBe(0);
+    expect(loadEnv({ ...base, TRUST_PROXY_HOPS: '1' }).TRUST_PROXY_HOPS).toBe(1);
+    expect(() => loadEnv({ ...base, TRUST_PROXY_HOPS: 'true' })).toThrow(/TRUST_PROXY_HOPS/);
+  });
+
   it('reflects the caller in development when no origins are listed', () => {
     expect(corsOrigins(loadEnv({ ...base }))).toBe(true);
   });

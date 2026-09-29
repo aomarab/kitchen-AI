@@ -56,7 +56,7 @@ export const webAr: WebMessages = {
       joinTab: 'الانضمام برمز',
       createCta: 'إنشاء الأسرة',
       joinCta: 'الانضمام إلى الأسرة',
-      inviteCodePlaceholder: 'رمز من 6 أحرف',
+      inviteCodePlaceholder: 'رمز من 6 إلى 10 أحرف',
       emailPlaceholder: 'you@example.com',
       demoNote: 'نسخة تجريبية — تُقبل أي بيانات وتُعرض من بيانات وهمية محلية.',
     },

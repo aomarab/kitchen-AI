@@ -57,7 +57,7 @@ export default function Onboarding() {
   const goHome = () => router.replace('/home');
   const submit = () => {
     if (mode === 'create') create.mutate({ name }, { onSuccess: goHome });
-    else join.mutate({ inviteCode: code.toUpperCase() }, { onSuccess: goHome });
+    else join.mutate({ inviteCode: code.trim().toUpperCase() }, { onSuccess: goHome });
   };
 
   const error = mode === 'create' ? create.error : join.error;
@@ -101,7 +101,7 @@ export default function Onboarding() {
             onChangeText={setCode}
             autoCapitalize="characters"
             autoCorrect={false}
-            maxLength={6}
+            maxLength={10}
           />
         )}
         {error ? (

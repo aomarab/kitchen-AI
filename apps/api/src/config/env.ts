@@ -14,6 +14,14 @@ const envSchema = z.object({
    * cookies. Empty in development means "reflect the caller".
    */
   CORS_ORIGINS: z.string().default(''),
+  /**
+   * Reverse proxies in front of the API (Express `trust proxy` hop count).
+   * Per-IP limits read `request.ip`; behind Caddy with 0 every client shares
+   * the proxy's address, so one abuser would lock everyone out. Set 1 only when
+   * the API port is reachable solely through that proxy — otherwise a direct
+   * caller can forge `X-Forwarded-For`.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
 
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),

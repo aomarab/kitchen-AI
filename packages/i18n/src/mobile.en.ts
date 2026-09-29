@@ -616,7 +616,7 @@ export const mobileEn = {
       orDivider: 'or',
       oauthUnavailable: "That sign-in method isn't available on this device.",
       onboardTitle: 'Set up your household',
-      onboardSubtitle: 'Create a new household or join one with a 6-character invite code.',
+      onboardSubtitle: 'Create a new household or join one with a 6- to 10-character invite code.',
       createTab: 'Create',
       joinTab: 'Join',
       signInTitle: 'Welcome',

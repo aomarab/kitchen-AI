@@ -21,7 +21,7 @@ export type HouseholdMember = z.infer<typeof householdMemberSchema>;
 export const householdSchema = z.object({
   id: uuidSchema,
   name: z.string().min(1).max(80),
-  inviteCode: z.string().length(6),
+  inviteCode: z.string().min(6).max(10),
   createdBy: uuidSchema,
   createdAt: isoDateTimeSchema,
   members: z.array(householdMemberSchema),
@@ -34,7 +34,7 @@ export const createHouseholdRequestSchema = z.object({
 export type CreateHouseholdRequest = z.infer<typeof createHouseholdRequestSchema>;
 
 export const joinHouseholdRequestSchema = z.object({
-  inviteCode: z.string().length(6),
+  inviteCode: z.string().min(6).max(10),
 });
 export type JoinHouseholdRequest = z.infer<typeof joinHouseholdRequestSchema>;
 

@@ -771,7 +771,7 @@ export const mobileAr: MobileMessages = {
       orDivider: 'أو',
       oauthUnavailable: 'طريقة تسجيل الدخول هذه غير متاحة على هذا الجهاز.',
       onboardTitle: 'إعداد أسرتك',
-      onboardSubtitle: 'أنشئ أسرة جديدة أو انضم إلى واحدة برمز دعوة من 6 أحرف.',
+      onboardSubtitle: 'أنشئ أسرة جديدة أو انضم إلى واحدة برمز دعوة من 6 إلى 10 أحرف.',
       createTab: 'إنشاء',
       joinTab: 'انضمام',
       signInTitle: 'مرحبًا',

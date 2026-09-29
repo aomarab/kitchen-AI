@@ -102,8 +102,11 @@ Web (Next.js) ─┘                            ├─→ Redis        (BullMQ j
 ### 3.4 Authentication
 
 JWT access token (15 min) + refresh token (30 days, rotating, stored hashed). Email/password plus
-Apple Sign-In and Google Sign-In. Households are created by a user or joined via a 6-character
-invite code. Roles: `owner`, `member`.
+Apple Sign-In and Google Sign-In. Households are created by a user or joined via an invite code:
+legacy households may still have 6-character codes, while newly created or rotated codes are
+10 characters. Failed join attempts are throttled per user and per client IP (behind a reverse
+proxy the client IP needs `TRUST_PROXY_HOPS`, or every caller shares the proxy's). Roles: `owner`,
+`member`.
 
 ---
 

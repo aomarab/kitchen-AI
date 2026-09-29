@@ -12,6 +12,7 @@ async function bootstrap(): Promise<void> {
   const env = loadEnv();
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
 
+  if (env.TRUST_PROXY_HOPS > 0) app.set('trust proxy', env.TRUST_PROXY_HOPS);
   app.useBodyParser('json', { limit: JSON_BODY_LIMIT });
   app.useGlobalFilters(new AppExceptionFilter());
   app.enableCors({

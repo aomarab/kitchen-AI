@@ -21,10 +21,15 @@ export function HouseholdSetup() {
   const [code, setCode] = useState('');
 
   const done = () => router.push('/');
+  const trimmedCode = code.trim();
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label={t('web.auth.householdTitle')}>
+      <div
+        className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
+        role="tablist"
+        aria-label={t('web.auth.householdTitle')}
+      >
         <TabButton active={tab === 'create'} onClick={() => setTab('create')}>
           {t('web.auth.createTab')}
         </TabButton>
@@ -54,7 +59,7 @@ export function HouseholdSetup() {
           className="flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault();
-            join.mutate({ inviteCode: code.toUpperCase() }, { onSuccess: done });
+            join.mutate({ inviteCode: trimmedCode.toUpperCase() }, { onSuccess: done });
           }}
         >
           <Field label={t('household.inviteCode')} htmlFor="hh-code">
@@ -63,19 +68,25 @@ export function HouseholdSetup() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder={t('web.auth.inviteCodePlaceholder')}
-              maxLength={6}
+              maxLength={10}
               className="tracking-[0.3em]"
               required
             />
           </Field>
           {join.isError ? <ErrorState error={join.error} /> : null}
-          <Button type="submit" block disabled={join.isPending || code.trim().length !== 6}>
+          <Button
+            type="submit"
+            block
+            disabled={join.isPending || trimmedCode.length < 6 || trimmedCode.length > 10}
+          >
             {t('web.auth.joinCta')}
           </Button>
         </form>
       )}
 
-      <p className="rounded-lg bg-muted/60 px-4 py-3 text-xs text-muted-foreground">{t('web.auth.demoNote')}</p>
+      <p className="rounded-lg bg-muted/60 px-4 py-3 text-xs text-muted-foreground">
+        {t('web.auth.demoNote')}
+      </p>
     </div>
   );
 }

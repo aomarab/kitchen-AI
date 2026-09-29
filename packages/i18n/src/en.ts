@@ -84,6 +84,7 @@ export const en = {
     timerNotPaused: 'That timer is not paused.',
     timerTooLong: 'A timer cannot run longer than 12 hours.',
     reminderNotFound: 'That reminder is no longer there.',
+    tooManyAttempts: 'Too many attempts. Please wait before trying again.',
   },
 
   /**
