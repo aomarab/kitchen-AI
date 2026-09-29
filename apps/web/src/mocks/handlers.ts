@@ -335,7 +335,7 @@ export const handlers = [
     );
     return HttpResponse.json({ items, nextCursor: null });
   }),
-  http.post(u('/ingredients'), async ({ request }) => {
+  http.post(u('/admin/ingredients'), async ({ request }) => {
     const body = (await request.json()) as CreateIngredientRequest;
     const ingredient = {
       id: uuid(),
