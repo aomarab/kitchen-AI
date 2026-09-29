@@ -94,6 +94,16 @@ export default function Profile() {
     }
     setAllergy('');
   };
+  const saveAndReturn = () => {
+    if (canAddAllergy) {
+      update.mutate(
+        { allergies: [...data.allergies, allergyValue] },
+        { onSuccess: () => router.back() },
+      );
+      return;
+    }
+    router.back();
+  };
 
   const chips = <T extends string>(
     items: readonly T[],
@@ -127,9 +137,8 @@ export default function Profile() {
         <Button
           title={t('common.save')}
           leadingIcon="check"
-          disabled={!canAddAllergy || update.isPending}
           loading={update.isPending && canAddAllergy}
-          onPress={saveAllergy}
+          onPress={saveAndReturn}
         />
       }
     >

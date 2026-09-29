@@ -3,6 +3,7 @@ import type { Session, User } from '@kitchen/contracts';
 import { tokenStore } from '../lib/token-store';
 import { readJson, writeJson, removeJson } from '../lib/storage';
 import { queryClient } from '../lib/queryClient';
+import { membershipAfterLeavingHousehold } from '../lib/household-session';
 
 const PERSIST_KEY = 'session';
 
@@ -20,6 +21,8 @@ interface AuthState extends PersistedSession {
   setActiveHousehold: (householdId: string) => void;
   /** After creating or joining a household: add it and make it active. */
   addHousehold: (householdId: string) => void;
+  /** After leaving a household: remove it locally and activate the next one, if any. */
+  removeHousehold: (householdId: string) => void;
   hydrate: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -77,6 +80,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (current.activeHouseholdId !== householdId) dropCachedHouseholdData();
     persist(next);
     set({ householdIds, activeHouseholdId: householdId });
+  },
+
+  removeHousehold: (householdId) => {
+    const current = snapshot(get());
+    const next: PersistedSession = {
+      ...current,
+      ...membershipAfterLeavingHousehold(current, householdId),
+    };
+    dropCachedHouseholdData();
+    persist(next);
+    set({ householdIds: next.householdIds, activeHouseholdId: next.activeHouseholdId });
   },
 
   hydrate: async () => {

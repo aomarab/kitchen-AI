@@ -248,7 +248,7 @@ describe('recipe and cook Coral rhythm', () => {
       expect(aiUsage).toContain('footer={');
       expect(aiUsage).toContain('<UsageSummary');
       expect(usageSummary).toContain('<Progress');
-      expect(usageSummary).toContain('variant="numeral"');
+      expect(usageSummary).toContain('variant="title"');
       expect(usageSummary).not.toContain('formatUsd');
     });
 
@@ -300,7 +300,7 @@ describe('account and settings Coral rhythm', () => {
     expect(account).toContain('<AccountHero');
     expect(accountHero).toContain('ACCOUNT_HERO_MIN_HEIGHT = 80');
     expect(accountHero).toContain('size={56}');
-    expect(account).toContain('variant="ghost"');
+    expect(account).toContain('variant="secondary"');
     expect(account).toContain('tone="danger"');
     expect(account).not.toContain('grouped');
     expect(account).not.toContain('variant="danger"');

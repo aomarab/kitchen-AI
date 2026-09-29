@@ -500,6 +500,24 @@ export const mobileAr: MobileMessages = {
       kitchenSection: 'المطبخ',
       toolsSection: 'الأدوات',
       appSection: 'التطبيق',
+      noDietRules: 'لا قيود غذائية',
+      peopleCount: plural('count', {
+        zero: 'لا أشخاص',
+        one: 'شخص واحد',
+        two: 'شخصان',
+        few: '{count} أشخاص',
+        many: '{count} شخصًا',
+        other: '{count} شخص',
+      }),
+      membersCount: plural('count', {
+        zero: 'لا أعضاء',
+        one: 'عضو واحد',
+        two: 'عضوان',
+        few: '{count} أعضاء',
+        many: '{count} عضوًا',
+        other: '{count} عضو',
+      }),
+      kitchenScreenSubtitle: 'لجهاز لوحي على الحائط',
     },
     more: {
       title: 'المزيد',
@@ -578,9 +596,23 @@ export const mobileAr: MobileMessages = {
         many: 'تم ضبط {count} تنبيهاً.',
         other: 'تم ضبط {count} تنبيه.',
       }),
+      enabledReminders: plural('count', {
+        zero: 'تم ضبط 0 تذكيرات.',
+        one: 'تم ضبط تذكير واحد.',
+        two: 'تم ضبط تذكيرين.',
+        few: 'تم ضبط {count} تذكيرات.',
+        many: 'تم ضبط {count} تذكيرًا.',
+        other: 'تم ضبط {count} تذكير.',
+      }),
     },
     profile: {
       addAllergy: 'إضافة حساسية',
+    },
+    household: {
+      shareInviteAction: 'مشاركة',
+      leaveConfirmTitle: 'هل تريد مغادرة الأسرة؟',
+      leaveConfirmBody:
+        'ستفقد الوصول إلى هذا المطبخ وأغراضه وخططه. لا يمكنك الانضمام مجددًا إلا برمز دعوة.',
     },
     notifications: {
       expiryTitle: 'استخدمه قبل أن يفسد',

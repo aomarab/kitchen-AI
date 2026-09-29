@@ -51,7 +51,7 @@ export default function CreditsScreen() {
       }}
       footer={
         balance ? (
-          <Button title={t('mobile.credits.buy')} onPress={() => router.push('/buy-credits')} />
+          <Button title={t('mobile.credits.getMore')} onPress={() => router.push('/buy-credits')} />
         ) : undefined
       }
     >

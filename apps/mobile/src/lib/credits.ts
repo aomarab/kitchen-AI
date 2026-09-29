@@ -76,6 +76,10 @@ export function usageCreditsFromUsd(spentUsd: number): number {
   return Math.round((spentUsd / CREDIT_COST_BASIS_USD) * 100) / 100;
 }
 
+export function usageCreditsForDisplay(credits: number): number {
+  return Math.round(credits);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }

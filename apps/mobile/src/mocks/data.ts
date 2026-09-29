@@ -796,9 +796,9 @@ export function buildRecognitionSession(photoKeys: string[]): RecognitionSession
 export const mockAiUsage: AiUsageSummary = {
   householdId: HOUSEHOLD_ID,
   day: isoDate(0),
-  spentUsd: 0.42,
-  budgetUsd: 2,
-  callCount: 7,
+  spentUsd: 0.018,
+  budgetUsd: 0.675,
+  callCount: 3,
 };
 
 /* ------------------------------------------------------------------ */

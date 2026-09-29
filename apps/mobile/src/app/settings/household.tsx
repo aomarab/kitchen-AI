@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Share, View } from 'react-native';
+import { Alert, Share, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Screen,
@@ -17,8 +17,15 @@ import {
   SectionLabel,
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
-import { useHouseholds, useUpdateHousehold, useRotateInviteCode } from '../../hooks/profile';
+import {
+  useHouseholds,
+  useLeaveHousehold,
+  useUpdateHousehold,
+  useRotateInviteCode,
+} from '../../hooks/profile';
+import { leaveHouseholdErrorKey, routeAfterHouseholdLeave } from '../../lib/household-session';
 import { useAuthStore } from '../../stores/auth';
+import { useToastStore } from '../../stores/toast';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
@@ -32,6 +39,8 @@ export default function Household() {
 
   const update = useUpdateHousehold(household?.id ?? '');
   const rotate = useRotateInviteCode(household?.id ?? '');
+  const leave = useLeaveHousehold(household?.id ?? '');
+  const showToast = useToastStore((state) => state.show);
   const [name, setName] = useState<string | null>(null);
 
   if (households.isLoading) {
@@ -61,18 +70,53 @@ export default function Household() {
 
   const draftName = name ?? household.name;
   const canSave = draftName.trim() !== household.name && draftName.trim().length > 0;
+  const save = () => {
+    const trimmed = draftName.trim();
+    if (!canSave || trimmed.length === 0) {
+      router.back();
+      return;
+    }
+    update.mutate({ name: trimmed }, { onSuccess: () => router.back() });
+  };
+  const leaveAndRoute = () => {
+    leave.mutate(undefined, {
+      onSuccess: () => {
+        const nextHouseholdId = useAuthStore.getState().activeHouseholdId;
+        router.replace(routeAfterHouseholdLeave(nextHouseholdId));
+      },
+      onError: (error) => {
+        showToast({ message: t(leaveHouseholdErrorKey(error)), tone: 'error' });
+      },
+    });
+  };
+  const confirmLeave = () => {
+    Alert.alert(t('mobile.household.leaveConfirmTitle'), t('mobile.household.leaveConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('household.leave'), style: 'destructive', onPress: leaveAndRoute },
+    ]);
+  };
 
   return (
     <Screen
       scroll
       footer={
-        <Button
-          title={t('common.save')}
-          leadingIcon="check"
-          disabled={!canSave || update.isPending}
-          loading={update.isPending}
-          onPress={() => update.mutate({ name: draftName.trim() })}
-        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <Button
+            title={t('household.leave')}
+            variant="ghost"
+            tone="danger"
+            fullWidth={false}
+            loading={leave.isPending}
+            onPress={confirmLeave}
+          />
+          <Button
+            title={t('common.save')}
+            leadingIcon="check"
+            style={{ flex: 1 }}
+            loading={update.isPending}
+            onPress={save}
+          />
+        </View>
       }
     >
       <Header title={t('household.title')} onBack={() => router.back()} />
@@ -80,7 +124,7 @@ export default function Household() {
       <Field label={t('household.name')} value={draftName} onChangeText={setName} />
 
       <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('household.members')}</SectionLabel>
+        <SectionLabel small>{t('household.members')}</SectionLabel>
         <ListGroup>
           {household.members.map((member) => (
             <ListRow
@@ -115,9 +159,9 @@ export default function Household() {
         <AppText variant="caption" muted>
           {t('household.shareInvite')}
         </AppText>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <Button
-            title={t('household.shareInvite')}
+            title={t('mobile.household.shareInviteAction')}
             variant="inverse"
             size="S"
             leadingIcon="share"

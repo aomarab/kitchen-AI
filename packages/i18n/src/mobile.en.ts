@@ -396,6 +396,16 @@ export const mobileEn = {
       kitchenSection: 'Kitchen',
       toolsSection: 'Tools',
       appSection: 'App',
+      noDietRules: 'No diet rules',
+      peopleCount: plural('count', {
+        one: '1 person',
+        other: '{count} people',
+      }),
+      membersCount: plural('count', {
+        one: '1 member',
+        other: '{count} members',
+      }),
+      kitchenScreenSubtitle: 'For a tablet on the wall',
     },
     more: {
       title: 'More',
@@ -468,9 +478,20 @@ export const mobileEn = {
         one: '1 reminder is set.',
         other: '{count} reminders are set.',
       }),
+      enabledReminders: plural('count', {
+        zero: '0 reminders are set.',
+        one: '1 reminder is set.',
+        other: '{count} reminders are set.',
+      }),
     },
     profile: {
       addAllergy: 'Add an allergy',
+    },
+    household: {
+      shareInviteAction: 'Share',
+      leaveConfirmTitle: 'Leave household?',
+      leaveConfirmBody:
+        'You will lose access to this kitchen, its items and plans. You can rejoin only with an invite code.',
     },
     notifications: {
       expiryTitle: 'Use it before it goes',

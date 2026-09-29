@@ -8,6 +8,7 @@ import {
   displayPrice,
   insufficientCreditsDetails,
   totalCredits,
+  usageCreditsForDisplay,
   usageCreditsFromUsd,
 } from './credits';
 
@@ -109,6 +110,15 @@ describe('usageCreditsFromUsd', () => {
     expect(usageCreditsFromUsd(0)).toBe(0);
     expect(usageCreditsFromUsd(0.0045)).toBe(1);
     expect(usageCreditsFromUsd(0.42)).toBe(93.33);
+  });
+});
+
+describe('usageCreditsForDisplay', () => {
+  it('rounds converted credits to whole numbers for the Coral usage frame', () => {
+    expect(usageCreditsForDisplay(0)).toBe(0);
+    expect(usageCreditsForDisplay(3.51)).toBe(4);
+    expect(usageCreditsForDisplay(149.49)).toBe(149);
+    expect(usageCreditsForDisplay(444.44)).toBe(444);
   });
 });
 

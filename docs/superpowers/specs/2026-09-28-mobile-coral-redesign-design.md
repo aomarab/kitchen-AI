@@ -526,9 +526,12 @@ only where the frame introduces copy with no key.
   frame header, one "Keep this meal" footer action, no servings stepper, and the existing Change meal
   regenerate row; the separate "Suggest another" frame row remains covered by the one-regenerate
   note above.
-- Account/settings: Twemoji attribution is no longer visible; Household “Leave household” and
-  feedback category chips were omitted because the existing mobile flows/contracts do not expose
-  them.
+- Account/settings: Twemoji attribution is no longer visible. By user ruling (2026-09-29), the
+  Account frame governs the sign-out treatment, so Sign out is an outlined danger button rather
+  than the earlier table's ghost danger wording. By user ruling (2026-09-29), Household exposes the
+  existing `leaveHousehold` route behind a destructive confirmation, clears or switches the active
+  household on success, and routes household-less users to the existing create/join onboarding.
+  Feedback category chips remain omitted because the existing mobile flow does not expose them.
 - Credits: out-of-credits appears as a sheet over Generate plan by user ruling; the shared
   `OutOfCreditsPanel` is also reused inline by `ErrorState`.
 - Assistant: add-spotted keeps the richer existing `ReviewList`; captions remain in Voice/Live

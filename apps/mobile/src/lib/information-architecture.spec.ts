@@ -710,7 +710,7 @@ describe('information architecture (spec §4)', () => {
     expect(aiUsage).toContain('useAiUsage');
     expect(aiUsage).toContain('<UsageSummary');
     expect(aiUsage).toContain('footer={');
-    expect(aiUsage).toContain("title={t('mobile.credits.buy')}");
+    expect(aiUsage).toContain("title={t('mobile.credits.getMore')}");
     expect(aiUsage).toContain('<ListGroup');
     expect(aiUsage.match(/<ListRow/g) ?? []).toHaveLength(2);
     expect(aiUsage).toContain("title={t('mobile.credits.free')}");
@@ -720,7 +720,7 @@ describe('information architecture (spec §4)', () => {
     expect(usageSummary).toContain('usageCreditsFromUsd');
     expect(usageSummary).toContain('<Progress');
     expect(usageSummary).toContain("t('mobile.aiUsage.spentOfBudget'");
-    expect(usageSummary).toContain('variant="numeral"');
+    expect(usageSummary).toContain('variant="title"');
     expect(usageSummary).toContain("t('mobile.aiUsage.callsCount'");
     expect(balanceTile).toContain('accessible');
     expect(balanceTile).toContain('creditBalanceAccessibilityLabel');

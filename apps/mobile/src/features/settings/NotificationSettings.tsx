@@ -3,7 +3,7 @@ import { AppState, Linking, View } from 'react-native';
 import { useLocale } from '../../lib/locale';
 import { useSettingsStore } from '../../stores/settings';
 import { useNotificationStatus } from '../../stores/notification-status';
-import { AppText, Button, Icon, ListGroup, ListRow, ToggleRow } from '../../components';
+import { AppText, Button, Icon, ListGroup, ListRow, Sheet, ToggleRow } from '../../components';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 import {
@@ -102,7 +102,7 @@ export function NotificationSettings() {
   const setReminderHour = useSettingsStore((state) => state.setReminderHour);
 
   const [permission, setPermissionState] = useState<PermissionState>('undetermined');
-  const scheduledCount = useNotificationStatus((state) => state.scheduledCount);
+  const [choiceSheet, setChoiceSheet] = useState<'lead' | 'hour' | null>(null);
 
   const setPermission = useCallback((value: PermissionState) => {
     setPermissionState(value);
@@ -130,6 +130,14 @@ export function NotificationSettings() {
 
   const anyEnabled =
     notifyExpiry || notifyMeals || notifyExpired || notifyShopping || notifyPlanning;
+  const enabledReminderCount = [
+    notifyExpiry,
+    notifyMeals,
+    notifyExpired,
+    notifyShopping,
+    notifyPlanning,
+    notifyTimers,
+  ].filter(Boolean).length;
 
   const hourLabel = (hour: number) =>
     new Date(2026, 0, 1, hour, 0).toLocaleTimeString(locale, {
@@ -152,9 +160,10 @@ export function NotificationSettings() {
         />
         {notifyExpiry ? (
           <ListRow
-            icon="clock"
             title={t('mobile.settings.leadTime')}
             value={t('mobile.settings.leadDays', { count: leadDays })}
+            showChevron
+            onPress={() => setChoiceSheet('lead')}
           />
         ) : null}
 
@@ -166,9 +175,10 @@ export function NotificationSettings() {
         />
         {anyEnabled ? (
           <ListRow
-            icon="clock"
             title={t('mobile.settings.reminderTime')}
             value={hourLabel(reminderHour)}
+            showChevron
+            onPress={() => setChoiceSheet('hour')}
           />
         ) : null}
 
@@ -197,35 +207,6 @@ export function NotificationSettings() {
           onValueChange={(value) => void enable(value, setNotifyTimers)}
         />
       </ListGroup>
-
-      {notifyExpiry ? (
-        <ChoiceRows
-          options={LEAD_CHOICES}
-          value={leadDays}
-          labelFor={(days) => t('mobile.settings.leadDays', { count: days })}
-          selectedLabel={t('mobile.notifications.timeSelected')}
-          onChange={setLeadDays}
-        />
-      ) : null}
-
-      {anyEnabled ? (
-        <ChoiceRows
-          options={HOUR_CHOICES}
-          value={reminderHour}
-          labelFor={hourLabel}
-          accessibilityLabelFor={(hour) =>
-            `${t('mobile.settings.reminderTime')}: ${hourLabel(hour)}`
-          }
-          selectedLabel={t('mobile.notifications.timeSelected')}
-          onChange={setReminderHour}
-        />
-      ) : null}
-
-      {permission === 'granted' && scheduledCount !== null && anyEnabled ? (
-        <AppText variant="caption" muted>
-          {t('mobile.settings.scheduled', { count: scheduledCount })}
-        </AppText>
-      ) : null}
 
       {permission === 'denied' && anyEnabled ? (
         <StatusMessage
@@ -257,6 +238,47 @@ export function NotificationSettings() {
       {permission === 'unavailable' && anyEnabled ? (
         <StatusMessage tone="danger" message={t('mobile.settings.permissionUnavailable')} />
       ) : null}
+
+      <AppText variant="caption" muted>
+        {t('mobile.settings.enabledReminders', { count: enabledReminderCount })}
+      </AppText>
+
+      <Sheet
+        visible={choiceSheet === 'lead'}
+        onClose={() => setChoiceSheet(null)}
+        title={t('mobile.settings.leadTime')}
+      >
+        <ChoiceRows
+          options={LEAD_CHOICES}
+          value={leadDays}
+          labelFor={(days) => t('mobile.settings.leadDays', { count: days })}
+          selectedLabel={t('mobile.notifications.timeSelected')}
+          onChange={(value) => {
+            setLeadDays(value);
+            setChoiceSheet(null);
+          }}
+        />
+      </Sheet>
+
+      <Sheet
+        visible={choiceSheet === 'hour'}
+        onClose={() => setChoiceSheet(null)}
+        title={t('mobile.settings.reminderTime')}
+      >
+        <ChoiceRows
+          options={HOUR_CHOICES}
+          value={reminderHour}
+          labelFor={hourLabel}
+          accessibilityLabelFor={(hour) =>
+            `${t('mobile.settings.reminderTime')}: ${hourLabel(hour)}`
+          }
+          selectedLabel={t('mobile.notifications.timeSelected')}
+          onChange={(value) => {
+            setReminderHour(value);
+            setChoiceSheet(null);
+          }}
+        />
+      </Sheet>
     </View>
   );
 }
