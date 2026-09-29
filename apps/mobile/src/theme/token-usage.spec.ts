@@ -31,15 +31,19 @@ function lineNumberFor(content: string, index: number): number {
   return content.slice(0, index).split('\n').length;
 }
 
+const RADIUS_STYLE_KEY_PATTERN =
+  /(?:borderRadius|border(?:Top|Bottom)(?:Start|End|Left|Right)Radius|border(?:Start|End)(?:Start|End)Radius)\s*:\s*([^,\n}\]]+)/g;
+
 function borderRadiusViolations(content: string, file: string): string[] {
   const out: string[] = [];
-  for (const match of content.matchAll(/borderRadius\s*:\s*([^,\n}\]]+)/g)) {
+  for (const match of content.matchAll(RADIUS_STYLE_KEY_PATTERN)) {
+    const key = match[0]!.split(':', 1)[0]!.trim();
     const value = match[1]!.trim();
     if (value === '0' || value === 'radius.none') continue;
     if (value === 'radius.shutter' && file === join('features', 'capture', 'Shutter.tsx')) {
       continue;
     }
-    out.push(`${file}:${lineNumberFor(content, match.index ?? 0)} borderRadius ${value}`);
+    out.push(`${file}:${lineNumberFor(content, match.index ?? 0)} ${key} ${value}`);
   }
   return out;
 }
@@ -237,6 +241,9 @@ describe('mobile source sweep', () => {
       '  computed: { borderRadius: size / 2 },',
       '  allowedToken: { borderRadius: radius.none },',
       '  allowedLiteral: { borderRadius: 0 },',
+      '  cornerLiteral: { borderTopStartRadius: 8 },',
+      '  cornerToken: { borderBottomEndRadius: radius.xl },',
+      '  cornerAllowed: { borderTopEndRadius: 0 },',
       '};',
     ].join('\n');
 
@@ -244,6 +251,8 @@ describe('mobile source sweep', () => {
       `${join('components', 'Fake.tsx')}:3 borderRadius 8`,
       `${join('components', 'Fake.tsx')}:4 borderRadius radius.md`,
       `${join('components', 'Fake.tsx')}:5 borderRadius size / 2`,
+      `${join('components', 'Fake.tsx')}:8 borderTopStartRadius 8`,
+      `${join('components', 'Fake.tsx')}:9 borderBottomEndRadius radius.xl`,
     ]);
     expect(
       borderRadiusViolations(
