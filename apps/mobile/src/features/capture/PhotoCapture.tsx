@@ -17,6 +17,7 @@ import type { MessageKey } from '@kitchen/i18n';
 import type { RecognizedItem } from '@kitchen/contracts';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText, Button, Chip, Icon, IconButton, Sheet } from '../../components';
 import { usePressFeedback } from '../../components/press-feedback';
 import { CameraGate, useCameraAccess } from './CameraGate';
@@ -197,6 +198,7 @@ function MediaPressable({
 export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCaptureProps) {
   const { t, locale, dir, prefs } = useFormat();
   const { colors, scrim } = useTheme();
+  const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const setSession = useCaptureStore((state) => state.setSession);
@@ -769,6 +771,7 @@ export function PhotoCapture({ mode, method, onMethodChange, onClose }: PhotoCap
           error={bubbleError ? t(bubbleError) : null}
           actions={renderBubbleActions()}
           accessory={renderPostCaptureTrayOpener()}
+          style={flushSheet ? { paddingBottom: spacing.gutter + insets.bottom } : undefined}
           caption={
             flow === 'nothingFound' && photos.length > 0
               ? t('mobile.review.emptyPhotos', { count: photos.length })

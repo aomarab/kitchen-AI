@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Animated, Pressable, View } from 'react-native';
+import { Animated, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { MealPlanEntry, MealPlanEntryState, MealSlot } from '@kitchen/contracts';
@@ -105,8 +105,8 @@ function MealSheetFrame({ children, footer }: { children: ReactNode; footer?: Re
   const { colors } = useTheme();
 
   return (
-    <SafeAreaView edges={['bottom']} style={{ backgroundColor: colors.surface }}>
-      <View style={{ padding: spacing.gutter, gap: spacing.lg }}>
+    <SafeAreaView edges={['bottom']} style={{ backgroundColor: colors.surface, maxHeight: '100%' }}>
+      <View style={{ padding: spacing.gutter, gap: spacing.lg, maxHeight: '100%' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <AppText variant="title" accessibilityRole="header" style={{ flex: 1 }}>
             {t('mobile.plans.entryTitle')}
@@ -118,7 +118,14 @@ function MealSheetFrame({ children, footer }: { children: ReactNode; footer?: Re
             onPress={() => router.back()}
           />
         </View>
-        {children}
+        <ScrollView
+          bounces={false}
+          showsVerticalScrollIndicator={false}
+          style={{ flexShrink: 1 }}
+          contentContainerStyle={{ gap: spacing.lg }}
+        >
+          {children}
+        </ScrollView>
         {footer ? <View style={{ paddingTop: spacing.sm }}>{footer}</View> : null}
       </View>
     </SafeAreaView>
@@ -204,6 +211,14 @@ export default function EntryDetail() {
   });
   const setEntryState = (state: MealPlanEntryState) =>
     update.mutate({ entryId: entry.id, body: { state } });
+  const openRecipe = () => {
+    if (!router.canGoBack()) {
+      router.push(`/recipe/${recipe.id}`);
+      return;
+    }
+    router.back();
+    requestAnimationFrame(() => router.push(`/recipe/${recipe.id}`));
+  };
 
   return (
     <MealSheetFrame
@@ -216,7 +231,7 @@ export default function EntryDetail() {
           dateLabel={hijriLabel ? `${dateLabel} · ${hijriLabel}` : dateLabel}
           servingsLabel={servingsLabel}
           haveBadge={haveBadge}
-          onPress={() => router.push(`/recipe/${recipe.id}`)}
+          onPress={openRecipe}
         />
 
         <View style={{ gap: spacing.sm }}>

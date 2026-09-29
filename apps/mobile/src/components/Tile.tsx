@@ -138,7 +138,7 @@ export function Tile({
   }, [image]);
 
   const container: ViewStyle = {
-    ...(quickAction ? { minHeight: baseHeight } : { height: baseHeight }),
+    minHeight: baseHeight,
     padding: quickAction ? spacing.md : spacing.lg,
     gap: spacing.sm,
     borderWidth: quickAction || hasPhotoImage || showPhotoFallback ? 0 : 1,
@@ -297,7 +297,7 @@ export function Bento({ children, variant = 'tiles', onRowLayout }: BentoProps) 
             <View
               key={indices.join('-')}
               onLayout={(event) => onRowLayout?.(indices, event.nativeEvent.layout.y)}
-              style={{ flexDirection: 'row', gap }}
+              style={{ flexDirection: 'row', alignItems: 'stretch', gap }}
             >
               {row.cells.map((cell) => {
                 const item = items[cell.index];

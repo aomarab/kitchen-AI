@@ -4,6 +4,7 @@ import { tokenStore } from '../lib/token-store';
 import { readJson, writeJson, removeJson } from '../lib/storage';
 import { queryClient } from '../lib/queryClient';
 import { membershipAfterLeavingHousehold } from '../lib/household-session';
+import { usePlanGenerationStore } from './plan-generation';
 
 const PERSIST_KEY = 'session';
 
@@ -45,6 +46,10 @@ function dropCachedHouseholdData(): void {
   queryClient.removeQueries();
 }
 
+function resetPlanGenerationState(): void {
+  usePlanGenerationStore.getState().reset();
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   status: 'loading',
   user: null,
@@ -53,6 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setSession: (session) => {
     dropCachedHouseholdData();
+    resetPlanGenerationState();
     const next: PersistedSession = {
       user: session.user,
       householdIds: session.householdIds,
@@ -66,6 +72,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setActiveHousehold: (householdId) => {
     if (get().activeHouseholdId === householdId) return;
     dropCachedHouseholdData();
+    resetPlanGenerationState();
     const next: PersistedSession = { ...snapshot(get()), activeHouseholdId: householdId };
     persist(next);
     set({ activeHouseholdId: householdId });
@@ -77,7 +84,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       ? current.householdIds
       : [...current.householdIds, householdId];
     const next: PersistedSession = { ...current, householdIds, activeHouseholdId: householdId };
-    if (current.activeHouseholdId !== householdId) dropCachedHouseholdData();
+    if (current.activeHouseholdId !== householdId) {
+      dropCachedHouseholdData();
+      resetPlanGenerationState();
+    }
     persist(next);
     set({ householdIds, activeHouseholdId: householdId });
   },
@@ -89,6 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       ...membershipAfterLeavingHousehold(current, householdId),
     };
     dropCachedHouseholdData();
+    if (current.activeHouseholdId !== next.activeHouseholdId) resetPlanGenerationState();
     persist(next);
     set({ householdIds: next.householdIds, activeHouseholdId: next.activeHouseholdId });
   },
@@ -110,6 +121,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     dropCachedHouseholdData();
+    resetPlanGenerationState();
     await tokenStore.set(null);
     await removeJson(PERSIST_KEY);
     set({ status: 'signedOut', user: null, householdIds: [], activeHouseholdId: null });

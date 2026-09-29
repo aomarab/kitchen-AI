@@ -26,7 +26,7 @@ import {
 import {
   householdSaveAction,
   leaveHouseholdErrorKey,
-  routeAfterHouseholdLeave,
+  resetAfterHouseholdLeave,
 } from '../../lib/household-session';
 import { useAuthStore } from '../../stores/auth';
 import { useToastStore } from '../../stores/toast';
@@ -87,7 +87,7 @@ export default function Household() {
     leave.mutate(undefined, {
       onSuccess: () => {
         const nextHouseholdId = useAuthStore.getState().activeHouseholdId;
-        router.replace(routeAfterHouseholdLeave(nextHouseholdId));
+        resetAfterHouseholdLeave(router, nextHouseholdId);
       },
       onError: (error) => {
         showToast({ message: t(leaveHouseholdErrorKey(error)), tone: 'error' });

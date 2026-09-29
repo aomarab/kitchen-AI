@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { Cuisine, CreditAction, MealSlot, PlanScope } from '@kitchen/contracts';
@@ -191,6 +191,7 @@ export default function GeneratePlan() {
           String(maxCook),
           formatMinutes(locale, maxCook, prefs),
         );
+  const returnToPlans = useCallback(() => router.dismissTo('/plans'), [router]);
 
   const goBuyCredits = () => {
     setCreditsSheetOpen(false);
@@ -198,12 +199,12 @@ export default function GeneratePlan() {
   };
 
   useEffect(() => {
-    if (activeGeneration) router.replace('/plans');
-  }, [activeGeneration, router]);
+    if (activeGeneration) returnToPlans();
+  }, [activeGeneration, returnToPlans]);
 
   const submit = async () => {
     if (activeGeneration) {
-      router.replace('/plans');
+      returnToPlans();
       return;
     }
     if (!affordable) {
@@ -220,10 +221,10 @@ export default function GeneratePlan() {
       locale,
     });
     if (!startGeneration(started.id, scope)) {
-      router.replace('/plans');
+      returnToPlans();
       return;
     }
-    router.replace('/plans');
+    returnToPlans();
   };
 
   return (

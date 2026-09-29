@@ -14,6 +14,12 @@ export interface NextHouseholdMembershipState {
 export type HouseholdLeaveDestination = '/home' | '/onboarding';
 export type HouseholdSaveAction = 'invalid' | 'noop' | 'save';
 
+export interface HouseholdLeaveRouter {
+  canDismiss?: () => boolean;
+  dismissAll?: () => void;
+  replace: (href: HouseholdLeaveDestination) => void;
+}
+
 export function householdSaveAction(draftName: string, currentName: string): HouseholdSaveAction {
   const trimmed = draftName.trim();
   if (trimmed.length === 0) return 'invalid';
@@ -38,6 +44,14 @@ export function routeAfterHouseholdLeave(
   activeHouseholdId: string | null,
 ): HouseholdLeaveDestination {
   return activeHouseholdId ? '/home' : '/onboarding';
+}
+
+export function resetAfterHouseholdLeave(
+  router: HouseholdLeaveRouter,
+  activeHouseholdId: string | null,
+): void {
+  if (router.canDismiss?.()) router.dismissAll?.();
+  router.replace(routeAfterHouseholdLeave(activeHouseholdId));
 }
 
 export function leaveHouseholdErrorKey(error: unknown): MessageKey {

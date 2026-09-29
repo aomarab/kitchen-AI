@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useIsFocused, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   EmptyState,
@@ -33,14 +33,17 @@ import { spacing } from '../../theme';
 export default function Plans() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
+  const isFocused = useIsFocused();
   const qc = useQueryClient();
   const tabBarClearance = useTabBarClearance();
   const [view, setView] = useState<PlanView>('week');
   const [selectedDate, setSelectedDate] = useState(todayISODate());
   const activeGeneration = usePlanGenerationStore((state) => state.active);
   const generationFailure = usePlanGenerationStore((state) => state.failure);
+  const readyPlanId = usePlanGenerationStore((state) => state.readyPlanId);
   const finishSuccess = usePlanGenerationStore((state) => state.finishSuccess);
   const finishFailure = usePlanGenerationStore((state) => state.finishFailure);
+  const consumeReadyPlan = usePlanGenerationStore((state) => state.consumeReadyPlan);
   const clearFailure = usePlanGenerationStore((state) => state.clearFailure);
   const plans = usePlans();
   const credits = useCredits();
@@ -50,6 +53,7 @@ export default function Plans() {
       derivePlanGenerationView({
         active: activeGeneration,
         failure: generationFailure,
+        readyPlanId,
         job: generationJob.data,
         // Transient network failures stay in React Query's retry cycle; isError means polling has
         // settled and the stale id should become a visible Retry state.
@@ -61,6 +65,7 @@ export default function Plans() {
       generationJob.data,
       generationJob.error,
       generationJob.isError,
+      readyPlanId,
     ],
   );
   const plan = plans.data?.[0];
@@ -71,9 +76,7 @@ export default function Plans() {
     router.push('/generate-plan');
   };
   const openShopping = () => router.push('/shopping');
-  const generationScope =
-    activeGeneration?.scope ??
-    (generationView.kind === 'failed' ? generationView.failure.scope : null);
+  const generationScope = activeGeneration?.scope ?? null;
   const effectiveView = generationScope ? planViewForScope(generationScope) : view;
   const contentBottomPadding =
     effectiveView === 'day' ? spacing.gutter + tabBarClearance : spacing.gutter;
@@ -90,13 +93,18 @@ export default function Plans() {
   useEffect(() => {
     if (!activeGeneration) return;
     if (generationView.kind === 'done') {
-      finishSuccess();
+      finishSuccess(generationView.planId);
       void qc.invalidateQueries({ queryKey: ['plans'] });
-      router.replace(`/plan/${generationView.planId}`);
     } else if (generationView.kind === 'failed') {
       finishFailure(generationView.failure.error);
     }
-  }, [activeGeneration, finishFailure, finishSuccess, generationView, qc, router]);
+  }, [activeGeneration, finishFailure, finishSuccess, generationView, qc]);
+
+  useEffect(() => {
+    if (!isFocused || generationView.kind !== 'ready') return;
+    const planId = consumeReadyPlan();
+    if (planId) router.push(`/plan/${planId}`);
+  }, [consumeReadyPlan, generationView, isFocused, router]);
 
   const retryGeneration = () => {
     clearFailure();
@@ -139,7 +147,7 @@ export default function Plans() {
         <SegmentedControl<PlanView>
           value={effectiveView}
           onChange={(next) => {
-            if (!activeGeneration && !generationFailure) setView(next);
+            if (!activeGeneration) setView(next);
           }}
           options={[
             { value: 'day', label: t('plans.daily') },
@@ -148,10 +156,16 @@ export default function Plans() {
           ]}
         />
 
+        {generationView.kind === 'failed' ? (
+          <PlanGenerationFailedState
+            failure={generationView.failure}
+            onRetry={retryGeneration}
+            onDismiss={clearFailure}
+          />
+        ) : null}
+
         {generationView.kind === 'generating' ? (
           <GeneratingPlanState progress={generationView.progress} />
-        ) : generationView.kind === 'failed' ? (
-          <PlanGenerationFailedState failure={generationView.failure} onRetry={retryGeneration} />
         ) : plans.isLoading ? (
           <LoadingState />
         ) : plans.isError ? (

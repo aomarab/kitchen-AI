@@ -4,6 +4,7 @@ import {
   householdSaveAction,
   leaveHouseholdErrorKey,
   membershipAfterLeavingHousehold,
+  resetAfterHouseholdLeave,
   routeAfterHouseholdLeave,
 } from './household-session';
 
@@ -68,6 +69,38 @@ describe('routeAfterHouseholdLeave', () => {
 
   it('sends a household-less user to the existing onboarding gate', () => {
     expect(routeAfterHouseholdLeave(null)).toBe('/onboarding');
+  });
+});
+
+describe('resetAfterHouseholdLeave', () => {
+  it('dismisses the existing app stack before replacing with onboarding', () => {
+    const calls: string[] = [];
+
+    resetAfterHouseholdLeave(
+      {
+        canDismiss: () => true,
+        dismissAll: () => calls.push('dismissAll'),
+        replace: (href) => calls.push(`replace:${href}`),
+      },
+      null,
+    );
+
+    expect(calls).toEqual(['dismissAll', 'replace:/onboarding']);
+  });
+
+  it('replaces with home after switching households without requiring a dismissible stack', () => {
+    const calls: string[] = [];
+
+    resetAfterHouseholdLeave(
+      {
+        canDismiss: () => false,
+        dismissAll: () => calls.push('dismissAll'),
+        replace: (href) => calls.push(`replace:${href}`),
+      },
+      'studio',
+    );
+
+    expect(calls).toEqual(['replace:/home']);
   });
 });
 

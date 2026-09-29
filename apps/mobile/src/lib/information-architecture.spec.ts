@@ -111,7 +111,11 @@ describe('information architecture (spec §4)', () => {
       'illustration="calendar"',
     );
     expect(plans, 'Plans tab owns B3 job polling').toContain('useJob(activeGeneration?.jobId');
-    expect(plans, 'Plans tab clears active generation on success').toContain('finishSuccess()');
+    expect(plans, 'Plans tab stores a ready plan on success').toContain(
+      'finishSuccess(generationView.planId)',
+    );
+    expect(plans, 'Plans tab opens ready plans only after focus').toContain('useIsFocused()');
+    expect(plans, 'Plans tab consumes ready plans exactly once').toContain('consumeReadyPlan()');
     expect(plans, 'Plans tab invalidates plan queries after generation').toContain(
       "invalidateQueries({ queryKey: ['plans'] })",
     );
@@ -195,8 +199,8 @@ describe('information architecture (spec §4)', () => {
     expect(generate, 'Generate records the plan job in the Plans-tab store').toContain(
       'startGeneration(started.id, scope)',
     );
-    expect(generate, 'Generate returns to the Plans tab after the job starts').toContain(
-      "router.replace('/plans')",
+    expect(generate, 'Generate returns to the existing Plans tab after the job starts').toContain(
+      "router.dismissTo('/plans')",
     );
     expect(generate).toContain('<DateField');
     expect(generate).toContain('<SegmentedControl');

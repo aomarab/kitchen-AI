@@ -155,12 +155,14 @@ describe('bento grid (spec §8)', () => {
     expect(source).toContain('style={pressableStyle}');
   });
 
-  it('keeps place tiles fixed-height and top-aligned inside bento rows', () => {
+  it('keeps place tiles at least 158pt and stretches paired bento rows', () => {
     const source = readFileSync(join(__dirname, 'Tile.tsx'), 'utf8');
 
     expect(source).toContain('const PLACE_TILE_MIN_HEIGHT = 158');
     expect(source).toContain('const baseHeight = height ?? tileMinHeight(variant)');
-    expect(source).toContain('quickAction ? { minHeight: baseHeight } : { height: baseHeight }');
+    expect(source).toContain('minHeight: baseHeight');
+    expect(source).toContain("alignItems: 'stretch'");
+    expect(source).not.toContain('height: baseHeight');
     expect(source).toContain('gap: spacing.sm');
     expect(source).not.toContain('<View style={{ flex: 1 }} />');
   });

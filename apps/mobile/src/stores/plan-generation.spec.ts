@@ -54,10 +54,19 @@ describe('usePlanGenerationStore', () => {
     usePlanGenerationStore.getState().finishFailure(error);
     usePlanGenerationStore.getState().start('job-2', 'monthly');
 
-    usePlanGenerationStore.getState().finishSuccess();
+    usePlanGenerationStore.getState().finishSuccess('plan-1');
 
     expect(usePlanGenerationStore.getState().active).toBeNull();
     expect(usePlanGenerationStore.getState().failure).toBeNull();
+    expect(usePlanGenerationStore.getState().readyPlanId).toBe('plan-1');
+  });
+
+  it('consumes a ready plan exactly once when the Plans tab next focuses', () => {
+    usePlanGenerationStore.getState().finishSuccess('plan-1');
+
+    expect(usePlanGenerationStore.getState().consumeReadyPlan()).toBe('plan-1');
+    expect(usePlanGenerationStore.getState().consumeReadyPlan()).toBeNull();
+    expect(usePlanGenerationStore.getState().readyPlanId).toBeNull();
   });
 
   it('clears the active job and keeps the failed scope plus error for Retry', () => {
@@ -88,6 +97,7 @@ describe('derivePlanGenerationView', () => {
       derivePlanGenerationView({
         active,
         failure: null,
+        readyPlanId: null,
         job: undefined,
         queryError: null,
       }),
@@ -104,6 +114,7 @@ describe('derivePlanGenerationView', () => {
       derivePlanGenerationView({
         active,
         failure: null,
+        readyPlanId: null,
         job: job({
           status: 'done',
           progress: 1,
@@ -123,6 +134,7 @@ describe('derivePlanGenerationView', () => {
       derivePlanGenerationView({
         active: { jobId: 'job-1', scope: 'monthly' },
         failure: null,
+        readyPlanId: null,
         job: job({ status: 'failed', error }),
         queryError: null,
       }),
@@ -145,6 +157,7 @@ describe('derivePlanGenerationView', () => {
       derivePlanGenerationView({
         active,
         failure: null,
+        readyPlanId: null,
         job: undefined,
         queryError: notFound,
       }),
@@ -158,5 +171,17 @@ describe('derivePlanGenerationView', () => {
         },
       },
     });
+  });
+
+  it('keeps a completed plan ready while the Plans tab is mounted but unfocused', () => {
+    expect(
+      derivePlanGenerationView({
+        active: null,
+        failure: null,
+        readyPlanId: '22222222-2222-4222-8222-222222222222',
+        job: undefined,
+        queryError: null,
+      }),
+    ).toEqual({ kind: 'ready', planId: '22222222-2222-4222-8222-222222222222' });
   });
 });

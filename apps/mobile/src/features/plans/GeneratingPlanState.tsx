@@ -40,9 +40,11 @@ export function GeneratingPlanState({ progress }: { progress: number }) {
 export function PlanGenerationFailedState({
   failure,
   onRetry,
+  onDismiss,
 }: {
   failure: FailedPlanGeneration;
   onRetry: () => void;
+  onDismiss: () => void;
 }) {
   const { t } = useFormat();
   const { colors } = useTheme();
@@ -61,7 +63,10 @@ export function PlanGenerationFailedState({
       <AppText color="danger">
         {t(jobErrorKey(failure.error, 'mobile.job.generationFailed'))}
       </AppText>
-      <Button title={t('common.retry')} variant="secondary" onPress={onRetry} />
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <Button title={t('common.retry')} variant="secondary" fullWidth={false} onPress={onRetry} />
+        <Button title={t('common.close')} variant="ghost" fullWidth={false} onPress={onDismiss} />
+      </View>
     </View>
   );
 }
