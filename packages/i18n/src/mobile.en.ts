@@ -374,6 +374,10 @@ export const mobileEn = {
       inStockLabel: 'in stock',
       upNext: 'Up next',
       servingsLabel: 'Servings',
+      servesLabel: 'Serves',
+      servingsSheetTitle: 'Servings',
+      servingsOpenLabel: 'Serves {count}',
+      servingsOpenHint: 'Opens servings controls',
       minutesValue: plural('minutes', {
         one: '1 min',
         other: '{minutes} min',

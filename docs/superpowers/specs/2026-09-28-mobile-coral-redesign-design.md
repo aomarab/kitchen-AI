@@ -510,9 +510,17 @@ only where the frame introduces copy with no key.
   instead of the duration stepper/preset chips; capture Review rows are flat while Assistant
   add-spotted keeps the richer existing rows; capture Manual add and Review edit use a Quantity
   number Field plus Unit dropdown, while Kitchen item edit keeps its existing unit chips.
-- Recipe/cook: recipe hero height follows the frame at 280pt, not the 260pt note; bookmark/share,
-  cook pause/stop and cooked-sheet stars were omitted because no existing behavior or contract field
-  supports them.
+- Recipe/cook: recipe hero height follows the frame at 280pt, not the 260pt note; bookmark/share
+  and cooked-sheet stars were omitted because no existing behavior or contract field supports them.
+  By user ruling (2026-09-29), the recipe hero has no top media band, the compact recipe header and
+  tabs fade in only after the hero clears them, the servings stepper lives in a Servings sheet opened
+  from the Serves meta cell, and cook pause/resume/stop use the existing timer update route. Per-step
+  ingredient chips remain only where the existing step-to-ingredient matcher finds data; no new source
+  is invented for missing chips.
+- Plans: By user ruling (2026-09-29), the meal entry opens as an iOS `formSheet` over Plans with the
+  frame header, one "Keep this meal" footer action, no servings stepper, and the existing Change meal
+  regenerate row; the separate "Suggest another" frame row remains covered by the one-regenerate
+  note above.
 - Account/settings: Twemoji attribution is no longer visible; Household “Leave household” and
   feedback category chips were omitted because the existing mobile flows/contracts do not expose
   them.

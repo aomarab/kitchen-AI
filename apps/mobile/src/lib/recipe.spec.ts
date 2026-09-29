@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  clampRecipeServings,
   parseRecipeSegmentParam,
   parseServingsParam,
   recipeStockCount,
@@ -77,28 +78,42 @@ describe('parseServingsParam', () => {
   });
 });
 
+describe('clampRecipeServings', () => {
+  it('keeps the servings sheet value within the visible stepper bounds', () => {
+    expect(clampRecipeServings(0, 1, 12)).toBe(1);
+    expect(clampRecipeServings(13, 1, 12)).toBe(12);
+    expect(clampRecipeServings(6, 1, 12)).toBe(6);
+  });
+
+  it('normalises fractional and invalid values before they reach UI state', () => {
+    expect(clampRecipeServings(3.6, 1, 12)).toBe(4);
+    expect(clampRecipeServings(Number.NaN, 1, 12)).toBe(1);
+  });
+});
+
 describe('recipeTopBarBacked', () => {
   const metrics = { heroHeight: 360, sheetOverlap: 28, barHeight: 100, fadeDistance: 24 };
   const range = recipeTopBarFadeRange(metrics);
 
-  it('ends at the sheet-to-backing threshold', () => {
-    expect(range.end).toBe(metrics.heroHeight - metrics.sheetOverlap - metrics.barHeight);
+  it('starts when the hero clears the compact header', () => {
+    expect(range.start).toBe(metrics.heroHeight - metrics.sheetOverlap - metrics.barHeight);
   });
 
-  it('starts one spacing-xl before the backing threshold', () => {
-    expect(range.start).toBe(range.end - 24);
+  it('ends one fade distance after the hero clears the header', () => {
+    expect(range.end).toBe(range.start + metrics.fadeDistance);
   });
 
   it('stays transparent while the photo fills the bar area', () => {
     expect(recipeTopBarBacked(0, range)).toBe(false);
   });
 
-  it('keeps the status bar on the photo before the fade starts', () => {
+  it('keeps the status bar on the photo at and before the fade threshold', () => {
     expect(recipeTopBarBacked(range.start - 1, range)).toBe(false);
+    expect(recipeTopBarBacked(range.start, range)).toBe(false);
   });
 
-  it('backs the status area when the fade starts', () => {
-    expect(recipeTopBarBacked(range.start, range)).toBe(true);
+  it('backs the status area after the fade starts', () => {
+    expect(recipeTopBarBacked(range.start + 1, range)).toBe(true);
   });
 
   it('is fully opaque at and after the fade end', () => {

@@ -472,6 +472,10 @@ export const mobileAr: MobileMessages = {
       inStockLabel: 'متوفر',
       upNext: 'التالي',
       servingsLabel: 'الحصص',
+      servesLabel: 'تكفي',
+      servingsSheetTitle: 'الحصص',
+      servingsOpenLabel: 'تكفي {count}',
+      servingsOpenHint: 'يفتح أدوات تعديل عدد الحصص',
       minutesValue: plural('minutes', {
         one: 'دقيقة واحدة',
         two: 'دقيقتان',

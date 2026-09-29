@@ -128,7 +128,17 @@ export default function RootLayout() {
               // screens arrive from the side the back gesture lives on.
               animation: dir === 'rtl' ? 'slide_from_left' : 'slide_from_right',
             }}
-          />
+          >
+            <Stack.Screen
+              name="entry/[id]"
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: 'fitToContents',
+                sheetExpandsWhenScrolledToEdge: false,
+                sheetGrabberVisible: true,
+              }}
+            />
+          </Stack>
           {ready ? null : (
             <View
               style={{

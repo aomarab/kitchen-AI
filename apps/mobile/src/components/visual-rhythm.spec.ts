@@ -201,7 +201,9 @@ describe('recipe and cook Coral rhythm', () => {
   it('draws recipe detail from Coral rows and media icon buttons, not legacy tiles', () => {
     expect(recipe).toContain('RECIPE_FOOTER_ACTION_HEIGHT = 44');
     expect(recipe).toContain('const HERO_HEIGHT = 280');
-    expect(recipe).toContain("tone={barBacked ? 'plain' : 'media'}");
+    expect(recipe).toContain('tone="media"');
+    expect(recipe).toContain('tone="plain"');
+    expect(recipe).toContain('visible={servingsSheetOpen}');
     expect(recipe).not.toContain('RoundButton');
     expect(recipe).not.toContain('<Tile');
     expect(recipe).not.toContain('<ListRow');
@@ -274,7 +276,8 @@ describe('recipe and cook Coral rhythm', () => {
     expect(cook).toContain('<StatusBar style="light" />');
     expect(cook).toContain('COOK_NAV_TARGET_HEIGHT = 44');
     expect(cook).toContain('<Progress');
-    expect(cook).toContain('label="M"');
+    expect(cook).toContain('icon="chat"');
+    expect(cook).toContain('useUpdateTimer()');
     expect(cook).not.toContain('<OrbMascot');
     expect(cook).not.toContain('RoundButton');
     expect(cook).not.toContain('tintNamed');

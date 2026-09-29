@@ -20,7 +20,7 @@ import { CookIngredientChip } from '../../../features/recipe/CookIngredientChip'
 import { CookTimerPanel } from '../../../features/recipe/CookTimerPanel';
 import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe } from '../../../hooks/recipe';
-import { useCreateTimer, useTimers } from '../../../hooks/timers';
+import { useCreateTimer, useTimers, useUpdateTimer } from '../../../hooks/timers';
 import { existingStepTimer, stepTimerPlan } from '../../../lib/cook-timers';
 import { hasRunningTimer, useTimerTick } from '../../../lib/timers';
 import { formatMinutes } from '../../../lib/format';
@@ -45,6 +45,7 @@ function CookModeContent() {
   // running does not re-render this screen once a second for no reason.
   const timers = useTimers();
   const createTimer = useCreateTimer();
+  const updateTimer = useUpdateTimer();
   /*
    * Every hook here runs before the loading early-return below, which is why
    * the tick is gated on a value read straight from the query rather than on
@@ -136,7 +137,7 @@ function CookModeContent() {
               }}
             >
               <IconButton
-                label="M"
+                icon="chat"
                 tone="surface"
                 accessibilityLabel={t('mobile.assistant.cookAsk')}
                 onPress={() => setAssistantOpen(true)}
@@ -183,11 +184,12 @@ function CookModeContent() {
           <CookTimerPanel
             plan={plan}
             projected={projected}
-            pending={createTimer.isPending}
+            pending={createTimer.isPending || updateTimer.isPending}
             durationMinutes={current.durationMinutes ?? 0}
             onStart={() => {
               if (plan.ok) createTimer.mutate(plan.body);
             }}
+            onAction={(timerId, body) => updateTimer.mutate({ id: timerId, body })}
           />
 
           {nextStep ? (

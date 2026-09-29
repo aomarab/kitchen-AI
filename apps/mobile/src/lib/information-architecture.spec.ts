@@ -572,9 +572,12 @@ describe('information architecture (spec §4)', () => {
     expect(entry, 'Entry recipe row must keep the recipe detail route').toContain(
       'router.push(`/recipe/${recipe.id}`)',
     );
-    expect(entry, 'Entry must keep cook-mode navigation in a quiet secondary spot').toContain(
-      'router.push(`/recipe/${recipe.id}/cook`)',
-    );
+    expect(
+      entry,
+      'B4 removes the secondary cook-mode footer action from the meal sheet',
+    ).not.toContain('router.push(`/recipe/${recipe.id}/cook`)');
+    expect(entry).not.toContain('<QuantityStepper');
+    expect(entry).not.toContain("t('mobile.recipe.startCooking')");
     expect(entry, 'Entry status title must be a stable label, not badge copy').toContain(
       "t('mobile.plans.status')",
     );
@@ -1075,9 +1078,11 @@ describe('information architecture (spec §4)', () => {
     );
     expect(recipe).toContain('useNativeDriver: true');
     expect(recipe).toContain('listener: handleRecipeScroll');
-    expect(recipe).toContain('pointerEvents="none"');
-    expect(recipe).toContain('StyleSheet.hairlineWidth');
-    expect(recipe).toContain("tone={barBacked ? 'plain' : 'media'}");
+    expect(recipe).toContain("pointerEvents={barBacked ? 'none' : 'auto'}");
+    expect(recipe).toContain("pointerEvents={barBacked ? 'auto' : 'none'}");
+    expect(recipe).toContain('borderBottomWidth: 1');
+    expect(recipe).toContain('tone="plain"');
+    expect(recipe).toContain('tone="media"');
     expect(recipe).toContain('showLightStatusBar');
     expect(recipe).toContain('!barBacked');
     expect(recipe).not.toContain('heroUnderStatus');
@@ -1102,6 +1107,9 @@ describe('information architecture (spec §4)', () => {
     expect(recipe).toContain('<RecipeStepRow');
     expect(recipe).toContain('<RecipeCookedSheetContent');
     expect(recipe).toContain('<QuantityStepper');
+    expect(recipe).toContain('visible={servingsSheetOpen}');
+    expect(recipe).toContain("t('mobile.recipe.servingsOpenLabel'");
+    expect(recipe).toContain("t('mobile.recipe.servingsOpenHint')");
     expect(recipe).toContain("t('recipe.markCooked')");
     expect(recipe).toContain("t('mobile.recipe.startCooking')");
     expect(recipe).toContain('mobile.recipe.minutesValue');
@@ -1133,7 +1141,11 @@ describe('information architecture (spec §4)', () => {
     expect(timerControl).toContain('accessibilityLabel={progressLabel}');
     expect(timerControl).not.toContain('accessibilityValue={{ min: 0, max: 100');
     expect(cook).toContain('<IconButton');
-    expect(cook).toContain('label="M"');
+    expect(cook).toContain('icon="chat"');
+    expect(cook).toContain('useUpdateTimer()');
+    expect(cook).toContain(
+      'onAction={(timerId, body) => updateTimer.mutate({ id: timerId, body })}',
+    );
     expect(cook).not.toContain('<OrbMascot');
     expect(cook).not.toContain('RoundButton');
     expect(cook).toContain('stepIngredients(');
@@ -1144,12 +1156,18 @@ describe('information architecture (spec §4)', () => {
     expect(cook).toContain("backgroundColor: 'transparent'");
 
     expect(timerControl).toContain('<Button');
+    expect(timerControl).toContain('variant="numeralSmall"');
+    expect(timerControl).toContain('variant="caption"');
+    expect(timerControl).toContain('cookTimerControls(projected)');
+    expect(timerControl).toContain('icon="x"');
+    expect(timerControl).toContain('action: pauseResumeAction');
+    expect(timerControl).toContain("onAction(projected.id, { action: 'stop' })");
     expect(timerControl).not.toMatch(/\n\s+accessible\b/);
     expect(timerControl).not.toContain('accessibilityLabel={caption}');
     expect(
       timerControl,
-      'The visible running-timer caption is status only; the large numeral carries the countdown.',
-    ).toContain("t('mobile.recipe.stepTimerRunningStatus')");
+      'The visible running-timer caption is the timer name; the large numeral carries the countdown.',
+    ).toContain('projected.label');
     expect(
       timerControl,
       'The screen-reader label must keep the legacy countdown-inclusive running timer wording.',

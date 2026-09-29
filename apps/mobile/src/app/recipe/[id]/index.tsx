@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  StyleSheet,
-  View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
+import { Animated, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,6 +28,7 @@ import { useFormat } from '../../../hooks/useFormat';
 import { useRecipe } from '../../../hooks/recipe';
 import { formatMinutes, formatQty } from '../../../lib/format';
 import {
+  clampRecipeServings,
   parseRecipeSegmentParam,
   recipeStockCount,
   recipeTopBarBacked,
@@ -47,6 +42,7 @@ const SHEET_OVERLAP = 0;
 const MAX_SERVINGS = 12;
 const HERO_HEIGHT = 280;
 const TOP_BAR_ROW_HEIGHT = 44;
+const SEGMENTED_ROW_HEIGHT = 44;
 const RECIPE_FOOTER_ACTION_HEIGHT = 44;
 
 const DIFFICULTY_KEY: Record<
@@ -70,11 +66,12 @@ export default function RecipeDetail() {
   const [cooked, setCooked] = useState(false);
   const [segment, setSegment] = useState<RecipeSegment>(() => parseRecipeSegmentParam(tab));
   const [servings, setServings] = useState<number | null>(null);
+  const [servingsSheetOpen, setServingsSheetOpen] = useState(false);
   const [heroImageLoaded, setHeroImageLoaded] = useState(false);
   const [barBacked, setBarBacked] = useState(false);
   const barBackedRef = useRef(false);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const topBarHeight = insets.top + spacing.md + TOP_BAR_ROW_HEIGHT + spacing.sm;
+  const topBarHeight = insets.top + spacing.md + TOP_BAR_ROW_HEIGHT + SEGMENTED_ROW_HEIGHT;
   const topBarFade = useMemo(
     () =>
       recipeTopBarFadeRange({
@@ -106,6 +103,7 @@ export default function RecipeDetail() {
 
   useEffect(() => {
     setServings(null);
+    setServingsSheetOpen(false);
     setSegment(parseRecipeSegmentParam(tab));
     setCooked(false);
     setHeroImageLoaded(false);
@@ -133,6 +131,8 @@ export default function RecipeDetail() {
 
   const data = recipe.data;
   const servingCount = servings ?? data.servings;
+  const setClampedServings = (nextServings: number) =>
+    setServings(clampRecipeServings(nextServings, 1, MAX_SERVINGS));
   const stock = recipeStockCount(data.ingredients);
   const cuisine = data.cuisine ? t(`mobile.cuisines.${data.cuisine}` as MessageKey) : null;
   const difficulty = t(DIFFICULTY_KEY[data.difficulty]);
@@ -147,6 +147,14 @@ export default function RecipeDetail() {
     extrapolate: 'clamp',
   });
   const showLightStatusBar = isFocused && heroImageLoaded && !barBacked;
+  const segmentOptions = [
+    { value: 'ingredients', label: t('recipe.ingredients') },
+    { value: 'steps', label: t('recipe.steps') },
+    { value: 'videos', label: t('recipe.videos') },
+  ] as const;
+  const renderTabs = () => (
+    <SegmentedControl value={segment} onChange={setSegment} options={segmentOptions} />
+  );
   const footer = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
       <Button
@@ -188,25 +196,12 @@ export default function RecipeDetail() {
             onImageError={() => setHeroImageLoaded(false)}
             style={{ width: '100%', height: '100%' }}
           />
-          {data.heroImageUrl ? (
-            <View
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                top: 0,
-                start: 0,
-                end: 0,
-                height: insets.top + 64,
-                backgroundColor: colors.mediaButton,
-              }}
-            />
-          ) : null}
         </View>
 
         <View style={{ padding: spacing.gutter, gap: spacing.xl }}>
           <View style={{ gap: spacing.md }}>
             {metaLead ? (
-              <AppText variant="eyebrow" color="primaryText">
+              <AppText variant="eyebrow" muted>
                 {metaLead}
               </AppText>
             ) : null}
@@ -232,38 +227,29 @@ export default function RecipeDetail() {
               },
               {
                 value: formatQty(locale, servingCount, prefs),
-                label: t('mobile.recipe.servingsLabel'),
+                label: t('mobile.recipe.servesLabel'),
+                trailingIcon: 'chevD',
+                accessibilityLabel: t('mobile.recipe.servingsOpenLabel', {
+                  count: formatQty(locale, servingCount, prefs),
+                }),
+                accessibilityHint: t('mobile.recipe.servingsOpenHint'),
+                onPress: () => setServingsSheetOpen(true),
               },
               {
                 value: stockLine,
-                label: t('mobile.recipe.inStockLabel'),
+                label: t('recipe.inStock'),
               },
             ]}
           />
 
-          <View style={{ gap: spacing.sm }}>
-            <QuantityStepper
-              value={servingCount}
-              min={1}
-              max={MAX_SERVINGS}
-              onChange={setServings}
-              label={formatQty(locale, servingCount, prefs)}
-              unit={t('mobile.recipe.servingsLabel')}
-              accessibilityLabel={t('mobile.recipe.servingsLabel')}
-              decrementLabel={t('mobile.common.decrease')}
-              incrementLabel={t('mobile.common.increase')}
-            />
+          <View
+            accessibilityElementsHidden={barBacked}
+            importantForAccessibility={barBacked ? 'no-hide-descendants' : 'auto'}
+            pointerEvents={barBacked ? 'none' : 'auto'}
+            style={{ opacity: barBacked ? 0 : 1 }}
+          >
+            {renderTabs()}
           </View>
-
-          <SegmentedControl
-            value={segment}
-            onChange={setSegment}
-            options={[
-              { value: 'ingredients', label: t('recipe.ingredients') },
-              { value: 'steps', label: t('recipe.steps') },
-              { value: 'videos', label: t('recipe.videos') },
-            ]}
-          />
 
           {segment === 'ingredients' ? (
             <View>
@@ -294,6 +280,10 @@ export default function RecipeDetail() {
             </View>
           ) : null}
 
+          {segment === 'ingredients' ? null : (
+            <View accessibilityElementsHidden style={{ height: topBarHeight + spacing.xxl * 2 }} />
+          )}
+
           {cooked ? <Badge tone="success" label={t('recipe.cookedDone')} /> : null}
         </View>
 
@@ -310,9 +300,29 @@ export default function RecipeDetail() {
             }}
           />
         </Sheet>
+        <Sheet
+          visible={servingsSheetOpen}
+          onClose={() => setServingsSheetOpen(false)}
+          title={t('mobile.recipe.servingsSheetTitle')}
+        >
+          <View style={{ gap: spacing.lg }}>
+            <QuantityStepper
+              value={servingCount}
+              min={1}
+              max={MAX_SERVINGS}
+              onChange={setClampedServings}
+              label={formatQty(locale, servingCount, prefs)}
+              unit={t('mobile.recipe.servingsSheetTitle')}
+              accessibilityLabel={t('mobile.recipe.servingsSheetTitle')}
+              decrementLabel={t('mobile.common.decrease')}
+              incrementLabel={t('mobile.common.increase')}
+            />
+            <Button title={t('common.done')} onPress={() => setServingsSheetOpen(false)} />
+          </View>
+        </Sheet>
       </Screen>
       <Animated.View
-        pointerEvents="none"
+        pointerEvents={barBacked ? 'auto' : 'none'}
         style={{
           position: 'absolute',
           top: 0,
@@ -321,35 +331,48 @@ export default function RecipeDetail() {
           height: topBarHeight,
           opacity: barOpacity,
           backgroundColor: colors.bg,
-          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomWidth: 1,
           borderBottomColor: colors.border,
           zIndex: 1,
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          paddingBottom: spacing.sm,
-          paddingHorizontal: topBarHeight,
         }}
       >
-        <AppText variant="bodyStrong" numberOfLines={1} center>
-          {data.title}
-        </AppText>
+        <View style={{ paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.gutter }}>
+          <View style={{ height: TOP_BAR_ROW_HEIGHT, flexDirection: 'row', alignItems: 'center' }}>
+            <IconButton
+              icon="chevL"
+              directional
+              tone="plain"
+              accessibilityLabel={t('common.back')}
+              onPress={() => router.back()}
+            />
+            <View style={{ flex: 1, minWidth: 0, alignItems: 'center' }}>
+              <AppText variant="bodyStrong" numberOfLines={1} center>
+                {data.title}
+              </AppText>
+            </View>
+            <View style={{ width: TOP_BAR_ROW_HEIGHT, height: TOP_BAR_ROW_HEIGHT }} />
+          </View>
+        </View>
+        <View style={{ paddingHorizontal: spacing.gutter }}>{renderTabs()}</View>
       </Animated.View>
-      <View
-        style={{
-          position: 'absolute',
-          top: insets.top + spacing.md,
-          start: spacing.gutter,
-          zIndex: 2,
-        }}
-      >
-        <IconButton
-          icon="chevL"
-          directional
-          tone={barBacked ? 'plain' : 'media'}
-          accessibilityLabel={t('common.back')}
-          onPress={() => router.back()}
-        />
-      </View>
+      {!barBacked ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: insets.top + spacing.md,
+            start: spacing.gutter,
+            zIndex: 2,
+          }}
+        >
+          <IconButton
+            icon="chevL"
+            directional
+            tone="media"
+            accessibilityLabel={t('common.back')}
+            onPress={() => router.back()}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }

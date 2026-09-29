@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { MealPlanEntry, MealPlanEntryState, MealSlot } from '@kitchen/contracts';
 import type { MessageKey } from '@kitchen/i18n';
 import {
@@ -9,12 +11,10 @@ import {
   DirectionalIcon,
   EmptyState,
   ErrorState,
-  Header,
+  IconButton,
   ListRow,
   LoadingState,
-  QuantityStepper,
   RecipeThumb,
-  Screen,
   SegmentedControl,
 } from '../../components';
 import { usePressFeedback } from '../../components/press-feedback';
@@ -25,7 +25,7 @@ import {
   useRegeneratePlanEntry,
   useUpdatePlanEntry,
 } from '../../hooks/plans';
-import { formatDateL, formatMinutes, formatQty, hijriCaption } from '../../lib/format';
+import { formatDateL, formatQty, hijriCaption } from '../../lib/format';
 import { planEntryHaveBadge, type PlanEntryHaveBadge } from '../../lib/plan-entry-have-badge';
 import { planEntryStatus } from '../../lib/plan-entry-status';
 import { spacing } from '../../theme';
@@ -39,23 +39,6 @@ const SLOT_KEY: Record<MealSlot, MessageKey> = {
 };
 
 const ENTRY_ACTION_ROW_MIN_HEIGHT = 56;
-
-function minutesMessage({
-  t,
-  locale,
-  prefs,
-  minutes,
-}: {
-  t: ReturnType<typeof useFormat>['t'];
-  locale: ReturnType<typeof useFormat>['locale'];
-  prefs: ReturnType<typeof useFormat>['prefs'];
-  minutes: number;
-}) {
-  return t('mobile.plans.minutesValue', { minutes }).replace(
-    String(minutes),
-    formatMinutes(locale, minutes, prefs),
-  );
-}
 
 function RecipeRow({
   entry,
@@ -116,6 +99,32 @@ function RecipeRow({
   );
 }
 
+function MealSheetFrame({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+  const { t } = useFormat();
+  const router = useRouter();
+  const { colors } = useTheme();
+
+  return (
+    <SafeAreaView edges={['bottom']} style={{ backgroundColor: colors.surface }}>
+      <View style={{ padding: spacing.gutter, gap: spacing.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <AppText variant="title" accessibilityRole="header" style={{ flex: 1 }}>
+            {t('mobile.plans.entryTitle')}
+          </AppText>
+          <IconButton
+            icon="x"
+            tone="plain"
+            accessibilityLabel={t('common.close')}
+            onPress={() => router.back()}
+          />
+        </View>
+        {children}
+        {footer ? <View style={{ paddingTop: spacing.sm }}>{footer}</View> : null}
+      </View>
+    </SafeAreaView>
+  );
+}
+
 function haveBadgeLabel({
   badge,
   t,
@@ -153,26 +162,23 @@ export default function EntryDetail() {
 
   if (plan.isLoading) {
     return (
-      <Screen>
-        <Header title={t('mobile.plans.entryTitle')} onBack={() => router.back()} />
+      <MealSheetFrame>
         <LoadingState />
-      </Screen>
+      </MealSheetFrame>
     );
   }
   if (plan.isError) {
     return (
-      <Screen>
-        <Header title={t('mobile.plans.entryTitle')} onBack={() => router.back()} />
+      <MealSheetFrame>
         <ErrorState error={plan.error} onRetry={() => void plan.refetch()} />
-      </Screen>
+      </MealSheetFrame>
     );
   }
   if (!entry) {
     return (
-      <Screen>
-        <Header title={t('mobile.plans.entryTitle')} onBack={() => router.back()} />
+      <MealSheetFrame>
         <EmptyState illustration="calendar" title={t('errors.NOT_FOUND')} />
-      </Screen>
+      </MealSheetFrame>
     );
   }
 
@@ -182,7 +188,6 @@ export default function EntryDetail() {
   const statusLabel = t(status.labelKey);
   const dateLabel = formatDateL(locale, entry.date, {
     weekday: 'short',
-    month: 'short',
     day: 'numeric',
   });
   const hijriLabel = hijriCaption(locale, `${entry.date}T00:00:00`, showHijri);
@@ -191,8 +196,6 @@ export default function EntryDetail() {
     String(entry.servings),
     servings,
   );
-  const minutes = recipe.prepMinutes + recipe.cookMinutes;
-  const minutesLabel = minutesMessage({ t, locale, prefs, minutes });
   const haveBadge = haveBadgeLabel({
     badge: planEntryHaveBadge(entry, coverage.isSuccess ? coverage.data : undefined),
     t,
@@ -203,22 +206,10 @@ export default function EntryDetail() {
     update.mutate({ entryId: entry.id, body: { state } });
 
   return (
-    <Screen
-      scroll
-      footer={
-        <View style={{ gap: spacing.sm }}>
-          <Button
-            title={t('mobile.recipe.startCooking')}
-            variant="secondary"
-            onPress={() => router.push(`/recipe/${recipe.id}/cook`)}
-          />
-          <Button title={t('mobile.plans.keepMeal')} onPress={() => router.back()} />
-        </View>
-      }
+    <MealSheetFrame
+      footer={<Button title={t('mobile.plans.keepMeal')} onPress={() => router.back()} />}
     >
-      <Header title={t('mobile.plans.entryTitle')} onBack={() => router.back()} />
-
-      <View style={{ gap: spacing.xl }}>
+      <View style={{ gap: spacing.lg }}>
         <RecipeRow
           entry={entry}
           slot={slot}
@@ -246,27 +237,6 @@ export default function EntryDetail() {
           />
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <AppText variant="label">{t('mobile.plans.servings')}</AppText>
-            <AppText variant="caption" muted>
-              {minutesLabel}
-            </AppText>
-          </View>
-          <QuantityStepper
-            value={entry.servings}
-            min={1}
-            onChange={(nextServings) =>
-              update.mutate({ entryId: entry.id, body: { servings: nextServings } })
-            }
-            label={servings}
-            accessibilityLabel={`${t('mobile.plans.servings')} ${servings}`}
-            accessible={false}
-            decrementLabel={t('mobile.common.decrease')}
-            incrementLabel={t('mobile.common.increase')}
-          />
-        </View>
-
         <View>
           <ListRow
             title={t('mobile.plans.changeMeal')}
@@ -281,6 +251,6 @@ export default function EntryDetail() {
           />
         </View>
       </View>
-    </Screen>
+    </MealSheetFrame>
   );
 }

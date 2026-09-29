@@ -1,7 +1,8 @@
-import { formatRemaining, type CookingTimer } from '@kitchen/contracts';
+import { formatRemaining, type CookingTimer, type UpdateTimerRequest } from '@kitchen/contracts';
 import { View } from 'react-native';
 import { AppText, Button, IconButton, Progress } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
+import { cookTimerControls, cookTimerProgressValue } from '../../lib/cook-mode-timer';
 import { formatMinutes } from '../../lib/format';
 import type { StepTimerPlan } from '../../lib/cook-timers';
 import { spacing } from '../../theme';
@@ -13,12 +14,14 @@ export function CookTimerPanel({
   pending,
   durationMinutes,
   onStart,
+  onAction,
 }: {
   plan: StepTimerPlan;
   projected: CookingTimer | null;
   pending: boolean;
   durationMinutes: number;
   onStart: () => void;
+  onAction: (id: string, body: UpdateTimerRequest) => void;
 }) {
   const { t, locale, prefs } = useFormat();
   const { colors } = useTheme();
@@ -29,6 +32,7 @@ export function CookTimerPanel({
   const countdownSeconds = projected?.remainingSec ?? totalSeconds;
   const countdown = formatRemaining(countdownSeconds);
   const finished = projected?.status === 'done';
+  const controls = cookTimerControls(projected);
   const runningAnnouncement = projected
     ? t('mobile.recipe.stepTimerRunning', {
         remaining: formatRemaining(projected.remainingSec),
@@ -37,14 +41,21 @@ export function CookTimerPanel({
   const statusCaption = projected
     ? finished
       ? t('mobile.recipe.stepTimerDone')
-      : t('mobile.recipe.stepTimerRunningStatus')
+      : projected.label
     : null;
-  const statusAccessibilityLabel = finished ? (statusCaption ?? undefined) : runningAnnouncement;
+  const statusAccessibilityLabel = finished
+    ? (statusCaption ?? undefined)
+    : projected?.status === 'paused'
+      ? `${projected.label} · ${t('mobile.timers.paused')}`
+      : runningAnnouncement;
   const buttonTitle = t('mobile.recipe.startStepTimer', {
     minutes: formatMinutes(locale, durationMinutes, prefs),
   });
-  const progress = projected ? 1 - countdownSeconds / totalSeconds : 0;
+  const progress = cookTimerProgressValue(projected);
   const progressLabel = t('mobile.recipe.stepTimerProgress');
+  const pauseResumeAction = controls.pauseResumeAction;
+  const pauseResumeLabel =
+    pauseResumeAction === 'resume' ? t('mobile.timers.resume') : t('mobile.timers.pause');
 
   return (
     <View
@@ -70,19 +81,38 @@ export function CookTimerPanel({
           ) : null}
         </View>
         {projected ? (
-          <IconButton
-            icon={finished ? 'check' : 'timer'}
-            tone="surface"
-            accessibilityLabel={statusAccessibilityLabel ?? statusCaption ?? countdown}
-            disabled
-          />
+          controls.showStop && controls.pauseResumeIcon && pauseResumeAction ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <IconButton
+                icon={controls.pauseResumeIcon}
+                tone="surface"
+                accessibilityLabel={pauseResumeLabel}
+                disabled={pending}
+                onPress={() =>
+                  onAction(projected.id, {
+                    action: pauseResumeAction,
+                  })
+                }
+              />
+              <IconButton
+                icon="x"
+                tone="plain"
+                accessibilityLabel={t('mobile.timers.stop')}
+                disabled={pending}
+                onPress={() => onAction(projected.id, { action: 'stop' })}
+              />
+            </View>
+          ) : (
+            <IconButton
+              icon="check"
+              tone="surface"
+              accessibilityLabel={statusAccessibilityLabel ?? statusCaption ?? countdown}
+              disabled
+            />
+          )
         ) : null}
       </View>
-      <Progress
-        value={progress}
-        tone={finished ? 'idle' : 'active'}
-        accessibilityLabel={progressLabel}
-      />
+      <Progress value={progress} tone={controls.progressTone} accessibilityLabel={progressLabel} />
       {projected ? null : (
         <Button
           title={buttonTitle}
