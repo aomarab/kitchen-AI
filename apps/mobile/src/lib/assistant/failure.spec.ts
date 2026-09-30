@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { assistantConnectionLabelKey, assistantFailureMessageKey } from './failure';
+import {
+  assistantConnectionLabelKey,
+  assistantFailureMessageKey,
+  isOutOfCreditsFailure,
+} from './failure';
 
 describe('assistantFailureMessageKey', () => {
   it('gives every adapter error code its own message', () => {
+    expect(assistantFailureMessageKey('assistant.outOfCredits')).toBe(
+      'errors.INSUFFICIENT_CREDITS',
+    );
     expect(assistantFailureMessageKey('assistant.mintFailed')).toBe('mobile.assistant.errorMint');
     expect(assistantFailureMessageKey('assistant.connectFailed')).toBe(
       'mobile.assistant.errorConnect',
@@ -17,6 +24,15 @@ describe('assistantFailureMessageKey', () => {
     expect(assistantFailureMessageKey('assistant.somethingNew')).toBe(
       'mobile.assistant.errorConnect',
     );
+  });
+});
+
+describe('isOutOfCreditsFailure', () => {
+  it('singles out the credits refusal, the one failure Retry cannot fix', () => {
+    expect(isOutOfCreditsFailure('assistant.outOfCredits')).toBe(true);
+    expect(isOutOfCreditsFailure('assistant.mintFailed')).toBe(false);
+    expect(isOutOfCreditsFailure('assistant.connectFailed')).toBe(false);
+    expect(isOutOfCreditsFailure(null)).toBe(false);
   });
 });
 

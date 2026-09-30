@@ -8,6 +8,7 @@ import type { AssistantStatus } from './realtime-port';
  * a failed connection looked like a live chat that never answered.
  */
 const FAILURE_MESSAGE_KEYS = {
+  'assistant.outOfCredits': 'errors.INSUFFICIENT_CREDITS',
   'assistant.mintFailed': 'mobile.assistant.errorMint',
   'assistant.connectFailed': 'mobile.assistant.errorConnect',
   'assistant.micDenied': 'mobile.assistant.errorMic',
@@ -23,6 +24,14 @@ export function assistantFailureMessageKey(code: string): AssistantFailureMessag
     (FAILURE_MESSAGE_KEYS as Record<string, AssistantFailureMessageKey>)[code] ??
     'mobile.assistant.errorConnect'
   );
+}
+
+/**
+ * A mint refused for credits (HTTP 402) is the one failure Retry can never fix,
+ * so the screen offers "Get more credits" instead of a dead-end retry loop.
+ */
+export function isOutOfCreditsFailure(code: string | null): boolean {
+  return code === 'assistant.outOfCredits';
 }
 
 /** The header's connection word. `ended` must not read as "connected". */

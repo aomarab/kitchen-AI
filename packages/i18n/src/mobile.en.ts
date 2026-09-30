@@ -889,8 +889,7 @@ export const mobileEn = {
       errorTitle: "Couldn't reach Mama",
       errorConnect:
         'The connection dropped before Mama could answer. Check your internet and try again.',
-      errorMint:
-        "Couldn't start a session — you may be out of credits, or the service is busy. Try again in a moment.",
+      errorMint: "Couldn't start a session — the service may be busy. Try again in a moment.",
       errorMic: 'Microphone access is off. Allow it in Settings to talk, or switch to Text.',
       errorReply: "Mama couldn't answer that one. Try again.",
     },

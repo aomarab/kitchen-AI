@@ -18,6 +18,7 @@ import { detectionsToSession } from '../../lib/assistant/detections';
 import {
   assistantConnectionLabelKey,
   assistantFailureMessageKey,
+  isOutOfCreditsFailure,
 } from '../../lib/assistant/failure';
 import { ASSISTANT_MODES, type AssistantMode } from '../../lib/assistant/mode';
 import { appendTranscriptTurn, groupTurns, showStarters } from '../../lib/assistant/transcript';
@@ -241,6 +242,20 @@ export function LiveAssistantScreen({
     setSessionNonce((n) => n + 1);
   };
 
+  // Out of credits: send the user to buy more, and start a fresh session once
+  // when they come back. If they bought nothing, the mint is refused again at
+  // no cost and the same panel returns.
+  const retryOnReturnRef = useRef(false);
+  const getMoreCredits = () => {
+    retryOnReturnRef.current = true;
+    router.push('/buy-credits');
+  };
+  useEffect(() => {
+    if (!isFocused || !retryOnReturnRef.current) return;
+    retryOnReturnRef.current = false;
+    setSessionNonce((n) => n + 1);
+  }, [isFocused]);
+
   const sendMessage = useCallback((message: string) => {
     const text = message.trim();
     if (!text) return;
@@ -319,6 +334,12 @@ export function LiveAssistantScreen({
   const sessionFailed = failure !== null && status === 'ended' && !capReached;
   const replyFailed = failure !== null && status === 'live';
   const failureMessage = failure ? t(assistantFailureMessageKey(failure)) : null;
+  const outOfCredits = sessionFailed && isOutOfCreditsFailure(failure);
+  const failureTitle = outOfCredits
+    ? t('mobile.credits.outOfCreditsTitle')
+    : t('mobile.assistant.errorTitle');
+  const failureActionLabel = outOfCredits ? t('mobile.credits.getMore') : t('common.retry');
+  const onFailureAction = outOfCredits ? getMoreCredits : resume;
   const demoLabel = isMock ? t('mobile.assistant.demoBadge') : t('mobile.assistant.liveBadge');
   const demoBanner =
     isMock && !isLiveSurface ? <DemoBanner label={t('mobile.assistant.demoNote')} /> : null;
@@ -363,14 +384,12 @@ export function LiveAssistantScreen({
           micLabel={micMuted ? t('mobile.assistant.micMuted') : t('mobile.assistant.mic')}
           closeLabel={t('mobile.assistant.cookClose')}
           capReached={capReached || sessionFailed}
-          capTitle={
-            sessionFailed ? t('mobile.assistant.errorTitle') : t('mobile.assistant.capTitle')
-          }
+          capTitle={sessionFailed ? failureTitle : t('mobile.assistant.capTitle')}
           capBody={sessionFailed && failureMessage ? failureMessage : capBody}
-          resumeLabel={sessionFailed ? t('common.retry') : t('mobile.assistant.resume')}
+          resumeLabel={sessionFailed ? failureActionLabel : t('mobile.assistant.resume')}
           onToggleMic={toggleMic}
           onClose={endSession}
-          onResume={resume}
+          onResume={sessionFailed ? onFailureAction : resume}
         />
       ) : (
         <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -617,12 +636,14 @@ export function LiveAssistantScreen({
             />
           ) : sessionFailed && failureMessage ? (
             <SessionPausedOverlay
-              icon={failure === 'assistant.micDenied' ? 'micOff' : 'wifiOff'}
-              title={t('mobile.assistant.errorTitle')}
+              icon={
+                outOfCredits ? 'coins' : failure === 'assistant.micDenied' ? 'micOff' : 'wifiOff'
+              }
+              title={failureTitle}
               body={failureMessage}
-              resumeLabel={t('common.retry')}
+              resumeLabel={failureActionLabel}
               endLabel={t('mobile.assistant.end')}
-              onResume={resume}
+              onResume={onFailureAction}
               onEnd={endSession}
             />
           ) : null}

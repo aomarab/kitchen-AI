@@ -339,7 +339,10 @@ were decided differently from the sketch above, and the reasons matter more than
   rule that only a camera session reports detections.
 - **Mobile surfaces adapter errors.** `LiveAssistantScreen` maps the port's `error` codes to
   `mobile.assistant.error*` copy (`lib/assistant/failure.ts`). A failure that ends the session shows
-  an overlay with Retry. A failed reply mid-session shows an inline caption. The connection label
+  an overlay with Retry — except a mint refused for credits (402 `INSUFFICIENT_CREDITS`, mapped to
+  `assistant.outOfCredits`). Retry can never fix that one, so the overlay reads "Out of credits",
+  offers Get more credits, and starts a fresh session once when the user comes back from buying.
+  A failed reply mid-session shows an inline caption. The connection label
   reads `disconnected` once ended, not `connected`. The demo-only copy ("sample", "Demo mode") has
   `*Live` variants chosen by `isMock`.
 

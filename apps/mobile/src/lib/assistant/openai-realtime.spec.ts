@@ -1,4 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '@kitchen/api-client';
 import type { RealtimeSession } from '@kitchen/contracts';
 import { OpenAiRealtimeAssistantClient, realtimeSocketUrl } from './openai-realtime';
 import type { OpenAiRealtimeOptions } from './openai-realtime';
@@ -403,7 +404,7 @@ describe('OpenAiRealtimeAssistantClient (mobile)', () => {
   it('surfaces a failed mint as an error and ends, rather than hanging', async () => {
     const { events, start, fetchMock } = setup({
       session: async () => {
-        throw new Error('402');
+        throw new Error('503');
       },
     });
     await start();
@@ -414,6 +415,25 @@ describe('OpenAiRealtimeAssistantClient (mobile)', () => {
       { type: 'status', status: 'ended' },
     ]);
     // Never reached the provider.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('names an empty credit balance, so the screen can offer credits instead of Retry', async () => {
+    const { events, start, fetchMock } = setup({
+      session: async () => {
+        throw new ApiError(402, {
+          code: 'INSUFFICIENT_CREDITS',
+          messageKey: 'errors.INSUFFICIENT_CREDITS',
+        });
+      },
+    });
+    await start();
+
+    expect(events).toEqual([
+      { type: 'status', status: 'connecting' },
+      { type: 'error', code: 'assistant.outOfCredits' },
+      { type: 'status', status: 'ended' },
+    ]);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

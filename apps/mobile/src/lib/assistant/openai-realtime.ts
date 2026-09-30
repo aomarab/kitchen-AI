@@ -8,6 +8,7 @@ import type {
   StartAssistantOptions,
 } from './realtime-port';
 import { MockRealtimeAssistantClient } from './mock-realtime';
+import { isInsufficientCredits } from '../errors';
 
 /**
  * The live assistant's real transport on **mobile** (kitchen companion spec —
@@ -271,9 +272,13 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
     let session: RealtimeSession;
     try {
       session = await this.options.createSession(locale);
-    } catch {
+    } catch (error) {
       // The mint is where credits are spent and where an outage shows up first.
-      onEvent({ type: 'error', code: 'assistant.mintFailed' });
+      // An empty balance gets its own code: retrying it can never succeed.
+      onEvent({
+        type: 'error',
+        code: isInsufficientCredits(error) ? 'assistant.outOfCredits' : 'assistant.mintFailed',
+      });
       onEvent({ type: 'status', status: 'ended' });
       return;
     }
