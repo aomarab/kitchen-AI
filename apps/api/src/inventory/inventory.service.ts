@@ -12,13 +12,14 @@ import type {
   UpdateInventoryItemRequest,
 } from '@kitchen/contracts';
 import { DB, type Database } from '../db/index.js';
-import { ingredients, inventoryEvents, inventoryItems, storageLocations } from '../db/schema.js';
+import { ingredients, inventoryEvents, inventoryItems } from '../db/schema.js';
 import { AppError } from '../common/errors.js';
 import { numeric, toNumber } from '../common/serialization.js';
 import { decodeCursor, toPage, type Page } from '../common/pagination.js';
 import { inventoryNameMatches } from '../catalog/normalize.js';
 import { CatalogService } from '../catalog/catalog.service.js';
 import { areCompatible, convertQuantity } from './units.js';
+import { assertStorageLocation } from './location-assertion.js';
 import {
   toInventoryEvent,
   toInventoryItem,
@@ -104,9 +105,7 @@ export class InventoryService {
 
     const page = toPage(rows, offset, query.limit);
     return {
-      items: page.items.map((row) =>
-        toInventoryItem(row.item as InventoryItemRow, row.ingredient),
-      ),
+      items: page.items.map((row) => toInventoryItem(row.item as InventoryItemRow, row.ingredient)),
       nextCursor: page.nextCursor,
     };
   }
@@ -128,16 +127,14 @@ export class InventoryService {
     userId: string,
     dto: BulkCreateInventoryRequest,
   ): Promise<InventoryItem[]> {
-    const resolved = await Promise.all(
-      dto.items.map((input) => this.resolveIngredientId(input)),
-    );
+    const resolved = await Promise.all(dto.items.map((input) => this.resolveIngredientId(input)));
 
     const itemIds = await this.db.transaction(async (tx) => {
       const ids: string[] = [];
       for (let i = 0; i < dto.items.length; i += 1) {
         const input = dto.items[i]!;
         const ingredientId = resolved[i]!;
-        await this.assertLocation(tx, householdId, input.locationId);
+        await assertStorageLocation(tx, householdId, input.locationId);
         const id = await this.addStock(tx, {
           householdId,
           ingredientId,
@@ -183,7 +180,8 @@ export class InventoryService {
       const currentQty = toNumber(current.quantity);
 
       if (dto.unit && dto.unit !== current.unit && dto.quantity === undefined) {
-        if (!areCompatible(current.unit, dto.unit)) throw AppError.validation({ reason: 'incompatible_unit' });
+        if (!areCompatible(current.unit, dto.unit))
+          throw AppError.validation({ reason: 'incompatible_unit' });
       }
 
       let finalQuantity = currentQty;
@@ -196,7 +194,7 @@ export class InventoryService {
       const priorInFinalUnit = convertQuantity(currentQty, current.unit, finalUnit) ?? 0;
       const delta = finalQuantity - priorInFinalUnit;
 
-      if (dto.locationId) await this.assertLocation(tx, householdId, dto.locationId);
+      if (dto.locationId) await assertStorageLocation(tx, householdId, dto.locationId);
 
       const patch: Record<string, unknown> = { updatedAt: new Date() };
       if (dto.locationId !== undefined) patch.locationId = dto.locationId;
@@ -282,10 +280,7 @@ export class InventoryService {
           .select({ id: inventoryItems.id })
           .from(inventoryItems)
           .where(
-            and(
-              eq(inventoryItems.householdId, householdId),
-              inArray(inventoryItems.id, itemIds),
-            ),
+            and(eq(inventoryItems.householdId, householdId), inArray(inventoryItems.id, itemIds)),
           )
           .orderBy(inventoryItems.id)
           .for('update');
@@ -296,10 +291,7 @@ export class InventoryService {
           .select({ id: inventoryItems.id, unit: inventoryItems.unit })
           .from(inventoryItems)
           .where(
-            and(
-              eq(inventoryItems.id, event.itemId),
-              eq(inventoryItems.householdId, householdId),
-            ),
+            and(eq(inventoryItems.id, event.itemId), eq(inventoryItems.householdId, householdId)),
           )
           .limit(1);
         if (!item) {
@@ -352,7 +344,12 @@ export class InventoryService {
       }
     });
 
-    return { applied, duplicate, rejected, items: await this.fetchItems(householdId, [...touched]) };
+    return {
+      applied,
+      duplicate,
+      rejected,
+      items: await this.fetchItems(householdId, [...touched]),
+    };
   }
 
   /* --------------------------- helpers ------------------------- */
@@ -433,17 +430,6 @@ export class InventoryService {
     return item.id;
   }
 
-  private async assertLocation(tx: Tx, householdId: string, locationId: string): Promise<void> {
-    const [row] = await tx
-      .select({ id: storageLocations.id })
-      .from(storageLocations)
-      .where(
-        and(eq(storageLocations.id, locationId), eq(storageLocations.householdId, householdId)),
-      )
-      .limit(1);
-    if (!row) throw AppError.notFound();
-  }
-
   /** Locks the row so a read-modify-write can be trusted; caller supplies the tx. */
   private async requireItem(tx: Tx, householdId: string, id: string): Promise<InventoryItemRow> {
     const [row] = await tx
@@ -462,9 +448,7 @@ export class InventoryService {
       .select({ item: inventoryItems, ingredient: ingredients })
       .from(inventoryItems)
       .innerJoin(ingredients, eq(ingredients.id, inventoryItems.ingredientId))
-      .where(
-        and(eq(inventoryItems.householdId, householdId), inArray(inventoryItems.id, itemIds)),
-      );
+      .where(and(eq(inventoryItems.householdId, householdId), inArray(inventoryItems.id, itemIds)));
 
     // Returned in the order asked for. A bare select has no order at all, and
     // `bulkCreate` hands this array straight back to a caller that pairs it

@@ -8,22 +8,24 @@ import {
 } from '@kitchen/contracts';
 import { ZodPipe } from '../common/http.js';
 import { AuthGuard } from '../common/auth.guard.js';
+import { StaffGuard } from '../common/staff.guard.js';
 import type { Page } from '../common/pagination.js';
 import { CatalogService } from './catalog.service.js';
 
-@Controller('ingredients')
-@UseGuards(AuthGuard)
+@Controller()
 export class CatalogController {
   constructor(@Inject(CatalogService) private readonly catalog: CatalogService) {}
 
-  @Get()
+  @Get('ingredients')
+  @UseGuards(AuthGuard)
   search(
     @Query(new ZodPipe(searchIngredientsQuerySchema)) query: SearchIngredientsQuery,
   ): Promise<Page<Ingredient>> {
     return this.catalog.search(query);
   }
 
-  @Post()
+  @Post('admin/ingredients')
+  @UseGuards(AuthGuard, StaffGuard)
   create(
     @Body(new ZodPipe(createIngredientRequestSchema)) body: CreateIngredientRequest,
   ): Promise<Ingredient> {

@@ -1,8 +1,9 @@
-import { Pressable, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 import { stepperTone } from './control-tones';
-import { spacing } from '../theme';
+import { usePressFeedback } from './press-feedback';
+import { radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 export interface QuantityStepperProps {
@@ -11,9 +12,9 @@ export interface QuantityStepperProps {
   step?: number;
   min?: number;
   max?: number;
-  /** Replaces the bare number, e.g. "8 cups". */
+  /** Replaces the bare number; keep this one line and render units outside the box. */
   label?: string;
-  /** Shown as a caption under the value, e.g. "kg". */
+  /** Kept in accessibilityValue while the visual box stays one line. */
   unit?: string;
   /** What is being adjusted, spoken before the value. */
   accessibilityLabel?: string;
@@ -23,10 +24,58 @@ export interface QuantityStepperProps {
   incrementLabel: string;
 }
 
+export const STEPPER_VISUAL_WIDTH = 118;
+export const STEPPER_VISUAL_HEIGHT = 36;
+const STEPPER_TARGET_SIZE = 44;
+
+interface StepperActionProps {
+  action: 'decrement' | 'increment';
+  disabled: boolean;
+  onPress: () => void;
+  fill: string;
+  glyph: string;
+}
+
+function StepperAction({ action, disabled, onPress, fill, glyph }: StepperActionProps) {
+  const pressFeedback = usePressFeedback();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessible={false}
+      importantForAccessibility="no"
+      {...pressFeedback.pressHandlers}
+      style={{
+        width: STEPPER_TARGET_SIZE,
+        height: STEPPER_TARGET_SIZE,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: -(STEPPER_TARGET_SIZE - STEPPER_VISUAL_HEIGHT) / 2,
+      }}
+    >
+      <Animated.View
+        style={[
+          {
+            width: STEPPER_VISUAL_HEIGHT,
+            height: STEPPER_VISUAL_HEIGHT,
+            borderRadius: radius.none,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: fill,
+          },
+          disabled ? { opacity: 0.4 } : pressFeedback.animatedStyle,
+        ]}
+      >
+        <Icon name={action === 'increment' ? 'plus' : 'minus'} size={18} color={glyph} />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 /**
- * `−` and `+` circles of 32pt, each centred in a 44pt Pressable, around a
- * `bodyStrong` value (spec §8.4). To a screen reader it is one adjustable
- * element: swipe up or down to change it. Row direction mirrors under RTL.
+ * One adjustable element: swipe up or down to change it. Row direction mirrors
+ * under RTL while each 36pt square action keeps a 44pt Pressable.
  */
 export function QuantityStepper({
   value,
@@ -49,32 +98,15 @@ export function QuantityStepper({
   const display = label ?? String(value);
 
   const circle = (action: 'decrement' | 'increment', onPress: () => void, disabled: boolean) => {
-    const tone = stepperTone(colors, action);
+    const tone = stepperTone(colors, action, disabled);
     return (
-      <Pressable
-        onPress={onPress}
+      <StepperAction
+        action={action}
         disabled={disabled}
-        accessible={false}
-        importantForAccessibility="no"
-        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
-      >
-        {({ pressed }) => (
-          <View
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: tone.fill,
-              opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-            }}
-          >
-            <Icon name={action === 'increment' ? 'plus' : 'minus'} size={18} color={tone.glyph} />
-          </View>
-        )}
-      </Pressable>
+        onPress={onPress}
+        fill={tone.fill}
+        glyph={tone.glyph}
+      />
     );
   };
 
@@ -98,18 +130,39 @@ export function QuantityStepper({
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
     >
-      {circle('decrement', decrement, atMin)}
-      <View style={{ minWidth: 40, alignItems: 'center' }}>
-        <AppText variant="bodyStrong" center style={{ fontVariant: ['tabular-nums'] }}>
-          {display}
-        </AppText>
-        {unit ? (
-          <AppText variant="caption" muted center>
-            {unit}
-          </AppText>
-        ) : null}
+      <View
+        style={{
+          width: STEPPER_VISUAL_WIDTH,
+          height: STEPPER_TARGET_SIZE,
+          justifyContent: 'center',
+        }}
+      >
+        <View
+          style={{
+            width: STEPPER_VISUAL_WIDTH,
+            height: STEPPER_VISUAL_HEIGHT,
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: radius.none,
+            backgroundColor: colors.bg,
+          }}
+        >
+          {circle('decrement', decrement, atMin)}
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <AppText
+              variant="bodyStrong"
+              center
+              numberOfLines={1}
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
+              {display}
+            </AppText>
+          </View>
+          {circle('increment', increment, atMax)}
+        </View>
       </View>
-      {circle('increment', increment, atMax)}
     </View>
   );
 }

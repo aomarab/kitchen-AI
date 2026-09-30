@@ -61,7 +61,7 @@ export function useCreateHousehold() {
   });
 }
 
-/** Join a household by 6-character invite code. */
+/** Join a household by 6- to 10-character invite code. */
 export function useJoinHousehold() {
   const addHousehold = useAuthStore((state) => state.addHousehold);
   return useMutation({

@@ -37,10 +37,12 @@ const ACCOUNT_KEYS = [
   'mobile.more.settings',
   'mobile.more.signOut',
   'mobile.more.appVersion',
-  'mobile.more.iconCredit',
   'mobile.screen.entry',
   'mobile.timers.entry',
   'mobile.wellness.entry',
+  'mobile.account.kitchenSection',
+  'mobile.account.toolsSection',
+  'mobile.account.appSection',
 ];
 
 describe('information architecture (spec §4)', () => {
@@ -98,41 +100,173 @@ describe('information architecture (spec §4)', () => {
     expect(read('components', 'TabHeader.tsx')).toContain('<AccountButton');
   });
 
-  it('keeps the Plan surfaces on the G7 Bento contract', () => {
+  it('keeps the Plan surfaces on the Coral agenda contract', () => {
     const plans = read('app', '(tabs)', 'plans.tsx');
     expect(plans).toContain('<DayChipStrip');
     expect(plans).toContain('<PlanTiles');
+    expect(plans).toContain('<PlanBoard');
+    expect(plans, 'Plans header action migrated off RoundButton').not.toContain('RoundButton');
+    expect(plans, 'Plans header must keep the generate action').toContain('<IconButton');
+    expect(plans, 'Plans empty state must use the J calendar illustration').toContain(
+      'illustration="calendar"',
+    );
+    expect(plans, 'Plans tab owns B3 job polling').toContain('useJob(activeGeneration?.jobId');
+    expect(plans, 'Plans tab stores a ready plan on success').toContain(
+      'finishSuccess(generationView.planId)',
+    );
+    expect(plans, 'Plans tab opens ready plans only after focus').toContain('useIsFocused()');
+    expect(plans, 'Plans tab consumes ready plans exactly once').toContain('consumeReadyPlan()');
+    expect(plans, 'Plans tab invalidates plan queries after generation').toContain(
+      "invalidateQueries({ queryKey: ['plans'] })",
+    );
+    expect(plans, 'Plans tab shows the in-tab generating state').toContain('<GeneratingPlanState');
+    for (const key of ['plans.daily', 'plans.weekly', 'plans.monthly']) {
+      expect(plans, `Plans segmented control must use ${key}`).toContain(`t('${key}')`);
+    }
+    const weeklyBranch =
+      plans.match(/view === 'week'\s*\? \(([\s\S]*?)\)\s*:\s*view === 'day'/)?.[1] ?? '';
+    expect(
+      weeklyBranch,
+      'Plans weekly branch must be explicit so frame order stays guarded',
+    ).not.toHaveLength(0);
+    expect(
+      weeklyBranch.indexOf('<PlanTiles'),
+      'Weekly frame order must put progress immediately after the segmented control',
+    ).toBeLessThan(weeklyBranch.indexOf('<DayChipStrip'));
+    expect(
+      weeklyBranch.indexOf('<DayChipStrip'),
+      'Weekly frame order must put the day strip before plan-day rows',
+    ).toBeLessThan(weeklyBranch.indexOf('<PlanBoard'));
 
     const tiles = read('features', 'plans', 'PlanTiles.tsx');
-    expect(tiles).toContain("'mobile.plans.cookedCaption'");
-    expect(tiles).toContain("'mobile.plans.toBuyCaption'");
-    expect(tiles).not.toContain('name="warning"');
+    expect(tiles, 'Plan progress is now a J summary block, not legacy Bento tiles').not.toContain(
+      '<Bento',
+    );
+    expect(
+      tiles,
+      'Plan progress is now a J summary block, not legacy Tile bridge props',
+    ).not.toContain('<Tile');
+    expect(tiles).toContain('<Stat');
+    expect(read('components', 'index.ts')).toContain('export { Stat }');
+    expect(tiles).toContain('function PlanShortfallLine');
+    expect(tiles).toContain('usePressFeedback()');
+    expect(tiles).toContain("'mobile.plans.addToList'");
+    expect(tiles).toContain('planCookedStatValue');
+    expect(translate('en', 'mobile.plans.cookedCaption' as never)).toBe('cooked');
+    expect(tiles).not.toMatch(/\b(tint|fill|compact)=/);
     expect(tiles).not.toContain('icon="warning"');
-    for (const key of ['mobile.plans.cookedCaption', 'mobile.plans.toBuyCaption']) {
+    for (const key of [
+      'mobile.plans.cookedCaption',
+      'mobile.plans.toBuyCaption',
+      'mobile.plans.addToList',
+    ]) {
       expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
       expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
     }
 
+    const strip = read('features', 'plans', 'DayChipStrip.tsx');
+    expect(strip).toContain('const DAY_CELL_WIDTH = 44');
+    expect(strip).toContain('const DAY_CELL_HEIGHT = 60');
+    expect(strip).toContain('accessibilityState={{ selected: day.isSelected }}');
+    expect(
+      strip,
+      'Plans day cells own selection; they should not inherit Chip styling',
+    ).not.toContain('<Chip');
+
+    const board = read('features', 'plans', 'PlanBoard.tsx');
+    expect(board).toContain('function PlanDayRow');
+    expect(board).toContain('function MealEntryRow');
+    expect(board).toContain('function EmptySlotRow');
+    expect(board).toContain('usePressFeedback()');
+    expect(board).toContain('planEntryStatus');
+    expect(board).toContain('size={56}');
+    expect(board).toContain('size={72}');
+    expect(board).toContain('minHeight: 80');
+    expect(board).toContain('paddingVertical: 4');
+    expect(board).toContain('showDate={shouldShowPlanDateColumn');
+    expect(board).toContain('<Icon name="check" size={14} color={colors.success} />');
+    expect(board).toContain('style={{ color: colors.success, flexShrink: 1 }}');
+    expect(board).not.toContain('pressed ?');
+    expect(board).not.toContain('<ListGroup');
+
     const generate = read('app', 'generate-plan.tsx');
-    expect(generate).toContain('<OrbMascot');
-    expect(generate).toContain('state="looking"');
+    const planGeneration = read('features', 'plans', 'GeneratingPlanState.tsx');
+    const planStore = read('stores', 'plan-generation.ts');
+    expect(generate, 'Generate plan must retire the orb mascot').not.toContain('<OrbMascot');
+    expect(generate, 'Generating moved into the Plans tab by user ruling B3').not.toContain(
+      'useJob',
+    );
+    expect(generate, 'Generate records the plan job in the Plans-tab store').toContain(
+      'startGeneration(started.id, scope)',
+    );
+    expect(generate, 'Generate returns to the existing Plans tab after the job starts').toContain(
+      "router.dismissTo('/plans')",
+    );
+    expect(generate).toContain('<DateField');
+    expect(generate).toContain('<SegmentedControl');
+    expect(generate).toContain('<QuantityStepper');
+    expect(generate).toContain('footer=');
+    expect(planGeneration).toContain('<Illustration name="pot" size={64} />');
+    expect(planGeneration).toContain('<Progress');
+    expect(planGeneration).toContain('<LoadingState rows={3} compact');
+    expect(planGeneration).not.toContain('<Avatar');
+    expect(planStore).toContain('finishFailure');
+    expect(generate, 'Generate default servings must match the pre-C8 request body').toContain(
+      'const [servings, setServings] = useState(2)',
+    );
+    expect(generate, 'Generate default max cook time must remain omitted').toContain(
+      'const [maxCook, setMaxCook] = useState<number | null>(null)',
+    );
+
+    const detail = read('app', 'plan', '[id].tsx');
+    expect(detail).toContain('variant="shortfall"');
+    expect(
+      detail.indexOf('<PlanTiles'),
+      'Plan detail must render week progress before plan-day rows',
+    ).toBeLessThan(detail.indexOf('<PlanBoard'));
+    expect(
+      detail.indexOf('<PlanBoard'),
+      'Plan detail must render the shortfall line after plan-day rows',
+    ).toBeLessThan(detail.indexOf('variant="shortfall"'));
   });
 
-  it('draws the avatar as a 36pt soft RoundButton that opens Account', () => {
+  it('draws the avatar as a 44pt AccountButton around a 32pt J avatar', () => {
     const button = read('components', 'AccountButton.tsx');
-    expect(button).toContain('<RoundButton');
-    expect(button).toContain('size={36}');
-    expect(button).toContain('tone="soft"');
+    expect(button).toContain('<Pressable');
+    expect(button).toContain('width: 44');
+    expect(button).toContain('height: 44');
+    expect(button).toContain('<Avatar');
+    expect(button).toContain('size={32}');
+    expect(button).toContain('usePressFeedback');
     expect(button).toContain("router.push('/account')");
     expect(button).toContain("t('mobile.account.title')");
   });
 
-  it('lays grouped rows out at 56pt (spec §9.7)', () => {
+  it('lays every flat J row out at 56pt with a rowline', () => {
     const row = read('components', 'ListRow.tsx');
-    expect(row).toMatch(/grouped\s*\?\s*\{[^}]*minHeight:\s*56/);
+    expect(row).toMatch(/minHeight:\s*56/);
+    expect(row).toContain('borderBottomColor: colors.rowline');
+    expect(row).not.toContain('grouped?:');
   });
 
-  it('keeps Account and Settings rows on the grouped G10 contract (spec §9.7)', () => {
+  it('keeps Account and Settings on the Coral account contract (spec §9)', () => {
+    const account = read('app', 'account.tsx');
+    expect(account, 'Account keeps the profile row action').toContain("router.push('/profile')");
+    expect(account, 'Account keeps the household row').toContain("'/settings/household'");
+    expect(account, 'Account keeps the credits row').toContain("'/ai-usage'");
+    expect(account, 'Account keeps the kitchen-screen row').toContain("'/screen'");
+    expect(account, 'Account keeps the cooking-timers row').toContain("'/timers'");
+    expect(account, 'Account keeps the wellness row').toContain("'/wellness'");
+    expect(account, 'Account keeps the notification row').toContain("'/settings/notifications'");
+    expect(account, 'Account keeps the settings row').toContain("'/settings'");
+    expect(account, 'Account keeps the exact sign-out flow').toContain('resetToSignIn(router)');
+    expect(
+      account,
+      'Account rows should be flat J rows, not deprecated grouped rows',
+    ).not.toContain('grouped');
+    expect(account).toContain('<AccountHero');
+    expect(account).toContain('tone="danger"');
+
     const themePicker = read('features', 'settings', 'ThemePicker.tsx');
     expect(themePicker, 'ThemePicker must use the shared segmented control').toContain(
       '<SegmentedControl',
@@ -142,36 +276,58 @@ describe('information architecture (spec §4)', () => {
     );
 
     const settings = read('app', 'settings', 'index.tsx');
-    expect(settings, 'Settings navigation groups should use ListGroup cards').toContain(
+    expect(settings, 'Settings navigation groups should use shared ListGroup columns').toContain(
       '<ListGroup',
     );
-    const rows = settings.match(/<ListRow[\s\S]*?\/>/g) ?? [];
-    expect(rows.length, 'Settings should render navigation rows').toBeGreaterThan(0);
-    for (const row of rows) {
-      expect(row, `Settings navigation row is not grouped:\n${row}`).toContain('grouped');
+    expect(
+      settings,
+      'Settings rows should be flat J rows, not deprecated grouped rows',
+    ).not.toContain('grouped');
+    expect(settings, 'Settings keeps the language switch action on screen').toContain(
+      'chooseLocale(nextLocale)',
+    );
+    expect(settings, 'Settings keeps the appearance persistence').toContain('<ThemePicker');
+    for (const href of [
+      '/settings/notifications',
+      '/settings/places',
+      '/settings/reminders',
+      '/settings/assistant',
+      '/settings/feedback',
+      '/settings/delete-account',
+    ]) {
+      expect(settings, `Settings lost ${href}`).toContain(`'${href}'`);
     }
 
     const deleteAccount = read('app', 'settings', 'delete-account.tsx');
     expect(deleteAccount, 'Delete account must keep the destructive CTA tone').toContain(
-      'variant="danger"',
+      'variant="destructive"',
     );
 
     const toggleRow = read('components', 'ToggleRow.tsx');
-    expect(
-      toggleRow,
-      'ToggleRow should let the platform draw a consistent native thumb',
-    ).not.toContain('thumbColor');
-    expect(toggleRow, 'ToggleRow must paint the iOS off-state gutter').toContain(
-      'ios_backgroundColor={colors.switchTrackOff}',
+    expect(toggleRow, 'ToggleRow should use the J square Toggle primitive').toContain('<Toggle');
+    expect(toggleRow, 'ToggleRow should not wrap the native Switch after C3').not.toContain(
+      '<Switch',
     );
-    expect(toggleRow, 'ToggleRow must center a lone label but top-align label+hint rows').toContain(
-      "alignItems: hint ? 'flex-start' : 'center'",
+    expect(toggleRow, 'ToggleRow should delegate structure to the flat J ListRow').toContain(
+      '<ListRow',
     );
-    expect(toggleRow, 'Switch thumb must mirror under the app RTL direction').toContain(
-      "dir === 'rtl' ? { transform: [{ scaleX: -1 }] } : undefined",
+    expect(toggleRow, 'ToggleRow should preserve the 56pt row target').toContain(
+      'TOGGLE_ROW_MIN_HEIGHT = 56',
+    );
+    const toggle = read('components', 'Toggle.tsx');
+    expect(toggle, 'Toggle knob motion must mirror under the app RTL direction').toContain(
+      "dir === 'rtl' ? -TOGGLE_TRAVEL : TOGGLE_TRAVEL",
     );
 
     const household = read('app', 'settings', 'household.tsx');
+    expect(household, 'Household members should render with J Avatars').toContain('<Avatar');
+    expect(household, 'Household must keep the existing Share path for invite codes').toContain(
+      'Share.share({ message: household.inviteCode })',
+    );
+    expect(
+      household,
+      'Household rows should be flat J rows, not deprecated grouped rows',
+    ).not.toContain('grouped');
     const inviteActions =
       household.match(
         /t\('household\.shareInvite'\)[\s\S]*?t\('mobile\.settings\.newInviteCode'\)/,
@@ -179,25 +335,28 @@ describe('information architecture (spec §4)', () => {
     expect(inviteActions, 'Household invite actions should render in order').toContain(
       "t('mobile.settings.newInviteCode')",
     );
-    expect(inviteActions, 'Household invite actions must stack, not share one row').not.toContain(
+    expect(inviteActions, 'Household invite actions should sit in the frame row').toContain(
       "flexDirection: 'row'",
     );
-    expect(
-      inviteActions,
-      'Household invite buttons must be full-width, not half-width',
-    ).not.toContain('flex: 1');
+    expect(inviteActions, 'Household invite buttons keep intrinsic width').toContain(
+      'fullWidth={false}',
+    );
   });
 
   it('keeps inline tab controls named and inside safe areas (spec §12)', () => {
     const checkboxFile = read('features', 'shop', 'ShoppingCheckbox.tsx');
-    expect(checkboxFile, 'shopping checkbox Pressable is missing').toContain(
+    expect(checkboxFile, 'shopping checkbox should delegate to the J Checkbox primitive').toContain(
+      '<Checkbox',
+    );
+    const checkbox = read('components', 'Checkbox.tsx');
+    expect(checkbox, 'shopping checkbox Pressable is missing').toContain(
       'accessibilityRole="checkbox"',
     );
-    expect(checkboxFile, 'shopping checkbox touch target width is below 44pt').toMatch(
-      /(?:minWidth|width):\s*44/,
+    expect(checkbox, 'shopping checkbox touch target width is below 44pt').toContain(
+      'width: CHECKBOX_TARGET_SIZE',
     );
-    expect(checkboxFile, 'shopping checkbox touch target height is below 44pt').toMatch(
-      /(?:minHeight|height):\s*44/,
+    expect(checkbox, 'shopping checkbox touch target height is below 44pt').toContain(
+      'height: CHECKBOX_TARGET_SIZE',
     );
     expect(checkboxFile, 'shopping checkbox label should be injected by its row').toContain(
       'accessibilityLabel={label}',
@@ -206,20 +365,22 @@ describe('information architecture (spec §4)', () => {
     expect(row, 'shopping row must pass a sentence label to the checkbox').toContain(
       'accessibilityLabel',
     );
-    expect(row, 'purchased shopping rows should be struck through').toContain(
-      "textDecorationLine: 'line-through'",
+    expect(row, 'J purchased shopping rows dim text without a strike-through').not.toContain(
+      'textDecorationLine',
     );
-    expect(
-      checkboxFile,
-      'unchecked shopping checkbox ring must use the accessible token',
-    ).toContain('colors.textMuted');
-    expect(checkboxFile, 'unchecked shopping checkbox ring must be 1.5pt').toContain(
-      'borderWidth: checked ? 1 : 1.5',
+    expect(row, 'J shopping rows use the body tier for item names').toContain('variant="body"');
+    expect(row, 'J shopping rows separate with a rowline').toContain(
+      'borderBottomColor: colors.rowline',
     );
-    expect(
-      checkboxFile,
-      'shopping checkbox tick must use the semantic success label token',
-    ).toContain('colors.onSuccess');
+    expect(checkbox, 'unchecked shopping checkbox ring must use the control token').toContain(
+      'colors.control',
+    );
+    expect(checkbox, 'unchecked shopping checkbox ring must be 1.5pt').toContain(
+      'borderWidth: checked ? 0 : 1.5',
+    );
+    expect(checkbox, 'shopping checkbox tick must use the onFill label token').toContain(
+      'colors.onFill',
+    );
 
     const kitchen = read('app', '(tabs)', 'kitchen.tsx');
     expect(kitchen).not.toContain("edges={['top']}");
@@ -247,10 +408,57 @@ describe('information architecture (spec §4)', () => {
     expect(shopping, 'Shop must not send free-text names to addShoppingItems').not.toMatch(
       /items:\s*\[\s*\{[\s\S]*?(?:name|label|rawName)\s*:/,
     );
+    expect(shopping, 'Shop header action migrated off RoundButton').not.toContain('RoundButton');
+    expect(shopping, 'Shop header must keep the share action').toContain('<IconButton');
+    expect(shopping, 'Shop empty state must use the J bag illustration').toContain(
+      'illustration="bag"',
+    );
+    expect(shopping, 'Shop content must sit inside the J page gutter').toContain('padded={false}');
+    expect(shopping, 'Shop rows are domain rows, not legacy grouped card rows').not.toContain(
+      '<ListGroup',
+    );
+    expect(shopping, 'Shop must render the frame To buy group label').toContain(
+      "t('mobile.home.statShopping')",
+    );
+    expect(shopping, 'Shop To buy label must include the unpurchased count').toContain(
+      'unpurchasedCountText',
+    );
+  });
+
+  it('keeps Capture and Review on the Coral confirmation contract (spec §9.7)', () => {
+    const capture = read('app', 'capture', 'index.tsx');
+    const chrome = read('features', 'capture', 'CaptureChrome.tsx');
+    const photo = read('features', 'capture', 'PhotoCapture.tsx');
+    const pins = read('features', 'capture', 'ArPins.tsx');
+    const review = read('features', 'capture', 'ReviewList.tsx');
+    const row = read('features', 'capture', 'ReviewTile.tsx');
+
+    expect(capture).toContain('<CapturePageHeader');
+    expect(chrome).toContain('CAPTURE_METHOD_OPTIONS');
+    expect(chrome).toContain("value: 'manual'");
+    expect(chrome).toContain('export function CaptureModeTabs');
+    expect(chrome).not.toContain('<SegmentedControl');
+    expect(photo).toContain('colors.surfaceInverseAlt');
+    expect(photo).toContain("setSession(session, 'photo', zipPhotos(photos, keys))");
+    expect(photo).toContain("setSession(session, 'receipt')");
+    expect(photo).toContain(
+      'buildInventoryInputs(initialReviewRows(session, locations.data ?? [])',
+    );
+    expect(pins).toContain('DETECTION_CORNER_LENGTH = 18');
+    expect(pins).toContain('DETECTION_TAG_HEIGHT = 22');
+    expect(review).toContain('orderedReviewRows');
+    expect(review).toContain("t('mobile.review.hint')");
+    expect(review).toContain('ReviewFooter');
+    expect(review).toContain("const rowVariant = source === 'assistant' ? 'rich' : 'flat'");
+    expect(row).toContain('showQuantityStepper');
+    expect(row).toContain('borderBottomColor: colors.rowline');
+    expect(row).not.toContain('<Tile');
+    expect(review).not.toContain('<Bento');
   });
 
   it('keeps Item detail on the append-only event-ledger contract (spec §9.7)', () => {
     const item = read('app', 'item', '[id].tsx');
+    const productReview = read('features', 'inventory', 'ProductReview.tsx');
 
     expect(item, 'Item detail must read household event history').toContain('useInventoryEvents');
     expect(item, 'Item detail must filter history through the pure helper').toContain(
@@ -263,13 +471,33 @@ describe('information architecture (spec §4)', () => {
       item,
       'The quantity stepper must still write corrected deltas to useAdjustQuantity, not updateInventoryItem',
     ).toContain("adjust.mutate({ itemId: item.id, delta, unit: item.unit, reason: 'corrected' })");
+    const updateBody = item.match(/update\.mutate\(\s*\{([\s\S]*?)\}\s*,\s*\{/);
+    expect(updateBody, 'Item detail must keep one updateInventoryItem save body').not.toBeNull();
     expect(
-      item,
-      'The variable-length expiry badge belongs in the body, not Header trailing',
-    ).not.toMatch(/<Header[\s\S]*?trailing=/);
-    expect(item, 'Item mini tiles must use the shared Bento primitive').toContain('<Bento>');
-    expect(item, 'Item mini tiles must use shared Tile, not a screen-local MiniTile').not.toContain(
-      'MiniTile',
+      updateBody?.[1] ?? '',
+      'Quantity must remain an append-only event and never enter the updateInventoryItem body',
+    ).not.toContain('quantity');
+    expect(item, 'J item detail keeps the pencil as the nav trailing action').toMatch(
+      /<Header[\s\S]*?trailing=\{[\s\S]*?<IconButton[\s\S]*?icon="pencil"/,
+    );
+    expect(item, 'J item detail renders fact rows, not the old Bento mini tiles').not.toContain(
+      '<Bento',
+    );
+    expect(item, 'J item detail renders fact rows, not shared Tile mini cards').not.toContain(
+      '<Tile',
+    );
+    expect(item, 'Quantity stays editable inline on the page').toContain('<QuantityStepper');
+    expect(item, 'Item detail keeps the visible unit beside the numeric stepper').toContain(
+      'const quantityUnitText = unitLabel(t, item.unit);',
+    );
+    expect(item, 'Item detail keeps the visible unit beside the numeric stepper').toContain(
+      '{quantityUnitText}',
+    );
+    expect(item, 'Item footer keeps the remove action visible outside the edit sheet').toContain(
+      "title={t('inventory.deleteItem')}",
+    );
+    expect(item, 'C7 screens must migrate off deprecated Button danger aliases').not.toContain(
+      'variant="danger"',
     );
     expect(item, 'History loading must use the shared compact LoadingState').toContain(
       '<LoadingState compact',
@@ -277,34 +505,86 @@ describe('information architecture (spec §4)', () => {
     expect(item, 'History errors must use the shared compact ErrorState').toMatch(
       /<ErrorState[\s\S]*?\bcompact\b/,
     );
+    expect(item, 'Product review stays on the item page below History').toContain('<ProductReview');
+    expect(productReview, 'ProductReview is the J inline rate block, not a card').not.toContain(
+      '<Card',
+    );
+    expect(productReview).toContain('<StarRating');
+    expect(productReview).toContain('<Field');
+    expect(productReview, 'Review submission uses the J secondary outline button').toContain(
+      'variant="secondary"',
+    );
+    expect(productReview, 'The privacy caption remains visible').toContain(
+      "t('mobile.productReview.vendorNote')",
+    );
   });
 
-  it('keeps Entry detail on shared Bento tiles and status semantics (spec §9.7)', () => {
+  it('keeps Settings places on the Coral place-row contract', () => {
+    const places = read('app', 'settings', 'places.tsx');
+
+    expect(places).toContain("t('mobile.places.entryHint')");
+    expect(places, 'Place rows must render J place drawings').toContain('<Illustration');
+    expect(places, 'Place rows and move sheet must share the Home place art mapping').toContain(
+      'placeIllustration(',
+    );
+    expect(
+      places,
+      'Rename and remove controls are icon buttons in the row trailing area',
+    ).toContain('<IconButton');
+    expect(places, 'C7 must move places off deprecated grouped rows').not.toContain('grouped');
+    expect(places, 'C7 must move places off generic location glyph rows').not.toContain(
+      'icon="location"',
+    );
+    expect(places, 'Occupied removal must still ask for a move destination').toContain(
+      "t('mobile.places.moveTitle')",
+    );
+    expect(places, 'Move rows keep the destructive move-and-remove label').toContain(
+      "t('mobile.places.moveHere')",
+    );
+    expect(
+      places,
+      'Move rows must render the destructive move-and-remove subtitle in danger text',
+    ).toContain('function MoveDestinationSubtitle');
+    expect(
+      places,
+      'Move rows must not rely on ListRow muted subtitle styling for the destructive action',
+    ).toContain('style={{ color: colors.danger }}');
+  });
+
+  it('keeps Entry detail on the Coral meal-sheet route contract (spec §9.7)', () => {
     const entry = read('app', 'entry', '[id].tsx');
     const board = read('features', 'plans', 'PlanBoard.tsx');
 
-    expect(entry, 'Entry mini tiles must use the shared Bento primitive').toContain('<Bento>');
     expect(
       entry,
-      'Entry mini tiles must use shared Tile, not a screen-local MiniTile',
-    ).not.toContain('MiniTile');
+      'Entry detail is now the J meal-sheet layout, not the old Bento mini tiles',
+    ).not.toContain('<Bento');
+    expect(
+      entry,
+      'Entry detail is now the J meal-sheet layout, not shared Tile mini cards',
+    ).not.toContain('<Tile');
+    expect(entry).toContain('<SegmentedControl');
+    expect(entry).toContain('value={entry.state}');
+    expect(entry).toContain('usePlanCoverage');
+    expect(entry).toContain('planEntryHaveBadge');
+    expect(entry).not.toContain("entry.fullyCovered ? t('mobile.home.allInKitchen') : statusLabel");
+    expect(entry).toContain("value: 'planned'");
+    expect(entry).toContain("value: 'cooked'");
+    expect(entry).toContain("value: 'skipped'");
+    expect(entry).toContain("t('mobile.plans.keepMeal')");
+    expect(entry).toContain("t('mobile.plans.changeMeal')");
+    expect(entry, 'Entry recipe row must keep the recipe detail route').toContain(
+      'router.push(`/recipe/${recipe.id}`)',
+    );
+    expect(
+      entry,
+      'B4 removes the secondary cook-mode footer action from the meal sheet',
+    ).not.toContain('router.push(`/recipe/${recipe.id}/cook`)');
+    expect(entry).not.toContain('<QuantityStepper');
+    expect(entry).not.toContain("t('mobile.recipe.startCooking')");
     expect(entry, 'Entry status title must be a stable label, not badge copy').toContain(
       "t('mobile.plans.status')",
     );
-    const dateTile =
-      entry.match(/<Tile[\s\S]*?accessibilityLabel=\{`\$\{slot\}[\s\S]*?<\/Tile>/)?.[0] ?? '';
-    const statusTile =
-      entry.match(
-        /<Tile[\s\S]*?accessibilityLabel=\{`\$\{t\('mobile\.plans\.status'\)\}[\s\S]*?<\/Tile>/,
-      )?.[0] ?? '';
-    expect(
-      dateTile,
-      'Entry date tile must stay the narrower half because its chip is short',
-    ).not.toContain('weight={1.4}');
-    expect(
-      statusTile,
-      'Entry status tile must be the wider half so long badges stay one line',
-    ).toContain('weight={1.4}');
     expect(entry, 'Entry status must come from the shared helper').toContain('planEntryStatus');
     expect(entry, 'Entry Hijri caption must share the format eligibility helper').toContain(
       'hijriCaption(locale',
@@ -336,25 +616,94 @@ describe('information architecture (spec §4)', () => {
 
   it('keeps the credits purchase route on the store purchase path (spec §9.7)', () => {
     const buyCredits = read('screens', 'BuyCreditsScreen.tsx');
+    const packCard = read('features', 'credits', 'CreditPackCard.tsx');
 
     expect(buyCredits).toContain("import { buyCredits } from '../lib/purchase';");
     expect(buyCredits).toContain('<BalanceTile');
     expect(buyCredits).toContain('<LowBalanceNotice');
-    expect(buyCredits).toContain('accessibilityRole="radio"');
-    expect(buyCredits).toContain(
-      'accessibilityState={{ checked: selected, disabled: busyProduct !== null }}',
-    );
-    expect(buyCredits).toContain('disabled: busyProduct !== null');
-    expect(buyCredits).toMatch(
-      /style=\{selected \? \{ borderWidth: 2, borderColor: colors\.primary \} : undefined\}/,
-    );
-    expect(buyCredits).not.toContain('borderWidth: selected ? 2 : undefined');
-    expect(buyCredits).not.toContain('borderColor: selected ? colors.primary : undefined');
+    expect(buyCredits).toContain('<CreditPackCard');
+    expect(buyCredits).toContain('onBuy={(productId) => void onBuy(productId)}');
+    expect(buyCredits).toContain('busyProduct === pack.productId');
+    expect(buyCredits).toContain('disabled={busyProduct !== null}');
+    expect(buyCredits).not.toContain('<Bento');
+    expect(buyCredits).not.toContain('<Tile');
+    expect(packCard).toContain('pack.productId');
+    expect(packCard).toContain('CREDIT_PACK_ILLUSTRATION_SIZE = 56');
+    expect(packCard).toContain('<Button');
+    expect(packCard).toContain("t('mobile.credits.packSubtitle'");
+    expect(packCard).not.toContain('accessibilityRole="radio"');
   });
 
-  it('shares the credits balance tile and renders the balance breakdown (spec §9.7)', () => {
+  it('opens the out-of-credits sheet from generate plan without changing the footer action', () => {
+    const generate = read('app', 'generate-plan.tsx');
+    const panel = read('features', 'credits', 'OutOfCreditsPanel.tsx');
+
+    expect(generate).toContain('const [creditsSheetOpen, setCreditsSheetOpen] = useState(false);');
+    expect(generate).toContain('setCreditsSheetOpen(true);');
+    expect(generate).toContain("title={t('mobile.plans.generateCta')}");
+    expect(generate).not.toContain("affordable ? t('mobile.plans.generateCta')");
+    expect(generate).toContain('visible={creditsSheetOpen}');
+    expect(generate).toContain("title={t('mobile.credits.outOfCreditsTitle')}");
+    expect(generate).toContain('<OutOfCreditsPanel');
+    expect(generate).toContain('onGetMore={goBuyCredits}');
+    expect(generate).toContain('router.push(`/buy-credits?action=${action}`)');
+    expect(panel).toContain('onGetMore');
+    expect(panel).toContain("t('mobile.credits.getMore')");
+  });
+
+  it('keeps Assistant on the Coral text, voice, live and review contracts', () => {
+    const route = read('app', 'assistant.tsx');
+    const screen = read('features', 'assistant', 'LiveAssistantScreen.tsx');
+    const header = read('features', 'assistant', 'AssistantHeader.tsx');
+    const composer = read('features', 'assistant', 'Composer.tsx');
+    const modeSheet = read('features', 'assistant', 'ModeSheet.tsx');
+    const bubble = read('features', 'assistant', 'Bubble.tsx');
+
+    expect(route).toContain('initialMode={assistantModeFromParam(params.mode)}');
+    expect(header).toContain('<Avatar');
+    expect(header).toContain('assistantHeaderAccessibilityLabel');
+    expect(header).not.toContain('OrbMascot');
+    expect(header).not.toContain('RoundButton');
+    expect(header).not.toContain('tintNamed');
+
+    expect(screen).toContain('const demoBanner =');
+    expect(screen).toContain('isMock && !isLiveSurface ?');
+    expect(screen).toContain('{demoBanner}');
+    expect(screen.indexOf('{demoBanner}')).toBeLessThan(
+      screen.indexOf("mode === 'live' && !cameraReady"),
+    );
+    expect(screen).toContain('function AssistantStarterPrompt');
+    expect(screen).toContain('function VoiceAssistantPanel');
+    expect(screen).toContain('function DetectionOverlay');
+    expect(screen).toContain('function SessionPausedOverlay');
+    expect(screen).toContain('<ReviewList');
+    expect(screen).toContain('source="assistant"');
+    expect(screen).toContain('detectionsToSession(detections)');
+    expect(screen).toContain('create.mutate');
+    expect(screen).not.toContain('useAdjustQuantity');
+    expect(screen).not.toContain('<Chip');
+    expect(screen).not.toContain('RecipeThumb');
+
+    expect(composer).toContain('borderTopColor: colors.rowline');
+    expect(composer).toContain('backgroundColor: colors.surfaceAlt');
+    expect(composer).toContain('icon="sliders"');
+    expect(composer).not.toContain('RoundButton');
+
+    expect(modeSheet).toContain('<ListRow');
+    expect(modeSheet).toContain('assistantModeAccessibilityLabel');
+    expect(modeSheet).not.toContain('<SegmentedControl');
+    expect(modeSheet).not.toContain('<ToggleRow');
+
+    expect(bubble).toContain('maxWidth: 290');
+    expect(bubble).toContain('backgroundColor: mine ? colors.inverse : colors.surfaceAlt');
+    expect(bubble).not.toContain('OrbMascot');
+  });
+
+  it('shares the credits balance tile and renders the balance plus usage breakdown (spec §9.7)', () => {
     const buyCredits = read('screens', 'BuyCreditsScreen.tsx');
     const aiUsage = read('app', 'ai-usage.tsx');
+    const usageSummary = read('features', 'credits', 'UsageSummary.tsx');
+    const balanceTile = read('features', 'credits', 'BalanceTile.tsx');
 
     expect(buyCredits).toContain("from '../features/credits/BalanceTile'");
     expect(aiUsage).toContain("from '../features/credits/BalanceTile'");
@@ -362,15 +711,25 @@ describe('information architecture (spec §4)', () => {
     expect(aiUsage).toContain("from '../features/credits/LowBalanceNotice'");
     expect(aiUsage).toContain('<BalanceTile');
     expect(aiUsage).toContain('<LowBalanceNotice');
+    expect(aiUsage).toContain('useAiUsage');
+    expect(aiUsage).toContain('<UsageSummary');
+    expect(aiUsage).toContain('footer={');
+    expect(aiUsage).toContain("title={t('mobile.credits.getMore')}");
     expect(aiUsage).toContain('<ListGroup');
     expect(aiUsage.match(/<ListRow/g) ?? []).toHaveLength(2);
     expect(aiUsage).toContain("title={t('mobile.credits.free')}");
     expect(aiUsage).toContain("title={t('mobile.credits.paid')}");
     expect(aiUsage).toContain("t('mobile.credits.resets'");
     expect(aiUsage).toContain("router.push('/buy-credits')");
-    expect(aiUsage).not.toContain('useAiUsage');
+    expect(usageSummary).toContain('usageCreditsFromUsd');
+    expect(usageSummary).toContain('<Progress');
+    expect(usageSummary).toContain("t('mobile.aiUsage.spentOfBudget'");
+    expect(usageSummary).toContain('variant="title"');
+    expect(usageSummary).toContain("t('mobile.aiUsage.callsCount'");
+    expect(balanceTile).toContain('accessible');
+    expect(balanceTile).toContain('creditBalanceAccessibilityLabel');
+    expect(balanceTile).toContain('accessibilityLabel={accessibilityLabel}');
     expect(aiUsage).not.toContain('spentUsd');
-    expect(aiUsage).not.toContain('usage-summary');
   });
 
   it('keeps sticky footer and toast geometry above the floating tab bar', () => {
@@ -391,9 +750,22 @@ describe('information architecture (spec §4)', () => {
     expect(addField).toContain('resolveFontFamily');
     expect(addField).toContain('autoCorrect={false}');
     expect(addField).toContain('autoCapitalize="none"');
+    expect(addField, 'Shop add button migrated off RoundButton').not.toContain('RoundButton');
+    expect(addField, 'Shop add action uses the J inverse IconButton').toContain('<IconButton');
+    expect(addField).toContain('tone="inverse"');
+    expect(addField, 'Shop add field uses the frame surfaceAlt fill').toContain(
+      'backgroundColor: colors.surfaceAlt',
+    );
+    expect(addField, 'Shop add field must stay square').toContain('borderRadius: radius.none');
+    expect(addField, 'Shop suggestion rows use animated press feedback').toContain(
+      'usePressFeedback()',
+    );
+    expect(addField, 'Shop suggestion rows must not switch style on pressed').not.toContain(
+      'pressed ?',
+    );
   });
 
-  it('keeps Kitchen wired to the G2 screen contract', () => {
+  it('keeps Kitchen wired to the Coral screen contract', () => {
     const kitchen = read('app', '(tabs)', 'kitchen.tsx');
 
     expect(kitchen, "Kitchen's add button must open manual capture").toContain(
@@ -409,64 +781,155 @@ describe('information architecture (spec §4)', () => {
     expect(kitchen).not.toContain('From scan');
     expect(kitchen).not.toMatch(/provenance/i);
     expect(kitchen).not.toMatch(/sourceLabel|sourceKey/);
-    expect(kitchen).toMatch(
-      /<RoundButton[\s\S]*icon=\{searchOpen \? 'close' : 'search'\}[\s\S]*accessibilityLabel=\{searchLabel\}/,
+    expect(kitchen, 'Kitchen header action migrated off RoundButton').not.toContain('RoundButton');
+    expect(kitchen, 'Kitchen header must keep the add action').toContain('<IconButton');
+    expect(kitchen, 'Kitchen vertical rhythm must use the compact Figma stack gap').toContain(
+      'KITCHEN_TOP_STACK_GAP = spacing.md',
     );
-    expect(kitchen).toMatch(/<RoundButton[\s\S]*icon="plus"[\s\S]*accessibilityLabel=\{addLabel\}/);
-
-    const compactPlaceTile =
-      kitchen.match(/function CompactPlaceContent[\s\S]*?function MiniItemCard/)?.[0] ?? '';
-    expect(compactPlaceTile, 'compact place tiles must use numeral counts').toContain(
-      'variant="numeral"',
+    expect(kitchen, 'Kitchen fridge view must not inherit overview-only vertical gaps').toContain(
+      'gap: selectedLocation ? 0 : KITCHEN_TOP_STACK_GAP',
+    );
+    expect(kitchen, 'Kitchen chips must remove extra vertical padding').not.toContain(
+      'paddingVertical: spacing.xs',
     );
     expect(
-      compactPlaceTile,
-      'place tiles grow with Dynamic Type instead of truncating count or label text',
-    ).not.toContain('numberOfLines');
-
-    const placeGrid = kitchen.match(/<Bento>[\s\S]*?\{useFirstItems\.length > 0/)?.[0] ?? '';
-    expect(placeGrid, 'Kitchen places must keep the lead tile in column one').toContain(
-      'renderPlaceTile(places[0], 0, false)',
+      read('components', 'TabHeader.tsx'),
+      'TabHeader owns the account affordance for every tab',
+    ).toContain('<AccountButton');
+    expect(kitchen, 'Kitchen must not duplicate the TabHeader account affordance').not.toContain(
+      '<AccountButton',
     );
-    expect(placeGrid, 'Kitchen places must stack every non-lead place in column two').toContain(
-      'places.slice(1).map((place, index) => renderPlaceTile(place, index + 1, true))',
+    expect(kitchen, 'J search is the 44pt SearchField below the header').toContain('<SearchField');
+
+    const placeTile = kitchen.match(/function PlaceTile[\s\S]*?function SortSheet/)?.[0] ?? '';
+    const placeGrid = kitchen.match(/<Bento[\s\S]*?\{useFirstItems\.length > 0/)?.[0] ?? '';
+    expect(placeGrid, 'Kitchen places must use the J two-column tile primitive').toContain(
+      'variant="tiles"',
+    );
+    expect(placeTile, 'Kitchen place tiles must be J place tiles').toContain('variant="place"');
+    expect(placeTile, 'Kitchen place tiles must share the Home place art mapping').toContain(
+      'placeIllustration(ranked.location.type)',
+    );
+    const placeChipStart = kitchen.indexOf('{places.map((place) => (');
+    const placeChipEnd = kitchen.indexOf('{places.length > 0 ?', placeChipStart);
+    const placeChips =
+      placeChipStart >= 0 && placeChipEnd > placeChipStart
+        ? kitchen.slice(placeChipStart, placeChipEnd)
+        : '';
+    expect(placeChips, 'Place chips keep only labels; All is the only counted chip').not.toContain(
+      'count={place.count}',
+    );
+    expect(placeChips, 'Place chips must still announce item and soon counts').toContain(
+      'accessibilityLabel={placeAccessibilityLabel',
+    );
+    expect(kitchen, 'Use-first trailing action must open the Sort sheet').toContain(
+      "actionLabel={selectedLocation ? undefined : t('mobile.kitchen.sortAction')}",
+    );
+    expect(kitchen, 'Use-first action must no longer scroll to All items').not.toContain(
+      'seeAllUseFirst',
     );
     expect(
       placeGrid,
-      'Kitchen places must not strand places after the stacked column',
-    ).not.toContain('places.slice(3)');
+      'Kitchen place tiles must not use deprecated tint/fill/compact bridge props',
+    ).not.toMatch(/\b(tint|fill|compact)=/);
 
-    const miniItemCard =
-      kitchen.match(/function MiniItemCard[\s\S]*?function SectionHeading/)?.[0] ?? '';
-    expect(miniItemCard, 'Kitchen mini item cards must be thin Tile wrappers').toContain('<Tile');
-    expect(
-      miniItemCard,
-      'Kitchen mini item cards must not render hand-styled Pressable cards',
-    ).not.toContain('<Pressable');
-    expect(
-      miniItemCard,
-      'Kitchen mini item cards must preserve the three-across width on Tile',
-    ).toContain('style={{ width: MINI_CARD_WIDTH }}');
-    expect(miniItemCard, 'Kitchen mini item names and status must not truncate').not.toContain(
-      'numberOfLines',
+    expect(kitchen, 'Use-first and all-items rows must reuse the shared item row').toContain(
+      '<InventoryItemRow',
+    );
+    expect(kitchen, 'Kitchen item rows must use the generalized metadata helper').toContain(
+      'inventoryItemRowMeta(t, locale, item,',
+    );
+    expect(kitchen, 'Kitchen item rows must use the generalized timing helper').toContain(
+      'inventoryItemRowWhen(t, locale, item, prefs, now)',
+    );
+    expect(kitchen, 'Kitchen item rows must use the generalized badge helper').toContain(
+      'inventoryItemRowBadge(t, item, now)',
+    );
+    expect(kitchen, 'Kitchen item rows must use the shared food-art helper').toContain(
+      'inventoryItemRowFoodIcon(item)',
     );
     expect(kitchen, 'Kitchen use-first status must use the short visible days-left copy').toContain(
-      'formatDaysLeft(t, locale, item.expiresAt, prefs, now)',
+      'inventoryItemRowWhen(t, locale, item, prefs, now)',
     );
     expect(
       kitchen,
       'Kitchen use-first accessibility labels must keep the full expiry sentence',
-    ).toContain('accessibilityText: formatExpiryLabel(t, locale, item.expiresAt, prefs, now)');
+    ).toContain('formatExpiryLabel(t, locale, item.expiresAt, prefs, now)');
   });
 
-  it('keeps the redesigned Home tab inside the G1 screen scope', () => {
+  it('keeps Home on the Coral dashboard contract', () => {
     const home = read('app', '(tabs)', 'home.tsx');
+    const assistantSearch = read('features', 'home', 'AssistantSearchButton.tsx');
+    const assistantShortcuts = read('features', 'home', 'AssistantModeShortcuts.tsx');
+    const tonightCard = read('features', 'home', 'TonightRecipeCard.tsx');
+    const noPlanCard = read('features', 'home', 'NoPlanCard.tsx');
+    const quickActions = read('features', 'home', 'QuickActions.tsx');
+    const useSoonSection = read('features', 'home', 'UseSoonSection.tsx');
+    const weekSection = read('features', 'home', 'WeekSection.tsx');
+    const kitchenGlance = read('features', 'home', 'KitchenGlance.tsx');
+    const inventoryRow = read('features', 'inventory', 'InventoryItemRow.tsx');
+    const homeOwned = [
+      home,
+      assistantSearch,
+      assistantShortcuts,
+      tonightCard,
+      noPlanCard,
+      quickActions,
+      useSoonSection,
+      weekSection,
+      kitchenGlance,
+      inventoryRow,
+    ].join('\n');
 
-    expect(home).not.toContain('bell');
+    expect(home).toContain('padded={false}');
+    expect(home).toContain('<TabHeader');
+    expect(home).toContain('icon="bell"');
+    expect(home).toContain("router.push('/settings/notifications')");
+    expect(home).toContain('<AssistantSearchButton');
+    expect(assistantSearch).toContain('usePressFeedback()');
+    expect(assistantSearch, 'Home assistant search uses the chat glyph from the frame').toContain(
+      'name="chat"',
+    );
+    expect(assistantSearch, 'Home assistant search must not use a magnifier glyph').not.toContain(
+      'name="search"',
+    );
+    expect(home, 'Home greeting is one ink title, not a coral-accent name').toContain(
+      'const greetingTitle = greetingName',
+    );
+    expect(home, 'Home must not pass the greeting name through the accent slot').not.toContain(
+      'titleAccent={greetingName',
+    );
+    expect(home).toContain("router.push('/assistant')");
+    expect(home, 'Home must keep labelled chat/voice/live assistant shortcuts').toContain(
+      '<AssistantModeShortcuts',
+    );
+    expect(home).toContain('router.push(`/assistant?mode=${mode}`)');
+    for (const mode of ["mode: 'text'", "mode: 'voice'", "mode: 'live'"]) {
+      expect(assistantShortcuts).toContain(mode);
+    }
+    expect(assistantSearch).not.toContain('<SearchField');
+    expect(homeOwned).not.toContain('<OrbMascot');
+    expect(homeOwned).not.toContain('<RoundButton');
+    expect(homeOwned).not.toContain('tint=');
+    expect(homeOwned).not.toContain('tintNamed');
+    expect(homeOwned).not.toContain('radius.pill');
+    expect(homeOwned).not.toContain('pressed ?');
+    expect(homeOwned).not.toContain('transform: [{ scale');
     expect(home).not.toContain('StatTiles');
-    expect(home).not.toContain('KitchenGlance');
     expect(existsSync(join(SRC, 'features', 'home', 'StatTiles.tsx'))).toBe(false);
-    expect(existsSync(join(SRC, 'features', 'home', 'KitchenGlance.tsx'))).toBe(false);
+    expect(existsSync(join(SRC, 'features', 'home', 'KitchenGlance.tsx'))).toBe(true);
+    for (const inlineComponent of [
+      'function AssistantSearchButton',
+      'function TonightRecipeCard',
+      'function NoPlanCard',
+      'function QuickActions',
+      'function UseSoonSection',
+      'function WeekSection',
+      'function PlaceTile',
+      'function KitchenGlanceSection',
+    ]) {
+      expect(home, `Home route still owns ${inlineComponent}`).not.toContain(inlineComponent);
+    }
 
     for (const route of [
       '/recipe/',
@@ -475,49 +938,138 @@ describe('information architecture (spec §4)', () => {
       '/assistant',
       '/buy-credits',
       '/capture?method=receipt',
+      '/capture?method=manual',
       '/generate-plan',
       '/plans',
     ]) {
       expect(home, `Home no longer routes to ${route}`).toContain(route);
     }
 
-    const useSoonTile =
-      home.match(/accessibilityLabel=\{useSoonAccessibilityLabel\}[\s\S]*?<\/Tile>/)?.[0] ?? '';
-    expect(useSoonTile, 'Home use-soon row must scroll instead of squeezing mini items').toContain(
-      '<ScrollView',
+    expect(tonightCard, 'Tonight recipe must keep the recipe detail route').toContain(
+      'onOpenRecipe',
+    );
+    expect(tonightCard, 'Tonight recipe must keep cook-mode navigation').toContain('onCookRecipe');
+    expect(tonightCard, 'Watch how must open the videos, not the recipe top').toContain(
+      'onPress={onWatchRecipe}',
+    );
+    expect(home, 'Watch how must deep-link to the videos tab').toContain(
+      'router.push(`/recipe/${recipeId}?tab=videos`)',
     );
     expect(
-      useSoonTile,
-      'Home use-soon scroller must remount when direction changes so live en→ar switches do not keep the old physical offset.',
-    ).toContain('key={`use-soon-${dir}`}');
-    expect(useSoonTile, 'Home use-soon visible statuses must use short days-left copy').toContain(
-      'formatDaysLeft(t, locale, item.expiresAt, prefs)',
+      read('app', 'recipe', '[id]', 'index.tsx'),
+      'Recipe reset must honour the requested tab, not force the ingredients',
+    ).not.toContain("setSegment('ingredients')");
+    expect(tonightCard, 'Tonight recipe must use the J full-bleed recipe photo').toContain(
+      'size={196}',
     );
-    expect(useSoonTile, 'Home use-soon mini item names and status must not truncate').not.toContain(
-      'numberOfLines',
+    for (const [name, value] of [
+      ['RECIPE_CARD_BODY_PADDING_TOP', 16],
+      ['RECIPE_CARD_BODY_PADDING_HORIZONTAL', 16],
+      ['RECIPE_CARD_BODY_PADDING_BOTTOM', 18],
+      ['RECIPE_CARD_BODY_GAP', 6],
+      ['RECIPE_CARD_ACTIONS_PADDING_TOP', 10],
+    ]) {
+      expect(tonightCard, `Tonight recipe ${name} drifted from spec §8`).toContain(
+        `const ${name} = ${value}`,
+      );
+    }
+    expect(tonightCard).toContain('paddingTop: RECIPE_CARD_BODY_PADDING_TOP');
+    expect(tonightCard).toContain('paddingHorizontal: RECIPE_CARD_BODY_PADDING_HORIZONTAL');
+    expect(tonightCard).toContain('paddingBottom: RECIPE_CARD_BODY_PADDING_BOTTOM');
+    expect(tonightCard).toContain('gap: RECIPE_CARD_BODY_GAP');
+    expect(tonightCard).toContain('paddingTop: RECIPE_CARD_ACTIONS_PADDING_TOP');
+    expect(tonightCard, 'Tonight recipe actions must be compact J buttons').toContain('size="S"');
+
+    expect(noPlanCard, 'No-plan state must use the J calendar EmptyState').toContain(
+      'illustration="calendar"',
+    );
+    expect(noPlanCard, 'No-plan action must be a compact primary action').toContain('size="S"');
+    expect(noPlanCard, 'No-plan card must show the plan-generation credit cost').toContain(
+      "costOf('plan.daily')",
+    );
+
+    expect(quickActions).toContain('variant="quickAction"');
+    expect(quickActions.match(/\bcount=\{/g) ?? []).toHaveLength(3);
+    expect(
+      quickActions,
+      'Quick actions must use caption labels, not bodyStrong overrides',
+    ).not.toContain('variant="bodyStrong"');
+    expect(quickActions, 'Quick actions should let Tile render the caption tier').not.toContain(
+      '<AppText',
+    );
+
+    expect(
+      useSoonSection,
+      'Home use-soon rows must be J item rows, not a squeezed scroller',
+    ).not.toContain('<ScrollView');
+    expect(useSoonSection, 'Home use-soon rows keep the direction remount guard').toContain(
+      'key={`use-soon-${dir}`}',
+    );
+    expect(
+      useSoonSection,
+      'Home use-soon visible statuses must use short days-left copy',
+    ).toContain('inventoryItemRowWhen(t, locale, item, prefs)');
+    expect(useSoonSection, 'Home use-soon rows must render the shared inventory row').toContain(
+      '<InventoryItemRow',
+    );
+    expect(inventoryRow, 'Item rows must keep spec §8 vertical padding').toContain(
+      'paddingVertical: 10',
+    );
+    expect(inventoryRow, 'Item rows must keep spec §8 gap').toContain('gap: 14');
+    expect(inventoryRow, 'Item rows must keep the flat rowline').toContain(
+      'borderBottomColor: colors.rowline',
+    );
+    expect(inventoryRow, 'Home use-soon item rows must show food art at the J row size').toContain(
+      'size={56}',
+    );
+    expect(inventoryRow, 'Item rows must keep the bodyStrong name').toContain(
+      'variant="bodyStrong"',
+    );
+    expect(inventoryRow, 'Item rows must keep the caption meta line').toContain(
+      'variant="caption"',
+    );
+    expect(useSoonSection, 'Home use-soon metadata must keep quantity and location').toContain(
+      'inventoryItemRowMeta(t, locale, item, { location, prefs })',
+    );
+    expect(
+      useSoonSection,
+      'Home use-soon section must not render the extra count caption after the rows',
+    ).not.toContain('countLabel');
+    expect(inventoryRow, 'Home use-soon rows must use worded status badges').toContain('<Badge');
+
+    expect(weekSection, 'Home week block must be the J Progress plus day strip').toContain(
+      '<Progress',
+    );
+    expect(weekSection, 'Home week block must render the owned WeekStrip').toContain('<WeekStrip');
+
+    expect(kitchenGlance, 'Home glance must rank real household places').toContain('rankPlaces');
+    expect(kitchenGlance, 'Home glance must render J place tiles').toContain('variant="place"');
+    expect(home, 'Home glance must keep the full kitchen route').toContain(
+      "router.push('/kitchen')",
     );
   });
 
-  it('mirrors only the Home arrow affordance, not the media play glyph', () => {
+  it('keeps the Home cook action as a recipe action, not a mirrored direction glyph', () => {
     const home = read('app', '(tabs)', 'home.tsx');
-    expect(home).toContain('<RoundButton');
-    expect(home).toContain('icon="play"');
+    expect(home).toContain('router.push(`/recipe/${recipeId}/cook`)');
+    expect(home).toContain('onCookRecipe={() => cookRecipe(tonight.recipe.id)}');
     expect(home).not.toContain('<DirectionalIcon name="play"');
-    expect(home).toContain('<DirectionalIcon name="arrowForward"');
   });
 
-  it('keeps the empty Tonight tile at the populated Tonight height', () => {
-    const home = read('app', '(tabs)', 'home.tsx');
-    expect(home).toMatch(
-      /tint="apricot"[\s\S]*?height=\{220\}[\s\S]*?accessibilityLabel=\{t\('mobile\.home\.tonightEmpty'\)\}/,
+  it('keeps the empty Tonight state at the populated Tonight card height', () => {
+    const noPlanCard = read('features', 'home', 'NoPlanCard.tsx');
+    expect(noPlanCard).toMatch(
+      /NO_PLAN_CARD_MIN_HEIGHT\s*=\s*270[\s\S]*?function NoPlanCard[\s\S]*?minHeight:\s*NO_PLAN_CARD_MIN_HEIGHT/,
     );
   });
 
-  it('keeps Recipe on the G9 screen contract', () => {
+  it('keeps Recipe on the Coral J screen contract', () => {
     const recipe = read('app', 'recipe', '[id]', 'index.tsx');
+    const ingredientRow = read('features', 'recipe', 'RecipeIngredientRow.tsx');
+    const videoCard = read('features', 'recipe', 'RecipeVideoCard.tsx');
 
     expect(recipe).toContain('<RecipeThumb');
-    expect(recipe).toContain('height: 360');
+    expect(recipe).toContain('const HERO_HEIGHT = 280');
     expect(recipe).toContain('const TOP_BAR_ROW_HEIGHT = 44');
     expect(recipe).toContain('recipeTopBarBacked');
     expect(recipe).toContain('recipeTopBarFadeRange');
@@ -530,9 +1082,11 @@ describe('information architecture (spec §4)', () => {
     );
     expect(recipe).toContain('useNativeDriver: true');
     expect(recipe).toContain('listener: handleRecipeScroll');
-    expect(recipe).toContain('pointerEvents="none"');
-    expect(recipe).toContain('StyleSheet.hairlineWidth');
-    expect(recipe).toContain("tone={barBacked ? 'surface' : 'mediaLight'}");
+    expect(recipe).toContain("pointerEvents={barBacked ? 'none' : 'auto'}");
+    expect(recipe).toContain("pointerEvents={barBacked ? 'auto' : 'none'}");
+    expect(recipe).toContain('borderBottomWidth: 1');
+    expect(recipe).toContain('tone="plain"');
+    expect(recipe).toContain('tone="media"');
     expect(recipe).toContain('showLightStatusBar');
     expect(recipe).toContain('!barBacked');
     expect(recipe).not.toContain('heroUnderStatus');
@@ -543,26 +1097,61 @@ describe('information architecture (spec §4)', () => {
     expect(recipe).not.toContain('Animated.timing');
     expect(recipe).not.toContain('TOP_BAR_FADE_MS');
     expect(recipe).toContain('recipeStockCount');
-    expect(recipe).toContain('scaleQuantityForServings');
+    expect(ingredientRow).toContain('scaleQuantityForServings');
     expect(recipe).toContain('<SegmentedControl');
+    expect(recipe).toContain("value: 'videos'");
     expect(recipe).toContain("segment === 'steps'");
-    expect(recipe).toContain('<YoutubePlayer');
+    expect(recipe).toContain("segment === 'videos'");
+    expect(videoCard).toContain('<YoutubePlayer');
+    expect(videoCard).toContain('formatRecipeVideoDuration');
+    expect(videoCard).toContain('thumbnailOverlay={');
+    expect(videoCard).toContain('backgroundColor: colors.surfaceInverse');
+    expect(recipe).toContain('<RecipeMetaRow');
+    expect(recipe).toContain('<RecipeIngredientRow');
+    expect(recipe).toContain('<RecipeStepRow');
+    expect(recipe).toContain('<RecipeCookedSheetContent');
+    expect(recipe).toContain('<QuantityStepper');
+    expect(recipe).toContain('visible={servingsSheetOpen}');
+    expect(recipe).toContain("t('mobile.recipe.servingsOpenLabel'");
+    expect(recipe).toContain("t('mobile.recipe.servingsOpenHint')");
+    expect(recipe).toContain("t('recipe.markCooked')");
+    expect(recipe).toContain("t('mobile.recipe.startCooking')");
     expect(recipe).toContain('mobile.recipe.minutesValue');
-    expect(recipe).toContain('mobile.recipe.totalTimeLabel');
-    expect(recipe).toContain('mobile.recipe.difficultyLabel');
+    expect(recipe).toContain('mobile.recipe.prepLabel');
+    expect(recipe).toContain('mobile.recipe.cookLabel');
+    expect(recipe).toContain('DIFFICULTY_KEY');
+    expect(recipe).not.toContain('RoundButton');
+    expect(recipe).not.toContain('<Tile');
+    expect(recipe).not.toContain('<ListGroup');
+    expect(recipe).not.toContain('<ListRow');
+    expect(recipe).not.toContain('tintNamed');
     expect(recipe).not.toMatch(/heart/i);
   });
 
-  it('keeps Cook on the G9 screen contract', () => {
+  it('keeps Cook on the Coral J always-dark screen contract', () => {
     const cook = read('app', 'recipe', '[id]', 'cook.tsx');
+    const timerControl = read('features', 'recipe', 'CookTimerPanel.tsx');
 
+    expect(cook).toMatch(
+      /export default function CookMode\(\) \{\s*return \(\s*<ThemeModeOverride mode="dark">[\s\S]*?<StatusBar style="light" \/>[\s\S]*?<CookModeContent \/>[\s\S]*?<\/ThemeModeOverride>/,
+    );
     expect(cook).toContain('useKeepAwake()');
     expect(cook).toContain("direction: 'ltr'");
-    expect(cook).toContain('accessibilityRole="progressbar"');
+    expect(cook).toContain('<Progress');
     expect(cook).toContain(
       'accessibilityValue={{ min: 0, max: total, now: step + 1, text: progressLabel }}',
     );
-    expect(cook).toContain('<OrbMascot');
+    expect(timerControl).toContain("t('mobile.recipe.stepTimerProgress')");
+    expect(timerControl).toContain('accessibilityLabel={progressLabel}');
+    expect(timerControl).not.toContain('accessibilityValue={{ min: 0, max: 100');
+    expect(cook).toContain('<IconButton');
+    expect(cook).toContain('icon="chat"');
+    expect(cook).toContain('useUpdateTimer()');
+    expect(cook).toContain(
+      'onAction={(timerId, body) => updateTimer.mutate({ id: timerId, body })}',
+    );
+    expect(cook).not.toContain('<OrbMascot');
+    expect(cook).not.toContain('RoundButton');
     expect(cook).toContain('stepIngredients(');
     expect(cook).toContain('parseServingsParam');
     expect(cook).toContain('projectTimer(existing, now)');
@@ -570,19 +1159,25 @@ describe('information architecture (spec §4)', () => {
     expect(cook).toContain('lockMode');
     expect(cook).toContain("backgroundColor: 'transparent'");
 
-    const timerControl = cook.match(/function StepTimerControl[\s\S]*/)?.[0] ?? '';
     expect(timerControl).toContain('<Button');
+    expect(timerControl).toContain('variant="numeralSmall"');
+    expect(timerControl).toContain('variant="caption"');
+    expect(timerControl).toContain('cookTimerControls(projected)');
+    expect(timerControl).toContain('icon="x"');
+    expect(timerControl).toContain('action: pauseResumeAction');
+    expect(timerControl).toContain("onAction(projected.id, { action: 'stop' })");
     expect(timerControl).not.toMatch(/\n\s+accessible\b/);
     expect(timerControl).not.toContain('accessibilityLabel={caption}');
     expect(
       timerControl,
-      'The visible running-timer caption is status only; the large numeral carries the countdown.',
-    ).toContain("t('mobile.recipe.stepTimerRunningStatus')");
+      'The visible running-timer caption is the timer name; the large numeral carries the countdown.',
+    ).toContain('projected.label');
     expect(
       timerControl,
       'The screen-reader label must keep the legacy countdown-inclusive running timer wording.',
     ).toContain("t('mobile.recipe.stepTimerRunning'");
     expect(timerControl).toContain('accessibilityLabel={statusAccessibilityLabel}');
+    expect(timerControl).not.toContain('tintNamed');
   });
 
   it('adds the G9 recipe labels in both languages', () => {
@@ -601,58 +1196,83 @@ describe('information architecture (spec §4)', () => {
     }
   });
 
-  it('keeps Welcome on the Apricot Bento screen contract', () => {
+  it('keeps Welcome on the Coral full-bleed photo screen contract', () => {
     const welcome = read('app', '(auth)', 'welcome.tsx');
 
     expect(welcome).toContain('welcome-produce.jpg');
-    expect(welcome).toContain('welcome-salad.jpg');
-    expect(welcome).toContain("t('mobile.welcome.collageLabel')");
-    expect(welcome).toContain("t('auth.signIn')");
+    expect(welcome).toContain('padded={false}');
+    expect(welcome).toContain("edges={['bottom', 'left', 'right']}");
+    expect(welcome).toContain('<StatusBar style="light"');
+    expect(welcome).toContain("t('mobile.welcome.photoLabel')");
+    expect(welcome).toContain("t('common.appName')");
+    expect(welcome).toContain("t('mobile.welcome.haveAccount')");
+    expect(welcome).toContain('const LOCALES = [');
+    expect(welcome).toContain('setLocale');
+    expect(welcome).toContain('localeToggle');
+    expect(welcome).toContain('size="S"');
+    expect(welcome).toContain("t('mobile.welcome.switchLanguageTo'");
+    expect(welcome).not.toContain('haveAccountShort');
+    expect(welcome).not.toContain('SegmentedControl');
     expect(welcome).not.toContain('surfaceInverse');
-    expect(welcome).not.toContain('snapTitle');
     expect(welcome).not.toContain('tagline');
-    expect(welcome).toContain('const WELCOME_SECTION_GAP = spacing.sm;');
-    expect(welcome).toContain('style={{ gap: 0 }}');
+    expect(welcome).toContain('const WELCOME_BODY_GAP = spacing.xl;');
     expect(welcome).toContain('style={{ flexGrow: 1 }}');
-    expect(welcome).not.toContain('minHeight: spacing.md');
+    expect(welcome).toContain('variant="hero"');
+    expect(welcome).toContain('variant="ghost"');
 
     for (const key of [
+      'common.appName',
       'mobile.welcome.headline',
       'mobile.welcome.headlineAccent',
       'mobile.welcome.subtitle',
-      'mobile.welcome.collageLabel',
+      'mobile.welcome.snapTitle',
+      'mobile.welcome.snapBody',
+      'mobile.welcome.planTitle',
+      'mobile.welcome.planBody',
+      'mobile.welcome.wasteTitle',
+      'mobile.welcome.wasteBody',
+      'mobile.welcome.photoLabel',
       'mobile.welcome.collage.tomatoes',
-      'mobile.welcome.collage.carrots',
       'mobile.welcome.collage.itemsSpotted',
-      'mobile.welcome.collage.freshFor',
-      'mobile.welcome.collage.tonight',
-      'mobile.welcome.haveAccountShort',
+      'mobile.welcome.getStarted',
+      'mobile.welcome.haveAccount',
+      'mobile.welcome.switchLanguageTo',
     ]) {
       expect(isMessageKey(key), `${key} is missing from the catalog`).toBe(true);
       expect(translate('ar', key as never)).not.toBe(translate('en', key as never));
     }
 
-    for (const file of ['welcome-produce.jpg', 'welcome-salad.jpg']) {
+    for (const file of ['welcome-produce.jpg']) {
       const path = join(MOBILE, 'assets', 'images', file);
       expect(existsSync(path), `${file} is missing`).toBe(true);
       expect(statSync(path).size, `${file} is larger than 160 KiB`).toBeLessThanOrEqual(160 * 1024);
     }
 
     const collage = read('features', 'welcome', 'WelcomeCollage.tsx');
-    expect(collage).toContain('function FloatingLeafCircle');
+    expect(collage).toContain('ImageBackground');
+    expect(collage).toContain('WELCOME_HERO_PHOTO_HEIGHT');
+    expect(collage).toContain('function DetectionCorners');
+    expect(collage).toContain('variant="numeralSmall"');
     expect(collage).toContain("position: 'absolute'");
-    expect(collage).not.toContain('leading={<LeafCircle />}');
+    expect(collage).not.toContain('<Bento');
+    expect(collage).not.toContain('<Tile');
+    expect(collage).not.toContain('OrbMascot');
+    expect(collage).not.toContain('tint=');
+    expect(collage).not.toContain('colors.accent');
   });
 
-  it('keeps Auth on the Apricot Bento screen contract', () => {
+  it('keeps Auth on the Coral welcome and household contracts', () => {
     const layout = read('components', 'AuthLayout.tsx');
     expect(layout).not.toContain('surfaceInverse');
-    expect(layout).toContain('<OrbMascot');
-    expect(layout).toContain('size={72}');
-    expect(layout).toContain('state="idle"');
-    expect(layout).toContain('accessible={false}');
-    expect(layout).toContain('variant="hero"');
+    expect(layout).not.toContain('<OrbMascot');
+    expect(layout).toContain('paddingTop: spacing.gutter');
+    expect(layout).toContain('<IconButton');
+    expect(layout).toContain('tone="plain"');
+    expect(layout).toContain('icon="chevL"');
+    expect(layout).toContain('variant="display"');
     expect(layout).toContain('titleAccent');
+    expect(layout).toContain('leading?: ReactNode');
+    expect(layout).toContain('footer?: ReactNode');
     expect(layout).toContain("edges={['top', 'bottom']}");
 
     const signIn = read('app', '(auth)', 'sign-in.tsx');
@@ -661,19 +1281,26 @@ describe('information architecture (spec §4)', () => {
     expect(signIn).toContain("t('mobile.auth.welcomeSubtitle')");
 
     const signUp = read('app', '(auth)', 'sign-up.tsx');
-    expect(signUp).toContain("t('mobile.auth.signUpTitle2')");
-    expect(signUp).toContain("t('mobile.auth.signUpAccent')");
+    expect(signUp).toContain("t('mobile.auth.signUpTitle')");
+    expect(signUp).not.toContain("t('mobile.auth.signUpTitle2')");
+    expect(signUp).not.toContain("t('mobile.auth.signUpAccent')");
+    expect(signUp).toContain(
+      "accessibilityLabel={`${t(key)}, ${t('mobile.auth.passwordRuleUnmet')}`}",
+    );
+    expect(signUp).toContain('<Icon name="x" size={14} color={colors.danger} />');
+    expect(signUp).not.toContain('✕');
 
     const onboarding = read('app', '(auth)', 'onboarding.tsx');
-    expect(onboarding).not.toContain('SegmentedControl');
-    expect(onboarding).toContain('accessibilityRole="radiogroup"');
-    expect(onboarding).toContain('accessibilityRole="radio"');
-    expect(onboarding).toContain('accessibilityState={{ checked: selected }}');
+    expect(onboarding).toContain('<SegmentedControl<Mode>');
+    expect(onboarding).not.toContain('<Chip');
     expect(onboarding).toContain("t('mobile.auth.onboardTitle2')");
     expect(onboarding).toContain("t('mobile.auth.onboardAccent')");
     expect(onboarding).toContain("t('mobile.auth.continue')");
+    expect(onboarding).toContain('leading={<HouseholdMark />}');
+    expect(onboarding).toContain('footer={');
 
     const switchLink = read('components', 'AuthSwitchLink.tsx');
+    expect(switchLink).toContain('usePressFeedback');
     expect(switchLink).toContain('variant="caption" muted');
     expect(switchLink).toContain('color="primaryText"');
     expect(switchLink).toContain('minHeight: 44');
@@ -683,6 +1310,7 @@ describe('information architecture (spec §4)', () => {
     for (const key of [
       'mobile.auth.signInTitle',
       'mobile.auth.signInAccent',
+      'mobile.auth.signUpTitle',
       'mobile.auth.signUpTitle2',
       'mobile.auth.signUpAccent',
       'mobile.auth.onboardTitle2',
@@ -694,63 +1322,102 @@ describe('information architecture (spec §4)', () => {
     }
   });
 
-  it('keeps Timers on butter tiles with tabular numeral countdowns (spec §9.7)', () => {
+  it('keeps Timers on the Coral timer-card and new-timer sheet contract (spec §9)', () => {
     const timers = read('app', 'timers.tsx');
-    const runningTile = timers.match(/<Tile[\s\S]*?tint="butter"[\s\S]*?<\/Tile>/)?.[0] ?? '';
+    const timerCard = read('features', 'timers', 'TimerCard.tsx');
+    const newTimerSheet = read('features', 'timers', 'NewTimerSheet.tsx');
 
-    expect(timers, 'Running timers must use the shared Tile primitive').toContain('<Tile');
-    expect(timers, 'Running timers should use the butter tint').toContain('tint="butter"');
-    expect(
-      runningTile,
-      'The running timer Tile is one accessibility element, so its visible controls must be exposed through Tile actions.',
-    ).toContain('actions={timerActions}');
-    expect(timers, 'Countdowns must render through the numeral typography variant').toContain(
-      'variant="numeral"',
+    expect(timers).toContain('<NewTimerSheet');
+    expect(timers).toContain(
+      'ordered.length === 0 && !timersQuery.isLoading && !timersQuery.isError',
     );
-    expect(timers, 'Timer controls must stay as individually focusable RoundButtons').toContain(
-      '<RoundButton',
-    );
+    expect(timers).toContain("actionLabel={t('mobile.timers.newTimer')}");
+    expect(timers).not.toContain('showFooter');
+    expect(timers).toContain('illustration="timer"');
+    expect(timers).not.toContain('<Tile');
+    expect(timers).not.toContain('RoundButton');
+    expect(timers).not.toMatch(/\b(tint|fill|compact)=/);
+    expect(timerCard).toContain('<Progress');
+    expect(timerCard).toContain('timerProgressValue');
+    expect(timerCard).toContain('variant="numeralSmall"');
+    expect(timerCard).toContain('<IconButton');
+    expect(timerCard).toContain("icon={paused ? 'play' : 'pause'}");
+    expect(timerCard).not.toContain("'timerPause'");
+    expect(timerCard).toContain("'play'");
+    expect(timerCard).toContain('icon="x"');
+    expect(timerCard).toContain('timerCardAccessibilityLabel');
     expect(
-      timers,
-      'The timer pause control must not use Icon name "pause", which is the wellness coffee-break glyph.',
-    ).not.toMatch(/\bicon\s*(?:=|:)\s*['"]pause['"]/);
+      timerCard,
+      'The kept +1 minute action must remain visible because it existed before C15.',
+    ).toContain("title={t('mobile.timers.addMinute')}");
     expect(
-      timers,
-      'The add-minute control must visibly say +1 instead of a bare plus glyph.',
-    ).toContain("visibleLabel: '+1'");
-    expect(
-      timers,
-      'The add-minute label must remain the accessible label even though the visible affordance is compact.',
-    ).toContain('accessibilityLabel={control.label}');
+      newTimerSheet,
+      'New timer duration must use the frame-matching plain Minutes field.',
+    ).toContain('keyboardType="number-pad"');
+    expect(newTimerSheet).not.toContain('<QuantityStepper');
+    expect(newTimerSheet).not.toContain('<Chip');
+    expect(newTimerSheet).toContain('durationSec: minutes * 60');
+    expect(newTimerSheet).toContain('const [minutes, setMinutes] = useState<number>(5)');
   });
 
-  it('keeps the smart screen hero on the shared ember Card (spec §9.7)', () => {
-    const screen = read('app', 'screen.tsx');
-    const heroOpening = screen.slice(
-      screen.indexOf('<Card'),
-      screen.indexOf('>', screen.indexOf('<Card')) + 1,
-    );
+  it('keeps Wellness on the Coral nudge-row contract (spec §9)', () => {
+    const wellness = read('app', 'wellness.tsx');
+    const blocks = read('features', 'wellness', 'WellnessBlocks.tsx');
 
-    expect(screen, 'Smart screen must render the hero with the shared gradient Card').toMatch(
-      /<Card[\s\S]*?\bgradient\b/,
-    );
-    expect(screen, 'Smart screen must not draw its own gradient outside Card').not.toContain(
-      '<LinearGradient',
-    );
-    expect(screen, 'Smart screen must not read gradientHero outside Card').not.toContain(
-      'gradientHero',
-    );
+    expect(wellness).toContain('<HydrationSummaryCard');
+    expect(wellness).toContain('<NudgeList');
+    expect(wellness).toContain('illustration="bell"');
+    expect(blocks).toContain('name="droplet"');
+    expect(blocks).toContain('<Progress');
+    expect(blocks).toContain('variant="numeralSmall"');
+    expect(blocks).toContain('kioskCardAccessibilityLabel');
+    expect(blocks).toContain('wellnessNudgeAccessibilityLabel');
+    expect(blocks).toContain('variant="inverse"');
+    expect(blocks).toContain('leadingIcon="settings"');
+    expect(blocks).not.toContain('tintNamed');
+    expect(blocks).not.toContain('radius.pill');
+    expect(blocks).not.toContain('colors.accent');
+  });
+
+  it('keeps the smart screen on the Coral kiosk card contract (spec §9)', () => {
+    const screen = read('app', 'screen.tsx');
+
+    expect(screen).toContain('kioskLayoutMode(width, height)');
+    expect(screen).toContain("mode === 'tablet'");
+    expect(screen).toContain("mode === 'wide'");
+    expect(screen).toContain('variant="numeral"');
+    expect(screen).toContain('<KioskPlanCard');
+    expect(screen).toContain('<KioskTimerCard');
+    expect(screen).toContain('<KioskHydrationCard');
+    expect(screen).toContain('kioskCardAccessibilityLabel');
+    expect(screen).toContain('const titleAccessibilityLabel = kioskCardAccessibilityLabel');
+    expect(screen).toContain('{householdName}');
+    expect(screen).toContain('KIOSK_PORTRAIT_CARD_MIN_HEIGHT = 142');
+    expect(screen).toContain("if (mode === 'portrait') return { flex: 0");
+    expect(screen).toMatch(/<AppText variant=\{mode === 'tablet' \? 'numeral' : 'numeralSmall'\}>/);
+    expect(screen).not.toContain('`${timer.label} · ${remaining}`');
+    expect(screen).not.toContain("variant={mode === 'tablet' ? 'display' : 'numeralSmall'}");
+    expect(screen).toContain("router.push('/timers')");
+    expect(screen).toContain("router.push('/wellness')");
+    expect(screen).toContain("t('mobile.screen.rotateHint')");
+    expect(screen).toContain('useKeepAwake()');
+    expect(screen).toContain('void ScreenOrientation.unlockAsync()');
+    expect(screen).toContain('useHouseholds()');
+    expect(screen).toContain('useAuthStore');
+    expect(screen).toContain('useTimerTick(needsTick(timers, new Date()))');
+    expect(screen).not.toContain('gradient');
+    expect(screen).not.toContain('LinearGradient');
+    expect(screen).not.toContain('gradientHero');
+    expect(screen).not.toContain('tintNamed');
+    expect(screen).not.toContain('colors.accent');
     expect(
       screen,
-      'The smart screen hero must no longer paint a flat inverse surface',
-    ).not.toContain('backgroundColor: colors.surfaceInverse');
+      'Kiosk cards should be square Coral cards, not deprecated gradient/tint bridges.',
+    ).not.toMatch(/\b(tint|fill|compact)=/);
     expect(
-      heroOpening,
-      'The hero container must not be accessible, or its nested buttons can be hidden from assistive tech.',
-    ).not.toContain('accessible');
-    expect(screen, "The hero's accessibility label must stay on its text group").toContain(
-      'accessibilityLabel={`${heroEyebrow}, ${heroMessage}`}',
-    );
+      screen,
+      'The active nudge card text group should keep its label off the nested Done button.',
+    ).toContain('accessibilityLabel={planAccessibilityLabel}');
   });
 
   it('keeps capture result retake in the fixed trailing icon slot', () => {
@@ -758,8 +1425,11 @@ describe('information architecture (spec §4)', () => {
     const resultTrailing =
       capture.match(/flow === 'result' \? \([\s\S]*?\) : cameraGranted/)?.[0] ?? '';
 
-    expect(resultTrailing).toContain('<RoundButton');
+    expect(resultTrailing).toContain('<IconButton');
+    expect(resultTrailing).toContain('icon="refresh"');
+    expect(resultTrailing).toContain('tone="media"');
     expect(resultTrailing).toContain("accessibilityLabel={t('mobile.capture.retake')}");
+    expect(resultTrailing).not.toContain('<RoundButton');
     expect(resultTrailing).not.toContain('<Button');
     expect(resultTrailing).not.toContain("title={t('mobile.capture.retake')}");
   });

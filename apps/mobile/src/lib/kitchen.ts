@@ -1,9 +1,14 @@
-import type { InventoryItem, ListInventoryQuery, StorageLocation } from '@kitchen/contracts';
+import type {
+  InventoryItem,
+  ListInventoryQuery,
+  StorageLocation,
+  StorageLocationType,
+} from '@kitchen/contracts';
 import type { MessageKey, Translator } from '@kitchen/i18n';
 import type { BadgeTone } from '../components/Badge';
+import type { IllustrationName } from '../components/glyphs/illustration-paths';
 import { byExpiryUrgency, expiryStatus, isExpiringSoon, type ExpiryStatus } from './expiry';
 import { isSeededLocationName, locationLabel } from './format';
-import type { TintName } from '../theme';
 
 export type KitchenSort = NonNullable<ListInventoryQuery['sort']>;
 export type KitchenSection = 'justAdded';
@@ -19,16 +24,10 @@ export const EXPIRY_TONE: Record<ExpiryStatus, BadgeTone> = {
   today: 'danger',
   soon: 'warn',
   ok: 'success',
-  none: 'neutral',
+  none: 'muted',
 };
 
 const SORTS = new Set<KitchenSort>(['expiry', 'name', 'recent']);
-const PLACE_TINTS: readonly Extract<TintName, 'butter' | 'sage' | 'apricot'>[] = [
-  'butter',
-  'sage',
-  'apricot',
-];
-
 export function rankPlaces(
   items: readonly Pick<InventoryItem, 'locationId' | 'expiresAt'>[],
   locations: readonly StorageLocation[],
@@ -61,9 +60,10 @@ export function rankPlaces(
     );
 }
 
-export function placeTint(rank: number): Extract<TintName, 'butter' | 'sage' | 'apricot'> {
-  const index = ((Math.trunc(rank) % PLACE_TINTS.length) + PLACE_TINTS.length) % PLACE_TINTS.length;
-  return PLACE_TINTS[index]!;
+export function placeIllustration(type: StorageLocationType): IllustrationName {
+  if (type === 'spice_rack') return 'spicerack';
+  if (type === 'fridge' || type === 'freezer' || type === 'pantry') return type;
+  return 'pantry';
 }
 
 export function useFirst<T extends Pick<InventoryItem, 'expiresAt'>>(
@@ -95,6 +95,23 @@ export function parseSort(value: unknown): KitchenSort | undefined {
 
 export function parseSection(value: unknown): KitchenSection | undefined {
   return value === 'justAdded' ? 'justAdded' : undefined;
+}
+
+export function kitchenInventoryQuery({
+  query,
+  locationId,
+  sort,
+}: {
+  query: string;
+  locationId?: string;
+  sort: KitchenSort;
+}): Partial<ListInventoryQuery> {
+  const visibleQuery = query.trim();
+  return {
+    q: locationId ? undefined : visibleQuery || undefined,
+    locationId,
+    sort,
+  };
 }
 
 export function placeCaption(t: Translator, location: StorageLocation): string {

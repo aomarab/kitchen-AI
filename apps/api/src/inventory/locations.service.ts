@@ -90,13 +90,14 @@ export class LocationsService {
       const contents = await tx
         .select({
           id: inventoryItems.id,
+          householdId: inventoryItems.householdId,
           ingredientId: inventoryItems.ingredientId,
           unit: inventoryItems.unit,
           quantity: inventoryItems.quantity,
           expiresAt: inventoryItems.expiresAt,
         })
         .from(inventoryItems)
-        .where(eq(inventoryItems.locationId, id));
+        .where(and(eq(inventoryItems.locationId, id), eq(inventoryItems.householdId, householdId)));
 
       if (contents.length > 0) {
         const moveTo = query.moveTo;
@@ -121,7 +122,9 @@ export class LocationsService {
         }
       }
 
-      await tx.delete(storageLocations).where(eq(storageLocations.id, id));
+      await tx
+        .delete(storageLocations)
+        .where(and(eq(storageLocations.id, id), eq(storageLocations.householdId, householdId)));
     });
   }
 
@@ -142,7 +145,7 @@ export class LocationsService {
    */
   private async moveItem(
     tx: Tx,
-    item: Pick<ItemRow, 'id' | 'ingredientId' | 'unit' | 'quantity' | 'expiresAt'>,
+    item: Pick<ItemRow, 'id' | 'householdId' | 'ingredientId' | 'unit' | 'quantity' | 'expiresAt'>,
     destinationId: string,
   ): Promise<void> {
     const [existing] = await tx
@@ -151,6 +154,7 @@ export class LocationsService {
       .where(
         and(
           eq(inventoryItems.locationId, destinationId),
+          eq(inventoryItems.householdId, item.householdId),
           eq(inventoryItems.ingredientId, item.ingredientId),
           eq(inventoryItems.unit, item.unit),
         ),
@@ -160,14 +164,18 @@ export class LocationsService {
       await tx
         .update(inventoryItems)
         .set({ locationId: destinationId, updatedAt: new Date() })
-        .where(eq(inventoryItems.id, item.id));
+        .where(
+          and(eq(inventoryItems.id, item.id), eq(inventoryItems.householdId, item.householdId)),
+        );
       return;
     }
 
     await tx
       .update(inventoryEvents)
       .set({ itemId: existing.id })
-      .where(eq(inventoryEvents.itemId, item.id));
+      .where(
+        and(eq(inventoryEvents.itemId, item.id), eq(inventoryEvents.householdId, item.householdId)),
+      );
 
     await tx
       .update(inventoryItems)
@@ -178,9 +186,13 @@ export class LocationsService {
         expiresAt: earliest(existing.expiresAt, item.expiresAt),
         updatedAt: new Date(),
       })
-      .where(eq(inventoryItems.id, existing.id));
+      .where(
+        and(eq(inventoryItems.id, existing.id), eq(inventoryItems.householdId, item.householdId)),
+      );
 
-    await tx.delete(inventoryItems).where(eq(inventoryItems.id, item.id));
+    await tx
+      .delete(inventoryItems)
+      .where(and(eq(inventoryItems.id, item.id), eq(inventoryItems.householdId, item.householdId)));
   }
 }
 

@@ -27,6 +27,33 @@ function sourceFiles(): string[] {
  */
 const LINE_HEIGHT_ALLOWED = [join('theme', 'index.ts'), join('components', 'AppText.tsx')];
 
+function lineNumberFor(content: string, index: number): number {
+  return content.slice(0, index).split('\n').length;
+}
+
+const RADIUS_STYLE_KEY_PATTERN =
+  /(?:borderRadius|border(?:Top|Bottom)(?:Start|End|Left|Right)Radius|border(?:Start|End)(?:Start|End)Radius)\s*:\s*([^,\n}\]]+)/g;
+
+function borderRadiusViolations(content: string, file: string): string[] {
+  const out: string[] = [];
+  for (const match of content.matchAll(RADIUS_STYLE_KEY_PATTERN)) {
+    const key = match[0]!.split(':', 1)[0]!.trim();
+    const value = match[1]!.trim();
+    if (value === '0' || value === 'radius.none') continue;
+    if (value === 'radius.shutter' && file === join('features', 'capture', 'Shutter.tsx')) {
+      continue;
+    }
+    out.push(`${file}:${lineNumberFor(content, match.index ?? 0)} ${key} ${value}`);
+  }
+  return out;
+}
+
+function uppercaseTransformViolations(content: string, file: string): string[] {
+  return [...content.matchAll(/textTransform\s*:\s*['"]uppercase['"]/g)].map(
+    (match) => `${file}:${lineNumberFor(content, match.index ?? 0)} textTransform uppercase`,
+  );
+}
+
 describe('mobile source sweep', () => {
   /**
    * Apple requires a 44pt minimum touch target and Android 48dp. A regex sweep
@@ -38,38 +65,68 @@ describe('mobile source sweep', () => {
    */
   const TOUCH_TARGETS: Record<string, { path: string; pattern: RegExp }> = {
     'Button.tsx': { path: 'components/Button.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'Fab.tsx': { path: 'components/Fab.tsx', pattern: /height:\s*(\d+)/ },
-    'Field.tsx': { path: 'components/Field.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Checkbox.tsx': {
+      path: 'components/Checkbox.tsx',
+      pattern: /CHECKBOX_TARGET_SIZE\s*=\s*(\d+)/,
+    },
+    'Field.tsx': {
+      path: 'components/Field.tsx',
+      pattern: /minHeight:\s*multiline \? 132 : (\d+)/,
+    },
     'Header.tsx': { path: 'components/Header.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'QuantityStepper.tsx': { path: 'components/QuantityStepper.tsx', pattern: /height:\s*(\d+)/ },
-    // The visual circle is 36-40pt; the Pressable around it is what is measured.
-    'RoundButton.tsx': { path: 'components/RoundButton.tsx', pattern: /height:\s*(\d+)/ },
+    'AssistantSearchButton.tsx': {
+      path: 'features/home/AssistantSearchButton.tsx',
+      pattern: /ASSISTANT_SEARCH_TARGET_HEIGHT\s*=\s*(\d+)/,
+    },
+    'IconButton.tsx': {
+      path: 'components/IconButton.tsx',
+      pattern: /ICON_BUTTON_TARGET_SIZE\s*=\s*(\d+)/,
+    },
+    'QuantityStepper.tsx': {
+      path: 'components/QuantityStepper.tsx',
+      pattern: /STEPPER_TARGET_SIZE\s*=\s*(\d+)/,
+    },
+    'SearchField.tsx': { path: 'components/SearchField.tsx', pattern: /minHeight:\s*(\d+)/ },
     'SegmentedControl.tsx': {
       path: 'components/SegmentedControl.tsx',
       pattern: /minHeight:\s*(\d+)/,
     },
     'StarRating.tsx': { path: 'components/StarRating.tsx', pattern: /minHeight:\s*(\d+)/ },
     'TabBar.tsx': { path: 'components/TabBar.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'Tile.tsx': { path: 'components/Tile.tsx', pattern: /COMPACT_TILE_MIN_HEIGHT\s*=\s*(\d+)/ },
-    'ToggleRow.tsx': { path: 'components/ToggleRow.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Tile.tsx': { path: 'components/Tile.tsx', pattern: /QUICK_ACTION_MIN_HEIGHT\s*=\s*(\d+)/ },
+    'Toggle.tsx': { path: 'components/Toggle.tsx', pattern: /TOGGLE_TARGET_SIZE\s*=\s*(\d+)/ },
+    'ToggleRow.tsx': {
+      path: 'components/ToggleRow.tsx',
+      pattern: /TOGGLE_ROW_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
     'BalanceTile.tsx': {
       path: 'features/credits/BalanceTile.tsx',
-      pattern: /BALANCE_ORB_SIZE\s*=\s*(\d+)/,
+      pattern: /BALANCE_TILE_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
+    'CreditPackCard.tsx': {
+      path: 'features/credits/CreditPackCard.tsx',
+      pattern: /CREDIT_PACK_ACTION_MIN_HEIGHT\s*=\s*(\d+)/,
     },
     'ArPins.tsx': { path: 'features/capture/ArPins.tsx', pattern: /minHeight:\s*(\d+)/ },
-    'Shutter.tsx': { path: 'features/capture/Shutter.tsx', pattern: /width:\s*(\d+)/ },
+    'Shutter.tsx': {
+      path: 'features/capture/Shutter.tsx',
+      pattern: /SHUTTER_TOUCH_TARGET_SIZE\s*=\s*(\d+)/,
+    },
     'QuestionTile.tsx': {
       path: 'features/capture/QuestionTile.tsx',
       pattern: /minHeight:\s*(\d+)/,
     },
     'ReviewEditSheet.tsx': {
       path: 'features/capture/ReviewEditSheet.tsx',
-      pattern: /minHeight:\s*(\d+)/,
+      pattern: /REVIEW_EDIT_ACTION_MIN_HEIGHT\s*=\s*(\d+)/,
     },
-    'ReviewList.tsx': { path: 'features/capture/ReviewList.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'ReviewList.tsx': {
+      path: 'features/capture/ReviewList.tsx',
+      pattern: /REVIEW_FOOTER_ACTION_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
     'DayChipStrip.tsx': {
       path: 'features/plans/DayChipStrip.tsx',
-      pattern: /minHeight:\s*(\d+)/,
+      pattern: /DAY_CELL_HEIGHT\s*=\s*(\d+)/,
     },
     'shopping.tsx': { path: 'app/(tabs)/shopping.tsx', pattern: /size=\{(\d+)\}/ },
     'AddItemField.tsx': {
@@ -78,18 +135,53 @@ describe('mobile source sweep', () => {
     },
     'ShoppingCheckbox.tsx': {
       path: 'features/shop/ShoppingCheckbox.tsx',
-      pattern: /height:\s*(\d+)/,
+      pattern: /SHOPPING_CHECKBOX_TARGET_SIZE\s*=\s*(\d+)/,
     },
     'ShoppingRow.tsx': {
       path: 'features/shop/ShoppingRow.tsx',
       pattern: /minHeight:\s*(\d+)/,
     },
-    'recipe/[id]/index.tsx': { path: 'app/recipe/[id]/index.tsx', pattern: /height:\s*(\d+)/ },
-    'recipe/[id]/cook.tsx': { path: 'app/recipe/[id]/cook.tsx', pattern: /height:\s*(\d+)/ },
-    'item/[id].tsx': { path: 'app/item/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
-    'entry/[id].tsx': { path: 'app/entry/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
-    'screen.tsx': { path: 'app/screen.tsx', pattern: /MINI_CARD_ICON_SIZE\s*=\s*(\d+)/ },
-    'wellness.tsx': { path: 'app/wellness.tsx', pattern: /NUDGE_ICON_SIZE\s*=\s*(\d+)/ },
+    'recipe/[id]/index.tsx': {
+      path: 'app/recipe/[id]/index.tsx',
+      pattern: /RECIPE_FOOTER_ACTION_HEIGHT\s*=\s*(\d+)/,
+    },
+    'recipe/[id]/cook.tsx': {
+      path: 'app/recipe/[id]/cook.tsx',
+      pattern: /COOK_NAV_TARGET_HEIGHT\s*=\s*(\d+)/,
+    },
+    'RecipeIngredientRow.tsx': {
+      path: 'features/recipe/RecipeIngredientRow.tsx',
+      pattern: /RECIPE_INGREDIENT_ROW_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
+    'item/[id].tsx': {
+      path: 'app/item/[id].tsx',
+      pattern: /ITEM_DETAIL_MIN_TOUCH_TARGET\s*=\s*(\d+)/,
+    },
+    'entry/[id].tsx': {
+      path: 'app/entry/[id].tsx',
+      pattern: /ENTRY_ACTION_ROW_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
+    'screen.tsx': { path: 'app/screen.tsx', pattern: /KIOSK_EXIT_TARGET_SIZE\s*=\s*(\d+)/ },
+    'wellness.tsx': {
+      path: 'features/wellness/WellnessBlocks.tsx',
+      pattern: /WELLNESS_ACTION_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
+    'WeekStrip.tsx': {
+      path: 'features/home/WeekStrip.tsx',
+      pattern: /DAY_CELL_HEIGHT\s*=\s*(\d+)/,
+    },
+    'AccountHero.tsx': {
+      path: 'features/account/AccountHero.tsx',
+      pattern: /ACCOUNT_HERO_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
+    'AssistantPersonaPicker.tsx': {
+      path: 'features/settings/AssistantPersonaPicker.tsx',
+      pattern: /PERSONA_OPTION_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
+    'LiveAssistantScreen.tsx': {
+      path: 'features/assistant/LiveAssistantScreen.tsx',
+      pattern: /ASSISTANT_PROMPT_MIN_HEIGHT\s*=\s*(\d+)/,
+    },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {
@@ -110,8 +202,8 @@ describe('mobile source sweep', () => {
       if (file === 'Field.tsx') {
         expect(
           Number(match![1]),
-          'Auth fields must use the 56pt spec §9.7 box',
-        ).toBeGreaterThanOrEqual(56);
+          'J fields must use at least the 48pt spec §8 box',
+        ).toBeGreaterThanOrEqual(48);
       }
     }
   });
@@ -129,6 +221,79 @@ describe('mobile source sweep', () => {
         'and the text clips at large Dynamic Type sizes. Use a typography ' +
         `variant instead. Offending files: ${offenders.join(', ')}`,
     ).toEqual([]);
+  });
+
+  it('keeps Coral source square except the camera shutter', () => {
+    const offenders = sourceFiles().flatMap((file) =>
+      borderRadiusViolations(readFileSync(file, 'utf8'), relative(SRC, file)),
+    );
+
+    expect(
+      offenders,
+      'J Coral is square everywhere. Use radius.none/0, and reserve ' +
+        `radius.shutter for features/capture/Shutter.tsx only. Offenders: ${offenders.join(', ')}`,
+    ).toEqual([]);
+  });
+
+  it('catches literal, token and computed border-radius violations', () => {
+    const fixture = [
+      'const size = 40;',
+      'const styles = {',
+      '  literal: { borderRadius: 8 },',
+      '  token: { borderRadius: radius.md },',
+      '  computed: { borderRadius: size / 2 },',
+      '  allowedToken: { borderRadius: radius.none },',
+      '  allowedLiteral: { borderRadius: 0 },',
+      '  cornerLiteral: { borderTopStartRadius: 8 },',
+      '  cornerToken: { borderBottomEndRadius: radius.xl },',
+      '  cornerAllowed: { borderTopEndRadius: 0 },',
+      '};',
+    ].join('\n');
+
+    expect(borderRadiusViolations(fixture, join('components', 'Fake.tsx'))).toEqual([
+      `${join('components', 'Fake.tsx')}:3 borderRadius 8`,
+      `${join('components', 'Fake.tsx')}:4 borderRadius radius.md`,
+      `${join('components', 'Fake.tsx')}:5 borderRadius size / 2`,
+      `${join('components', 'Fake.tsx')}:8 borderTopStartRadius 8`,
+      `${join('components', 'Fake.tsx')}:9 borderBottomEndRadius radius.xl`,
+    ]);
+    expect(
+      borderRadiusViolations(
+        'const ok = { borderRadius: radius.shutter };',
+        join('features', 'capture', 'Shutter.tsx'),
+      ),
+    ).toEqual([]);
+    expect(
+      borderRadiusViolations(
+        'const bad = { borderRadius: radius.shutter };',
+        join('components', 'Fake.tsx'),
+      ),
+    ).toEqual([`${join('components', 'Fake.tsx')}:1 borderRadius radius.shutter`]);
+  });
+
+  it('never uppercases text through styles', () => {
+    const offenders = sourceFiles().flatMap((file) =>
+      uppercaseTransformViolations(readFileSync(file, 'utf8'), relative(SRC, file)),
+    );
+
+    expect(
+      offenders,
+      'J Coral uses sentence case in every locale. Do not set textTransform: ' +
+        `'uppercase'. Offenders: ${offenders.join(', ')}`,
+    ).toEqual([]);
+  });
+
+  it('catches single- and double-quoted uppercase text transforms', () => {
+    const fixture = [
+      "const a = { textTransform: 'uppercase' };",
+      'const b = { textTransform: "uppercase" };',
+      "const ok = { textTransform: 'none' };",
+    ].join('\n');
+
+    expect(uppercaseTransformViolations(fixture, join('components', 'Fake.tsx'))).toEqual([
+      `${join('components', 'Fake.tsx')}:1 textTransform uppercase`,
+      `${join('components', 'Fake.tsx')}:2 textTransform uppercase`,
+    ]);
   });
 
   /**

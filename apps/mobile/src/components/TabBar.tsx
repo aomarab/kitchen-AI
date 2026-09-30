@@ -1,27 +1,29 @@
 import { useEffect, useState } from 'react';
-import { Keyboard, Platform, Pressable, View, useWindowDimensions } from 'react-native';
+import {
+  Animated,
+  Keyboard,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
-import { Fab } from './Fab';
+import { Icon } from './Icon';
+import { usePressFeedback } from './press-feedback';
 import {
   TAB_BAR_HEIGHT,
+  TAB_BAR_HORIZONTAL_PADDING,
   TAB_BAR_SIDE_INSET,
+  TAB_BAR_TOP_PADDING,
   splitTabs,
   tabBarBottom,
   tabBarClearance,
 } from '../lib/tab-bar';
-import { radius, spacing } from '../theme';
 import { contentMaxWidth } from '../theme/layout';
 import { useTheme } from '../theme/useTheme';
 
-/**
- * The slice of React Navigation's tab bar props this bar actually uses.
- *
- * `@react-navigation/bottom-tabs` reaches us transitively through expo-router
- * and is not a declared dependency, so importing `BottomTabBarProps` from it
- * would bind us to a package we do not control the version of. Describing the
- * shape structurally keeps the contract explicit and the import graph honest.
- */
 interface TabRoute {
   key: string;
   name: string;
@@ -48,15 +50,16 @@ export interface TabBarProps {
   captureLabel: string;
 }
 
+const SCAN_KEY_WIDTH = 52;
+const SCAN_KEY_HEIGHT = 40;
+const ACTIVE_MARKER_SIZE = 4;
+const TABLET_LABEL_BREAKPOINT = 600;
+
 /** The bottom padding a tab screen's scroll content needs to clear the bar. */
 export function useTabBarClearance(): number {
   return tabBarClearance(useSafeAreaInsets().bottom);
 }
 
-/**
- * Android resizes the window for the keyboard, which would lift a floating bar
- * onto the keyboard's top edge. iOS does not, so the keyboard simply covers it.
- */
 function useAndroidKeyboardVisible(): boolean {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -71,70 +74,111 @@ function useAndroidKeyboardVisible(): boolean {
   return visible;
 }
 
-/**
- * The floating capsule (spec §8.1) with a centre capture action.
- *
- * It is absolutely positioned, so React Navigation gives the screens the full
- * height and each tab screen pads its own content past the bar
- * (`useTabBarClearance`, or `Screen`'s `tabBar` prop).
- *
- * The capture button gets a real column of its own. Previously it was an
- * absolutely positioned FAB laid over a four-tab bar, which put it exactly on
- * the seam between the two middle tabs and covered about a third of each of
- * their touch targets, so taps near the circle landed unpredictably.
- *
- * Direction is never hard-coded: the row mirrors itself under RTL, so the
- * capture action stays centred and the tabs reverse with the writing system.
- */
+interface TabBarSlotProps {
+  route: TabRoute;
+  focused: boolean;
+  descriptor: TabDescriptor;
+  navigation: TabBarProps['navigation'];
+  showLabel: boolean;
+}
+
+function TabBarSlot({ route, focused, descriptor, navigation, showLabel }: TabBarSlotProps) {
+  const { colors } = useTheme();
+  const pressFeedback = usePressFeedback();
+  const color = focused ? colors.primary : colors.text;
+  const { options } = descriptor;
+
+  const onPress = () => {
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
+    if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+  };
+
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected: focused }}
+      accessibilityLabel={options.title}
+      onPress={onPress}
+      {...pressFeedback.pressHandlers}
+      style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Animated.View style={[{ alignItems: 'center', gap: 5 }, pressFeedback.animatedStyle]}>
+        {options.tabBarIcon?.({ color, size: 24, focused })}
+        {focused ? (
+          <View
+            style={{
+              width: ACTIVE_MARKER_SIZE,
+              height: ACTIVE_MARKER_SIZE,
+              backgroundColor: colors.primary,
+            }}
+          />
+        ) : showLabel ? (
+          <View style={{ height: ACTIVE_MARKER_SIZE }} />
+        ) : null}
+        {showLabel ? (
+          <AppText variant="tab" style={{ color }}>
+            {options.title}
+          </AppText>
+        ) : null}
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+function CaptureSlot({ onCapture, captureLabel }: { onCapture: () => void; captureLabel: string }) {
+  const { colors } = useTheme();
+  const pressFeedback = usePressFeedback();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={captureLabel}
+      onPress={onCapture}
+      {...pressFeedback.pressHandlers}
+      style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Animated.View
+        style={[
+          {
+            width: SCAN_KEY_WIDTH,
+            height: SCAN_KEY_HEIGHT,
+            backgroundColor: colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          pressFeedback.animatedStyle,
+        ]}
+      >
+        <Icon name="scan" size={22} color={colors.onFill} />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 export function TabBar({ state, descriptors, navigation, onCapture, captureLabel }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { colors, isDark, shadow } = useTheme();
+  const { colors } = useTheme();
   const keyboardVisible = useAndroidKeyboardVisible();
-
-  const renderTab = (route: TabRoute, index: number) => {
-    const { options } = descriptors[route.key]!;
-    const focused = state.index === index;
-    const color = focused ? colors.primaryText : colors.textMuted;
-
-    const onPress = () => {
-      const event = navigation.emit({
-        type: 'tabPress',
-        target: route.key,
-        canPreventDefault: true,
-      });
-      if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
-    };
-
-    return (
-      <Pressable
-        key={route.key}
-        accessibilityRole="tab"
-        accessibilityState={{ selected: focused }}
-        accessibilityLabel={options.title}
-        onPress={onPress}
-        style={{
-          flex: 1,
-          minHeight: 44,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: spacing.xs,
-        }}
-      >
-        {options.tabBarIcon?.({ color, size: 22, focused })}
-        <AppText variant="caption" style={{ color }}>
-          {options.title}
-        </AppText>
-      </Pressable>
-    );
-  };
+  const showLabel = width >= TABLET_LABEL_BREAKPOINT;
 
   if (keyboardVisible) return null;
-  const { leading, trailing } = splitTabs(state.routes.map(renderTab));
+  const tabs = state.routes.map((route, index) => (
+    <TabBarSlot
+      key={route.key}
+      route={route}
+      focused={state.index === index}
+      descriptor={descriptors[route.key]!}
+      navigation={navigation}
+      showLabel={showLabel}
+    />
+  ));
+  const { leading, trailing } = splitTabs(tabs);
 
   return (
-    // Centred by a wrapper, as `Screen` does, so a tablet caps the capsule at
-    // the content width in both directions.
     <View
       pointerEvents="box-none"
       style={{
@@ -142,6 +186,9 @@ export function TabBar({ state, descriptors, navigation, onCapture, captureLabel
         bottom: tabBarBottom(insets.bottom),
         start: TAB_BAR_SIDE_INSET,
         end: TAB_BAR_SIDE_INSET,
+        backgroundColor: colors.bg,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: colors.border,
         alignItems: 'center',
       }}
     >
@@ -149,23 +196,16 @@ export function TabBar({ state, descriptors, navigation, onCapture, captureLabel
         style={{
           width: '100%',
           maxWidth: contentMaxWidth(width),
-          height: TAB_BAR_HEIGHT,
+          minHeight: TAB_BAR_HEIGHT + insets.bottom,
           flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: spacing.xs,
-          borderRadius: radius.pill,
-          borderWidth: 1,
-          borderColor: isDark ? colors.border : colors.surface,
-          backgroundColor: colors.surface,
-          ...shadow.raised,
+          alignItems: 'flex-start',
+          paddingTop: TAB_BAR_TOP_PADDING,
+          paddingHorizontal: TAB_BAR_HORIZONTAL_PADDING,
+          paddingBottom: insets.bottom,
         }}
       >
         {leading}
-
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Fab icon="camera" accessibilityLabel={captureLabel} onPress={onCapture} />
-        </View>
-
+        <CaptureSlot captureLabel={captureLabel} onCapture={onCapture} />
         {trailing}
       </View>
     </View>

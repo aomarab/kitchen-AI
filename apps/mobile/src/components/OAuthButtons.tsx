@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, View } from 'react-native';
 import type { OAuthProvider } from '@kitchen/contracts';
-import { Button } from './Button';
 import { AppText } from './AppText';
+import { Icon } from './Icon';
+import { usePressFeedback } from './press-feedback';
 import { useFormat } from '../hooks/useFormat';
 import { useOAuthSignIn } from '../hooks/auth';
 import { errorMessageKey } from '../lib/errors';
-import { spacing } from '../theme';
+import { radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 interface OAuthButtonsProps {
@@ -61,23 +62,80 @@ export function OAuthButtons({ onSuccess }: OAuthButtonsProps) {
       ) : null}
 
       <View style={{ gap: spacing.sm }}>
-        <Button
-          variant="secondary"
-          icon="apple"
+        <SocialButton
+          provider="apple"
           title={t('auth.continueWithApple')}
-          onPress={() => go('apple')}
           loading={pending === 'apple'}
           disabled={pending !== null}
+          onPress={() => go('apple')}
         />
-        <Button
-          variant="secondary"
-          icon="google"
+        <SocialButton
+          provider="google"
           title={t('auth.continueWithGoogle')}
-          onPress={() => go('google')}
           loading={pending === 'google'}
           disabled={pending !== null}
+          onPress={() => go('google')}
         />
       </View>
     </View>
+  );
+}
+
+interface SocialButtonProps {
+  provider: OAuthProvider;
+  title: string;
+  loading: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}
+
+function SocialButton({ provider, title, loading, disabled, onPress }: SocialButtonProps) {
+  const { colors } = useTheme();
+  const apple = provider === 'apple';
+  const fill = apple ? colors.inverse : colors.bg;
+  const label = apple ? colors.onInverse : colors.text;
+  const border = apple ? colors.inverse : colors.border;
+  const pressFeedback = usePressFeedback();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled, busy: loading }}
+      disabled={disabled}
+      onPress={onPress}
+      {...pressFeedback.pressHandlers}
+      style={{
+        minHeight: 44,
+      }}
+    >
+      <Animated.View
+        style={[
+          {
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            borderRadius: radius.none,
+            borderWidth: 1,
+            borderColor: border,
+            backgroundColor: fill,
+          },
+          disabled && !loading ? { opacity: 0.5 } : pressFeedback.animatedStyle,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={label} />
+        ) : (
+          <>
+            <Icon name={provider} size={18} color={label} />
+            <AppText variant="buttonSmall" style={{ color: label }}>
+              {title}
+            </AppText>
+          </>
+        )}
+      </Animated.View>
+    </Pressable>
   );
 }

@@ -22,6 +22,7 @@ export default function SignIn() {
       title={t('mobile.auth.signInTitle')}
       titleAccent={t('mobile.auth.signInAccent')}
       subtitle={t('mobile.auth.welcomeSubtitle')}
+      footer={<AuthSwitchLink to="/sign-up" />}
     >
       <View style={{ gap: spacing.md }}>
         <Field
@@ -49,8 +50,6 @@ export default function SignIn() {
       </View>
 
       <OAuthButtons onSuccess={goHome} />
-
-      <AuthSwitchLink to="/sign-up" />
     </AuthLayout>
   );
 }

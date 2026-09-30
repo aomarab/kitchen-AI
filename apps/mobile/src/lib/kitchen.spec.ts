@@ -4,10 +4,11 @@ import { createTranslator } from '@kitchen/i18n';
 import {
   EXPIRY_TONE,
   justAdded,
+  kitchenInventoryQuery,
   parseSection,
   parseSort,
   placeCaption,
-  placeTint,
+  placeIllustration,
   rankPlaces,
   useFirst,
 } from './kitchen';
@@ -90,20 +91,6 @@ describe('rankPlaces', () => {
   });
 });
 
-describe('placeTint', () => {
-  it('rotates butter, sage and apricot from rank 0', () => {
-    expect(Array.from({ length: 7 }, (_, rank) => placeTint(rank))).toEqual([
-      'butter',
-      'sage',
-      'apricot',
-      'butter',
-      'sage',
-      'apricot',
-      'butter',
-    ]);
-  });
-});
-
 describe('useFirst', () => {
   it('returns at most six expired, due-today or soon items in urgency order', () => {
     const result = useFirst(
@@ -160,6 +147,26 @@ describe('parseSection', () => {
   });
 });
 
+describe('kitchenInventoryQuery', () => {
+  it('keeps visible search filtering on the all-kitchen view', () => {
+    expect(kitchenInventoryQuery({ query: ' parsley ', sort: 'expiry' })).toEqual({
+      q: 'parsley',
+      locationId: undefined,
+      sort: 'expiry',
+    });
+  });
+
+  it('drops the hidden search filter in drill-in place views', () => {
+    expect(
+      kitchenInventoryQuery({ query: 'parsley', locationId: 'fridge-id', sort: 'name' }),
+    ).toEqual({
+      q: undefined,
+      locationId: 'fridge-id',
+      sort: 'name',
+    });
+  });
+});
+
 describe('EXPIRY_TONE', () => {
   it('keeps the existing status-to-badge-tone mapping', () => {
     expect(EXPIRY_TONE).toEqual({
@@ -167,8 +174,18 @@ describe('EXPIRY_TONE', () => {
       today: 'danger',
       soon: 'warn',
       ok: 'success',
-      none: 'neutral',
+      none: 'muted',
     });
+  });
+});
+
+describe('placeIllustration', () => {
+  it('uses the shared J place art, with other places falling back to pantry', () => {
+    expect(placeIllustration('fridge')).toBe('fridge');
+    expect(placeIllustration('freezer')).toBe('freezer');
+    expect(placeIllustration('pantry')).toBe('pantry');
+    expect(placeIllustration('spice_rack')).toBe('spicerack');
+    expect(placeIllustration('other')).toBe('pantry');
   });
 });
 

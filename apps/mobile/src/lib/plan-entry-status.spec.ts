@@ -19,14 +19,14 @@ describe('planEntryStatus', () => {
 
   it('shows skipped before the coverage fallback', () => {
     expect(planEntryStatus(entry('skipped', true))).toEqual({
-      tone: 'neutral',
+      tone: 'muted',
       labelKey: 'plans.skipped',
     });
   });
 
   it('shows fully covered for planned entries with pantry coverage', () => {
     expect(planEntryStatus(entry('planned', true))).toEqual({
-      tone: 'info',
+      tone: 'primary',
       labelKey: 'plans.fullyCovered',
     });
   });

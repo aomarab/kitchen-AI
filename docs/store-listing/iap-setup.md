@@ -21,8 +21,9 @@ balance, §10 verification).
   `store_transaction_id` UNIQUE backstop, so the confirm call and the webhook
   can both arrive without doubling the balance (`purchase.service.ts`).
 - **Mock by default**: `PAYMENTS_MOCK=true` (server) and `EXPO_PUBLIC_USE_MOCKS`
-  (client) keep the whole flow offline and free, so it runs in the Simulator and
-  in node tests with no RevenueCat account.
+  (client) keep local flows offline. Production may use that mock only with
+  `PAYMENTS_DISABLED=true`, which leaves balances/spending live but closes
+  purchase intent creation, purchase confirmation, and webhook crediting.
 
 ## The product
 
@@ -73,13 +74,19 @@ a pack, edit `CREDIT_PACKS` (contract) — never hard-code an id in an app.
 ## Step 3 — Set environment
 
 **Server** (`.env`, see `.env.example` and `config/env.ts`). In production the
-API **refuses to boot** if `PAYMENTS_MOCK=false` and either key is missing:
+API **refuses to boot** if `PAYMENTS_MOCK=true` while purchases are enabled, or
+if live payments are enabled and either RevenueCat value is missing:
 
 ```
 PAYMENTS_MOCK=false
+PAYMENTS_DISABLED=false
 REVENUECAT_API_KEY=<revenuecat secret API key>
 REVENUECAT_WEBHOOK_SECRET=<the Authorization value you set on the webhook>
 ```
+
+To ship before IAP is ready, use `PAYMENTS_MOCK=true` and
+`PAYMENTS_DISABLED=true`; this boots without RevenueCat keys and cannot mint paid
+credits from a fake receipt.
 
 **Mobile** (build-time `EXPO_PUBLIC_*`):
 
@@ -105,36 +112,31 @@ before the real key is in and the IAP is approved. The `preview` and
 
 The DI factory in `credits.module.ts` swaps the mock verifier for
 `RevenueCatVerifier` purely on `PAYMENTS_MOCK`; no code change is needed to go
-live.
+live. The API still rejects sandbox/TestFlight purchases in production and
+requires the RevenueCat `product_id` to match the recorded purchase intent.
 
-## Step 4 — Two integration points to finalize (REQUIRED)
+## Step 4 — Verify RevenueCat payloads before paid launch (REQUIRED)
 
-These are the parts the code intentionally leaves until a real account exists.
-Both must be verified against RevenueCat's live payloads before shipping paid.
+These are the integration assumptions that must be checked against a real
+RevenueCat account before shipping paid.
 
-1. **Finalize the receipt lookup** in
-   `apps/api/src/credits/revenuecat.verifier.ts`. Its `verify()` is a
-   documented placeholder ("The precise RevenueCat lookup is finalized once the
-   account exists (spec §10)") — it currently `GET`s
-   `/subscribers/{storeTransactionId}`, but the lookup key and the
-   `non_subscriptions` matching must be confirmed against real RevenueCat data
-   (e.g. look the purchase up by the app user id / your intent, and assert the
-   `product_id` and transaction match). **The security contract is fixed and
-   must not weaken: never return `valid:true` on an unverified receipt** — a
-   non-2xx already raises `EXTERNAL_SERVICE_ERROR` rather than parsing as
-   success. Add a test with a real (sanitized) RevenueCat body.
+1. **REST receipt lookup** (`apps/api/src/credits/revenuecat.verifier.ts`) reads
+   the subscriber by RevenueCat app user id, which the mobile client sets to the
+   purchase intent id before checkout (`Purchases.logIn(intentId)`). Confirm the
+   live `subscriber.non_subscriptions[productId]` entries carry either
+   `store_transaction_id` or `id`, plus `is_sandbox`. **The security contract is
+   fixed and must not weaken:** the verifier returns `valid:true` only when the
+   transaction is under the expected product id, and production rejects sandbox
+   receipts.
 
-2. **Carry the `intent_id` into the webhook.** The webhook schema requires
-   `event.intent_id` (a UUID), `transaction_id`, `product_id`, `store`
-   (`webhook.controller.ts`). RevenueCat's native event does **not** include your
-   `intent_id`, so set it as a **subscriber attribute** on the customer right
-   before `purchasePackage` (in `src/lib/purchases.ts`, using the value returned
-   by `createPurchaseIntent`), and confirm the webhook body maps that attribute
-   onto `intent_id`. If RevenueCat delivers it under a different field, adjust
-   `revenueCatWebhookSchema` / `toWebhookEvent` to read it — this is a coordinated
-   change (contract-adjacent), keep the confirm path and the webhook path reading
-   the _same_ intent. Until this is wired, the confirm call still credits
-   correctly; only the webhook backstop is inert.
+2. **Webhook intent mapping** (`webhook.controller.ts`) reads
+   `event.app_user_id` as the intent id and then requires `transaction_id`,
+   `product_id`, and non-sandbox `environment` before crediting. Confirm
+   RevenueCat delivers those fields for `INITIAL_PURCHASE`,
+   `NON_RENEWING_PURCHASE`, `CANCELLATION`, and `REFUND`. If a field name differs,
+   adjust `revenueCatWebhookSchema` / `toWebhookEvent` and add a sanitized-payload
+   test; keep the confirm path and webhook path enforcing the same product and
+   sandbox checks.
 
 ## Step 5 — Verify end to end
 

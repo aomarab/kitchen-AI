@@ -62,15 +62,44 @@ export class RecognitionService {
     spendGroupId: string,
   ): Promise<RecognitionSession> {
     const { householdId, request } = input;
-    await this.credits.assertCanAfford(householdId, 'pantry.scan');
     const locale = await this.localeFor(input.userId);
     const hint = request.locationHint;
 
+    const imageRefs: { photoKey: string; imageUrl: string }[] = [];
+    for (const photoKey of request.photoKeys) {
+      // This is local validation/presigning, not model work. Do it before
+      // charging so a bad object key fails as a normal validation error rather
+      // than as a charge-plus-refund cycle.
+      imageRefs.push({
+        photoKey,
+        imageUrl: await this.storage.providerImageUrl(householdId, photoKey),
+      });
+    }
+
+    const chargedSpendGroupId = await this.credits.spend(householdId, 'pantry.scan', {
+      spendGroupId,
+    });
+
+    try {
+      return await this.runRecognition(input, locale, hint, imageRefs);
+    } catch (error) {
+      await this.credits.refundSpendGroup(householdId, chargedSpendGroupId);
+      throw error;
+    }
+  }
+
+  private async runRecognition(
+    input: RecognizeInput,
+    locale: Locale,
+    hint: RecognizeRequest['locationHint'],
+    imageRefs: { photoKey: string; imageUrl: string }[],
+  ): Promise<RecognitionSession> {
+    const { householdId, request } = input;
     const emptyPhotoKeys: string[] = [];
     const collected: { item: VisionResult['ingredients'][number]; photoKey: string }[] = [];
     const seen = new Set<string>();
 
-    for (const photoKey of request.photoKeys) {
+    for (const { photoKey, imageUrl } of imageRefs) {
       // The provider fetches the image, so it needs something it can actually
       // dereference. `providerImageUrl` presigns for public storage and inlines
       // a `data:` URL when storage is private (loopback/RFC1918), which a real
@@ -80,7 +109,6 @@ export class RecognitionService {
       // arbitrary URL, and have the model fetch it for them. It also rejects a
       // key uploaded under a non-capture purpose (recipe_image, avatar), which
       // would otherwise bypass the 2 MB capture ceiling.
-      const imageUrl = await this.storage.providerImageUrl(householdId, photoKey);
       const vision = await this.gateway.execute<VisionResult>({
         householdId,
         operation: 'vision.recognize',
@@ -154,8 +182,6 @@ export class RecognitionService {
         emptyPhotoKeys,
       })
       .returning({ id: recognitionSessions.id, createdAt: recognitionSessions.createdAt });
-
-    await this.credits.spend(householdId, 'pantry.scan', { spendGroupId });
 
     return {
       id: row!.id,

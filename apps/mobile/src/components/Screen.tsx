@@ -64,16 +64,14 @@ export function Screen({
   const setToastFooterOffset = useToastStore((state) => state.setFooterOffset);
   const maxWidth = contentMaxWidth(width);
   const hasFooter = !!footer;
-  // `lg` between top-level blocks against the `sm` most screens use inside a
-  // section gives a real 2:1 rhythm tier. At the previous `md` the gap between
-  // two sections was 12 and the gap inside one was 8, so nothing grouped and
-  // every screen read as one undifferentiated stack.
+  // The J gutter is the page inset; rows inside a section keep using smaller
+  // spacing tokens so top-level blocks still read as their own rhythm tier.
   const pad: ViewStyle = {
-    ...(padded ? { padding: spacing.lg, gap: spacing.lg } : null),
+    ...(padded ? { padding: spacing.gutter, gap: spacing.gutter } : null),
     ...(tabBar && !hasFooter ? { paddingBottom: clearance } : null),
   };
   const footerPad: ViewStyle = {
-    padding: spacing.lg,
+    padding: spacing.gutter,
     paddingTop: spacing.sm,
     ...(tabBar ? { paddingBottom: clearance } : null),
   };

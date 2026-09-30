@@ -145,6 +145,16 @@ export function canAddAll(
   );
 }
 
+export type CaptureResultActionState = { kind: 'addAll'; count: number } | { kind: 'review' };
+
+export function captureResultActionState(
+  session: RecognitionSession,
+  locations: readonly StorageLocation[],
+): CaptureResultActionState {
+  if (canAddAll(session, locations)) return { kind: 'addAll', count: session.items.length };
+  return { kind: 'review' };
+}
+
 export function includedCount(rows: readonly ReviewRow[]): number {
   return rows.filter((row) => row.include && row.locationId !== '').length;
 }

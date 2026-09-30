@@ -1,173 +1,70 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, ScrollView, View, type LayoutChangeEvent, type TextInput } from 'react-native';
+import { Animated, FlatList, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { InventoryItem, StorageLocation, StorageLocationType } from '@kitchen/contracts';
+import type { InventoryItem } from '@kitchen/contracts';
 import {
   AppText,
-  Badge,
   Bento,
-  BentoColumn,
   Button,
   Chip,
   EmptyState,
   ErrorState,
-  Field,
-  FoodIcon,
-  Icon,
-  ListGroup,
+  Header,
+  IconButton,
   ListRow,
   LoadingState,
-  RoundButton,
   Screen,
-  SegmentedControl,
+  SearchField,
+  Sheet,
   TabHeader,
   Tile,
-  type IconName,
 } from '../../components';
-import { BENTO_GUTTER } from '../../components/tile-layout';
+import { InventoryItemRow } from '../../features/inventory/InventoryItemRow';
 import { useFormat } from '../../hooks/useFormat';
 import { useInventory, useInventorySnapshot, useLocations } from '../../hooks/inventory';
-import { expiryStatus, type ExpiryStatus } from '../../lib/expiry';
+import { formatExpiryLabel, formatQty, itemName, locationLabel } from '../../lib/format';
 import {
-  formatExpiryLabel,
-  formatDaysLeft,
-  formatMeasure,
-  formatQty,
-  itemName,
-  locationLabel,
-} from '../../lib/format';
-import {
-  EXPIRY_TONE,
   countMessage,
   justAdded,
+  kitchenInventoryQuery,
   parseSection,
   parseSort,
   placeAccessibilityLabel,
-  placeCaption,
-  placeTint,
+  placeIllustration,
   rankPlaces,
   useFirst,
   type KitchenSort,
 } from '../../lib/kitchen';
-import { spacing, type ColorToken } from '../../theme';
-import { useTheme } from '../../theme/useTheme';
+import {
+  inventoryItemRowBadge,
+  inventoryItemRowFoodIcon,
+  inventoryItemRowMeta,
+  inventoryItemRowWhen,
+} from '../../lib/inventory-row';
+import { spacing } from '../../theme';
 import { useTabBarClearance } from '../../components/TabBar';
+import { usePressFeedback } from '../../components/press-feedback';
 
-const COMPACT_PLACE_TILE_HEIGHT = 74;
-const MINI_CARD_WIDTH = '31.5%';
+const SORT_OPTIONS: readonly KitchenSort[] = ['expiry', 'name', 'recent'];
+const KITCHEN_TOP_STACK_GAP = spacing.md;
 
-const LOCATION_ICON: Record<StorageLocationType, IconName> = {
-  fridge: 'kitchen',
-  freezer: 'snowflake',
-  pantry: 'box',
-  spice_rack: 'restaurant',
-  other: 'box',
-};
+type RankedPlace = ReturnType<typeof rankPlaces>[number];
 
-function HeaderActions({
-  searchOpen,
-  onSearchPress,
-  onAddPress,
-  searchLabel,
-  addLabel,
-}: {
-  searchOpen: boolean;
-  onSearchPress: () => void;
-  onAddPress: () => void;
-  searchLabel: string;
-  addLabel: string;
-}) {
+function HeaderActions({ onAddPress }: { onAddPress: () => void }) {
+  const { t } = useFormat();
   return (
-    <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-      <RoundButton
-        size={40}
-        tone="surface"
-        icon={searchOpen ? 'close' : 'search'}
-        accessibilityLabel={searchLabel}
-        onPress={onSearchPress}
-      />
-      <RoundButton
-        size={40}
-        tone="primary"
-        icon="plus"
-        accessibilityLabel={addLabel}
-        onPress={onAddPress}
-      />
-    </View>
+    <IconButton
+      icon="plus"
+      tone="plain"
+      accessibilityLabel={t('inventory.addItem')}
+      onPress={onAddPress}
+    />
   );
 }
 
-function PlaceIcon({ type }: { type: StorageLocationType }) {
-  const { colors } = useTheme();
+function SortAction({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <View
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.surface,
-      }}
-    >
-      <Icon name={LOCATION_ICON[type]} size={18} color={colors.text} />
-    </View>
-  );
-}
-
-function CompactPlaceContent({
-  location,
-  count,
-  label,
-}: {
-  location: StorageLocation;
-  count: string;
-  label: string;
-}) {
-  return (
-    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-      <PlaceIcon type={location.type} />
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <AppText variant="numeral">{count}</AppText>
-        <AppText variant="caption" muted>
-          {label}
-        </AppText>
-      </View>
-    </View>
-  );
-}
-
-function MiniItemCard({
-  item,
-  name,
-  detail,
-  detailColor,
-  accessibilityLabel,
-  onPress,
-}: {
-  item: InventoryItem;
-  name: string;
-  detail: string;
-  detailColor?: ColorToken;
-  accessibilityLabel: string;
-  onPress: () => void;
-}) {
-  return (
-    <Tile
-      tint="plain"
-      compact
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      style={{ width: MINI_CARD_WIDTH }}
-    >
-      <FoodIcon item={foodIconItem(item)} size={40} />
-      <View style={{ gap: 2 }}>
-        <AppText variant="bodyStrong">{name}</AppText>
-        <AppText variant="caption" color={detailColor} muted={!detailColor}>
-          {detail}
-        </AppText>
-      </View>
-    </Tile>
+    <Button title={label} variant="ghost" leadingIcon="sort" fullWidth={false} onPress={onPress} />
   );
 }
 
@@ -175,45 +72,114 @@ function SectionHeading({
   title,
   actionLabel,
   onAction,
-  onLayout,
 }: {
   title: string;
   actionLabel?: string;
   onAction?: () => void;
-  onLayout?: (event: LayoutChangeEvent) => void;
 }) {
+  const pressFeedback = usePressFeedback();
+
   return (
-    <View
-      onLayout={onLayout}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}
-    >
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
       <AppText variant="heading" accessibilityRole="header" style={{ flex: 1 }}>
         {title}
       </AppText>
       {actionLabel && onAction ? (
-        <Button title={actionLabel} variant="ghost" fullWidth={false} onPress={onAction} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+          onPress={onAction}
+          {...pressFeedback.pressHandlers}
+          style={{ minHeight: 44, justifyContent: 'center' }}
+        >
+          <Animated.View style={pressFeedback.animatedStyle}>
+            <AppText variant="label" color="primaryText">
+              {actionLabel}
+            </AppText>
+          </Animated.View>
+        </Pressable>
       ) : null}
     </View>
   );
 }
 
-function foodIconItem(item: InventoryItem) {
-  return {
-    label: item.label,
-    nameEn: item.ingredient.canonicalNameEn,
-    nameAr: item.ingredient.canonicalNameAr,
-    category: item.ingredient.category,
-  };
+function formattedCountMessage(
+  t: ReturnType<typeof useFormat>['t'],
+  key: Parameters<typeof countMessage>[1],
+  count: number,
+  formattedCount: string,
+  extra?: Record<string, string | number>,
+) {
+  return countMessage(t, key, count, formattedCount, extra);
 }
 
-function expiryTextColor(status: ExpiryStatus): ColorToken {
-  if (status === 'expired' || status === 'today') return 'danger';
-  if (status === 'soon') return 'warn';
-  return 'textMuted';
+function PlaceTile({ ranked, onPress }: { ranked: RankedPlace; onPress: () => void }) {
+  const { t, locale, prefs } = useFormat();
+  const label = locationLabel(t, ranked.location);
+  const count = formatQty(locale, ranked.count, prefs);
+  const soon = formatQty(locale, ranked.soon, prefs);
+  const countText = formattedCountMessage(t, 'inventory.itemCount', ranked.count, count);
+  const soonBadge =
+    ranked.soon > 0
+      ? formattedCountMessage(t, 'mobile.kitchen.soonCount', ranked.soon, soon)
+      : undefined;
+
+  return (
+    <Tile
+      variant="place"
+      illustration={placeIllustration(ranked.location.type)}
+      count={label}
+      caption={countText}
+      badgeLabel={soonBadge}
+      accessibilityLabel={placeAccessibilityLabel({
+        t,
+        caption: label,
+        count: ranked.count,
+        formattedCount: count,
+        soon: ranked.soon,
+        formattedSoon: soon,
+      })}
+      onPress={onPress}
+    />
+  );
+}
+
+function SortSheet({
+  visible,
+  value,
+  onChange,
+  onClose,
+}: {
+  visible: boolean;
+  value: KitchenSort;
+  onChange: (value: KitchenSort) => void;
+  onClose: () => void;
+}) {
+  const { t } = useFormat();
+  return (
+    <Sheet visible={visible} onClose={onClose} title={t('mobile.kitchen.sortBy')}>
+      <View>
+        {SORT_OPTIONS.map((option) => {
+          const selected = value === option;
+          return (
+            <ListRow
+              key={option}
+              title={t(`mobile.kitchen.sort.${option}`)}
+              checked={selected}
+              accessibilityState={{ selected }}
+              onPress={() => {
+                onChange(option);
+                onClose();
+              }}
+            />
+          );
+        })}
+      </View>
+    </Sheet>
+  );
 }
 
 export default function Kitchen() {
-  const { colors } = useTheme();
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const clearance = useTabBarClearance();
@@ -223,37 +189,41 @@ export default function Kitchen() {
     section?: string;
   }>();
   const listRef = useRef<FlatList<InventoryItem>>(null);
-  const searchRef = useRef<TextInput>(null);
   const now = useMemo(() => new Date(), []);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [locationId, setLocationId] = useState<string | undefined>(params.locationId);
   const [sort, setSort] = useState<KitchenSort>(() => parseSort(params.sort) ?? 'expiry');
-  const [allItemsY, setAllItemsY] = useState<number | null>(null);
+  const [sortOpen, setSortOpen] = useState(false);
   const [justAddedY, setJustAddedY] = useState<number | null>(null);
 
   const locationsQuery = useLocations();
   const snapshotQuery = useInventorySnapshot();
-  const inventory = useInventory({ q: query || undefined, locationId, sort });
+  const inventory = useInventory(kitchenInventoryQuery({ query, locationId, sort }));
 
   const snapshotItems = snapshotQuery.data?.items ?? [];
   const locations = locationsQuery.data ?? [];
   const listItems = inventory.data?.items ?? [];
-  const useFirstItems = useFirst(snapshotItems, now);
-  const recentItems = justAdded(snapshotItems);
+  const byLocation = useMemo(
+    () => new Map(locations.map((location) => [location.id, location])),
+    [locations],
+  );
+  const selectedLocation = locationId ? byLocation.get(locationId) : undefined;
+  const visibleSnapshotItems = useMemo(
+    () =>
+      locationId ? snapshotItems.filter((item) => item.locationId === locationId) : snapshotItems,
+    [locationId, snapshotItems],
+  );
+  const useFirstItems = useFirst(visibleSnapshotItems, now);
+  const recentItems = justAdded(visibleSnapshotItems);
   const places = useMemo(
     () => rankPlaces(snapshotItems, locations, (location) => locationLabel(t, location), now),
     [locations, now, snapshotItems, t],
   );
+  const selectedRank = selectedLocation
+    ? places.find((place) => place.location.id === selectedLocation.id)
+    : undefined;
 
-  useEffect(() => {
-    if (!searchOpen) {
-      setQuery('');
-      return;
-    }
-    const frame = requestAnimationFrame(() => searchRef.current?.focus());
-    return () => cancelAnimationFrame(frame);
-  }, [searchOpen]);
+  useEffect(() => setLocationId(params.locationId), [params.locationId]);
 
   const section = parseSection(params.section);
   useEffect(() => {
@@ -270,18 +240,14 @@ export default function Kitchen() {
     router.setParams({ section: undefined });
   }, [justAddedY, recentItems.length, router, section]);
 
-  const toggleLocation = (id: string) =>
-    setLocationId((current) => (current === id ? undefined : id));
   const addItem = () => router.push('/capture?method=manual');
-  const seeAllUseFirst = () => {
-    setSort('expiry');
+  const openPlace = (id: string) => {
+    setLocationId(id);
+    router.setParams({ locationId: id });
+  };
+  const clearPlace = () => {
     setLocationId(undefined);
-    if (allItemsY !== null) {
-      listRef.current?.scrollToOffset({
-        offset: Math.max(0, allItemsY - spacing.lg),
-        animated: true,
-      });
-    }
+    router.setParams({ locationId: undefined });
   };
   const refresh = () => {
     void snapshotQuery.refetch();
@@ -289,227 +255,187 @@ export default function Kitchen() {
     void locationsQuery.refetch();
   };
 
-  const renderPlaceTile = (ranked: (typeof places)[number], rank: number, compact: boolean) => {
-    const label = locationLabel(t, ranked.location);
-    const caption = placeCaption(t, ranked.location);
-    const count = formatQty(locale, ranked.count, prefs);
-    const soon = formatQty(locale, ranked.soon, prefs);
-    const selected = locationId === ranked.location.id;
-    const soonBadge =
-      ranked.soon > 0 ? (
-        <Badge tone="warn" label={countMessage(t, 'mobile.kitchen.soonCount', ranked.soon, soon)} />
-      ) : undefined;
-
-    if (compact) {
-      return (
-        <Tile
-          key={ranked.location.id}
-          tint={placeTint(rank)}
-          height={COMPACT_PLACE_TILE_HEIGHT}
-          accessibilityLabel={placeAccessibilityLabel({
-            t,
-            caption,
-            count: ranked.count,
-            formattedCount: count,
-            soon: ranked.soon,
-            formattedSoon: soon,
-          })}
-          accessibilityState={selected ? { selected: true } : undefined}
-          leading={<CompactPlaceContent location={ranked.location} count={count} label={label} />}
-          corner={soonBadge}
-          onPress={() => toggleLocation(ranked.location.id)}
-        />
-      );
-    }
-
+  const renderInventoryItemRow = (item: InventoryItem, includeLocation: boolean) => {
+    const name = itemName(locale, item);
+    const location = byLocation.get(item.locationId);
+    const meta = inventoryItemRowMeta(t, locale, item, {
+      location,
+      brand: item.brand,
+      includeLocation,
+      prefs,
+    });
+    const when = inventoryItemRowWhen(t, locale, item, prefs, now);
+    const badge = inventoryItemRowBadge(t, item, now);
+    const expiryAccessibility = formatExpiryLabel(t, locale, item.expiresAt, prefs, now);
     return (
-      <Tile
-        key={ranked.location.id}
-        tint="butter"
-        icon={LOCATION_ICON[ranked.location.type]}
-        height={COMPACT_PLACE_TILE_HEIGHT * 2 + BENTO_GUTTER}
-        count={count}
-        caption={caption}
-        corner={soonBadge}
-        accessibilityLabel={placeAccessibilityLabel({
-          t,
-          caption,
-          count: ranked.count,
-          formattedCount: count,
-          soon: ranked.soon,
-          formattedSoon: soon,
-        })}
-        accessibilityState={selected ? { selected: true } : undefined}
-        onPress={() => toggleLocation(ranked.location.id)}
+      <InventoryItemRow
+        key={item.id}
+        item={inventoryItemRowFoodIcon(item)}
+        name={name}
+        meta={meta}
+        badgeLabel={badge?.label}
+        badgeTone={badge?.tone}
+        when={when}
+        accessibilityLabel={[name, meta, badge?.label, expiryAccessibility]
+          .filter(Boolean)
+          .join(', ')}
+        onPress={() => router.push(`/item/${item.id}`)}
       />
     );
   };
 
-  const miniGrid = (
-    items: readonly InventoryItem[],
-    detailFor: (item: InventoryItem) => {
-      text: string;
-      color?: ColorToken;
-      accessibilityText?: string;
-    },
-  ) => (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-      {items.map((item) => {
-        const detail = detailFor(item);
-        const name = itemName(locale, item);
-        return (
-          <MiniItemCard
-            key={item.id}
-            item={item}
-            name={name}
-            detail={detail.text}
-            detailColor={detail.color}
-            accessibilityLabel={`${name}, ${detail.accessibilityText ?? detail.text}`}
-            onPress={() => router.push(`/item/${item.id}`)}
-          />
-        );
-      })}
-    </View>
-  );
+  const allCount = formatQty(locale, snapshotItems.length, prefs);
+  const selectedCount = formatQty(locale, selectedRank?.count ?? 0, prefs);
+  const selectedSoon = formatQty(locale, selectedRank?.soon ?? 0, prefs);
+  const selectedSummary = selectedRank
+    ? [
+        formattedCountMessage(t, 'inventory.itemCount', selectedRank.count, selectedCount),
+        selectedRank.soon > 0
+          ? formattedCountMessage(t, 'mobile.kitchen.placeSoon', selectedRank.soon, selectedSoon)
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : null;
+  const sortLabel = t(`mobile.kitchen.sort.${sort}`);
 
   const content = (
-    <View style={{ padding: spacing.lg, gap: spacing.lg }}>
-      <TabHeader
-        title={t('inventory.title')}
-        action={
-          <HeaderActions
-            searchOpen={searchOpen}
-            searchLabel={t('mobile.kitchen.search')}
-            addLabel={t('inventory.addItem')}
-            onSearchPress={() => setSearchOpen((open) => !open)}
-            onAddPress={addItem}
-          />
-        }
-      />
-
-      {searchOpen ? (
-        <Field
-          ref={searchRef}
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('mobile.kitchen.searchPlaceholder')}
-          autoCorrect={false}
-          style={{ backgroundColor: colors.surfaceAlt }}
+    <View style={{ paddingBottom: clearance, gap: selectedLocation ? 0 : KITCHEN_TOP_STACK_GAP }}>
+      {selectedLocation ? (
+        <Header
+          title={locationLabel(t, selectedLocation)}
+          onBack={clearPlace}
+          trailing={
+            <IconButton
+              icon="plus"
+              tone="plain"
+              accessibilityLabel={t('inventory.addItem')}
+              onPress={addItem}
+            />
+          }
         />
-      ) : null}
-
-      {places.length > 0 ? (
-        <Bento>
-          {places[0] ? renderPlaceTile(places[0], 0, false) : null}
-          {places.length > 1 ? (
-            <BentoColumn>
-              {places.slice(1).map((place, index) => renderPlaceTile(place, index + 1, true))}
-            </BentoColumn>
+      ) : (
+        <>
+          <TabHeader title={t('inventory.title')} action={<HeaderActions onAddPress={addItem} />} />
+          <View style={{ paddingHorizontal: spacing.gutter }}>
+            <SearchField
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t('mobile.kitchen.searchPlaceholder')}
+              autoCorrect={false}
+            />
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: spacing.sm,
+                paddingHorizontal: spacing.gutter,
+              }}
+            >
+              <Chip
+                label={t('common.all')}
+                count={snapshotItems.length}
+                countAccessibilityLabel={formattedCountMessage(
+                  t,
+                  'inventory.itemCount',
+                  snapshotItems.length,
+                  allCount,
+                )}
+                selected={!locationId}
+                onPress={clearPlace}
+              />
+              {places.map((place) => (
+                <Chip
+                  key={place.location.id}
+                  label={locationLabel(t, place.location)}
+                  accessibilityLabel={placeAccessibilityLabel({
+                    t,
+                    caption: locationLabel(t, place.location),
+                    count: place.count,
+                    formattedCount: formatQty(locale, place.count, prefs),
+                    soon: place.soon,
+                    formattedSoon: formatQty(locale, place.soon, prefs),
+                  })}
+                  selected={locationId === place.location.id}
+                  onPress={() => openPlace(place.location.id)}
+                />
+              ))}
+            </View>
+          </ScrollView>
+          {places.length > 0 ? (
+            <View style={{ paddingHorizontal: spacing.gutter }}>
+              <Bento variant="tiles">
+                {places.slice(0, 4).map((ranked) => (
+                  <PlaceTile
+                    key={ranked.location.id}
+                    ranked={ranked}
+                    onPress={() => openPlace(ranked.location.id)}
+                  />
+                ))}
+              </Bento>
+            </View>
           ) : null}
-        </Bento>
-      ) : null}
+        </>
+      )}
 
-      {useFirstItems.length > 0 ? (
+      <View style={{ paddingHorizontal: spacing.gutter, gap: selectedLocation ? 0 : spacing.xl }}>
+        {selectedLocation && selectedSummary ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <AppText variant="caption" muted style={{ flex: 1 }}>
+              {selectedSummary}
+            </AppText>
+            <SortAction label={sortLabel} onPress={() => setSortOpen(true)} />
+          </View>
+        ) : null}
+
+        {useFirstItems.length > 0 ? (
+          <View style={{ gap: spacing.sm }}>
+            <SectionHeading
+              title={t('mobile.kitchen.useFirst')}
+              actionLabel={selectedLocation ? undefined : t('mobile.kitchen.sortAction')}
+              onAction={selectedLocation ? undefined : () => setSortOpen(true)}
+            />
+            <View>
+              {useFirstItems.map((item) => renderInventoryItemRow(item, !selectedLocation))}
+            </View>
+          </View>
+        ) : null}
+
+        {!selectedLocation && recentItems.length > 0 ? (
+          <View
+            style={{ gap: spacing.sm }}
+            onLayout={(event) => setJustAddedY(event.nativeEvent.layout.y)}
+          >
+            <SectionHeading title={t('mobile.kitchen.justAdded')} />
+            <View>
+              {recentItems.map((item) => renderInventoryItemRow(item, !selectedLocation))}
+            </View>
+          </View>
+        ) : null}
+
         <View style={{ gap: spacing.sm }}>
           <SectionHeading
-            title={t('mobile.kitchen.useFirst')}
-            actionLabel={t('mobile.home.seeAll')}
-            onAction={seeAllUseFirst}
+            title={t('mobile.kitchen.allItems')}
+            actionLabel={selectedLocation ? undefined : t('mobile.kitchen.sortBy')}
+            onAction={selectedLocation ? undefined : () => setSortOpen(true)}
           />
-          {miniGrid(useFirstItems, (item) => {
-            const status = expiryStatus(item.expiresAt, now);
-            return {
-              text: formatDaysLeft(t, locale, item.expiresAt, prefs, now) ?? '',
-              accessibilityText: formatExpiryLabel(t, locale, item.expiresAt, prefs, now) ?? '',
-              color: expiryTextColor(status),
-            };
-          })}
-        </View>
-      ) : null}
 
-      {recentItems.length > 0 ? (
-        <View
-          style={{ gap: spacing.sm }}
-          onLayout={(event) => setJustAddedY(event.nativeEvent.layout.y)}
-        >
-          <SectionHeading title={t('mobile.kitchen.justAdded')} />
-          {miniGrid(recentItems, (item) => ({
-            text: formatMeasure(t, locale, item.quantity, item.unit, prefs),
-          }))}
-        </View>
-      ) : null}
-
-      <View
-        style={{ gap: spacing.md }}
-        onLayout={(event) => setAllItemsY(event.nativeEvent.layout.y)}
-      >
-        <SectionHeading title={t('mobile.kitchen.allItems')} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs }}>
-            <Chip
-              label={t('common.all')}
-              selected={locationId === undefined}
-              onPress={() => setLocationId(undefined)}
+          {inventory.isLoading ? (
+            <LoadingState />
+          ) : inventory.isError ? (
+            <ErrorState error={inventory.error} onRetry={() => void inventory.refetch()} />
+          ) : listItems.length === 0 ? (
+            <EmptyState
+              illustration="pantry"
+              title={t('inventory.emptyLocation')}
+              actionLabel={t('inventory.addItem')}
+              onAction={addItem}
             />
-            {locations.map((location) => (
-              <Chip
-                key={location.id}
-                label={locationLabel(t, location)}
-                selected={locationId === location.id}
-                onPress={() => toggleLocation(location.id)}
-              />
-            ))}
-          </View>
-        </ScrollView>
-        <SegmentedControl<KitchenSort>
-          value={sort}
-          onChange={setSort}
-          options={[
-            { value: 'expiry', label: t('mobile.kitchen.sort.expiry') },
-            { value: 'name', label: t('mobile.kitchen.sort.name') },
-            { value: 'recent', label: t('mobile.kitchen.sort.recent') },
-          ]}
-        />
-
-        {inventory.isLoading ? (
-          <LoadingState />
-        ) : inventory.isError ? (
-          <ErrorState error={inventory.error} onRetry={() => void inventory.refetch()} />
-        ) : listItems.length === 0 ? (
-          <EmptyState
-            icon="kitchen"
-            title={t('inventory.emptyLocation')}
-            actionLabel={t('inventory.addItem')}
-            onAction={addItem}
-          />
-        ) : (
-          <ListGroup>
-            {listItems.map((item) => {
-              const name = itemName(locale, item);
-              const expiryLabel = formatExpiryLabel(t, locale, item.expiresAt, prefs, now);
-              return (
-                <ListRow
-                  key={item.id}
-                  grouped
-                  title={name}
-                  subtitle={formatMeasure(t, locale, item.quantity, item.unit, prefs)}
-                  accessibilityLabel={name}
-                  onPress={() => router.push(`/item/${item.id}`)}
-                  showChevron
-                  leading={<FoodIcon item={foodIconItem(item)} />}
-                  trailing={
-                    expiryLabel ? (
-                      <Badge
-                        tone={EXPIRY_TONE[expiryStatus(item.expiresAt, now)]}
-                        label={expiryLabel}
-                      />
-                    ) : undefined
-                  }
-                />
-              );
-            })}
-          </ListGroup>
-        )}
+          ) : (
+            <View>{listItems.map((item) => renderInventoryItemRow(item, !selectedLocation))}</View>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -522,11 +448,17 @@ export default function Kitchen() {
         keyExtractor={(item) => item.id}
         renderItem={() => null}
         ListHeaderComponent={content}
-        contentContainerStyle={{ paddingBottom: clearance }}
+        contentContainerStyle={{ paddingBottom: 0 }}
         refreshing={
           inventory.isRefetching || snapshotQuery.isRefetching || locationsQuery.isRefetching
         }
         onRefresh={refresh}
+      />
+      <SortSheet
+        visible={sortOpen}
+        value={sort}
+        onChange={setSort}
+        onClose={() => setSortOpen(false)}
       />
     </Screen>
   );

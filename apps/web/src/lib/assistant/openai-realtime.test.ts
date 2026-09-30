@@ -48,9 +48,13 @@ class FakePeerConnection {
   closed = false;
   remote: RTCSessionDescriptionInit | null = null;
   tracks: MediaStreamTrack[] = [];
+  transceivers: { kind: string; direction: string }[] = [];
   senders: { track: { stop: () => void; stopped?: boolean } }[] = [];
   ontrack: ((event: { streams: unknown[] }) => void) | null = null;
 
+  addTransceiver(kind: string, init: { direction: string }) {
+    this.transceivers.push({ kind, direction: init.direction });
+  }
   createDataChannel(label: string) {
     this.channelLabel = label;
     return this.channel;
@@ -140,6 +144,13 @@ function setup(
         stream: makeStream(track),
         onEvent: (event) => events.push(event),
       }),
+    /** Text mode: the view hands over no media at all. */
+    startText: () =>
+      client.start({
+        locale: 'en',
+        stream: null,
+        onEvent: (event) => events.push(event),
+      }),
   };
 }
 
@@ -174,6 +185,56 @@ describe('OpenAiRealtimeAssistantClient', () => {
     const { pc, start } = setup();
     await start();
     expect(pc.channelLabel).toBe('oai-events');
+  });
+
+  describe('text mode — no media handed over', () => {
+    it('still offers a receive-only audio section, opening no microphone', async () => {
+      const { pc, startText, client } = setup();
+      await startText();
+      // Measured against the live provider: an offer with no audio m-line is
+      // rejected with 400 `invalid_offer` ("Offer did not have an audio media
+      // section"), which left typed chat dead on arrival.
+      expect(pc.transceivers).toEqual([{ kind: 'audio', direction: 'recvonly' }]);
+      expect(pc.tracks).toHaveLength(0);
+      await client.stop();
+    });
+
+    it('switches the session to text replies once the channel opens', async () => {
+      const { pc, startText, client } = setup();
+      await startText();
+      pc.channel.emit('open', {});
+
+      expect(pc.channel.sent.map((raw) => JSON.parse(raw))).toContainEqual({
+        type: 'session.update',
+        session: { type: 'realtime', output_modalities: ['text'] },
+      });
+      await client.stop();
+    });
+
+    it('maps a text reply onto an assistant transcript turn', async () => {
+      const { pc, events, startText, client } = setup();
+      await startText();
+      pc.channel.message({
+        type: 'response.output_text.done',
+        text: 'Try shakshuka',
+        item_id: 't1',
+      });
+
+      expect(events.filter((event) => event.type === 'transcript')).toEqual([
+        { type: 'transcript', turn: { id: 't1', role: 'assistant', text: 'Try shakshuka' } },
+      ]);
+      await client.stop();
+    });
+
+    it('leaves a session with a microphone speaking', async () => {
+      const { pc, start, client } = setup();
+      await start();
+      pc.channel.emit('open', {});
+
+      expect(pc.transceivers).toHaveLength(0);
+      expect(pc.channel.sent.some((raw) => raw.includes('session.update'))).toBe(false);
+      await client.stop();
+    });
   });
 
   it('publishes the microphone but never the camera', async () => {
@@ -348,6 +409,30 @@ describe('OpenAiRealtimeAssistantClient', () => {
     });
   });
 
+  it('reports no detections from a session without a camera', async () => {
+    // With no camera there is nothing to have seen, so a report is invented.
+    const { pc, events, startText, client } = setup();
+    await startText();
+    pc.channel.message({
+      type: 'response.function_call_arguments.done',
+      name: 'report_items',
+      arguments: JSON.stringify({
+        items: [
+          {
+            nameEn: 'Tomato',
+            nameAr: 'طماطم',
+            quantity: 3,
+            unit: 'piece',
+            confidence: 0.9,
+            category: 'vegetable',
+          },
+        ],
+      }),
+    });
+    expect(events.some((event) => event.type === 'detections')).toBe(false);
+    await client.stop();
+  });
+
   it('accepts the exact arguments a live gpt-realtime session produced', async () => {
     // Captured from a real session on 2026-08-27 (model gpt-realtime, our own
     // REPORT_ITEMS_TOOL definition), byte for byte including the stray padding
@@ -479,9 +564,7 @@ describe('OpenAiRealtimeAssistantClient', () => {
 
       // The user's own words appear immediately — a typed item produces no
       // input-transcription event, so the client must echo it itself.
-      const echoed = events.find(
-        (e) => e.type === 'transcript' && e.turn.role === 'user',
-      );
+      const echoed = events.find((e) => e.type === 'transcript' && e.turn.role === 'user');
       expect(echoed?.type === 'transcript' && echoed.turn.text).toBe('what should I cook?');
 
       // A typed message is a prompt: the item is created, then a response is

@@ -278,9 +278,10 @@ export const routes = {
   },
   createIngredient: {
     method: 'POST',
-    path: '/ingredients',
+    path: '/admin/ingredients',
     auth: true,
     household: false,
+    staff: true,
     body: createIngredientRequestSchema,
     response: ingredientSchema,
   },

@@ -267,6 +267,18 @@ export class AuthService {
           .returning();
         if (!userRow) throw new AppError('INTERNAL_ERROR');
         await tx.insert(profiles).values({ userId: userRow.id }).onConflictDoNothing();
+      } else if (userRow.passwordHash !== null) {
+        // WHY: this is the pre-hijack case. A password account can be created
+        // with an unverified victim email before the victim uses OAuth. Once a
+        // provider proves email ownership, the old password credential and its
+        // refresh-token sessions are untrusted and must die atomically.
+        [userRow] = await tx
+          .update(users)
+          .set({ passwordHash: null, updatedAt: new Date() })
+          .where(eq(users.id, userRow.id))
+          .returning();
+        if (!userRow) throw new AppError('INTERNAL_ERROR');
+        await this.tokens.revokeAllForUser(userRow.id, tx);
       }
 
       await tx

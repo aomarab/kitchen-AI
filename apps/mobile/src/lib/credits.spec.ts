@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { CREDIT_COSTS } from '@kitchen/contracts';
-import { canAfford, costOf, creditsShort, displayPrice, totalCredits } from './credits';
+import {
+  canAfford,
+  creditBalanceAccessibilityLabel,
+  costOf,
+  creditsShort,
+  displayPrice,
+  insufficientCreditsDetails,
+  totalCredits,
+  usageCreditsForDisplay,
+  usageCreditsFromUsd,
+} from './credits';
 
 const balance = {
   freeBalance: 10,
@@ -92,5 +102,63 @@ describe('displayPrice', () => {
     // Only `null` means "no store price"; an empty string is still a store
     // answer, so `??` (not `||`) must be used.
     expect(displayPrice('', 'US$4.99')).toBe('');
+  });
+});
+
+describe('usageCreditsFromUsd', () => {
+  it('converts the legacy usage budget dollars into user-facing credits', () => {
+    expect(usageCreditsFromUsd(0)).toBe(0);
+    expect(usageCreditsFromUsd(0.0045)).toBe(1);
+    expect(usageCreditsFromUsd(0.42)).toBe(93.33);
+  });
+});
+
+describe('usageCreditsForDisplay', () => {
+  it('rounds converted credits to whole numbers for the Coral usage frame', () => {
+    expect(usageCreditsForDisplay(0)).toBe(0);
+    expect(usageCreditsForDisplay(3.51)).toBe(4);
+    expect(usageCreditsForDisplay(149.49)).toBe(149);
+    expect(usageCreditsForDisplay(444.44)).toBe(444);
+  });
+});
+
+describe('creditBalanceAccessibilityLabel', () => {
+  it('keeps the pre-C13 grouped label order', () => {
+    expect(creditBalanceAccessibilityLabel('Balance', '146 credits')).toBe('Balance: 146 credits');
+  });
+});
+
+describe('insufficientCreditsDetails', () => {
+  it('parses assertCanAfford details with an action and available balance', () => {
+    expect(
+      insufficientCreditsDetails({
+        code: 'INSUFFICIENT_CREDITS',
+        details: { action: 'plan.weekly', required: 20, available: 12 },
+      }),
+    ).toEqual({ action: 'plan.weekly', required: 20, available: 12, needed: 8 });
+  });
+
+  it('parses spend details with the balance key', () => {
+    expect(
+      insufficientCreditsDetails({
+        code: 'INSUFFICIENT_CREDITS',
+        details: { required: 50, balance: 14 },
+      }),
+    ).toEqual({ action: null, required: 50, available: 14, needed: 36 });
+  });
+
+  it('falls back cleanly when details are absent or malformed', () => {
+    expect(insufficientCreditsDetails({ code: 'INSUFFICIENT_CREDITS' })).toEqual({
+      action: null,
+      required: null,
+      available: null,
+      needed: null,
+    });
+    expect(
+      insufficientCreditsDetails({
+        code: 'INSUFFICIENT_CREDITS',
+        details: { action: 'other', required: '50', available: Number.NaN },
+      }),
+    ).toEqual({ action: null, required: null, available: null, needed: null });
   });
 });

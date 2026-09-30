@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ingredientCategorySchema } from '@kitchen/contracts';
-import { allIconKeys, foodIconKey } from './food-icon';
+import { allIconKeys, foodIconKey, matchedFoodIconKey } from './food-icon';
 
 describe('foodIconKey — name first, category second', () => {
   it('reads the item name, because category is too coarse to tell food apart', () => {
@@ -11,10 +11,18 @@ describe('foodIconKey — name first, category second', () => {
 
   it('rescues packaged food the catalog can only call "other"', () => {
     // The real shelf that prompted this: every one of these was a bare box.
-    expect(foodIconKey({ nameEn: 'Bounty chocolate bars (coconut filling)', category: 'other' })).toBe('chocolate');
-    expect(foodIconKey({ nameEn: 'Whole round cake (store-bought)', category: 'other' })).toBe('cake');
-    expect(foodIconKey({ nameEn: 'Almarai chocolate pudding cups', category: 'other' })).toBe('pudding');
-    expect(foodIconKey({ nameEn: 'Wrapped dessert or pastry (plastic-wrapped)', category: 'other' })).toBe('croissant');
+    expect(
+      foodIconKey({ nameEn: 'Bounty chocolate bars (coconut filling)', category: 'other' }),
+    ).toBe('chocolate');
+    expect(foodIconKey({ nameEn: 'Whole round cake (store-bought)', category: 'other' })).toBe(
+      'cake',
+    );
+    expect(foodIconKey({ nameEn: 'Almarai chocolate pudding cups', category: 'other' })).toBe(
+      'pudding',
+    );
+    expect(
+      foodIconKey({ nameEn: 'Wrapped dessert or pastry (plastic-wrapped)', category: 'other' }),
+    ).toBe('croissant');
   });
 
   it('matches Arabic names, since that is what an Arabic reader sees', () => {
@@ -31,7 +39,11 @@ describe('foodIconKey — name first, category second', () => {
 
   it("prefers the household's own label, which is the name actually on screen", () => {
     expect(
-      foodIconKey({ label: 'Birthday cake', nameEn: 'Almarai chocolate pudding cups', category: 'dairy' }),
+      foodIconKey({
+        label: 'Birthday cake',
+        nameEn: 'Almarai chocolate pudding cups',
+        category: 'dairy',
+      }),
     ).toBe('cake');
   });
 
@@ -48,6 +60,13 @@ describe('foodIconKey — name first, category second', () => {
     for (const category of ingredientCategorySchema.options) {
       expect(foodIconKey({ category }), category).toBeTruthy();
     }
+  });
+
+  it('reports whether the name matched a rule before category fallback', () => {
+    expect(matchedFoodIconKey({ nameEn: 'Fresh tomato', category: 'other' })).toBe('tomato');
+    expect(
+      matchedFoodIconKey({ nameEn: 'Unmatched packaged item 402', category: 'grain' }),
+    ).toBeNull();
   });
 });
 

@@ -56,10 +56,8 @@ export function DateField({
   };
 
   return (
-    <View style={{ gap: spacing.xs }}>
-      <AppText variant="label" muted>
-        {label}
-      </AppText>
+    <View style={{ gap: 6 }}>
+      <AppText variant="label">{label}</AppText>
 
       <Pressable
         onPress={() => setOpen(true)}
@@ -70,9 +68,9 @@ export function DateField({
           minHeight: 48,
           borderWidth: 1,
           borderColor: colors.border,
-          borderRadius: radius.xs,
-          paddingHorizontal: spacing.md,
-          backgroundColor: colors.surface,
+          borderRadius: radius.none,
+          paddingHorizontal: 14,
+          backgroundColor: colors.bg,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -121,7 +119,7 @@ export function DateField({
               if (date) commit(date);
             }}
           />
-          <Button title={doneLabel} icon="check" onPress={() => setOpen(false)} />
+          <Button title={doneLabel} leadingIcon="check" onPress={() => setOpen(false)} />
         </Sheet>
       ) : null}
     </View>

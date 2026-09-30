@@ -1,19 +1,31 @@
 import { useEffect, useRef } from 'react';
 import { Animated, View } from 'react-native';
 import { useAppActive, useReduceMotion } from '../../hooks/motion';
-import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
-export const WAVEFORM_BAR_COUNT = 5;
+export const WAVEFORM_BAR_COUNT = 24;
+export const WAVEFORM_BAR_WIDTH = 3;
+export const WAVEFORM_BAR_GAP = 3;
+export const WAVEFORM_WIDTH = 141;
+export const WAVEFORM_HEIGHT = 40;
 export const WAVEFORM_DURATION_MS = 520;
-export const WAVEFORM_STAGGER_MS = 80;
+export const WAVEFORM_STAGGER_MS = 26;
 export const WAVEFORM_MIN_SCALE = 0.45;
 export const WAVEFORM_MAX_SCALE = 1;
 
-const STATIC_SCALES = [0.55, 0.82, 1, 0.72, 0.48] as const;
+const STATIC_SCALES = [
+  0.38, 0.58, 0.78, 0.92, 0.66, 0.82, 1, 0.72, 0.5, 0.86, 0.96, 0.62, 0.74, 0.9, 0.52, 0.68, 0.86,
+  0.44, 0.72, 0.54, 0.36, 0.64, 0.84, 0.46,
+] as const;
 
-/** Five-bar speaking indicator (spec §8.7/§13), static under Reduce Motion. */
-export function Waveform() {
+/** Coral waveform (spec §8/§13), static under Reduce Motion. */
+export function Waveform({
+  media = false,
+  highlightTail = false,
+}: {
+  media?: boolean;
+  highlightTail?: boolean;
+}) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const active = useAppActive();
@@ -61,20 +73,25 @@ export function Waveform() {
   return (
     <View
       style={{
-        minHeight: 32,
+        width: WAVEFORM_WIDTH,
+        height: WAVEFORM_HEIGHT,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.xs,
+        gap: WAVEFORM_BAR_GAP,
       }}
     >
       {values.map((value, index) => (
         <Animated.View
           key={index}
           style={{
-            width: 4,
-            height: 22,
-            borderRadius: radius.pill,
-            backgroundColor: colors.primaryText,
+            width: WAVEFORM_BAR_WIDTH,
+            height: WAVEFORM_HEIGHT,
+            backgroundColor:
+              highlightTail && index >= WAVEFORM_BAR_COUNT - 4
+                ? colors.primary
+                : media
+                  ? colors.textInverse
+                  : colors.text,
             transform: [{ scaleY: value }],
           }}
         />

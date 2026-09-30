@@ -1,4 +1,9 @@
-import { CREDIT_COSTS, type CreditAction } from '@kitchen/contracts';
+import {
+  CREDIT_COST_BASIS_USD,
+  CREDIT_COSTS,
+  creditActionSchema,
+  type CreditAction,
+} from '@kitchen/contracts';
 
 /**
  * The subset of a `CreditBalance` the gating maths needs. Kept structural so
@@ -8,6 +13,13 @@ import { CREDIT_COSTS, type CreditAction } from '@kitchen/contracts';
 export interface BalanceLike {
   freeBalance: number;
   paidBalance: number;
+}
+
+export interface InsufficientCreditsDetails {
+  action: CreditAction | null;
+  required: number | null;
+  available: number | null;
+  needed: number | null;
 }
 
 /**
@@ -49,4 +61,40 @@ export function creditsShort(balance: BalanceLike, action: CreditAction): number
  */
 export function displayPrice(storePrice: string | null, fallbackPrice: string): string {
   return storePrice ?? fallbackPrice;
+}
+
+export function creditBalanceAccessibilityLabel(label: string, totalLine: string): string {
+  return `${label}: ${totalLine}`;
+}
+
+/**
+ * The legacy usage route reports provider spend in USD. Credits are the unit a
+ * household understands, so the mobile usage surface converts that spend back
+ * through the same basis the credit contract uses.
+ */
+export function usageCreditsFromUsd(spentUsd: number): number {
+  return Math.round((spentUsd / CREDIT_COST_BASIS_USD) * 100) / 100;
+}
+
+export function usageCreditsForDisplay(credits: number): number {
+  return Math.round(credits);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+export function insufficientCreditsDetails(error: unknown): InsufficientCreditsDetails {
+  const details =
+    isRecord(error) && isRecord(error.details) ? error.details : isRecord(error) ? error : null;
+  const action = creditActionSchema.safeParse(details?.action).data ?? null;
+  const required = finiteNumber(details?.required);
+  const available = finiteNumber(details?.available) ?? finiteNumber(details?.balance);
+  const needed = required !== null && available !== null ? Math.max(0, required - available) : null;
+
+  return { action, required, available, needed };
 }

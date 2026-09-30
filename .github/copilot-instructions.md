@@ -12,8 +12,10 @@ file to the feature: `2026-07-26-kitchen-ai-design.md` (system baseline),
 `2026-08-10-publishing-compliance-design.md`, `2026-08-11-ai-credits-design.md`,
 `2026-08-11-recipe-media-resolution-design.md`, `2026-08-11-model-routing-design.md` (vision
 vendor + per-model cost), `2026-08-26-kitchen-companion-design.md` (smart screen, reminders,
-timers, live assistant), `2026-09-27-mobile-apricot-bento-redesign-design.md` (mobile UI, which
-supersedes the Slack-inspired spec for `apps/mobile`). Adding a subsystem means adding a spec, not just code.
+timers, live assistant), `2026-09-27-mobile-apricot-bento-redesign-design.md` (mobile IA, vision
+boxes and behaviour, which supersedes the Slack-inspired spec for `apps/mobile`),
+`2026-09-28-mobile-coral-redesign-design.md` (mobile visuals — tokens, type, glyphs, components,
+screens — superseding the Apricot Bento look). Adding a subsystem means adding a spec, not just code.
 
 ## Commands
 
@@ -27,7 +29,7 @@ uses Node 22 and installs with `pnpm install --frozen-lockfile`.
 | `pnpm infra:up` / `infra:down`                | Docker: PostgreSQL 17 + pgvector, Redis, MinIO                                            |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Drizzle migrations + bilingual ingredient catalog (`db:seed -- --dry-run` validates only) |
 | `pnpm db:reset`                               | Drops and rebuilds the local database, then re-seeds                                      |
-| `pnpm format`                                 | Prettier over the **whole** repo — see the warning below                                   |
+| `pnpm format`                                 | Prettier over the **whole** repo — see the warning below                                  |
 
 CI runs `pnpm build`, `pnpm typecheck`, `pnpm lint`, then `pnpm test`. Note CI does **not** check
 formatting, and the tree has never been uniformly Prettier-formatted, so `pnpm format` rewrites
@@ -102,7 +104,8 @@ Non-obvious system rules:
   Stage C is the correctness core — it gets the heaviest test coverage.
 - **AI providers swap on `env.AI_MOCK`** in `src/ai/ai.module.ts` (OpenAI, YouTube, Open Food Facts,
   embeddings each have a Mock* and an Http*/OpenAi* implementation behind a DI token in
-  `ai.constants.ts`). New external calls follow the same port/adapter shape.
+  `ai.constants.ts`). New external calls follow the same port/adapter shape. YouTube alone can be
+  overridden with `YOUTUBE_MOCK` (resolve it through `youtubeMock(env)`, never `env.AI_MOCK`).
 - **Tiers pick a model; pricing follows the model, not the tier.** `OPERATION_TIER` maps an
   `AiOperation` to `cheap` / `vision` / `planning`, but cost is resolved per served model
   (`resolveModelRate` in `ai.constants.ts`) because the `vision` tier can route to a second vendor:
@@ -115,8 +118,8 @@ Non-obvious system rules:
   choke-point: budget check before the call, schema-guarded provider call with one repair retry,
   usage recorded after. A service that calls a provider directly bypasses cost control and output
   validation — always route through the gateway.
-- **AI is paid for in credits, not requests.** `CREDIT_COSTS` / `FREE_MONTHLY_GRANT` live in
-  `packages/contracts/src/credits.ts` because prices are contract, not server detail. A household
+- **AI is paid for in credits, not requests.** `CREDIT_COST_BASIS_USD` / `CREDIT_COSTS` /
+  `FREE_MONTHLY_GRANT` live in `packages/contracts/src/credits.ts` because prices are contract, not server detail. A household
   has two buckets — a free grant that resets each calendar month and a purchased balance that never
   expires (Apple Guideline 3.1.1) — and free is always spent first. `CreditsService.spend` locks the
   balance row `FOR UPDATE`; that lock is required for split correctness, not an optimisation. Spends
@@ -160,8 +163,9 @@ Non-obvious system rules:
 
 Colour, radius and tracking resolve from exactly two files: `apps/web/src/app/globals.css`
 (`@theme inline` Tailwind v4 tokens) and `apps/mobile/src/theme/` (`palettes.ts` for colour — one
-Apricot palette in light and dark, where `onFill` is ink on the coral, never white — and `index.ts`
-for radius, spacing and type). Components reference
+Coral palette in light and dark, where `onFill` is white on coral per
+`2026-09-28-mobile-coral-redesign-design.md` — and `index.ts` for square radius (`none`, plus the
+camera-only `shutter` exception), spacing and type: Tajawal text with Outfit numerals). Components reference
 tokens by name. Three guard tests keep it honest and must not be relaxed to make a change pass:
 
 - `apps/web/src/app/palette.test.ts` + `apps/mobile/src/theme/palette.spec.ts` parse the token files

@@ -11,7 +11,13 @@ interface ShoppingFooterProps {
 export function ShoppingFooter({ title, disabled, loading, onPress }: ShoppingFooterProps) {
   return (
     <View>
-      <Button title={title} icon="check" disabled={disabled} loading={loading} onPress={onPress} />
+      <Button
+        title={title}
+        leadingIcon="check"
+        disabled={disabled}
+        loading={loading}
+        onPress={onPress}
+      />
     </View>
   );
 }

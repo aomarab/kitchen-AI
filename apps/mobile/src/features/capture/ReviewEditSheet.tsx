@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, View, type TextInput } from 'react-native';
+import { ScrollView, View, type TextInput } from 'react-native';
 import type { Ingredient, StorageLocation, Unit } from '@kitchen/contracts';
 import {
   AppText,
@@ -10,21 +10,22 @@ import {
   Field,
   FoodIcon,
   ListRow,
-  QuantityStepper,
   Sheet,
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import { useSearchIngredients } from '../../hooks/profile';
 import type { ReviewRow } from '../../lib/capture';
 import { applyIngredient, hasValidIngredientSelection, isNewReviewRow } from '../../lib/review';
-import { ingredientName, localizedName, locationLabel, unitLabel } from '../../lib/format';
-import { COMMON_UNITS } from '../../lib/units';
-import { radius, spacing } from '../../theme';
-import { useTheme } from '../../theme/useTheme';
+import { ingredientName, localizedName, locationLabel } from '../../lib/format';
+import { spacing } from '../../theme';
+import { QuantityField } from './QuantityField';
+import { UnitSelectField } from './UnitSelectField';
 
 export interface ReviewSaveMeta {
   ingredientChanged: boolean;
 }
+
+export const REVIEW_EDIT_ACTION_MIN_HEIGHT = 44;
 
 export interface ReviewEditSheetProps {
   visible: boolean;
@@ -55,19 +56,6 @@ function suggestionItem(ingredient: Ingredient) {
   };
 }
 
-function UnitChip({
-  unit,
-  selected,
-  onPress,
-}: {
-  unit: Unit;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const { t } = useFormat();
-  return <Chip label={unitLabel(t, unit)} selected={selected} onPress={onPress} />;
-}
-
 export function ReviewEditSheet({
   visible,
   row,
@@ -79,12 +67,12 @@ export function ReviewEditSheet({
   onRemove,
 }: ReviewEditSheetProps) {
   const { t, locale } = useFormat();
-  const { colors } = useTheme();
   const nameRef = useRef<TextInput>(null);
   const [draft, setDraft] = useState<ReviewRow | null>(row);
   const [term, setTerm] = useState('');
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [unitTouched, setUnitTouched] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
   const search = useSearchIngredients(term);
 
   useEffect(() => {
@@ -93,6 +81,7 @@ export function ReviewEditSheet({
     setTerm(label);
     setSelectedLabel(row && !isNewReviewRow(row) ? label : null);
     setUnitTouched(false);
+    setNameFocused(false);
   }, [locale, row]);
 
   useEffect(() => {
@@ -109,6 +98,7 @@ export function ReviewEditSheet({
       const label = ingredientName(locale, ingredient);
       setTerm(label);
       setSelectedLabel(label);
+      setNameFocused(false);
       return next;
     });
   };
@@ -123,7 +113,9 @@ export function ReviewEditSheet({
     setDraft((current) => (current ? { ...current, unit } : current));
   };
 
-  const suggestions = (search.data?.items ?? []).slice(0, 5);
+  const showSuggestions =
+    nameFocused && term.trim().length > 0 && !hasValidIngredientSelection(term, selectedLabel);
+  const suggestions = showSuggestions ? (search.data?.items ?? []).slice(0, 5) : [];
   const saveDisabled = draft.locationId === '' || !hasValidIngredientSelection(term, selectedLabel);
 
   const form = (
@@ -136,12 +128,14 @@ export function ReviewEditSheet({
 
       <Field
         ref={nameRef}
-        label={t('mobile.capture.searchIngredient')}
+        label={t('mobile.kitchen.sort.name')}
         value={term}
         onChangeText={changeTerm}
         placeholder={t('mobile.capture.searchIngredient')}
         autoCorrect={false}
         autoFocus={focusName}
+        onFocus={() => setNameFocused(true)}
+        onBlur={() => setNameFocused(false)}
       />
 
       {suggestions.length > 0 ? (
@@ -158,30 +152,17 @@ export function ReviewEditSheet({
         </View>
       ) : null}
 
-      <QuantityStepper
-        value={draft.quantity}
-        onChange={(quantity) =>
-          setDraft((current) => (current ? { ...current, quantity } : current))
-        }
-        unit={unitLabel(t, draft.unit)}
-        accessibilityLabel={t('inventory.quantity')}
-        decrementLabel={t('mobile.common.decrease')}
-        incrementLabel={t('mobile.common.increase')}
-      />
-
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('inventory.unit')}
-        </AppText>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          {COMMON_UNITS.map((unit) => (
-            <UnitChip
-              key={unit}
-              unit={unit}
-              selected={draft.unit === unit}
-              onPress={() => setUnit(unit)}
-            />
-          ))}
+      <View style={{ flexDirection: 'row', gap: spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <QuantityField
+            value={draft.quantity}
+            onChange={(quantity) =>
+              setDraft((current) => (current ? { ...current, quantity } : current))
+            }
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <UnitSelectField value={draft.unit} onChange={setUnit} />
         </View>
       </View>
 
@@ -214,39 +195,28 @@ export function ReviewEditSheet({
         doneLabel={t('mobile.capture.pickDate')}
       />
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('mobile.review.remove')}
-        onPress={() => onRemove(draft)}
-        style={({ pressed }) => ({
-          minHeight: 44,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: radius.pill,
-          opacity: pressed ? 0.7 : 1,
-        })}
+      <View
+        style={{ minHeight: REVIEW_EDIT_ACTION_MIN_HEIGHT, flexDirection: 'row', gap: spacing.md }}
       >
-        <AppText variant="button" style={{ color: colors.danger }}>
-          {t('mobile.review.remove')}
-        </AppText>
-      </Pressable>
-
-      <Button
-        title={t('common.save')}
-        icon="check"
-        disabled={saveDisabled}
-        onPress={() => onSave(draft, { ingredientChanged: ingredientChanged(row, draft) })}
-      />
-      <Button title={t('common.cancel')} variant="ghost" onPress={onCancel} />
+        <Button
+          title={t('mobile.review.remove')}
+          variant="ghost"
+          tone="danger"
+          fullWidth={false}
+          onPress={() => onRemove(draft)}
+        />
+        <Button
+          title={t('common.save')}
+          disabled={saveDisabled}
+          style={{ flex: 1 }}
+          onPress={() => onSave(draft, { ingredientChanged: ingredientChanged(row, draft) })}
+        />
+      </View>
     </View>
   );
 
   if (inline) {
-    return (
-      <Card tone="alt" style={{ gap: spacing.md }}>
-        {form}
-      </Card>
-    );
+    return <Card style={{ gap: spacing.md }}>{form}</Card>;
   }
 
   return (

@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   buildEmbedHtml,
+  DEFAULT_EMBED_BACKGROUND_COLOR,
   EMBED_BASE_URL,
   isAllowedEmbedUrl,
   isValidYoutubeId,
@@ -54,6 +57,13 @@ describe('isAllowedEmbedUrl', () => {
   it('allows about:blank, which WebViews navigate to internally', () => {
     expect(isAllowedEmbedUrl('about:blank')).toBe(true);
   });
+
+  it('allows the player document, and nothing else on its origin', () => {
+    expect(isAllowedEmbedUrl(EMBED_BASE_URL)).toBe(true);
+    expect(isAllowedEmbedUrl(`${EMBED_BASE_URL}/`)).toBe(true);
+    expect(isAllowedEmbedUrl(`${EMBED_BASE_URL}/other`)).toBe(false);
+    expect(isAllowedEmbedUrl(`${EMBED_BASE_URL}.evil.test/`)).toBe(false);
+  });
 });
 
 describe('originWhitelist', () => {
@@ -78,8 +88,7 @@ describe('buildEmbedHtml', () => {
   /**
    * The whole reason this function exists. Navigating the WebView straight to
    * the embed URL leaves the player with no referrer, and YouTube answers with
-   * a player configuration error (153, and its 152 siblings) instead of
-   * playing. The player must live inside a document served under a real https
+   * a player configuration error (153) instead of playing. The player must live inside a document served under a real https
    * origin, never at the WebView's own top-level URL.
    */
   it('builds the player in a document, so it has a referrer', () => {
@@ -91,18 +100,28 @@ describe('buildEmbedHtml', () => {
   });
 
   /**
-   * Hand-writing the frame was not enough: a frame pointed at a different
-   * YouTube host is cross-origin to the page holding it, and the player
-   * refuses a configuration it cannot verify. Letting YouTube's own API script
-   * build the frame keeps the two in agreement.
+   * A page that claims to be youtube.com gets error 152 on every video — the
+   * page once did exactly that and nothing played. YouTube wants the embedder
+   * to identify itself, and for a page loaded from a string that identity is
+   * `https://<app-id>`, so it is pinned to the real one in app.json.
    */
-  it('lets YouTube build the player, from the origin the page runs on', () => {
+  it('identifies the app, not YouTube, as the embedder', () => {
+    const app = JSON.parse(readFileSync(join(__dirname, '..', '..', 'app.json'), 'utf8')) as {
+      expo: { ios: { bundleIdentifier: string }; android: { package: string } };
+    };
+
+    expect(EMBED_BASE_URL).toBe(`https://${app.expo.ios.bundleIdentifier}`);
+    expect(EMBED_BASE_URL).toBe(`https://${app.expo.android.package}`);
+    expect(new URL(EMBED_BASE_URL).hostname).not.toMatch(/youtube/);
+  });
+
+  it('lets YouTube build the player, told the origin the page runs on', () => {
     const html = buildEmbedHtml('dQw4w9WgXcQ')!;
 
     expect(html).toContain('https://www.youtube.com/iframe_api');
     expect(html).toContain('new YT.Player');
-    expect(html).not.toContain('youtube-nocookie.com');
     expect(html).toContain(`origin: '${EMBED_BASE_URL}'`);
+    expect(html).toContain(`widget_referrer: '${EMBED_BASE_URL}'`);
   });
 
   /**
@@ -122,6 +141,12 @@ describe('buildEmbedHtml', () => {
 
     expect(html).toContain('playsinline: 1');
     expect(html).toContain('autoplay: 1');
+  });
+
+  it('uses the media inverse token as the default player background and allows injection', () => {
+    expect(DEFAULT_EMBED_BACKGROUND_COLOR).toMatch(/^#[0-9A-F]{6}$/i);
+    expect(buildEmbedHtml('dQw4w9WgXcQ')).toContain(`background:${DEFAULT_EMBED_BACKGROUND_COLOR}`);
+    expect(buildEmbedHtml('dQw4w9WgXcQ', 'token-media-bg')).toContain('background:token-media-bg');
   });
 
   /**
@@ -145,7 +170,10 @@ describe('buildEmbedHtml', () => {
 
 describe('parseEmbedMessage', () => {
   it('reads the codes the player reports', () => {
-    expect(parseEmbedMessage('{"type":"error","code":"150"}')).toEqual({ type: 'error', code: '150' });
+    expect(parseEmbedMessage('{"type":"error","code":"150"}')).toEqual({
+      type: 'error',
+      code: '150',
+    });
     expect(parseEmbedMessage('{"type":"ready"}')).toEqual({ type: 'ready' });
   });
 
@@ -158,7 +186,10 @@ describe('parseEmbedMessage', () => {
 
   it('still reports an error whose code is missing or not a string', () => {
     expect(parseEmbedMessage('{"type":"error"}')).toEqual({ type: 'error', code: 'unknown' });
-    expect(parseEmbedMessage('{"type":"error","code":150}')).toEqual({ type: 'error', code: 'unknown' });
+    expect(parseEmbedMessage('{"type":"error","code":150}')).toEqual({
+      type: 'error',
+      code: 'unknown',
+    });
   });
 });
 

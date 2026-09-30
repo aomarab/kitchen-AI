@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import {
   createHouseholdRequestSchema,
   joinHouseholdRequestSchema,
@@ -37,8 +49,9 @@ export class HouseholdsController {
   join(
     @CurrentUser() user: AuthUser,
     @Body(new ZodPipe(joinHouseholdRequestSchema)) body: JoinHouseholdRequest,
+    @Req() request: Request,
   ): Promise<Household> {
-    return this.households.join(user.userId, body.inviteCode);
+    return this.households.join(user.userId, body.inviteCode, clientIp(request));
   }
 
   @Patch(':id')
@@ -66,4 +79,10 @@ export class HouseholdsController {
     await this.households.leave(user.userId, id);
     return { ok: true };
   }
+}
+
+function clientIp(request: Request): string {
+  // Do not trust X-Forwarded-For directly. Express only folds proxy headers into
+  // request.ip when trust proxy is configured by the deployment.
+  return request.ip || request.socket.remoteAddress || 'unknown';
 }

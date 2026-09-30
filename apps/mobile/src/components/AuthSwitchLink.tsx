@@ -1,6 +1,7 @@
-import { Pressable, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppText } from './AppText';
+import { usePressFeedback } from './press-feedback';
 import { useFormat } from '../hooks/useFormat';
 import { hitSlop, spacing } from '../theme';
 
@@ -38,6 +39,7 @@ export function AuthSwitchLink({ to }: AuthSwitchLinkProps) {
   const router = useRouter();
   const text = t(DESTINATIONS[to]);
   const { caption, link } = splitSwitchText(text);
+  const pressFeedback = usePressFeedback();
 
   return (
     <Pressable
@@ -45,31 +47,33 @@ export function AuthSwitchLink({ to }: AuthSwitchLinkProps) {
       accessibilityLabel={text}
       hitSlop={hitSlop}
       onPress={() => router.replace(to)}
-      style={({ pressed }) => ({
+      {...pressFeedback.pressHandlers}
+      style={{
         minHeight: 44,
         justifyContent: 'center',
-        opacity: pressed ? 0.85 : 1,
-      })}
+      }}
     >
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: spacing.xs,
-          paddingVertical: spacing.sm,
-        }}
-      >
-        {caption ? (
-          <AppText variant="caption" muted>
-            {caption}
+      <Animated.View style={pressFeedback.animatedStyle}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.xs,
+            paddingVertical: spacing.sm,
+          }}
+        >
+          {caption ? (
+            <AppText variant="caption" muted>
+              {caption}
+            </AppText>
+          ) : null}
+          <AppText variant="label" color="primaryText">
+            {link}
           </AppText>
-        ) : null}
-        <AppText variant="label" color="primaryText">
-          {link}
-        </AppText>
-      </View>
+        </View>
+      </Animated.View>
     </Pressable>
   );
 }

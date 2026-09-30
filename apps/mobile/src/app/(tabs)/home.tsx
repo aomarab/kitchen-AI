@@ -1,31 +1,25 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { InventoryItem } from '@kitchen/contracts';
 import type { MessageKey, Translator } from '@kitchen/i18n';
-import {
-  AppText,
-  Bento,
-  Button,
-  DirectionalIcon,
-  FoodIcon,
-  Icon,
-  OrbMascot,
-  RoundButton,
-  Screen,
-  TabHeader,
-  Tile,
-} from '../../components';
+import { CreditBalance, IconButton, Screen, TabHeader } from '../../components';
+import { AssistantModeShortcuts } from '../../features/home/AssistantModeShortcuts';
+import { AssistantSearchButton } from '../../features/home/AssistantSearchButton';
+import { KitchenGlanceSection } from '../../features/home/KitchenGlance';
+import { NoPlanCard } from '../../features/home/NoPlanCard';
+import { QuickActions } from '../../features/home/QuickActions';
+import { TonightRecipeCard } from '../../features/home/TonightRecipeCard';
+import { UseSoonSection } from '../../features/home/UseSoonSection';
+import { WeekSection } from '../../features/home/WeekSection';
 import { useCredits } from '../../hooks/credits';
 import { useFormat } from '../../hooks/useFormat';
-import { useInventory, useInventorySnapshot } from '../../hooks/inventory';
+import { useInventory, useInventorySnapshot, useLocations } from '../../hooks/inventory';
 import { usePlans } from '../../hooks/plans';
 import { useMe } from '../../hooks/profile';
 import { useRecipe } from '../../hooks/recipe';
-import { expiryStatus, todayISODate } from '../../lib/expiry';
+import { todayISODate } from '../../lib/expiry';
 import {
   formatExpiryLabel,
-  formatDaysLeft,
   formatMinutes,
   formatQty,
   formatWeekday,
@@ -42,8 +36,10 @@ import {
   weekProgress,
 } from '../../lib/home';
 import { totalCredits } from '../../lib/credits';
-import { hitSlop, radius, spacing } from '../../theme';
-import { useTheme } from '../../theme/useTheme';
+import type { AssistantMode } from '../../lib/assistant/mode';
+import { spacing } from '../../theme';
+
+const EMPTY_CREDIT_BALANCE = { freeBalance: 0, paidBalance: 0, freeGrant: 0 };
 
 function dayPartMessageKey(part: ReturnType<typeof dayPart>): MessageKey {
   switch (part) {
@@ -72,130 +68,22 @@ function minuteMessage(t: Translator, minutes: number, formattedMinutes: string)
   return t('mobile.plans.minutesValue', { minutes }).replace(String(minutes), formattedMinutes);
 }
 
-function TonightChip({ label }: { label: string }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      accessible={false}
-      style={{
-        minHeight: 32,
-        borderRadius: radius.pill,
-        paddingHorizontal: spacing.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-        backgroundColor: colors.surface,
-      }}
-    >
-      <View
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: 3,
-          backgroundColor: colors.primary,
-        }}
-      />
-      <AppText variant="label">{label}</AppText>
-    </View>
-  );
-}
-
-function TopUpChip({ label, onPress }: { label: string; onPress: () => void }) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={hitSlop}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: 32,
-        borderRadius: radius.pill,
-        paddingHorizontal: spacing.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.primarySoft,
-        opacity: pressed ? 0.85 : 1,
-        transform: [{ scale: pressed ? 0.98 : 1 }],
-      })}
-    >
-      <AppText variant="label" color="primaryText">
-        {label}
-      </AppText>
-    </Pressable>
-  );
-}
-
-function IconCircle({ icon }: { icon: 'receipt' | 'calendar' }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      style={{
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.surface,
-      }}
-    >
-      <Icon name={icon} size={22} color={colors.text} />
-    </View>
-  );
-}
-
-function WeekProgressBar({ ratio }: { ratio: number }) {
-  const { colors } = useTheme();
-  const clamped = Math.min(1, Math.max(0, ratio));
-  return (
-    <View
-      style={{
-        height: 8,
-        borderRadius: radius.pill,
-        backgroundColor: colors.surface,
-        overflow: 'hidden',
-      }}
-    >
-      <View
-        style={{
-          height: 8,
-          borderRadius: radius.pill,
-          backgroundColor: colors.primary,
-          width: `${Math.round(clamped * 100)}%`,
-        }}
-      />
-    </View>
-  );
-}
-
-function expiryToneColor(item: Pick<InventoryItem, 'expiresAt'>): 'danger' | 'warn' | 'textMuted' {
-  const status = expiryStatus(item.expiresAt);
-  if (status === 'expired' || status === 'today') return 'danger';
-  if (status === 'soon') return 'warn';
-  return 'textMuted';
-}
-
-function miniItemIcon(item: InventoryItem) {
-  return {
-    label: item.label,
-    nameEn: item.ingredient.canonicalNameEn,
-    nameAr: item.ingredient.canonicalNameAr,
-    category: item.ingredient.category,
-  };
+function servingsMessage(t: Translator, servings: number, formattedServings: string): string {
+  return t('recipe.servings', { count: servings }).replace(String(servings), formattedServings);
 }
 
 export default function Home() {
-  const { colors } = useTheme();
-  const { t, locale, dir, prefs } = useFormat();
+  const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const plansQuery = usePlans();
   const expiringQuery = useInventory({ expiringWithinDays: 3, sort: 'expiry' });
   const snapshotQuery = useInventorySnapshot();
+  const locationsQuery = useLocations();
   const creditsQuery = useCredits();
   const meQuery = useMe();
 
   const today = todayISODate();
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const plan = plansQuery.data?.[0];
   const tonight = useMemo(
     () => (plan ? tonightEntry(plan.entries, today) : undefined),
@@ -205,12 +93,14 @@ export default function Home() {
   const pantry = pantryLine(recipeQuery.data, tonight?.fullyCovered ?? false);
   const week = weekProgress(plan);
 
-  const stockCount = snapshotQuery.data?.items.length ?? 0;
-  const stockCountText = formatQty(locale, stockCount, prefs);
+  const snapshotItems = snapshotQuery.data?.items ?? [];
   const credits = creditsQuery.data ? totalCredits(creditsQuery.data) : 0;
   const creditsText = formatQty(locale, credits, prefs);
   const greetingName =
     !meQuery.isLoading && !meQuery.isError ? firstName(meQuery.data?.displayName) : null;
+  const greetingTitle = greetingName
+    ? `${t('mobile.home.greetingLead')} ${greetingName}`
+    : t('mobile.home.greeting');
   const weekday = formatWeekday(locale, now);
   const dayPartCaption = t(dayPartMessageKey(dayPart(now)), { weekday });
   const expiring = expiringQuery.data?.items ?? [];
@@ -226,19 +116,27 @@ export default function Home() {
     expiryLabel: formatExpiryLabel(t, locale, item.expiresAt, prefs),
   }));
   const useSoonAccessibilityLabel = useSoonLabel({
-    heading: t('mobile.home.statExpiring'),
+    heading: t('mobile.home.expiringStrip'),
     countLabel: expiringCountLabel,
     emptyLabel: t('mobile.home.expiringNone'),
     items: useSoonItems,
   });
-  const kitchenLabel = `${stockCountText} ${t('mobile.home.itemsAtHome')}`;
-  const creditsLeft = t('mobile.home.creditsLeft');
   const mamaLabel = countMessage(t, 'mobile.home.askMamaLabel', credits, creditsText);
-  const cook = () => {
-    if (tonight) router.push(`/recipe/${tonight.recipe.id}/cook`);
-  };
   const topUp = () => router.push('/buy-credits');
   const generatePlan = () => router.push('/generate-plan');
+  const openAssistant = () => router.push('/assistant');
+  const openAssistantMode = (mode: AssistantMode) => router.push(`/assistant?mode=${mode}`);
+  const openNotifications = () => router.push('/settings/notifications');
+  const openRecipe = (recipeId: string) => router.push(`/recipe/${recipeId}`);
+  const cookRecipe = (recipeId: string) => router.push(`/recipe/${recipeId}/cook`);
+  const watchRecipe = (recipeId: string) => router.push(`/recipe/${recipeId}?tab=videos`);
+  const scanReceipt = () => router.push('/capture?method=receipt');
+  const openPlan = () => router.push('/plans');
+  const planWeek = week ? openPlan : generatePlan;
+  const quickAdd = () => router.push('/capture?method=manual');
+  const openUseSoon = () => router.push('/kitchen?sort=expiry');
+  const openKitchen = () => router.push('/kitchen');
+  const openPlace = (locationId: string) => router.push(`/kitchen?locationId=${locationId}`);
   const tonightMinutes =
     tonight !== undefined ? tonight.recipe.prepMinutes + tonight.recipe.cookMinutes : 0;
   const tonightMinutesLabel =
@@ -256,6 +154,9 @@ export default function Home() {
       : pantry?.key === 'allInKitchen'
         ? t('mobile.home.allInKitchen')
         : null;
+  const tonightServingsLabel = tonight
+    ? servingsMessage(t, tonight.recipe.servings, formatQty(locale, tonight.recipe.servings, prefs))
+    : null;
   const tonightAccessibilityLabel =
     tonight && tonightMinutesLabel
       ? tonightLabel({
@@ -270,186 +171,98 @@ export default function Home() {
         .replace(String(week.cooked), formatQty(locale, week.cooked, prefs))
         .replace(String(week.total), formatQty(locale, week.total, prefs))
     : null;
+  const weekRemainingText = week
+    ? countMessage(
+        t,
+        'mobile.home.weekRemaining',
+        Math.max(0, week.total - week.cooked),
+        formatQty(locale, Math.max(0, week.total - week.cooked), prefs),
+      )
+    : null;
 
   return (
     <Screen
       scroll
+      padded={false}
       tabBar
       refreshing={plansQuery.isRefetching}
-      onRefresh={() => void plansQuery.refetch()}
+      onRefresh={() => {
+        void plansQuery.refetch();
+        void expiringQuery.refetch();
+        void snapshotQuery.refetch();
+        void locationsQuery.refetch();
+        void creditsQuery.refetch();
+      }}
     >
       <TabHeader
         caption={dayPartCaption}
-        title={greetingName ? t('mobile.home.greetingLead') : t('mobile.home.greeting')}
-        titleAccent={greetingName ?? undefined}
+        title={greetingTitle}
+        action={
+          <IconButton
+            accessibilityLabel={t('mobile.settings.notifications')}
+            icon="bell"
+            tone="plain"
+            onPress={openNotifications}
+          />
+        }
       />
 
-      <Bento>
-        {tonight ? (
-          <Tile
-            span={2}
-            tint="photo"
-            height={220}
-            image={tonight.recipe.heroImageUrl ? { uri: tonight.recipe.heroImageUrl } : undefined}
-            leading={<TonightChip label={t('mobile.home.tonightTitle')} />}
+      <View
+        style={{
+          paddingHorizontal: spacing.gutter,
+          paddingBottom: spacing.gutter,
+          gap: spacing.xl,
+        }}
+      >
+        <View style={{ gap: spacing.md }}>
+          <AssistantSearchButton label={mamaLabel} onPress={openAssistant} />
+          <AssistantModeShortcuts onOpen={openAssistantMode} />
+        </View>
+
+        {tonight && tonightMinutesLabel && tonightServingsLabel ? (
+          <TonightRecipeCard
+            entry={tonight}
+            minutesLabel={tonightMinutesLabel}
+            pantryLabel={tonightPantryLabel}
+            servingsLabel={tonightServingsLabel}
             accessibilityLabel={tonightAccessibilityLabel ?? tonight.recipe.title}
-            actions={[{ name: 'cook', label: t('mobile.home.cook'), onPress: cook }]}
-            onPress={() => router.push(`/recipe/${tonight.recipe.id}`)}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md }}>
-              <View style={{ flex: 1, gap: spacing.xs }}>
-                <AppText variant="title" color="textInverse" numberOfLines={2}>
-                  {tonight.recipe.title}
-                </AppText>
-                <AppText variant="caption" color="textInverseMuted">
-                  {tonightMinutesLabel}
-                  {tonightPantryLabel ? ' · ' : ''}
-                  {tonightPantryLabel}
-                </AppText>
-              </View>
-              <RoundButton
-                size={48}
-                tone="primary"
-                icon="play"
-                accessibilityLabel={t('mobile.home.cook')}
-                onPress={cook}
-              />
-            </View>
-          </Tile>
+            onOpenRecipe={() => openRecipe(tonight.recipe.id)}
+            onCookRecipe={() => cookRecipe(tonight.recipe.id)}
+            onWatchRecipe={() => watchRecipe(tonight.recipe.id)}
+          />
         ) : (
-          <Tile
-            span={2}
-            tint="apricot"
-            height={220}
-            accessibilityLabel={t('mobile.home.tonightEmpty')}
-            actions={[{ name: 'generatePlan', label: t('plans.generate'), onPress: generatePlan }]}
-          >
-            <View style={{ gap: spacing.md }}>
-              <AppText variant="heading">{t('mobile.home.tonightEmpty')}</AppText>
-              <Button title={t('plans.generate')} onPress={generatePlan} />
-            </View>
-          </Tile>
+          <NoPlanCard onGenerate={generatePlan} />
         )}
 
-        <Tile
-          span={1}
-          tint="butter"
-          height={150}
-          icon="kitchen"
-          corner={<DirectionalIcon name="arrowForward" size={22} color={colors.textMuted} />}
-          count={stockCountText}
-          caption={t('mobile.home.itemsAtHome')}
-          accessibilityLabel={kitchenLabel}
-          onPress={() => router.push('/kitchen')}
-        />
+        <QuickActions onScanReceipt={scanReceipt} onPlanWeek={planWeek} onQuickAdd={quickAdd} />
 
-        <Tile
-          span={1}
-          tint="plain"
-          height={150}
-          leading={<OrbMascot size={44} />}
-          corner={<TopUpChip label={t('mobile.home.topUp')} onPress={topUp} />}
-          count={creditsText}
-          caption={creditsLeft}
-          accessibilityLabel={mamaLabel}
-          actions={[{ name: 'topUp', label: t('mobile.home.topUp'), onPress: topUp }]}
-          onPress={() => router.push('/assistant')}
-        />
-
-        <Tile
-          span={2}
-          tint="plain"
-          leading={<AppText variant="heading">{t('mobile.home.statExpiring')}</AppText>}
-          corner={
-            expiring.length > 0 ? (
-              <AppText variant="caption" muted>
-                {expiringCountLabel}
-              </AppText>
-            ) : null
-          }
+        <UseSoonSection
+          items={expiringPreview}
+          locations={locationsQuery.data ?? []}
           accessibilityLabel={useSoonAccessibilityLabel}
-          onPress={() => router.push('/kitchen?sort=expiry')}
-        >
-          {expiring.length === 0 ? (
-            <AppText variant="caption" muted>
-              {t('mobile.home.expiringNone')}
-            </AppText>
-          ) : (
-            <ScrollView
-              key={`use-soon-${dir}`}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: spacing.sm }}
-            >
-              {expiringPreview.map((item) => {
-                const name = itemName(locale, item);
-                const label = formatDaysLeft(t, locale, item.expiresAt, prefs);
-                const tone = expiryToneColor(item);
-                return (
-                  <View key={item.id}>
-                    <View
-                      style={{
-                        minWidth: 156,
-                        maxWidth: 220,
-                        borderRadius: radius.pill,
-                        paddingVertical: spacing.sm,
-                        paddingHorizontal: spacing.sm,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: spacing.sm,
-                        backgroundColor: colors.surfaceAlt,
-                      }}
-                    >
-                      <FoodIcon item={miniItemIcon(item)} size={32} />
-                      <View style={{ flex: 1 }}>
-                        <AppText variant="label">{name}</AppText>
-                        {label ? (
-                          <AppText variant="caption" color={tone}>
-                            {label}
-                          </AppText>
-                        ) : null}
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-            </ScrollView>
-          )}
-        </Tile>
+          onSeeAll={openUseSoon}
+        />
 
-        <Tile
-          span={1}
-          tint="apricot"
-          height={104}
-          accessibilityLabel={t('mobile.home.scanReceipt')}
-          onPress={() => router.push('/capture?method=receipt')}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <IconCircle icon="receipt" />
-            <AppText variant="bodyStrong" style={{ flex: 1 }}>
-              {t('mobile.home.scanReceipt')}
-            </AppText>
-          </View>
-        </Tile>
+        {plan && week && weekProgressText && weekRemainingText ? (
+          <WeekSection
+            plan={plan}
+            today={today}
+            progressLabel={weekProgressText}
+            remainingLabel={weekRemainingText}
+            onOpenPlan={openPlan}
+          />
+        ) : null}
 
-        <Tile
-          span={1}
-          tint="sage"
-          height={104}
-          accessibilityLabel={weekProgressText ?? t('mobile.home.planWeek')}
-          onPress={() => router.push(week ? '/plans' : '/generate-plan')}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <IconCircle icon="calendar" />
-            <View style={{ flex: 1, gap: spacing.xs }}>
-              <AppText variant="bodyStrong">
-                {weekProgressText ?? t('mobile.home.planWeek')}
-              </AppText>
-              {week ? <WeekProgressBar ratio={week.cooked / week.total} /> : null}
-            </View>
-          </View>
-        </Tile>
-      </Bento>
+        <KitchenGlanceSection
+          items={snapshotItems}
+          locations={locationsQuery.data ?? []}
+          now={now}
+          onSeeAll={openKitchen}
+          onPlacePress={openPlace}
+        />
+
+        <CreditBalance balance={creditsQuery.data ?? EMPTY_CREDIT_BALANCE} onTopUp={topUp} />
+      </View>
     </Screen>
   );
 }

@@ -2,26 +2,26 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 import type { RecognizedItem } from '@kitchen/contracts';
 import { AppText } from '../../components';
+import { usePressFeedback } from '../../components/press-feedback';
 import { useFormat } from '../../hooks/useFormat';
 import { buildArPinLabel } from '../../lib/ar-pin-labels';
 import {
+  boxRectForFrame,
   layoutPins,
-  PIN_ANCHOR,
-  PIN_CHIP_HEIGHT,
-  PIN_LEADER,
+  type PinBoxRect,
   type PinFrame,
   type PlacedPin,
 } from '../../lib/ar-pins';
 import { formatMeasure, localizedName } from '../../lib/format';
 import { isLowConfidence } from '../../lib/capture';
-import { radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 import { useReduceMotion } from '../../hooks/motion';
 
-export const AR_PIN_INITIAL_SCALE = 0.6;
 export const AR_PIN_STAGGER_MS = 40;
-export const AR_PIN_SPRING_DAMPING = 18;
-export const AR_PIN_SPRING_STIFFNESS = 220;
+export const DETECTION_CORNER_LENGTH = 18;
+export const DETECTION_CORNER_THICKNESS = 3;
+export const DETECTION_TAG_HEIGHT = 22;
 
 interface ArPinsProps {
   items: readonly RecognizedItem[];
@@ -33,18 +33,87 @@ interface PinViewProps {
   pin: PlacedPin;
   index: number;
   label: ReturnType<typeof buildArPinLabel>;
+  box: PinBoxRect;
   direction: 'ltr' | 'rtl';
   onPress: () => void;
 }
 
-function leaderTop(pin: PlacedPin): number {
-  return pin.placement === 'above' ? pin.chip.y + PIN_CHIP_HEIGHT : pin.anchor.y + PIN_ANCHOR / 2;
+function Corner({
+  vertical,
+  horizontal,
+  color,
+}: {
+  vertical: 'top' | 'bottom';
+  horizontal: 'start' | 'end';
+  color: string;
+}) {
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        [vertical]: 0,
+        [horizontal]: 0,
+        width: DETECTION_CORNER_LENGTH,
+        height: DETECTION_CORNER_LENGTH,
+      }}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          top: vertical === 'top' ? 0 : undefined,
+          bottom: vertical === 'bottom' ? 0 : undefined,
+          start: 0,
+          end: 0,
+          height: DETECTION_CORNER_THICKNESS,
+          backgroundColor: color,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          start: horizontal === 'start' ? 0 : undefined,
+          end: horizontal === 'end' ? 0 : undefined,
+          width: DETECTION_CORNER_THICKNESS,
+          backgroundColor: color,
+        }}
+      />
+    </View>
+  );
 }
 
-function PinView({ pin, index, label, direction, onPress }: PinViewProps) {
+function DetectionCorners({ box, lowConfidence }: { box: PinBoxRect; lowConfidence: boolean }) {
+  const { colors } = useTheme();
+  const color = lowConfidence ? colors.textInverseMuted : colors.primary;
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        start: box.x,
+        top: box.y,
+        width: box.width,
+        height: box.height,
+        borderStyle: lowConfidence ? 'dashed' : 'solid',
+        borderWidth: lowConfidence ? 1 : 0,
+        borderColor: lowConfidence ? colors.textInverseMuted : 'transparent',
+      }}
+    >
+      <Corner vertical="top" horizontal="start" color={color} />
+      <Corner vertical="top" horizontal="end" color={color} />
+      <Corner vertical="bottom" horizontal="start" color={color} />
+      <Corner vertical="bottom" horizontal="end" color={color} />
+    </View>
+  );
+}
+
+function PinView({ pin, index, label, box, direction, onPress }: PinViewProps) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const progress = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
+  const pressFeedback = usePressFeedback();
 
   useEffect(() => {
     progress.stopAnimation();
@@ -54,10 +123,9 @@ function PinView({ pin, index, label, direction, onPress }: PinViewProps) {
     }
     progress.setValue(0);
     const timer = setTimeout(() => {
-      Animated.spring(progress, {
+      Animated.timing(progress, {
         toValue: 1,
-        damping: AR_PIN_SPRING_DAMPING,
-        stiffness: AR_PIN_SPRING_STIFFNESS,
+        duration: 120,
         useNativeDriver: true,
       }).start();
     }, index * AR_PIN_STAGGER_MS);
@@ -69,94 +137,53 @@ function PinView({ pin, index, label, direction, onPress }: PinViewProps) {
 
   return (
     <Animated.View
+      pointerEvents="box-none"
       style={{
         position: 'absolute',
-        start: pin.anchor.x,
-        top: pin.anchor.y,
+        start: 0,
+        top: 0,
+        end: 0,
+        bottom: 0,
         opacity: progress,
-        transform: [
-          {
-            scale: progress.interpolate({
-              inputRange: [0, 1],
-              outputRange: [AR_PIN_INITIAL_SCALE, 1],
-            }),
-          },
-        ],
       }}
     >
-      <View
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          start: -PIN_ANCHOR / 2,
-          top: -PIN_ANCHOR / 2,
-          width: PIN_ANCHOR,
-          height: PIN_ANCHOR,
-          borderRadius: PIN_ANCHOR / 2,
-          borderWidth: 3,
-          borderColor: colors.textInverse,
-          backgroundColor: colors.primary,
-        }}
-      />
-      <View
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          start: -1,
-          top: leaderTop(pin) - pin.anchor.y,
-          width: 2,
-          height: PIN_LEADER,
-          borderRadius: 1,
-          backgroundColor: colors.textInverse,
-          opacity: 0.8,
-        }}
-      />
+      <DetectionCorners box={box} lowConfidence={pin.lowConfidence} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label.accessibilityLabel}
         onPress={onPress}
-        style={({ pressed }) => ({
+        {...pressFeedback.pressHandlers}
+        style={{
           position: 'absolute',
-          start: pin.chip.x - pin.anchor.x,
-          top: pin.chip.y - pin.anchor.y,
-          width: pin.chip.width,
+          start: Math.max(0, Math.min(box.x, pin.chip.x)),
+          top: Math.max(0, box.y - DETECTION_TAG_HEIGHT - spacing.xs),
+          maxWidth: pin.chip.width,
           minHeight: 44,
           justifyContent: 'center',
-          borderRadius: radius.pill,
-          backgroundColor: colors.textInverse,
-          opacity: pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-        })}
+        }}
       >
-        <View
+        <Animated.View
           style={{
             direction,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: spacing.xs,
-            paddingHorizontal: spacing.md,
+            minHeight: DETECTION_TAG_HEIGHT,
+            paddingHorizontal: spacing.sm,
+            backgroundColor: pin.lowConfidence ? colors.surfaceInverseAlt : colors.primary,
+            ...pressFeedback.animatedStyle,
           }}
         >
-          <View
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: pin.lowConfidence ? colors.warnInverse : colors.primary,
-            }}
-          />
           <AppText
-            variant="label"
+            variant="eyebrow"
             numberOfLines={1}
-            style={{ color: colors.onPrimaryInverse, flexShrink: 1 }}
+            style={{
+              color: pin.lowConfidence ? colors.textInverse : colors.onFill,
+              flexShrink: 1,
+            }}
           >
             {label.text}
           </AppText>
-        </View>
+        </Animated.View>
       </Pressable>
     </Animated.View>
   );
@@ -215,13 +242,16 @@ export function ArPins({ items, frame, onPress }: ArPinsProps) {
     >
       {layout.pins.map((pin, index) => {
         const label = labels.get(pin.id);
-        if (!label) return null;
+        const item = items.find((candidate) => candidate.tempId === pin.id);
+        const box = boxRectForFrame(item?.box, frame);
+        if (!label || !box) return null;
         return (
           <PinView
             key={pin.id}
             pin={pin}
             index={index}
             label={label}
+            box={box}
             direction={dir}
             onPress={() => onPress(pin.id)}
           />

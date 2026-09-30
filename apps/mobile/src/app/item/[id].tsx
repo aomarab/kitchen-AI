@@ -4,55 +4,57 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { InventoryEventReason, Unit } from '@kitchen/contracts';
 import type { MessageKey } from '@kitchen/i18n';
 import {
-  Screen,
-  Header,
-  Card,
-  Bento,
   AppText,
   Badge,
   Button,
   Chip,
   DateField,
+  EmptyState,
+  ErrorState,
   Field,
   FoodIcon,
-  QuantityStepper,
-  Sheet,
-  Tile,
-  LoadingState,
-  ErrorState,
-  EmptyState,
-  ListGroup,
+  Header,
+  Icon,
+  IconButton,
   ListRow,
-  SectionLabel,
+  LoadingState,
+  QuantityStepper,
+  Screen,
+  Sheet,
+  type IconName,
 } from '../../components';
 import { useFormat } from '../../hooks/useFormat';
 import {
-  useInventoryItem,
+  useAdjustQuantity,
+  useDeleteInventoryItem,
   useInventoryEvents,
+  useInventoryItem,
   useLocations,
   useUpdateInventoryItem,
-  useDeleteInventoryItem,
-  useAdjustQuantity,
 } from '../../hooks/inventory';
 import {
-  ingredientName,
-  itemName,
-  unitLabel,
-  formatExpiryLabel,
-  locationLabel,
   formatDateL,
+  formatExpiryLabel,
   formatMeasure,
+  formatQty,
+  itemName,
+  locationLabel,
+  unitLabel,
 } from '../../lib/format';
-import { expiryStatus, isValidExpiryInput } from '../../lib/expiry';
+import { isValidExpiryInput } from '../../lib/expiry';
 import { errorMessageKey } from '../../lib/errors';
 import { itemHistory } from '../../lib/inventory-history';
-import { EXPIRY_TONE } from '../../lib/kitchen';
+import {
+  inventoryItemRowBadge,
+  inventoryItemRowFoodIcon,
+  inventoryItemRowWhen,
+} from '../../lib/inventory-row';
 import { ProductReview } from '../../features/inventory/ProductReview';
-import { radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 const COMMON_UNITS: Unit[] = ['piece', 'g', 'kg', 'ml', 'l', 'bunch', 'can', 'packet'];
-const MINI_TILE_HEIGHT = 112;
+const ITEM_DETAIL_MIN_TOUCH_TARGET = 44;
 
 const REASON_KEY: Record<InventoryEventReason, MessageKey> = {
   added: 'mobile.item.reason.added',
@@ -64,36 +66,12 @@ const REASON_KEY: Record<InventoryEventReason, MessageKey> = {
 
 function foodIconItem(item: {
   label: string | null;
-  ingredient: {
-    canonicalNameEn: string;
-    canonicalNameAr: string;
-    category: Parameters<typeof FoodIcon>[0]['item']['category'];
-  };
+  ingredient: Parameters<typeof inventoryItemRowFoodIcon>[0]['ingredient'];
+  quantity: number;
+  unit: Unit;
+  expiresAt: string | null;
 }) {
-  return {
-    label: item.label,
-    nameEn: item.ingredient.canonicalNameEn,
-    nameAr: item.ingredient.canonicalNameAr,
-    category: item.ingredient.category,
-  };
-}
-
-function FoodIconCircle({ item }: { item: Parameters<typeof foodIconItem>[0] }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      style={{
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: colors.surfaceAlt,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <FoodIcon item={foodIconItem(item)} size={52} />
-    </View>
-  );
+  return inventoryItemRowFoodIcon(item);
 }
 
 function signedDelta(
@@ -111,14 +89,57 @@ function signedDelta(
   return `${sign}${measure}`;
 }
 
+function historyIcon(reason: InventoryEventReason, delta: number): IconName {
+  if (reason === 'corrected') return 'pencil';
+  return delta >= 0 ? 'plus' : 'minus';
+}
+
+function HistoryIcon({ icon }: { icon: IconName }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={{
+        width: 36,
+        height: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.surfaceAlt,
+      }}
+    >
+      <Icon name={icon} size={18} color={colors.text} />
+    </View>
+  );
+}
+
+function ItemFooter({ onDelete, onEdit }: { onDelete: () => void; onEdit: () => void }) {
+  const { t } = useFormat();
+  return (
+    <View style={{ flexDirection: 'row', gap: spacing.md }}>
+      <Button
+        title={t('inventory.deleteItem')}
+        variant="ghost"
+        tone="danger"
+        fullWidth
+        style={{ flex: 1, minHeight: ITEM_DETAIL_MIN_TOUCH_TARGET }}
+        onPress={onDelete}
+      />
+      <Button
+        title={t('inventory.editItem')}
+        variant="secondary"
+        fullWidth
+        style={{ flex: 1, minHeight: ITEM_DETAIL_MIN_TOUCH_TARGET }}
+        onPress={onEdit}
+      />
+    </View>
+  );
+}
+
 export default function ItemDetail() {
   const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
 
-  // Fetched by id. Scanning the first page of the unfiltered list instead
-  // meant anything past item #50 rendered as NOT_FOUND.
   const itemQuery = useInventoryItem(id ?? '');
   const locations = useLocations();
   const eventsQuery = useInventoryEvents();
@@ -135,6 +156,7 @@ export default function ItemDetail() {
   const [draftExpiry, setDraftExpiry] = useState<string | null>(null);
   const [draftBrand, setDraftBrand] = useState<string | null>(null);
   const [draftLabel, setDraftLabel] = useState<string | null>(null);
+  const now = useMemo(() => new Date(), []);
   const history = useMemo(
     () => (item ? itemHistory(eventsQuery.data ?? [], item.id) : []),
     [eventsQuery.data, item],
@@ -160,7 +182,7 @@ export default function ItemDetail() {
     return (
       <Screen>
         <Header title={t('inventory.editItem')} onBack={() => router.back()} />
-        <EmptyState icon="kitchen" title={t('errors.NOT_FOUND')} />
+        <EmptyState illustration="pantry" title={t('errors.NOT_FOUND')} />
       </Screen>
     );
   }
@@ -186,8 +208,6 @@ export default function ItemDetail() {
     if (delta === 0) return;
     adjust.mutate({ itemId: item.id, delta, unit: item.unit, reason: 'corrected' });
   };
-  const decrementQuantity = () => onAdjust(Math.max(0, item.quantity - 1));
-  const incrementQuantity = () => onAdjust(item.quantity + 1);
 
   const save = () => {
     if (!expiryValid) return;
@@ -196,8 +216,6 @@ export default function ItemDetail() {
         locationId,
         unit,
         brand: brand.trim() ? brand.trim() : null,
-        // Empty means "no name of our own", which restores the catalog name —
-        // the field is never left holding a blank the user cannot see.
         label: label.trim() ? label.trim() : null,
         expiresAt: expiresAt.trim() ? expiresAt.trim() : null,
       },
@@ -215,89 +233,101 @@ export default function ItemDetail() {
   };
 
   const draftExpiryLabel = formatExpiryLabel(t, locale, expiresAt || null, prefs);
-  const expiryText = draftExpiryLabel ?? t('mobile.capture.noExpiry');
+  const expiryText = draftExpiryLabel ?? t('mobile.home.freshNone');
   const quantityText = formatMeasure(t, locale, item.quantity, item.unit, prefs);
+  const quantityValueText = formatQty(locale, item.quantity, prefs);
+  const quantityUnitText = unitLabel(t, item.unit);
   const quantityAccessibility = `${t('inventory.quantity')} ${quantityText}`;
   const locationAccessibility = `${t('inventory.location')} ${locationText}`;
   const expiryAccessibility = `${t('inventory.expiryDate')} ${expiryText}`;
-  const caption = item.brand ?? (item.label ? ingredientName(locale, item.ingredient) : null);
+  const brandText = item.brand ?? t('mobile.productReview.unbranded');
+  const itemBadge = inventoryItemRowBadge(t, item, now);
+  const itemWhen = inventoryItemRowWhen(t, locale, item, prefs, now);
 
   return (
-    <Screen scroll>
-      <Header title={name} onBack={() => router.back()} />
+    <Screen
+      scroll
+      footer={
+        <ItemFooter onDelete={() => setConfirmDelete(true)} onEdit={() => setDetailsOpen(true)} />
+      }
+    >
+      <Header
+        title=""
+        onBack={() => router.back()}
+        trailing={
+          <IconButton
+            icon="pencil"
+            tone="plain"
+            accessibilityLabel={t('inventory.editItem')}
+            onPress={() => setDetailsOpen(true)}
+          />
+        }
+      />
 
-      <Card style={{ gap: spacing.lg, borderRadius: radius.xl }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <FoodIconCircle item={item} />
-          <View style={{ flex: 1 }}>
-            <AppText variant="display">{name}</AppText>
-            {caption ? (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
+        <FoodIcon item={foodIconItem(item)} size={72} />
+        <View style={{ flex: 1, gap: spacing.xs }}>
+          <AppText variant="display" accessibilityRole="header">
+            {name}
+          </AppText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            {itemBadge ? <Badge tone={itemBadge.tone} label={itemBadge.label} /> : null}
+            {itemWhen ? (
               <AppText variant="caption" muted>
-                {caption}
+                {itemWhen}
               </AppText>
             ) : null}
           </View>
         </View>
+      </View>
 
-        <Bento>
-          <Tile
-            span={2}
-            fill="surfaceAlt"
-            height={MINI_TILE_HEIGHT}
-            accessibilityRole="adjustable"
-            accessibilityLabel={quantityAccessibility}
-            actions={[
-              { name: 'increment', label: t('mobile.common.increase'), onPress: incrementQuantity },
-              { name: 'decrement', label: t('mobile.common.decrease'), onPress: decrementQuantity },
-            ]}
-          >
-            <View style={{ gap: spacing.sm }}>
-              <AppText variant="label" muted>
-                {t('inventory.quantity')}
-              </AppText>
+      <View>
+        <ListRow
+          title={t('inventory.quantity')}
+          trailing={
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <QuantityStepper
                 value={item.quantity}
                 onChange={onAdjust}
-                label={quantityText}
+                label={quantityValueText}
+                unit={quantityUnitText}
                 accessibilityLabel={quantityAccessibility}
-                accessible={false}
                 decrementLabel={t('mobile.common.decrease')}
                 incrementLabel={t('mobile.common.increase')}
               />
-            </View>
-          </Tile>
-          <Tile
-            fill="surfaceAlt"
-            height={MINI_TILE_HEIGHT}
-            accessibilityLabel={locationAccessibility}
-            onPress={() => setDetailsOpen(true)}
-          >
-            <View style={{ gap: spacing.sm }}>
-              <AppText variant="label" muted>
-                {t('inventory.location')}
+              <AppText variant="caption" muted>
+                {quantityUnitText}
               </AppText>
-              <Chip label={locationText} variant="tag" />
             </View>
-          </Tile>
-          <Tile
-            fill="surfaceAlt"
-            height={MINI_TILE_HEIGHT}
-            weight={1.4}
-            accessibilityLabel={expiryAccessibility}
-            onPress={() => setDetailsOpen(true)}
-          >
-            <View style={{ gap: spacing.sm }}>
-              <AppText variant="label" muted>
-                {t('inventory.expiryDate')}
-              </AppText>
-              <Badge tone={EXPIRY_TONE[expiryStatus(expiresAt || null)]} label={expiryText} />
-            </View>
-          </Tile>
-        </Bento>
-      </Card>
+          }
+        />
+        <ListRow
+          title={t('inventory.brand')}
+          value={brandText}
+          accessibilityLabel={`${t('inventory.brand')} ${brandText}`}
+          onPress={() => setDetailsOpen(true)}
+          showChevron
+        />
+        <ListRow
+          title={t('inventory.location')}
+          value={locationText}
+          accessibilityLabel={locationAccessibility}
+          onPress={() => setDetailsOpen(true)}
+          showChevron
+        />
+        <ListRow
+          title={t('inventory.expiryDate')}
+          value={expiryText}
+          accessibilityLabel={expiryAccessibility}
+          onPress={() => setDetailsOpen(true)}
+          showChevron
+        />
+      </View>
 
       <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.item.history')}</SectionLabel>
+        <AppText variant="heading" accessibilityRole="header">
+          {t('mobile.item.history')}
+        </AppText>
         {eventsQuery.isLoading ? (
           <LoadingState compact />
         ) : eventsQuery.isError ? (
@@ -307,43 +337,32 @@ export default function ItemDetail() {
             onRetry={() => void eventsQuery.refetch()}
           />
         ) : history.length === 0 ? (
-          <Card style={{ padding: spacing.md }}>
-            <AppText muted>{t('mobile.item.historyEmpty')}</AppText>
-          </Card>
+          <AppText variant="body" muted>
+            {t('mobile.item.historyEmpty')}
+          </AppText>
         ) : (
-          <ListGroup>
-            {history.map((event) => (
-              <ListRow
-                key={event.id}
-                grouped
-                icon={event.delta >= 0 ? 'plus' : 'minus'}
-                title={t(REASON_KEY[event.reason])}
-                subtitle={signedDelta(t, locale, prefs, event.delta, event.unit)}
-                value={formatDateL(locale, event.createdAt, {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-                accessibilityLabel={`${t(REASON_KEY[event.reason])}, ${signedDelta(
-                  t,
-                  locale,
-                  prefs,
-                  event.delta,
-                  event.unit,
-                )}`}
-              />
-            ))}
-          </ListGroup>
+          <View>
+            {history.map((event) => {
+              const delta = signedDelta(t, locale, prefs, event.delta, event.unit);
+              const reason = t(REASON_KEY[event.reason]);
+              return (
+                <ListRow
+                  key={event.id}
+                  leading={<HistoryIcon icon={historyIcon(event.reason, event.delta)} />}
+                  title={`${reason} · ${delta}`}
+                  value={formatDateL(locale, event.createdAt, {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                  accessibilityLabel={`${reason}, ${delta}`}
+                />
+              );
+            })}
+          </View>
         )}
       </View>
 
       <ProductReview itemId={item.id} locale={locale} t={t} />
-
-      <Button
-        title={t('inventory.deleteItem')}
-        variant="danger"
-        icon="trash"
-        onPress={() => setConfirmDelete(true)}
-      />
 
       <Sheet
         visible={detailsOpen}
@@ -351,9 +370,52 @@ export default function ItemDetail() {
         title={t('inventory.editItem')}
       >
         <View style={{ gap: spacing.xs }}>
-          <AppText variant="label" muted>
-            {t('inventory.location')}
-          </AppText>
+          <Field
+            label={t('mobile.item.nameLabel')}
+            value={label}
+            onChangeText={setDraftLabel}
+            placeholder={t('mobile.item.namePlaceholder')}
+            hint={t('mobile.item.nameHint')}
+            maxLength={120}
+            autoCapitalize="words"
+            autoCorrect={false}
+          />
+          <View style={{ alignItems: 'flex-end' }}>
+            <Button
+              title={t('mobile.item.resetName')}
+              variant="ghost"
+              fullWidth={false}
+              disabled={!item.label && label.length === 0}
+              onPress={() => setDraftLabel('')}
+            />
+          </View>
+        </View>
+
+        <View style={{ gap: spacing.xs }}>
+          <AppText variant="label">{t('inventory.unit')}</AppText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {COMMON_UNITS.map((option) => (
+              <Chip
+                key={option}
+                label={unitLabel(t, option)}
+                selected={unit === option}
+                onPress={() => setDraftUnit(option)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <Field
+          label={t('inventory.brand')}
+          value={brand}
+          onChangeText={setDraftBrand}
+          maxLength={120}
+          autoCapitalize="words"
+          autoCorrect={false}
+        />
+
+        <View style={{ gap: spacing.xs }}>
+          <AppText variant="label">{t('inventory.location')}</AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {(locations.data ?? []).map((loc) => (
               <Chip
@@ -366,58 +428,6 @@ export default function ItemDetail() {
           </View>
         </View>
 
-        <View style={{ gap: spacing.xs }}>
-          <AppText variant="label" muted>
-            {t('inventory.unit')}
-          </AppText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {COMMON_UNITS.map((u) => (
-              <Chip
-                key={u}
-                label={unitLabel(t, u)}
-                selected={unit === u}
-                onPress={() => setDraftUnit(u)}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={{ gap: spacing.xs }}>
-          <Field
-            label={t('mobile.item.nameLabel')}
-            value={label}
-            onChangeText={setDraftLabel}
-            placeholder={ingredientName(locale, item.ingredient)}
-            maxLength={120}
-            autoCapitalize="words"
-            autoCorrect={false}
-          />
-          {/*
-            The catalog name is a global row shared by every household, so this
-            renames the item and nothing else — worth saying, because "rename"
-            otherwise reads as editing the dictionary.
-          */}
-          <AppText variant="caption" muted>
-            {t('mobile.item.nameHint')}
-          </AppText>
-          {item.label ? (
-            <Button
-              title={t('mobile.item.resetName')}
-              variant="ghost"
-              onPress={() => setDraftLabel('')}
-            />
-          ) : null}
-        </View>
-
-        <Field
-          label={t('inventory.brand')}
-          value={brand}
-          onChangeText={setDraftBrand}
-          maxLength={120}
-          autoCapitalize="words"
-          autoCorrect={false}
-        />
-
         <DateField
           label={t('inventory.expiryDate')}
           value={expiresAt || null}
@@ -429,7 +439,6 @@ export default function ItemDetail() {
 
         <Button
           title={t('common.save')}
-          icon="check"
           disabled={!dirty || !expiryValid}
           loading={update.isPending}
           onPress={save}
@@ -449,7 +458,7 @@ export default function ItemDetail() {
         <AppText muted>{itemName(locale, item)}</AppText>
         <Button
           title={t('common.delete')}
-          variant="danger"
+          variant="destructive"
           loading={remove.isPending}
           onPress={() =>
             remove.mutate(item.id, {

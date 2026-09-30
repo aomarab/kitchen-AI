@@ -100,9 +100,13 @@ production, the conditionally-required rows for any mock you turn off).
       never the model).
 - [ ] Review `AI_DAILY_BUDGET_USD` (default 2) before real spend.
 
-### 9. Payments — required when `PAYMENTS_MOCK=false`
+### 9. Payments — required when purchases are enabled
 
-- [ ] `REVENUECAT_API_KEY` + `REVENUECAT_WEBHOOK_SECRET`. Full flow:
+- [ ] Before IAP is live, set `PAYMENTS_DISABLED=true` so production can boot
+      with `PAYMENTS_MOCK=true` without letting the always-approves mock mint
+      credits.
+- [ ] For paid launch, set `PAYMENTS_DISABLED=false`, `PAYMENTS_MOCK=false`,
+      and provide `REVENUECAT_API_KEY` + `REVENUECAT_WEBHOOK_SECRET`. Full flow:
       `docs/store-listing/iap-setup.md`.
 
 ### 10. Apple token revocation — required when `APPLE_REVOKE_MOCK=false`
@@ -123,8 +127,9 @@ production, the conditionally-required rows for any mock you turn off).
 4. [ ] **S3**: sign-in → capture a photo → confirm the object lands in the bucket
        via presigned upload, and is readable back.
 5. [ ] **Auth**: real Google/Apple sign-in works (aud pinned).
-6. [ ] Only after the above, flip `AI_MOCK=false` (and `PAYMENTS_MOCK=false` once
-       IAP is configured) and re-run §J of the runbook.
+6. [ ] Only after the above, flip `AI_MOCK=false` (and `PAYMENTS_MOCK=false` /
+       `PAYMENTS_DISABLED=false` once IAP is configured) and re-run §J of the
+       runbook.
 
 ## Env quick-reference
 
@@ -135,7 +140,8 @@ Always: `NODE_ENV=production`, `API_PORT` (3333), `DATABASE_URL`, `REDIS_URL`,
 
 Conditionally: `OPENAI_API_KEY` / `GEMINI_API_KEY` / `YOUTUBE_API_KEY`
 (`AI_MOCK=false`); `REVENUECAT_API_KEY` / `REVENUECAT_WEBHOOK_SECRET`
-(`PAYMENTS_MOCK=false`); `APPLE_*` (`APPLE_REVOKE_MOCK=false`).
+(`PAYMENTS_MOCK=false` and `PAYMENTS_DISABLED=false`); `PAYMENTS_DISABLED=true`
+when shipping production without purchases; `APPLE_*` (`APPLE_REVOKE_MOCK=false`).
 
 The authoritative list and its validation is `apps/api/src/config/env.ts` — if
 this file and the schema ever disagree, the schema wins.

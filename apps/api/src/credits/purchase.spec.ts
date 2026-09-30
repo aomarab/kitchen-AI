@@ -20,6 +20,10 @@ import { MockPaymentVerifier, type PaymentVerifier } from './payment-verifier.js
  */
 const RUN = randomUUID().slice(0, 8);
 const txn = (name: string) => `txn-${name}-${RUN}`;
+const paymentsEnabledEnv = { NODE_ENV: 'test' as const, PAYMENTS_DISABLED: false };
+const paymentsDisabledEnv = { NODE_ENV: 'test' as const, PAYMENTS_DISABLED: true };
+const productionPaymentsEnv = { NODE_ENV: 'production' as const, PAYMENTS_DISABLED: false };
+const developmentPaymentsEnv = { NODE_ENV: 'development' as const, PAYMENTS_DISABLED: false };
 
 const ctx = createTestContext();
 const createdHouseholds: string[] = [];
@@ -35,7 +39,7 @@ beforeEach(async () => {
   createdUsers.push(userId);
   createdHouseholds.push(householdId);
   credits = new CreditsService(ctx.db);
-  purchases = new PurchaseService(ctx.db, credits, new MockPaymentVerifier());
+  purchases = new PurchaseService(ctx.db, credits, new MockPaymentVerifier(), paymentsEnabledEnv);
 });
 
 afterAll(async () => {
@@ -90,6 +94,68 @@ describe('PurchaseService', () => {
 
     const balance = await credits.balance(householdId);
     expect(balance.paidBalance).toBe(300);
+  });
+
+  it('rejects purchase intent creation when payments are disabled', async () => {
+    const disabledPurchases = new PurchaseService(
+      ctx.db,
+      credits,
+      new MockPaymentVerifier(),
+      paymentsDisabledEnv,
+    );
+
+    await expect(
+      disabledPurchases.createIntent(householdId, userId, 'credits_300'),
+    ).rejects.toMatchObject({
+      code: 'AI_UNAVAILABLE',
+      messageKey: 'errors.PAYMENTS_DISABLED',
+    });
+  });
+
+  it('rejects purchase confirmation when payments are disabled', async () => {
+    const intent = await purchases.createIntent(householdId, userId, 'credits_300');
+    const disabledPurchases = new PurchaseService(
+      ctx.db,
+      credits,
+      new MockPaymentVerifier(),
+      paymentsDisabledEnv,
+    );
+
+    await expect(
+      disabledPurchases.confirm(householdId, {
+        intentId: intent.intentId,
+        storeTransactionId: txn('disabled-confirm'),
+        store: 'apple',
+      }),
+    ).rejects.toMatchObject({
+      code: 'AI_UNAVAILABLE',
+      messageKey: 'errors.PAYMENTS_DISABLED',
+    });
+
+    const balance = await credits.balance(householdId);
+    expect(balance.paidBalance).toBe(0);
+  });
+
+  it('acknowledges but does not credit webhook purchases when payments are disabled', async () => {
+    const intent = await purchases.createIntent(householdId, userId, 'credits_300');
+    const disabledPurchases = new PurchaseService(
+      ctx.db,
+      credits,
+      new MockPaymentVerifier(),
+      paymentsDisabledEnv,
+    );
+
+    await disabledPurchases.applyWebhook({
+      type: 'INITIAL_PURCHASE',
+      intentId: intent.intentId,
+      storeTransactionId: txn('disabled-webhook'),
+      productId: 'credits_300',
+      environment: 'PRODUCTION',
+      store: 'apple',
+    });
+
+    const balance = await credits.balance(householdId);
+    expect(balance.paidBalance).toBe(0);
   });
 
   it('is idempotent when the webhook races the confirm call', async () => {
@@ -171,6 +237,72 @@ describe('PurchaseService', () => {
     expect(balance.paidBalance).toBe(300);
   });
 
+  it('does not credit a webhook purchase whose product id mismatches the intent', async () => {
+    const intent = await purchases.createIntent(householdId, userId, 'credits_300');
+    await purchases.applyWebhook({
+      type: 'INITIAL_PURCHASE',
+      intentId: intent.intentId,
+      storeTransactionId: txn('product-mismatch'),
+      productId: 'credits_100',
+      environment: 'PRODUCTION',
+      store: 'apple',
+    });
+
+    const balance = await credits.balance(householdId);
+    expect(balance.paidBalance).toBe(0);
+
+    const [row] = await ctx.db
+      .select()
+      .from(creditPurchases)
+      .where(eq(creditPurchases.id, intent.intentId));
+    expect(row?.status).toBe('pending');
+    expect(row?.storeTransactionId).toBeNull();
+  });
+
+  it('does not credit a sandbox webhook purchase in production', async () => {
+    const productionPurchases = new PurchaseService(
+      ctx.db,
+      credits,
+      new MockPaymentVerifier(),
+      productionPaymentsEnv,
+    );
+    const intent = await productionPurchases.createIntent(householdId, userId, 'credits_300');
+
+    await productionPurchases.applyWebhook({
+      type: 'INITIAL_PURCHASE',
+      intentId: intent.intentId,
+      storeTransactionId: txn('sandbox-prod'),
+      productId: 'credits_300',
+      environment: 'SANDBOX',
+      store: 'apple',
+    });
+
+    const balance = await credits.balance(householdId);
+    expect(balance.paidBalance).toBe(0);
+  });
+
+  it('credits a sandbox webhook purchase in development', async () => {
+    const developmentPurchases = new PurchaseService(
+      ctx.db,
+      credits,
+      new MockPaymentVerifier(),
+      developmentPaymentsEnv,
+    );
+    const intent = await developmentPurchases.createIntent(householdId, userId, 'credits_300');
+
+    await developmentPurchases.applyWebhook({
+      type: 'INITIAL_PURCHASE',
+      intentId: intent.intentId,
+      storeTransactionId: txn('sandbox-dev'),
+      productId: 'credits_300',
+      environment: 'SANDBOX',
+      store: 'apple',
+    });
+
+    const balance = await credits.balance(householdId);
+    expect(balance.paidBalance).toBe(300);
+  });
+
   it('grants nothing when verification is rejected', async () => {
     const rejecting: PaymentVerifier = {
       verify: async (_appUserId, storeTransactionId, productId) => ({
@@ -179,7 +311,7 @@ describe('PurchaseService', () => {
         valid: false,
       }),
     };
-    const guarded = new PurchaseService(ctx.db, credits, rejecting);
+    const guarded = new PurchaseService(ctx.db, credits, rejecting, paymentsEnabledEnv);
     const intent = await guarded.createIntent(householdId, userId, 'credits_300');
 
     await expect(
@@ -245,7 +377,12 @@ describe('PurchaseService', () => {
         if (grantCalls === 1) throw new Error('simulated crash before credit');
         return realGrant(hid, credits, purchaseId, tx);
       });
-    const flakyPurchases = new PurchaseService(ctx.db, flaky, new MockPaymentVerifier());
+    const flakyPurchases = new PurchaseService(
+      ctx.db,
+      flaky,
+      new MockPaymentVerifier(),
+      paymentsEnabledEnv,
+    );
 
     const intent = await flakyPurchases.createIntent(householdId, userId, 'credits_300');
 

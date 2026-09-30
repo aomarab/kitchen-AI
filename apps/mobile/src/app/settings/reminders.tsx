@@ -1,9 +1,9 @@
-import { useRouter } from 'expo-router';
 import { View } from 'react-native';
+import { useRouter } from 'expo-router';
 import {
-  SCHEDULED_REMINDER_TYPES,
   type BreakCadenceMinutes,
   type ReminderType,
+  SCHEDULED_REMINDER_TYPES,
   type StretchCadenceMinutes,
 } from '@kitchen/contracts';
 import {
@@ -11,10 +11,8 @@ import {
   Header,
   AppText,
   Badge,
-  Card,
   ListGroup,
   ToggleRow,
-  SegmentedControl,
   QuantityStepper,
   LoadingState,
   ErrorState,
@@ -23,9 +21,97 @@ import {
 import { useFormat } from '../../hooks/useFormat';
 import { formatQty } from '../../lib/format';
 import { useReminderSettings, useUpdateReminderSettings } from '../../hooks/reminders';
-import { BREAK_CADENCES, clampHydrationGoal, clampQuietHour } from '../../lib/reminders';
+import { clampHydrationGoal, clampQuietHour } from '../../lib/reminders';
 import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
+
+const REMINDER_FRAME_RANK: readonly ReminderType[] = ['break', 'stretch', 'morning', 'hydration'];
+const REMINDER_ROW_ORDER = [...SCHEDULED_REMINDER_TYPES].sort(
+  (a, b) => REMINDER_FRAME_RANK.indexOf(a) - REMINDER_FRAME_RANK.indexOf(b),
+) satisfies ReminderType[];
+
+function SettingStepperRow({
+  title,
+  caption,
+  value,
+  label,
+  min,
+  max,
+  step = 1,
+  onChange,
+  decrementLabel,
+  incrementLabel,
+}: {
+  title: string;
+  caption: string;
+  value: number;
+  label: string;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (value: number) => void;
+  decrementLabel: string;
+  incrementLabel: string;
+}) {
+  return (
+    <View
+      style={{
+        minHeight: 48,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+      }}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText variant="bodyStrong">{title}</AppText>
+        <AppText variant="caption" muted>
+          {caption}
+        </AppText>
+      </View>
+      <QuantityStepper
+        value={value}
+        label={label}
+        min={min}
+        max={max}
+        step={step}
+        onChange={onChange}
+        accessibilityLabel={title}
+        decrementLabel={decrementLabel}
+        incrementLabel={incrementLabel}
+      />
+    </View>
+  );
+}
+
+function QuietHourRow({
+  title,
+  value,
+  onChange,
+  decrementLabel,
+  incrementLabel,
+}: {
+  title: string;
+  value: number;
+  onChange: (value: number) => void;
+  decrementLabel: string;
+  incrementLabel: string;
+}) {
+  return (
+    <View style={{ flex: 1, gap: 2 }}>
+      <AppText variant="caption">{title}</AppText>
+      <QuantityStepper
+        value={value}
+        label={`${String(value).padStart(2, '0')}:00`}
+        min={0}
+        max={23}
+        onChange={onChange}
+        accessibilityLabel={title}
+        decrementLabel={decrementLabel}
+        incrementLabel={incrementLabel}
+      />
+    </View>
+  );
+}
 
 export default function Reminders() {
   const { t, locale, prefs } = useFormat();
@@ -47,16 +133,12 @@ export default function Reminders() {
   if (!query.data) return frame(null);
 
   const s = query.data;
-  const cadenceOptions = BREAK_CADENCES.map((c) => ({
-    value: String(c),
-    label: t('mobile.reminders.cadenceShort', { minutes: c }).replace(
-      String(c),
-      formatQty(locale, c, prefs),
-    ),
-  }));
+  const cadenceEvery = (minutes: number) =>
+    t('mobile.reminders.cadenceEvery', { minutes }).replace(
+      String(minutes),
+      formatQty(locale, minutes, prefs),
+    );
 
-  // Exhaustive on ReminderType: a new nudge type in the contract fails to
-  // compile here until it is given a label.
   const toggleCopy: Record<
     ReminderType,
     { key: `${ReminderType}Enabled`; label: string; hint: string }
@@ -84,31 +166,21 @@ export default function Reminders() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll contentStyle={{ gap: spacing.md, paddingVertical: spacing.md }}>
       <Header title={t('mobile.reminders.title')} onBack={() => router.back()} />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <AppText variant="caption" muted style={{ flex: 1 }}>
-          {t('mobile.reminders.subtitle')}
-        </AppText>
-        {update.isSuccess ? <Badge tone="info" label={t('mobile.reminders.saved')} /> : null}
-      </View>
+      <AppText variant="body" muted>
+        {t('mobile.reminders.subtitle')}
+      </AppText>
 
-      <View style={{ gap: spacing.sm }}>
-        <SectionLabel>{t('mobile.reminders.nudgesTitle')}</SectionLabel>
+      <View style={{ gap: spacing.xs }}>
+        <SectionLabel small>{t('mobile.reminders.nudgesTitle')}</SectionLabel>
         <ListGroup>
-          {/*
-            The rows are derived from SCHEDULED_REMINDER_TYPES, not hand-listed,
-            so this screen can only offer a switch the firing engine can act on.
-            Stretch was absent until a cadence setting existed; it is back for
-            the same reason, without anyone having to edit this list.
-          */}
-          {SCHEDULED_REMINDER_TYPES.map((type) => {
+          {REMINDER_ROW_ORDER.map((type) => {
             const row = toggleCopy[type];
             return (
               <ToggleRow
                 key={type}
-                grouped
                 label={row.label}
                 hint={row.hint}
                 value={s[row.key]}
@@ -119,81 +191,69 @@ export default function Reminders() {
         </ListGroup>
       </View>
 
-      <Card style={{ gap: spacing.sm }}>
-        <AppText variant="label" muted>
-          {t('mobile.reminders.cadenceTitle')}
-        </AppText>
-        <SegmentedControl
-          options={cadenceOptions}
-          value={String(s.breakCadenceMinutes)}
-          onChange={(v) => update.mutate({ breakCadenceMinutes: Number(v) as BreakCadenceMinutes })}
-        />
-      </Card>
-
-      <Card style={{ gap: spacing.sm }}>
-        <AppText variant="label" muted>
-          {t('mobile.reminders.stretchCadenceTitle')}
-        </AppText>
-        <SegmentedControl
-          options={cadenceOptions}
-          value={String(s.stretchCadenceMinutes)}
-          onChange={(v) =>
-            update.mutate({ stretchCadenceMinutes: Number(v) as StretchCadenceMinutes })
-          }
-        />
-      </Card>
-
-      <Card style={{ gap: spacing.md }}>
-        <AppText variant="label" muted>
-          {t('mobile.reminders.hydrationGoalTitle')}
-        </AppText>
-        <QuantityStepper
-          value={s.hydrationGoalCups}
-          onChange={(v) => update.mutate({ hydrationGoalCups: clampHydrationGoal(v) })}
-          min={1}
-          label={t('mobile.reminders.hydrationGoalValue', { count: s.hydrationGoalCups })}
-          accessibilityLabel={t('mobile.reminders.hydrationGoalTitle')}
+      <View style={{ gap: spacing.xs }}>
+        <SectionLabel small>{t('mobile.reminders.howOftenTitle')}</SectionLabel>
+        <SettingStepperRow
+          title={t('mobile.reminders.cadenceTitle')}
+          caption={cadenceEvery(s.breakCadenceMinutes)}
+          value={s.breakCadenceMinutes}
+          label={formatQty(locale, s.breakCadenceMinutes, prefs)}
+          min={30}
+          max={120}
+          step={30}
+          onChange={(v) => update.mutate({ breakCadenceMinutes: v as BreakCadenceMinutes })}
           decrementLabel={t('mobile.reminders.decrease')}
           incrementLabel={t('mobile.reminders.increase')}
         />
-      </Card>
+        <SettingStepperRow
+          title={t('mobile.reminders.stretchCadenceTitle')}
+          caption={cadenceEvery(s.stretchCadenceMinutes)}
+          value={s.stretchCadenceMinutes}
+          label={formatQty(locale, s.stretchCadenceMinutes, prefs)}
+          min={30}
+          max={120}
+          step={30}
+          onChange={(v) => update.mutate({ stretchCadenceMinutes: v as StretchCadenceMinutes })}
+          decrementLabel={t('mobile.reminders.decrease')}
+          incrementLabel={t('mobile.reminders.increase')}
+        />
+        <SettingStepperRow
+          title={t('mobile.reminders.hydrationGoalTitle')}
+          caption={t('mobile.reminders.hydrationGoalValue', { count: s.hydrationGoalCups })}
+          value={s.hydrationGoalCups}
+          label={String(s.hydrationGoalCups)}
+          min={1}
+          max={20}
+          onChange={(v) => update.mutate({ hydrationGoalCups: clampHydrationGoal(v) })}
+          decrementLabel={t('mobile.reminders.decrease')}
+          incrementLabel={t('mobile.reminders.increase')}
+        />
+      </View>
 
-      <Card style={{ gap: spacing.md }}>
-        <AppText variant="label" muted>
-          {t('mobile.reminders.quietHoursTitle')}
-        </AppText>
+      <View style={{ gap: spacing.xs }}>
+        <SectionLabel small>{t('mobile.reminders.quietHoursTitle')}</SectionLabel>
         <AppText variant="caption" muted>
           {t('mobile.reminders.quietHoursHint')}
         </AppText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <AppText variant="body" style={{ minWidth: 44 }}>
-            {t('mobile.reminders.quietFrom')}
-          </AppText>
-          <QuantityStepper
+        <View style={{ flexDirection: 'row', gap: spacing.md }}>
+          <QuietHourRow
+            title={t('mobile.reminders.quietFrom')}
             value={s.quietHoursStart}
             onChange={(v) => update.mutate({ quietHoursStart: clampQuietHour(v) })}
-            min={0}
-            label={t('mobile.reminders.hourValue', { hour: s.quietHoursStart })}
-            accessibilityLabel={t('mobile.reminders.quietFrom')}
             decrementLabel={t('mobile.reminders.decrease')}
             incrementLabel={t('mobile.reminders.increase')}
           />
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <AppText variant="body" style={{ minWidth: 44 }}>
-            {t('mobile.reminders.quietTo')}
-          </AppText>
-          <QuantityStepper
+          <QuietHourRow
+            title={t('mobile.reminders.quietTo')}
             value={s.quietHoursEnd}
             onChange={(v) => update.mutate({ quietHoursEnd: clampQuietHour(v) })}
-            min={0}
-            label={t('mobile.reminders.hourValue', { hour: s.quietHoursEnd })}
-            accessibilityLabel={t('mobile.reminders.quietTo')}
             decrementLabel={t('mobile.reminders.decrease')}
             incrementLabel={t('mobile.reminders.increase')}
           />
         </View>
-      </Card>
+      </View>
+
+      {update.isSuccess ? <Badge tone="success" label={t('mobile.reminders.saved')} /> : null}
 
       {update.isError ? (
         <AppText variant="caption" accessibilityRole="alert" style={{ color: colors.danger }}>

@@ -1,99 +1,74 @@
 import { type ComponentProps } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { type ColorValue, type StyleProp, type TextStyle } from 'react-native';
+import { type ColorValue, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { ICON_PATHS, type GlyphName } from './glyphs/icon-paths';
+import {
+  iconStrokeWidth,
+  isBrandIconName,
+  isFilledGlyphName,
+  type BrandIconName,
+  type IconName,
+} from './glyphs/stroke';
 import { useTheme } from '../theme/useTheme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
-/**
- * The app's icon set, backed by Ionicons (`@expo/vector-icons`). A single map
- * keeps every screen decoupled from the underlying glyph names. Directional
- * icons (chevrons/arrows) are mirrored for RTL by <DirectionalIcon>, never here.
- */
-export const IONICONS = {
-  home: 'home-outline',
-  kitchen: 'file-tray-stacked-outline',
-  plans: 'calendar-outline',
-  more: 'ellipsis-horizontal',
-  camera: 'camera-outline',
-  cameraReverse: 'camera-reverse-outline',
-  flash: 'flash-outline',
-  images: 'images-outline',
-  barcode: 'barcode-outline',
-  receipt: 'receipt-outline',
-  manual: 'create-outline',
-  plus: 'add',
-  minus: 'remove',
-  search: 'search-outline',
-  check: 'checkmark',
-  close: 'close',
-  clock: 'time-outline',
-  calendar: 'calendar-outline',
-  trash: 'trash-outline',
-  edit: 'pencil-outline',
-  warning: 'warning-outline',
-  info: 'information-circle-outline',
-  flame: 'flame-outline',
-  leaf: 'leaf-outline',
-  star: 'star',
-  starOutline: 'star-outline',
-  basket: 'basket-outline',
-  share: 'share-outline',
-  restaurant: 'restaurant-outline',
-  settings: 'settings-outline',
-  bell: 'notifications-outline',
-  user: 'person-outline',
-  household: 'people-outline',
-  play: 'play',
-  mic: 'mic-outline',
-  micOff: 'mic-off-outline',
-  send: 'arrow-up',
-  captions: 'chatbox-ellipses-outline',
+const BRAND_IONICONS = {
   apple: 'logo-apple',
   google: 'logo-google',
-  wallet: 'wallet-outline',
-  sparkles: 'sparkles-outline',
-  offline: 'cloud-offline',
-  sync: 'sync',
-  location: 'location-outline',
-  snowflake: 'snow-outline',
-  box: 'cube-outline',
-  swap: 'swap-horizontal',
-  chevron: 'chevron-forward',
-  chevronDown: 'chevron-down',
-  back: 'chevron-back',
-  arrowForward: 'arrow-forward',
-  water: 'water-outline',
-  stretch: 'body-outline',
-  sunrise: 'sunny-outline',
-  pause: 'cafe-outline',
-  timerPause: 'pause',
-  screen: 'tablet-landscape-outline',
-} satisfies Record<string, IoniconName>;
+} satisfies Record<BrandIconName, IoniconName>;
 
-export type IconName = keyof typeof IONICONS;
+export type { IconName };
 
 export interface IconProps {
   name: IconName;
   size?: number;
   color?: ColorValue;
   style?: StyleProp<TextStyle>;
+  filled?: boolean;
 }
 
-export function Icon({ name, size = 18, color, style }: IconProps) {
+export function Icon({ name, size = 18, color, style, filled }: IconProps) {
   const { colors } = useTheme();
+  const iconColor = color ?? colors.text;
+
+  if (isBrandIconName(name)) {
+    return (
+      <Ionicons
+        name={BRAND_IONICONS[name]}
+        size={size}
+        color={iconColor}
+        style={style}
+        accessible={false}
+        importantForAccessibility="no"
+      />
+    );
+  }
+
+  const glyphName = name as GlyphName;
+  const shouldFill = filled ?? isFilledGlyphName(name);
+
   return (
-    <Ionicons
-      name={IONICONS[name]}
-      size={size}
-      // Ionicons has no default colour of its own: an omitted `color` reaches
-      // React Native as `undefined` and renders pure black, which was merely
-      // off-palette while every screen was light and is invisible now that
-      // three of the six palettes have near-black grounds.
-      color={color ?? colors.text}
-      style={style}
+    <Svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      style={style as StyleProp<ViewStyle>}
       accessible={false}
       importantForAccessibility="no"
-    />
+    >
+      {ICON_PATHS[glyphName].map((d, index) => (
+        <Path
+          key={`${glyphName}-${index}`}
+          d={d}
+          stroke={iconColor}
+          strokeWidth={iconStrokeWidth(size)}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill={shouldFill ? iconColor : 'none'}
+        />
+      ))}
+    </Svg>
   );
 }

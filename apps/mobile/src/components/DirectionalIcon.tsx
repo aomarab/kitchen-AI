@@ -1,13 +1,6 @@
-import { Icon, type IconName, type IconProps } from './Icon';
+import { Icon, type IconProps } from './Icon';
+import { isDirectionalIconName } from './glyphs/stroke';
 import { useLocale } from '../lib/locale';
-
-/** Icons whose meaning depends on reading direction and must mirror in RTL. */
-const DIRECTIONAL: ReadonlySet<IconName> = new Set<IconName>([
-  'chevron',
-  'back',
-  'arrowForward',
-  'swap',
-]);
 
 /**
  * Renders a direction-implying icon that flips horizontally in RTL. Build every
@@ -16,6 +9,8 @@ const DIRECTIONAL: ReadonlySet<IconName> = new Set<IconName>([
  */
 export function DirectionalIcon({ name, style, ...rest }: IconProps) {
   const { dir } = useLocale();
-  const flip = dir === 'rtl' && DIRECTIONAL.has(name);
-  return <Icon name={name} style={[flip ? { transform: [{ scaleX: -1 }] } : null, style]} {...rest} />;
+  const flip = dir === 'rtl' && isDirectionalIconName(name);
+  return (
+    <Icon name={name} style={[flip ? { transform: [{ scaleX: -1 }] } : null, style]} {...rest} />
+  );
 }

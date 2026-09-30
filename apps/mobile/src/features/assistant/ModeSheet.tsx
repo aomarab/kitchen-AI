@@ -1,35 +1,56 @@
-import { SegmentedControl, Sheet, ToggleRow } from '../../components';
+import { ListRow, Sheet, type IconName } from '../../components';
+import { assistantModeAccessibilityLabel } from '../../lib/assistant/accessibility';
 import type { AssistantMode } from './LiveAssistantScreen';
 
 export interface ModeSheetProps {
   visible: boolean;
   mode: AssistantMode;
-  captionsOn: boolean;
   title: string;
-  captionsLabel: string;
-  options: readonly { value: AssistantMode; label: string }[];
+  selectedLabel: string;
+  options: readonly {
+    value: AssistantMode;
+    label: string;
+    subtitle: string;
+    icon: IconName;
+  }[];
   onModeChange: (mode: AssistantMode) => void;
-  onCaptionsChange: (value: boolean) => void;
   onClose: () => void;
 }
 
 export function ModeSheet({
   visible,
   mode,
-  captionsOn,
   title,
-  captionsLabel,
+  selectedLabel,
   options,
   onModeChange,
-  onCaptionsChange,
   onClose,
 }: ModeSheetProps) {
   return (
     <Sheet visible={visible} onClose={onClose} title={title}>
-      <SegmentedControl<AssistantMode> value={mode} onChange={onModeChange} options={options} />
-      {mode === 'live' ? (
-        <ToggleRow label={captionsLabel} value={captionsOn} onValueChange={onCaptionsChange} />
-      ) : null}
+      {options.map((option) => {
+        const selected = option.value === mode;
+        return (
+          <ListRow
+            key={option.value}
+            title={option.label}
+            subtitle={option.subtitle}
+            icon={option.icon}
+            checked={selected}
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            accessibilityLabel={assistantModeAccessibilityLabel({
+              title: option.label,
+              subtitle: option.subtitle,
+              selectedLabel: selected ? selectedLabel : null,
+            })}
+            onPress={() => {
+              onModeChange(option.value);
+              onClose();
+            }}
+          />
+        );
+      })}
     </Sheet>
   );
 }

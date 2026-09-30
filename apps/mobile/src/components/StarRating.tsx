@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { Icon } from './Icon';
-import { spacing } from '../theme';
+import { starTone } from './control-tones';
 import { useTheme } from '../theme/useTheme';
 
 export interface StarRatingProps {
@@ -23,30 +23,28 @@ const STARS = [1, 2, 3, 4, 5];
 export function StarRating({ value, onChange, labelFor, disabled }: StarRatingProps) {
   const { colors } = useTheme();
   return (
-    <View style={{ flexDirection: 'row', gap: spacing.xs }} accessibilityRole="radiogroup">
-      {STARS.map((star) => (
-        <Pressable
-          key={star}
-          onPress={() => onChange(star)}
-          disabled={disabled}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: value === star, disabled: Boolean(disabled) }}
-          accessibilityLabel={labelFor(star)}
-          // 44x44 is Apple's minimum target and Android's 48dp rounds into it.
-          style={{
-            minWidth: 44,
-            minHeight: 44,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon
-            name={star <= value ? 'star' : 'starOutline'}
-            size={30}
-            color={star <= value ? colors.primaryText : colors.textMuted}
-          />
-        </Pressable>
-      ))}
+    <View style={{ flexDirection: 'row', gap: 4 }} accessibilityRole="radiogroup">
+      {STARS.map((star) => {
+        const tone = starTone(colors, star <= value);
+        return (
+          <Pressable
+            key={star}
+            onPress={() => onChange(star)}
+            disabled={disabled}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: value === star, disabled: Boolean(disabled) }}
+            accessibilityLabel={labelFor(star)}
+            style={{
+              minWidth: 44,
+              minHeight: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon name={tone.icon} size={20} color={tone.glyph} filled={tone.filled} />
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

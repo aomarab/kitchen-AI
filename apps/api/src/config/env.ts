@@ -14,6 +14,14 @@ const envSchema = z.object({
    * cookies. Empty in development means "reflect the caller".
    */
   CORS_ORIGINS: z.string().default(''),
+  /**
+   * Reverse proxies in front of the API (Express `trust proxy` hop count).
+   * Per-IP limits read `request.ip`; behind Caddy with 0 every client shares
+   * the proxy's address, so one abuser would lock everyone out. Set 1 only when
+   * the API port is reachable solely through that proxy — otherwise a direct
+   * caller can forge `X-Forwarded-For`.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
 
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
@@ -109,6 +117,16 @@ const envSchema = z.object({
   AI_DAILY_BUDGET_USD: z.coerce.number().nonnegative().default(2),
 
   YOUTUBE_API_KEY: z.string().default(''),
+  /**
+   * Overrides AI_MOCK for YouTube alone; unset or empty follows AI_MOCK. With
+   * `YOUTUBE_MOCK=false` and `AI_MOCK=true`, recipes get real dish videos and
+   * hero thumbnails while every paid model call stays mocked — YouTube costs
+   * quota, not money. Resolve it through {@link youtubeMock}.
+   */
+  YOUTUBE_MOCK: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((value) => (value === 'true' ? true : value === 'false' ? false : undefined)),
   OPEN_FOOD_FACTS_URL: z.string().url().default('https://world.openfoodfacts.org'),
 
   /**
@@ -122,6 +140,17 @@ const envSchema = z.object({
   PAYMENTS_MOCK: z
     .enum(['true', 'false'])
     .default('true')
+    .transform((value) => value === 'true'),
+  /**
+   * When true, purchase creation/confirmation and purchase-crediting webhooks
+   * are disabled while balance reads and credit spending keep working. This is
+   * the safe production posture before store products and RevenueCat are live:
+   * `PAYMENTS_MOCK` may remain true for offline boot, but no receipt can mint
+   * paid credits.
+   */
+  PAYMENTS_DISABLED: z
+    .enum(['true', 'false'])
+    .default('false')
     .transform((value) => value === 'true'),
   /** RevenueCat REST key; used by the verifier to confirm a store receipt. */
   REVENUECAT_API_KEY: z.string().default(''),
@@ -161,6 +190,15 @@ const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
       });
     }
   }
+  // An explicit opt-in to live YouTube with no key would 403 every search and
+  // quietly degrade every recipe to the placeholder, so refuse it in any mode.
+  if (env.YOUTUBE_MOCK === false && env.YOUTUBE_API_KEY.trim() === '') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['YOUTUBE_API_KEY'],
+      message: 'is required when YOUTUBE_MOCK is false',
+    });
+  }
   if (env.NODE_ENV === 'production' && !env.AI_MOCK && env.OPENAI_API_KEY.trim() === '') {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -168,10 +206,19 @@ const validatedEnvSchema = envSchema.superRefine((env, ctx) => {
       message: 'is required when AI_MOCK is false',
     });
   }
+  if (env.NODE_ENV === 'production' && env.PAYMENTS_MOCK && !env.PAYMENTS_DISABLED) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['PAYMENTS_MOCK'],
+      message:
+        'approves every receipt; set PAYMENTS_MOCK=false with RevenueCat keys, or PAYMENTS_DISABLED=true to ship without purchases',
+    });
+  }
   // With payments live the webhook signature is the only barrier to free
   // credits, and the verifier cannot call RevenueCat without a key — a missing
-  // secret or key would silently open or break the money path.
-  if (env.NODE_ENV === 'production' && !env.PAYMENTS_MOCK) {
+  // secret or key would silently open or break the money path. Deployments with
+  // purchases disabled do not need RevenueCat material yet.
+  if (env.NODE_ENV === 'production' && !env.PAYMENTS_DISABLED && !env.PAYMENTS_MOCK) {
     for (const key of ['REVENUECAT_API_KEY', 'REVENUECAT_WEBHOOK_SECRET'] as const) {
       if (env[key].trim() === '') {
         ctx.addIssue({
@@ -245,6 +292,11 @@ export function corsOrigins(env: Env): string[] | true {
     .map((o) => o.trim())
     .filter(Boolean);
   return list.length > 0 ? list : true;
+}
+
+/** Whether YouTube runs on fixtures: `YOUTUBE_MOCK` when set, otherwise AI_MOCK. */
+export function youtubeMock(env: Env): boolean {
+  return env.YOUTUBE_MOCK ?? env.AI_MOCK;
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {

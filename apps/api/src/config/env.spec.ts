@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { corsOrigins, loadEnv } from './env.js';
+import { corsOrigins, loadEnv, youtubeMock } from './env.js';
 
 const base = {
   DATABASE_URL: 'postgres://u:p@localhost:5432/kitchen',
@@ -18,11 +18,21 @@ const prodBase = {
   CORS_ORIGINS: 'https://kitchen.app',
   GOOGLE_CLIENT_ID: 'my-client.apps.googleusercontent.com',
   APPLE_CLIENT_ID: 'app.kitchen.ios',
+  // Production fixtures default to "ship without purchases": PAYMENTS_MOCK
+  // still approves everything, so the guard permits it only when the purchase
+  // routes/webhook are disabled.
+  PAYMENTS_DISABLED: 'true',
 } as unknown as NodeJS.ProcessEnv;
 
 describe('environment contract', () => {
   it('defaults to the port both clients point at', () => {
     expect(loadEnv({ ...base }).API_PORT).toBe(3333);
+  });
+
+  it('trusts no proxy unless a hop count is configured', () => {
+    expect(loadEnv({ ...base }).TRUST_PROXY_HOPS).toBe(0);
+    expect(loadEnv({ ...base, TRUST_PROXY_HOPS: '1' }).TRUST_PROXY_HOPS).toBe(1);
+    expect(() => loadEnv({ ...base, TRUST_PROXY_HOPS: 'true' })).toThrow(/TRUST_PROXY_HOPS/);
   });
 
   it('reflects the caller in development when no origins are listed', () => {
@@ -67,8 +77,35 @@ describe('environment contract', () => {
     expect(loadEnv({ ...prodBase }).AI_MOCK).toBe(true);
   });
 
-  it('defaults to the mock payment verifier, so the API boots with no RevenueCat account', () => {
-    expect(loadEnv({ ...prodBase }).PAYMENTS_MOCK).toBe(true);
+  it('keeps YouTube on AI_MOCK when YOUTUBE_MOCK is unset or empty', () => {
+    expect(youtubeMock(loadEnv({ ...base }))).toBe(true);
+    expect(youtubeMock(loadEnv({ ...base, YOUTUBE_MOCK: '' }))).toBe(true);
+    expect(youtubeMock(loadEnv({ ...base, AI_MOCK: 'false' }))).toBe(false);
+  });
+
+  it('lets YOUTUBE_MOCK override AI_MOCK in either direction', () => {
+    expect(
+      youtubeMock(loadEnv({ ...base, YOUTUBE_MOCK: 'false', YOUTUBE_API_KEY: 'yt-key' })),
+    ).toBe(false);
+    expect(youtubeMock(loadEnv({ ...base, AI_MOCK: 'false', YOUTUBE_MOCK: 'true' }))).toBe(true);
+  });
+
+  it('refuses live YouTube without a key, even in development', () => {
+    expect(() => loadEnv({ ...base, YOUTUBE_MOCK: 'false' })).toThrow(/YOUTUBE_API_KEY/);
+  });
+
+  it('defaults to the mock payment verifier in development, so local boots need no RevenueCat account', () => {
+    expect(loadEnv({ ...base }).PAYMENTS_MOCK).toBe(true);
+  });
+
+  it('refuses production when the always-approves payment mock is enabled without disabling purchases', () => {
+    expect(() => loadEnv({ ...prodBase, PAYMENTS_DISABLED: 'false' })).toThrow(/PAYMENTS_MOCK/);
+  });
+
+  it('boots in production with payment purchases disabled while the mock verifier remains configured', () => {
+    const env = loadEnv(prodBase);
+    expect(env.PAYMENTS_MOCK).toBe(true);
+    expect(env.PAYMENTS_DISABLED).toBe(true);
   });
 
   // `PAYMENTS_MOCK=false` must genuinely switch off the always-approves mock —
@@ -80,6 +117,7 @@ describe('environment contract', () => {
       expect(() =>
         loadEnv({
           ...prodBase,
+          PAYMENTS_DISABLED: 'false',
           PAYMENTS_MOCK: 'false',
           // Provide the *other* key so only `key` is the missing one under test.
           REVENUECAT_API_KEY: key === 'REVENUECAT_API_KEY' ? '' : 'rc-key',
@@ -92,11 +130,13 @@ describe('environment contract', () => {
   it('boots in production with live payments once both RevenueCat values are set', () => {
     const env = loadEnv({
       ...prodBase,
+      PAYMENTS_DISABLED: 'false',
       PAYMENTS_MOCK: 'false',
       REVENUECAT_API_KEY: 'rc-key',
       REVENUECAT_WEBHOOK_SECRET: 'rc-secret',
     });
     expect(env.PAYMENTS_MOCK).toBe(false);
+    expect(env.PAYMENTS_DISABLED).toBe(false);
   });
 
   // Without a client id the `aud` claim is unpinned, so an ID token minted for

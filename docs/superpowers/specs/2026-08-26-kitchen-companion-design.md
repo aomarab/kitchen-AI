@@ -319,6 +319,33 @@ were decided differently from the sketch above, and the reasons matter more than
   rather than reusing the `@kitchen/i18n` display abbreviations, which are sized for tight layouts
   and which a speech model would read aloud as letters.
 
+- **Typed chat uses the provider's WebSocket, not WebRTC** (mobile, 2026-09-29). Measured against
+  the live provider: `/v1/realtime/calls` rejects an SDP offer with no audio section (400
+  `invalid_offer`), so a mic-less chat never connected. A receive-only audio section connects,
+  but `react-native-webrtc` then starts the audio device. On a phone that opens an audio session
+  while the user is only typing (music pauses). On the iOS Simulator it deadlocks CoreAudio and
+  aborts the app. So `audio: false` opens `wss://…/v1/realtime?model=…`, derived from the
+  server-supplied `callsUrl`, with the ephemeral secret as a bearer header. React Native's
+  `WebSocket` accepts headers; the browser's does not, so web keeps the receive-only transceiver.
+  The events are the same as on the data channel. On `open` a `session.update` switches replies to
+  text (`response.output_text.done`). A socket that closes before `open` is reported as
+  `assistant.connectFailed`, never as a silent end.
+- **Sight is conditional on an image having arrived.** One minted session serves chat, voice and
+  live camera, and only live sends frames. The original instruction ("a kitchen assistant who can
+  see through the camera") made the model answer a typed "what can I make tonight?" by describing
+  peppers "on your counter" and offering to log them. The instructions now say it cannot see unless
+  an image has been sent, and `report_items` is only for items in a camera image. Both real
+  adapters also drop `report_items` from a session with no camera, which is the port's existing
+  rule that only a camera session reports detections.
+- **Mobile surfaces adapter errors.** `LiveAssistantScreen` maps the port's `error` codes to
+  `mobile.assistant.error*` copy (`lib/assistant/failure.ts`). A failure that ends the session shows
+  an overlay with Retry — except a mint refused for credits (402 `INSUFFICIENT_CREDITS`, mapped to
+  `assistant.outOfCredits`). Retry can never fix that one, so the overlay reads "Out of credits",
+  offers Get more credits, and starts a fresh session once when the user comes back from buying.
+  A failed reply mid-session shows an inline caption. The connection label
+  reads `disconnected` once ended, not `connected`. The demo-only copy ("sample", "Demo mode") has
+  `*Live` variants chosen by `isMock`.
+
 Fault injection for all of the above lives in `scripts/fault-inject-assistant.mjs` (50 defects, each
 caught by the check that names it). Run it **after** Prettier: anchors are string-exact, and one of
 them silently went stale when Prettier rewrapped a ternary, leaving that rule unproven until the

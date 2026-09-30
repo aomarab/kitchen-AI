@@ -8,6 +8,7 @@ import type {
   StartAssistantOptions,
 } from './realtime-port';
 import { MockRealtimeAssistantClient } from './mock-realtime';
+import { isInsufficientCredits } from '../errors';
 
 /**
  * The live assistant's real transport on **mobile** (kitchen companion spec —
@@ -54,6 +55,8 @@ const reportItemsArgsSchema = z.object({ items: z.array(reportedItemSchema) });
 
 /** Server events we act on. Everything else on the data channel is ignored. */
 const TRANSCRIPT_DONE = 'response.output_audio_transcript.done';
+/** A text-only session's reply: there is no audio, so no audio transcript. */
+const TEXT_DONE = 'response.output_text.done';
 const USER_TRANSCRIPT_DONE = 'conversation.item.input_audio_transcription.completed';
 const FUNCTION_ARGS_DONE = 'response.function_call_arguments.done';
 
@@ -89,6 +92,7 @@ const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } as
 interface ServerEvent {
   type?: string;
   transcript?: string;
+  text?: string;
   name?: string;
   arguments?: string;
   item_id?: string;
@@ -136,6 +140,43 @@ interface PeerConnectionLike {
 
 type GetUserMedia = (constraints: { audio: boolean; video: boolean }) => Promise<StreamLike>;
 
+/** The slice of React Native's `WebSocket` the text transport uses. */
+interface SocketLike {
+  addEventListener(
+    type: 'open' | 'message' | 'error' | 'close',
+    listener: (event: { data?: unknown }) => void,
+  ): void;
+  send(data: string): void;
+  close(): void;
+}
+
+type CreateSocket = (url: string, clientSecret: string) => SocketLike;
+
+/**
+ * The provider's WebSocket endpoint, derived from the server-supplied WebRTC
+ * `callsUrl` (`https://…/v1/realtime/calls` → `wss://…/v1/realtime`) so that the
+ * server still decides which provider and API version a client talks to.
+ */
+export function realtimeSocketUrl(session: Pick<RealtimeSession, 'callsUrl' | 'model'>): string {
+  const base = session.callsUrl.replace(/^https:/, 'wss:').replace(/\/calls\/?$/, '');
+  return `${base}?model=${encodeURIComponent(session.model)}`;
+}
+
+/**
+ * React Native's `WebSocket` takes headers as a third argument (the browser's
+ * does not), which lets the ephemeral secret travel as a normal bearer header.
+ */
+const nativeSocket: CreateSocket = (url, clientSecret) => {
+  const RnWebSocket = WebSocket as unknown as new (
+    url: string,
+    protocols: undefined,
+    options: { headers: Record<string, string> },
+  ) => SocketLike;
+  return new RnWebSocket(url, undefined, {
+    headers: { Authorization: `Bearer ${clientSecret}` },
+  });
+};
+
 /**
  * Lazily reach the native module, only ever on a real session. A static import
  * would load `react-native-webrtc` when this file is imported, which the
@@ -156,6 +197,8 @@ export interface OpenAiRealtimeOptions {
   createPeerConnection?: () => PeerConnectionLike;
   /** Overridable for tests; defaults to the native microphone. */
   getUserMedia?: GetUserMedia;
+  /** Overridable for tests; defaults to React Native's `WebSocket`. */
+  createSocket?: CreateSocket;
   /**
    * Produces one downscaled JPEG data URL from the live camera, or `null` when
    * a frame cannot be made. Injected by the screen (it owns the `CameraView`),
@@ -181,7 +224,8 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
   /** Set when the API says this deployment is mocked; we then defer to it. */
   private mock: MockRealtimeAssistantClient | null = null;
   private pc: PeerConnectionLike | null = null;
-  private channel: DataChannelLike | null = null;
+  /** The event channel: the WebRTC data channel, or the socket of a typed chat. */
+  private channel: Pick<DataChannelLike, 'send' | 'close'> | null = null;
   private stopped = false;
   private detectionSeq = 0;
   /**
@@ -200,9 +244,12 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
   private capturing = false;
   /** Last requested mute state, applied to tracks acquired after the toggle. */
   private micMuted = false;
+  /** Whether this session has a camera; only a camera session reports detections. */
+  private camera = true;
 
   private readonly createPeerConnection: () => PeerConnectionLike;
   private readonly getUserMedia: GetUserMedia;
+  private readonly createSocket: CreateSocket;
   private readonly captureFrame?: () => Promise<string | null>;
 
   constructor(private readonly options: OpenAiRealtimeOptions) {
@@ -210,22 +257,28 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
       options.createPeerConnection ?? (() => new (nativeWebrtc().RTCPeerConnection)(RTC_CONFIG));
     this.getUserMedia =
       options.getUserMedia ?? ((c) => nativeWebrtc().mediaDevices.getUserMedia(c));
+    this.createSocket = options.createSocket ?? nativeSocket;
     this.captureFrame = options.captureFrame;
   }
 
   async start({ locale, camera, audio, onEvent }: StartAssistantOptions): Promise<void> {
-    if (this.pc || this.mock) return;
+    if (this.pc || this.channel || this.mock) return;
     this.stopped = false;
     this.emit = onEvent;
     this.speaking = false;
+    this.camera = camera !== false;
     onEvent({ type: 'status', status: 'connecting' });
 
     let session: RealtimeSession;
     try {
       session = await this.options.createSession(locale);
-    } catch {
+    } catch (error) {
       // The mint is where credits are spent and where an outage shows up first.
-      onEvent({ type: 'error', code: 'assistant.mintFailed' });
+      // An empty balance gets its own code: retrying it can never succeed.
+      onEvent({
+        type: 'error',
+        code: isInsufficientCredits(error) ? 'assistant.outOfCredits' : 'assistant.mintFailed',
+      });
       onEvent({ type: 'status', status: 'ended' });
       return;
     }
@@ -240,6 +293,15 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
     }
     this.mintedReal = true;
 
+    // A typed chat never touches WebRTC. The provider rejects an offer with no
+    // audio section, and even a receive-only one makes the native module start
+    // the audio device — an audio session on the phone (music pauses) and a
+    // CoreAudio deadlock that kills the app on the iOS Simulator.
+    if (audio === false) {
+      this.openSocket(session, camera, onEvent);
+      return;
+    }
+
     const pc = this.createPeerConnection();
     this.pc = pc;
     // Remote audio is played by the native module once a track arrives; there is
@@ -247,28 +309,26 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
     // future speaker-routing hook has somewhere to live.
     pc.ontrack = () => {};
 
-    // Acquire and publish the microphone, unless this is a text-only session.
-    // Publishing only audio is deliberate: a speech-to-speech model gains
-    // nothing from a video track, and adding one would ship the user's kitchen
-    // to the provider unannounced — sight is given as periodic stills instead.
-    if (audio !== false) {
-      try {
-        const stream = await this.getUserMedia({ audio: true, video: false });
-        if (this.stopped) {
-          for (const track of stream.getTracks()) track.stop();
-          return;
-        }
-        for (const track of stream.getAudioTracks()) {
-          track.enabled = !this.micMuted;
-          this.micTracks.push(track);
-          pc.addTrack(track, stream);
-        }
-      } catch {
-        onEvent({ type: 'error', code: 'assistant.micDenied' });
-        await this.stop();
-        onEvent({ type: 'status', status: 'ended' });
+    // Acquire and publish the microphone. Publishing only audio is deliberate:
+    // a speech-to-speech model gains nothing from a video track, and adding one
+    // would ship the user's kitchen to the provider unannounced — sight is given
+    // as periodic stills instead.
+    try {
+      const stream = await this.getUserMedia({ audio: true, video: false });
+      if (this.stopped) {
+        for (const track of stream.getTracks()) track.stop();
         return;
       }
+      for (const track of stream.getAudioTracks()) {
+        track.enabled = !this.micMuted;
+        this.micTracks.push(track);
+        pc.addTrack(track, stream);
+      }
+    } catch {
+      onEvent({ type: 'error', code: 'assistant.micDenied' });
+      await this.stop();
+      onEvent({ type: 'status', status: 'ended' });
+      return;
     }
 
     const channel = pc.createDataChannel('oai-events');
@@ -278,12 +338,7 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
     });
     channel.addEventListener('open', () => {
       if (this.stopped) return;
-      onEvent({ type: 'status', status: 'live' });
-      // Sight begins when the channel can carry a message, and only if there is
-      // a camera to sample. A stop() before this clears the timer again.
-      if (camera && this.captureFrame) {
-        this.frameTimer = setInterval(() => void this.sendFrame(), FRAME_INTERVAL_MS);
-      }
+      this.goLive(camera, onEvent);
     });
 
     try {
@@ -307,6 +362,68 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
       onEvent({ type: 'error', code: 'assistant.connectFailed' });
       await this.stop();
       onEvent({ type: 'status', status: 'ended' });
+    }
+  }
+
+  /**
+   * The text transport: the provider's WebSocket endpoint, which carries the
+   * same client and server events as the WebRTC data channel but no media.
+   * Replies are switched to text on `open` — a typed chat is read, not played
+   * aloud over the kitchen, and no output audio is billed.
+   */
+  private openSocket(
+    session: RealtimeSession,
+    camera: boolean | undefined,
+    onEvent: (event: AssistantEvent) => void,
+  ): void {
+    let socket: SocketLike;
+    try {
+      socket = this.createSocket(realtimeSocketUrl(session), session.clientSecret);
+    } catch {
+      onEvent({ type: 'error', code: 'assistant.connectFailed' });
+      void this.stop().then(() => onEvent({ type: 'status', status: 'ended' }));
+      return;
+    }
+    this.channel = socket;
+
+    let opened = false;
+    let failed = false;
+    // A socket has no ICE to recover a dropped link, so any close the user did
+    // not ask for ends the session — as a failure unless the server closed it
+    // cleanly after it had been live.
+    const finish = () => {
+      if (this.stopped) return;
+      if (failed || !opened) onEvent({ type: 'error', code: 'assistant.connectFailed' });
+      void this.stop().then(() => onEvent({ type: 'status', status: 'ended' }));
+    };
+
+    socket.addEventListener('open', () => {
+      if (this.stopped) return;
+      opened = true;
+      socket.send(
+        JSON.stringify({
+          type: 'session.update',
+          session: { type: 'realtime', output_modalities: ['text'] },
+        }),
+      );
+      this.goLive(camera, onEvent);
+    });
+    socket.addEventListener('message', (event) => {
+      if (typeof event.data === 'string') this.handleServerEvent(event.data, onEvent);
+    });
+    socket.addEventListener('error', () => {
+      failed = true;
+      finish();
+    });
+    socket.addEventListener('close', finish);
+  }
+
+  private goLive(camera: boolean | undefined, onEvent: (event: AssistantEvent) => void): void {
+    onEvent({ type: 'status', status: 'live' });
+    // Sight begins when the channel can carry a message, and only if there is a
+    // camera to sample. A stop() before this clears the timer again.
+    if (camera && this.captureFrame) {
+      this.frameTimer = setInterval(() => void this.sendFrame(), FRAME_INTERVAL_MS);
     }
   }
 
@@ -423,13 +540,19 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
       return;
     }
 
-    if (event.type === TRANSCRIPT_DONE && event.transcript) {
+    const assistantText =
+      event.type === TRANSCRIPT_DONE
+        ? event.transcript
+        : event.type === TEXT_DONE
+          ? event.text
+          : undefined;
+    if (assistantText) {
       onEvent({
         type: 'transcript',
         turn: {
           id: event.item_id ?? event.event_id ?? `a${this.detectionSeq++}`,
           role: 'assistant',
-          text: event.transcript,
+          text: assistantText,
         },
       });
       return;
@@ -448,6 +571,9 @@ export class OpenAiRealtimeAssistantClient implements RealtimeAssistantClient {
     }
 
     if (event.type === FUNCTION_ARGS_DONE && event.name === 'report_items' && event.arguments) {
+      // The port's rule, enforced here as well as in the prompt: with no camera
+      // there is nothing to have seen, so any "detection" is invented.
+      if (!this.camera) return;
       const items = this.parseDetections(event.arguments);
       // An empty result is not the same as no result: reporting `[]` after every
       // failed parse would flicker the detection list to empty whenever the

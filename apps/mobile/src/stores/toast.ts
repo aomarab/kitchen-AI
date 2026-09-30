@@ -7,6 +7,7 @@ export interface ToastOptions {
   message: string;
   actionLabel?: string;
   onAction?: () => void;
+  tone?: 'default' | 'error';
 }
 
 interface ToastState {

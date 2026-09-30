@@ -1,25 +1,63 @@
 import { useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { Animated, Pressable, View, useWindowDimensions } from 'react-native';
 import { CameraView, type BarcodeScanningResult } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import type { RouteResponse, Unit } from '@kitchen/contracts';
-import { AppText, Badge, Button, Card, Chip, Field, QuantityStepper } from '../../components';
+import { AppText, Badge, Button, Card, Chip, Field, Icon, QuantityStepper } from '../../components';
+import { usePressFeedback } from '../../components/press-feedback';
 import { CameraGate, useCameraAccess } from './CameraGate';
-import { CaptureChrome, type CaptureMediaMethod } from './CaptureChrome';
+import { CaptureChrome, type CaptureMediaMethod, type CaptureMethod } from './CaptureChrome';
+import { CaptureTorchButton } from './CaptureTorchButton';
 import { useFormat } from '../../hooks/useFormat';
 import { useBarcodeLookup } from '../../hooks/capture';
 import { useLocations, useBulkCreateInventory } from '../../hooks/inventory';
 import { locationLabel, unitLabel } from '../../lib/format';
 import { buildBarcodeInput } from '../../lib/capture';
-import { radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 type Lookup = RouteResponse<'lookupBarcode'>;
 
 interface BarcodeCaptureProps {
   method: CaptureMediaMethod;
-  onMethodChange: (method: CaptureMediaMethod) => void;
+  onMethodChange: (method: CaptureMethod) => void;
   onClose: () => void;
+}
+
+function ManualEntryButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  const pressFeedback = usePressFeedback();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      {...pressFeedback.pressHandlers}
+      style={{ minHeight: 44, justifyContent: 'center' }}
+    >
+      <Animated.View
+        style={[
+          {
+            minHeight: 36,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.xs,
+            paddingHorizontal: 14,
+            borderWidth: 1,
+            borderColor: colors.textInverseMuted,
+            backgroundColor: colors.mediaButton,
+          },
+          pressFeedback.animatedStyle,
+        ]}
+      >
+        <Icon name="keyboard" size={16} color={colors.textInverse} />
+        <AppText variant="buttonSmall" style={{ color: colors.textInverse }}>
+          {label}
+        </AppText>
+      </Animated.View>
+    </Pressable>
+  );
 }
 
 /** Barcode capture: scan or type a code, look it up, then confirm the single add. */
@@ -36,6 +74,8 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
   const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState<Unit>('piece');
   const [locationId, setLocationId] = useState<string>('');
+  const [torch, setTorch] = useState(false);
+  const [manualEntryOpen, setManualEntryOpen] = useState(false);
 
   const lookup = useBarcodeLookup();
   const locations = useLocations();
@@ -64,81 +104,91 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
   };
 
   const guideSize = Math.min(width * 0.72, 280);
+  const manualEntryVisible = manualEntryOpen || cameraPermission?.granted === false;
+  const displayUnit = unitLabel(t, unit);
 
-  const bottom = (
-    <View style={{ padding: spacing.lg, gap: spacing.sm }}>
-      <Card style={{ gap: spacing.sm }}>
-        <AppText variant="caption" muted>
-          {t('mobile.capture.scanBarcodeHint')}
-        </AppText>
-        <Field
-          label={t('mobile.capture.enterBarcode')}
-          value={manual}
-          onChangeText={setManual}
-          placeholder={t('mobile.capture.barcodeManual')}
-          keyboardType="number-pad"
-          returnKeyType="search"
-          onSubmitEditing={() => void runLookup(manual)}
-        />
-        <Button
-          title={t('common.search')}
-          variant="secondary"
-          loading={lookup.isPending}
-          onPress={() => void runLookup(manual)}
-        />
-        {result && !result.found ? (
-          <AppText muted center>
-            {t('capture.barcodeNotFound')}
-          </AppText>
-        ) : null}
-      </Card>
+  const trailing = cameraPermission?.granted ? (
+    <CaptureTorchButton enabled={torch} onToggle={() => setTorch((value) => !value)} />
+  ) : null;
 
-      {result?.found ? (
-        <Card style={{ gap: spacing.md }}>
-          <View style={{ gap: 2 }}>
-            <AppText variant="heading">{result.productName}</AppText>
-            {result.brand ? (
-              <AppText variant="caption" muted>
-                {result.brand}
-              </AppText>
-            ) : null}
-            {result.match ? <Badge tone="info" label={t('recipe.inStock')} /> : null}
-          </View>
-          <QuantityStepper
-            value={quantity}
-            onChange={setQuantity}
-            unit={unitLabel(t, unit)}
-            accessibilityLabel={t('inventory.quantity')}
-            decrementLabel={t('mobile.common.decrease')}
-            incrementLabel={t('mobile.common.increase')}
+  const bottom =
+    manualEntryVisible || result ? (
+      <View style={{ padding: spacing.lg, gap: spacing.sm }}>
+        <Card style={{ gap: spacing.sm }}>
+          <Field
+            label={t('mobile.capture.enterBarcode')}
+            value={manual}
+            onChangeText={setManual}
+            placeholder={t('mobile.capture.barcodeManual')}
+            keyboardType="number-pad"
+            returnKeyType="search"
+            onSubmitEditing={() => void runLookup(manual)}
           />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {(locations.data ?? []).map((loc) => (
-              <Chip
-                key={loc.id}
-                label={locationLabel(t, loc)}
-                selected={locationId === loc.id}
-                onPress={() => setLocationId(loc.id)}
-              />
-            ))}
-          </View>
           <Button
-            title={t('inventory.addItem')}
-            icon="check"
-            loading={create.isPending}
-            disabled={!locationId}
-            onPress={() => void confirm()}
+            title={t('common.search')}
+            variant="secondary"
+            loading={lookup.isPending}
+            onPress={() => void runLookup(manual)}
           />
+          {result && !result.found ? (
+            <AppText muted center>
+              {t('capture.barcodeNotFound')}
+            </AppText>
+          ) : null}
         </Card>
-      ) : null}
-    </View>
-  );
+
+        {result?.found ? (
+          <Card style={{ gap: spacing.md }}>
+            <View style={{ gap: 2 }}>
+              <AppText variant="heading">{result.productName}</AppText>
+              {result.brand ? (
+                <AppText variant="caption" muted>
+                  {result.brand}
+                </AppText>
+              ) : null}
+              {result.match ? <Badge tone="primary" label={t('recipe.inStock')} /> : null}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <QuantityStepper
+                value={quantity}
+                onChange={setQuantity}
+                unit={displayUnit}
+                accessibilityLabel={t('inventory.quantity')}
+                decrementLabel={t('mobile.common.decrease')}
+                incrementLabel={t('mobile.common.increase')}
+              />
+              <AppText variant="caption" muted>
+                {displayUnit}
+              </AppText>
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              {(locations.data ?? []).map((loc) => (
+                <Chip
+                  key={loc.id}
+                  label={locationLabel(t, loc)}
+                  selected={locationId === loc.id}
+                  onPress={() => setLocationId(loc.id)}
+                />
+              ))}
+            </View>
+            <Button
+              title={t('inventory.addItem')}
+              leadingIcon="check"
+              loading={create.isPending}
+              disabled={!locationId}
+              onPress={() => void confirm()}
+            />
+          </Card>
+        ) : null}
+      </View>
+    ) : undefined;
 
   return (
     <CaptureChrome
       method={method}
       onMethodChange={onMethodChange}
       onClose={onClose}
+      trailing={trailing}
       bottom={bottom}
       onTopLayout={setTopHeight}
       onBottomLayout={setBottomHeight}
@@ -151,23 +201,83 @@ export function BarcodeCapture({ method, onMethodChange, onClose }: BarcodeCaptu
         >
           <CameraView
             style={{ flex: 1 }}
+            enableTorch={torch}
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_e', 'code128', 'qr'] }}
             onBarcodeScanned={onScan}
           />
           <View
-            pointerEvents="none"
+            pointerEvents="box-none"
             style={{
               position: 'absolute',
               alignSelf: 'center',
-              top: '26%',
-              width: guideSize,
-              height: guideSize,
-              borderWidth: 2,
-              borderColor: colors.textInverse,
-              borderRadius: radius.lg,
-              opacity: 0.8,
+              top: '19%',
+              alignItems: 'center',
+              gap: spacing.md,
             }}
-          />
+          >
+            <AppText variant="caption" center style={{ color: colors.textInverse }}>
+              {t('mobile.capture.scanBarcodeHint')}
+            </AppText>
+            <View pointerEvents="none" style={{ width: guideSize, height: guideSize }}>
+              {(['top-start', 'top-end', 'bottom-start', 'bottom-end'] as const).map((corner) => {
+                const [vertical, horizontal] = corner.split('-') as [
+                  'top' | 'bottom',
+                  'start' | 'end',
+                ];
+                return (
+                  <View
+                    key={corner}
+                    style={{
+                      position: 'absolute',
+                      [vertical]: 0,
+                      [horizontal]: 0,
+                      width: 28,
+                      height: 28,
+                    }}
+                  >
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: vertical === 'top' ? 0 : undefined,
+                        bottom: vertical === 'bottom' ? 0 : undefined,
+                        start: 0,
+                        end: 0,
+                        height: 3,
+                        backgroundColor: colors.textInverse,
+                      }}
+                    />
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        start: horizontal === 'start' ? 0 : undefined,
+                        end: horizontal === 'end' ? 0 : undefined,
+                        width: 3,
+                        backgroundColor: colors.textInverse,
+                      }}
+                    />
+                  </View>
+                );
+              })}
+              <View
+                style={{
+                  position: 'absolute',
+                  start: 44,
+                  end: 44,
+                  top: guideSize / 2,
+                  height: 2,
+                  backgroundColor: colors.primaryInverse,
+                }}
+              />
+            </View>
+            {!manualEntryOpen ? (
+              <ManualEntryButton
+                label={t('mobile.capture.enterBarcode')}
+                onPress={() => setManualEntryOpen(true)}
+              />
+            ) : null}
+          </View>
         </CameraGate>
       </View>
     </CaptureChrome>

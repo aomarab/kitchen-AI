@@ -1,17 +1,19 @@
+import { useLocalSearchParams } from 'expo-router';
 import { Screen } from '../components';
 import { LiveAssistantScreen } from '../features/assistant/LiveAssistantScreen';
+import { assistantModeFromParam } from '../lib/assistant/mode';
 
 /**
- * The live assistant is a full-bleed camera surface, so the Screen wrapper
- * carries no padding and no safe-area insets — the screen manages its own insets
- * so the camera reaches the edges while the controls stay clear of them. Screen
- * is still here for the keyboard-aware container the confirm sheet's expiry
- * field depends on.
+ * The assistant manages its own text, voice and full-bleed camera layouts.
+ * `?mode=voice|live` lets Home's shortcuts open straight into a mode; anything
+ * else opens text chat.
  */
 export default function AssistantRoute() {
+  const params = useLocalSearchParams<{ mode?: string }>();
+
   return (
     <Screen padded={false} edges={[]}>
-      <LiveAssistantScreen initialMode="text" />
+      <LiveAssistantScreen initialMode={assistantModeFromParam(params.mode)} />
     </Screen>
   );
 }

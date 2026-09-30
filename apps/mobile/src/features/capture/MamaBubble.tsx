@@ -1,48 +1,73 @@
 import type { ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import { AppText, OrbMascot } from '../../components';
-import type { OrbState } from '../../components/OrbMascot';
-import { radius, spacing } from '../../theme';
+import { AppText } from '../../components';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
+const SHEET_PADDING = 20;
+const MESSAGE_MAX_WIDTH = 290;
+const MESSAGE_PADDING_VERTICAL = 10;
+const MESSAGE_PADDING_HORIZONTAL = 14;
+const ACTION_GAP = 10;
+
 export interface MamaBubbleProps {
-  state?: OrbState;
+  title?: string;
   message: string;
   actions?: ReactNode;
+  accessory?: ReactNode;
+  caption?: string | null;
   error?: string | null;
   style?: StyleProp<ViewStyle>;
 }
 
-/** Floating Mama prompt used by capture shot, looking, result and empty states. */
-export function MamaBubble({ state = 'idle', message, actions, error, style }: MamaBubbleProps) {
-  const { colors, shadow } = useTheme();
+/** Bottom capture prompt. J retires the orb here, keeping only the spoken prompt and actions. */
+export function MamaBubble({
+  title,
+  message,
+  actions,
+  accessory,
+  caption,
+  error,
+  style,
+}: MamaBubbleProps) {
+  const { colors } = useTheme();
   return (
     <View
       style={[
         {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-          padding: spacing.md,
-          borderRadius: radius.lg,
+          gap: spacing.lg,
+          padding: SHEET_PADDING,
           backgroundColor: colors.surface,
-          ...shadow.raised,
         },
         style,
       ]}
     >
-      <OrbMascot size={44} state={state} />
-      <View style={{ flex: 1, gap: spacing.sm }}>
-        <AppText variant="bodyStrong">{message}</AppText>
-        {error ? (
-          <AppText variant="caption" style={{ color: colors.danger }}>
-            {error}
-          </AppText>
-        ) : null}
-        {actions ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>{actions}</View>
-        ) : null}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View
+          style={{
+            maxWidth: MESSAGE_MAX_WIDTH,
+            flexShrink: 1,
+            backgroundColor: colors.surfaceAlt,
+            paddingVertical: MESSAGE_PADDING_VERTICAL,
+            paddingHorizontal: MESSAGE_PADDING_HORIZONTAL,
+          }}
+        >
+          {title ? <AppText variant="bodyStrong">{title}</AppText> : null}
+          <AppText variant="body">{message}</AppText>
+          {error ? (
+            <AppText variant="caption" color="danger" style={{ marginTop: spacing.xs }}>
+              {error}
+            </AppText>
+          ) : null}
+        </View>
+        {accessory ? <View style={{ flexShrink: 0 }}>{accessory}</View> : null}
       </View>
+      {actions ? <View style={{ flexDirection: 'row', gap: ACTION_GAP }}>{actions}</View> : null}
+      {caption ? (
+        <AppText variant="caption" muted>
+          {caption}
+        </AppText>
+      ) : null}
     </View>
   );
 }

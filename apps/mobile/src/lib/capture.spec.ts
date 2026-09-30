@@ -10,6 +10,7 @@ import {
   buildBarcodeInput,
   buildInventoryInputs,
   canAddAll,
+  captureResultActionState,
   includedCount,
   initialReviewRows,
   isLowConfidence,
@@ -279,5 +280,32 @@ describe('canAddAll', () => {
 
   it('is false for an empty session', () => {
     expect(canAddAll(session([]), LOCATIONS)).toBe(false);
+  });
+});
+
+describe('captureResultActionState', () => {
+  it('offers review only when an item is unsure', () => {
+    expect(
+      captureResultActionState(
+        session([recognized(), recognized({ tempId: 'tmp-2', confidence: LOW_CONFIDENCE - 0.01 })]),
+        LOCATIONS,
+      ),
+    ).toEqual({ kind: 'review' });
+  });
+
+  it('offers review only while no storage location can be mapped', () => {
+    expect(captureResultActionState(session([recognized()]), [])).toEqual({ kind: 'review' });
+  });
+
+  it('offers add-all with the item count only through the canAddAll gate', () => {
+    expect(
+      captureResultActionState(
+        session([
+          recognized({ tempId: 'tmp-1', suggestedLocationType: 'fridge' }),
+          recognized({ tempId: 'tmp-2', suggestedLocationType: 'pantry' }),
+        ]),
+        LOCATIONS,
+      ),
+    ).toEqual({ kind: 'addAll', count: 2 });
   });
 });

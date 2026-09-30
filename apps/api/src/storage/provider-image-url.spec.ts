@@ -97,6 +97,19 @@ describe('StorageService.providerImageUrl', () => {
     expect(url.startsWith('data:image/jpeg;base64,')).toBe(true);
   });
 
+  it('maps a missing object to NOT_FOUND rather than a server error', async () => {
+    const service = buildService('http://localhost:9010', bytes);
+    const missing = Object.assign(new Error('The specified key does not exist.'), {
+      name: 'NoSuchKey',
+    });
+    (service as unknown as { client: { send: () => Promise<never> } }).client = {
+      send: () => Promise.reject(missing),
+    };
+    await expect(service.providerImageUrl(household, key)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+  });
+
   it('presigns rather than inlining when storage is public', async () => {
     const url = await buildService(
       'https://s3.us-east-1.amazonaws.com',

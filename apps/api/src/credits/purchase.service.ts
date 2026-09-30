@@ -10,6 +10,7 @@ import { DB, type Database } from '../db/index.js';
 import { creditPurchases } from '../db/schema.js';
 import { AppError } from '../common/errors.js';
 import { numeric } from '../common/serialization.js';
+import { ENV, type Env } from '../config/env.js';
 import { CreditsService } from './credits.service.js';
 import { PAYMENT_VERIFIER, type PaymentVerifier } from './payment-verifier.js';
 
@@ -23,6 +24,7 @@ export interface WebhookEvent {
   /** Absent on the events we ignore (e.g. RevenueCat's TEST ping). */
   storeTransactionId?: string;
   productId?: string;
+  environment?: string;
   store: 'apple' | 'google';
 }
 
@@ -55,6 +57,11 @@ export class PurchaseService {
     @Inject(DB) private readonly db: Database,
     @Inject(CreditsService) private readonly credits: CreditsService,
     @Inject(PAYMENT_VERIFIER) private readonly verifier: PaymentVerifier,
+    @Inject(ENV)
+    private readonly env: Pick<Env, 'NODE_ENV' | 'PAYMENTS_DISABLED'> = {
+      NODE_ENV: 'test',
+      PAYMENTS_DISABLED: false,
+    },
   ) {}
 
   /**
@@ -67,6 +74,8 @@ export class PurchaseService {
     userId: string,
     productId: string,
   ): Promise<PurchaseIntent> {
+    this.assertPurchasesEnabled();
+
     const pack = CREDIT_PACKS.find((p) => p.productId === productId);
     if (!pack) {
       throw new AppError('VALIDATION_FAILED', 'errors.VALIDATION_FAILED', {
@@ -91,6 +100,8 @@ export class PurchaseService {
   }
 
   async confirm(householdId: string, body: ConfirmPurchaseRequest): Promise<CreditBalance> {
+    this.assertPurchasesEnabled();
+
     const intent = await this.loadIntent(householdId, body.intentId);
 
     const verified = await this.verifier.verify(
@@ -98,7 +109,11 @@ export class PurchaseService {
       body.storeTransactionId,
       intent.productId,
     );
-    if (!verified.valid) {
+    if (
+      !verified.valid ||
+      verified.productId !== intent.productId ||
+      verified.storeTransactionId !== body.storeTransactionId
+    ) {
       throw new AppError('VALIDATION_FAILED', 'errors.VALIDATION_FAILED', {
         storeTransactionId: body.storeTransactionId,
       });
@@ -115,6 +130,11 @@ export class PurchaseService {
   }
 
   async applyWebhook(event: WebhookEvent): Promise<void> {
+    // Disabled deployments may still receive a RevenueCat retry or stale
+    // webhook. Acknowledge via the controller but never move money; returning a
+    // 5xx would cause RevenueCat to retry forever while purchases are off.
+    if (this.env.PAYMENTS_DISABLED) return;
+
     // `intentId` is RevenueCat's app_user_id; a value that is not one of our
     // intent uuids (an anonymous customer, or an event for some other user) is a
     // safe no-op — and the guard also stops a non-uuid from ever reaching the
@@ -133,6 +153,8 @@ export class PurchaseService {
       // A purchase event without a transaction id cannot be credited (the id is
       // the idempotency backstop); treat it as a no-op rather than a bad write.
       if (!event.storeTransactionId) return;
+      if (event.productId !== intent.productId) return;
+      if (this.isProductionSandbox(event)) return;
       await this.claimAndCredit(
         intent.id,
         intent.householdId,
@@ -144,6 +166,8 @@ export class PurchaseService {
     }
 
     if (REFUND_EVENTS.has(event.type)) {
+      if (event.productId !== intent.productId) return;
+      if (this.isProductionSandbox(event)) return;
       // The status flip and the debit share one transaction: a crash between
       // them must not leave a refunded purchase that never debited (or the
       // reverse). Only the first refund event claims `active` → `refunded`, and
@@ -160,6 +184,15 @@ export class PurchaseService {
         await this.credits.grantPurchase(intent.householdId, -intent.credits, intent.id, tx);
       });
     }
+  }
+
+  private assertPurchasesEnabled(): void {
+    if (!this.env.PAYMENTS_DISABLED) return;
+    throw new AppError('AI_UNAVAILABLE', 'errors.PAYMENTS_DISABLED');
+  }
+
+  private isProductionSandbox(event: WebhookEvent): boolean {
+    return this.env.NODE_ENV === 'production' && event.environment?.toUpperCase() === 'SANDBOX';
   }
 
   /**

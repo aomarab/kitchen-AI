@@ -1,37 +1,24 @@
-import { Children, Fragment, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Card } from './Card';
+import type { ReactNode } from 'react';
+import { View } from 'react-native';
+import { SectionLabel } from './SectionLabel';
 import { spacing } from '../theme';
-import { useTheme } from '../theme/useTheme';
 
 export interface ListGroupProps {
-  /** `ListRow grouped` children, separated by hairlines. */
   children: ReactNode;
+  title?: string;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
-/**
- * A white group card of rows (spec §9.7), as on Account and Settings. The card
- * carries the fill, edge and shadow once, so the rows inside stay flat.
- */
-export function ListGroup({ children }: ListGroupProps) {
-  const { colors } = useTheme();
-  const rows = Children.toArray(children);
+export function ListGroup({ children, title, actionLabel, onAction }: ListGroupProps) {
   return (
-    <Card style={{ padding: 0, gap: 0 }}>
-      {rows.map((row, index) => (
-        <Fragment key={index}>
-          {index > 0 ? (
-            <View
-              style={{
-                height: StyleSheet.hairlineWidth,
-                marginHorizontal: spacing.lg,
-                backgroundColor: colors.border,
-              }}
-            />
-          ) : null}
-          {row}
-        </Fragment>
-      ))}
-    </Card>
+    <View style={{ gap: title ? spacing.sm : 0 }}>
+      {title ? (
+        <SectionLabel actionLabel={actionLabel} onAction={onAction}>
+          {title}
+        </SectionLabel>
+      ) : null}
+      <View>{children}</View>
+    </View>
   );
 }

@@ -62,6 +62,7 @@ export const ar: Messages = {
     RATE_LIMITED: 'طلبات كثيرة جداً. يرجى الانتظار قليلاً.',
     QUOTA_EXCEEDED: 'لقد استهلكت حصة الذكاء الاصطناعي لليوم. ستتجدد غداً.',
     INSUFFICIENT_CREDITS: 'ليس لديك رصيد كافٍ لهذه العملية. أضف رصيداً لمواصلة الطبخ.',
+    PAYMENTS_DISABLED: 'عمليات الشراء غير متاحة حالياً. لا يزال بإمكانك استخدام رصيدك.',
     AI_UNAVAILABLE: 'خدمة الذكاء الاصطناعي غير متاحة حالياً. حاول بعد قليل.',
     AI_INVALID_OUTPUT: 'تعذّرت قراءة استجابة الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.',
     AI_NO_RESULT: 'لم يتم التعرف على أي شيء. جرّب صورة أخرى أو أضف الأصناف يدوياً.',
@@ -79,6 +80,7 @@ export const ar: Messages = {
     timerNotPaused: 'هذا المؤقّت غير متوقّف مؤقتًا.',
     timerTooLong: 'لا يمكن أن يتجاوز المؤقّت اثنتي عشرة ساعة.',
     reminderNotFound: 'هذا التذكير لم يعد موجودًا.',
+    tooManyAttempts: 'محاولات كثيرة جدًا. يرجى الانتظار قبل المحاولة مرة أخرى.',
   },
 
   // Copy taken from the approved prototype `03-wellness-settings.html`, which

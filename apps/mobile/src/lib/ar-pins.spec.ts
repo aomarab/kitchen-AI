@@ -7,6 +7,7 @@ import {
   PIN_LEADER,
   PIN_NUDGE,
   PIN_ROW_TOLERANCE,
+  boxRectForFrame,
   estimateChipWidth,
   layoutPins,
   type PinFrame,
@@ -47,6 +48,29 @@ describe('layoutPins geometry constants', () => {
 });
 
 describe('layoutPins cover mapping', () => {
+  it('maps a normalized detection box into cover-cropped frame coordinates', () => {
+    const frame: PinFrame = {
+      width: 400,
+      height: 200,
+      imageWidth: 100,
+      imageHeight: 200,
+      safeTop: 0,
+      safeBottom: 0,
+    };
+
+    expect(boxRectForFrame({ x: 0.2, y: 0.3, w: 0.4, h: 0.2 }, frame)).toEqual({
+      x: 80,
+      y: -60,
+      width: 160,
+      height: 160,
+    });
+  });
+
+  it('rejects invalid detection boxes before drawing brackets', () => {
+    expect(boxRectForFrame({ x: 0.9, y: 0.2, w: 0.2, h: 0.2 }, baseFrame)).toBeNull();
+    expect(boxRectForFrame(null, baseFrame)).toBeNull();
+  });
+
   it('maps a portrait image into a landscape frame with cover-crop offsets', () => {
     const frame: PinFrame = {
       width: 400,

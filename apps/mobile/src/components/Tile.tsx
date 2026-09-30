@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  Animated,
   type AccessibilityActionEvent,
   Image,
   Pressable,
@@ -23,26 +24,31 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from './AppText';
+import { Badge } from './Badge';
 import { Icon, type IconName } from './Icon';
-import { BENTO_GUTTER, bentoRows, type TileSpan } from './tile-layout';
-import { radius, spacing, type TintName } from '../theme';
+import { Illustration, type IllustrationName } from './Illustration';
+import { usePressFeedback } from './press-feedback';
+import {
+  BENTO_TILE_GAP,
+  bentoGap,
+  bentoRowLayout,
+  type BentoLayoutDescriptor,
+  type BentoVariant,
+  type TileSpan,
+} from './tile-layout';
+import { spacing } from '../theme';
 import { scrimGradient } from '../theme/scrim';
 import { useTheme } from '../theme/useTheme';
 
 export type { TileSpan } from './tile-layout';
-export type TileTint = TintName | 'photo';
+export type TileVariant = 'place' | 'quickAction';
 
 export interface TileProps {
-  /** Read by `Bento`: a whole row, or half of one. */
+  /** Read by `Bento`: a whole row, or part of one. */
   span?: TileSpan;
   /** Read by `Bento`: relative width within a packed row. Defaults to 1. */
   weight?: number;
-  tint?: TileTint;
-  /** Optional override for compact tiles nested inside a larger card. */
-  fill?: 'tint' | 'surfaceAlt';
-  /** Mini tile sizing for dense grids; keeps Tile behaviour but tightens the box. */
-  compact?: boolean;
-  /** The photo under the scrim. Only drawn when `tint` is `'photo'`. */
+  variant?: TileVariant;
   image?: ImageSourcePropType;
   /** Photo tiles keep their legibility scrim unless a caller deliberately opts out. */
   scrim?: boolean;
@@ -54,42 +60,37 @@ export interface TileProps {
   accessibilityState?: AccessibilityState;
   /** Screen-reader actions for visual controls nested inside the one tile element. */
   actions?: { name: string; label: string; onPress: () => void }[];
-  /** Drawn in a 36pt circle at the top. */
   icon?: IconName;
-  /** Drawn at the top-leading position instead of the standard icon circle. */
+  illustration?: IllustrationName;
+  /** Drawn at the top-leading position instead of the standard art slot. */
   leading?: ReactNode;
-  /** The trailing chip or arrow at the top. */
   corner?: ReactNode;
+  badgeLabel?: string;
   count?: string | number;
   caption?: string;
-  /** Extra content in the bottom block, above the count. */
   children?: ReactNode;
-  /** Taller kinds (§6.7): 150 for a count tile, 220 for the hero, 168 for review. */
   height?: number;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
-/** True inside `Bento`, where a tile shares its row or column by flex. */
 const InBento = createContext(false);
+const photoImageStyle: ImageStyle = { width: '100%', height: '100%' };
+const PLACE_TILE_MIN_HEIGHT = 158;
+const QUICK_ACTION_MIN_HEIGHT = 80;
 
-const photoImageStyle: ImageStyle = {
-  width: '100%',
-  height: '100%',
-};
+function bentoLayoutStyle(layout: BentoLayoutDescriptor): ViewStyle {
+  if ('width' in layout) return { width: layout.width, minWidth: 0 };
+  return { flex: layout.flex, flexBasis: 0, minWidth: 0 };
+}
 
-const TILE_MIN_HEIGHT = 120;
-const COMPACT_TILE_MIN_HEIGHT = 112;
+function tileMinHeight(variant: TileVariant | undefined): number {
+  if (variant === 'quickAction') return QUICK_ACTION_MIN_HEIGHT;
+  return PLACE_TILE_MIN_HEIGHT;
+}
 
-/**
- * The bento tile (spec §8.2): radius `xl`, a tint or a photo, and an optional
- * icon, count and caption. It is one accessibility element. Text on a photo
- * sits in the bottom block, which is where the scrim is dark enough for it.
- */
 export function Tile({
-  tint = 'plain',
-  fill: fillMode = 'tint',
-  compact = false,
+  variant,
   image,
   scrim = true,
   onPress,
@@ -98,8 +99,10 @@ export function Tile({
   accessibilityState,
   actions,
   icon,
+  illustration,
   leading,
   corner,
+  badgeLabel,
   count,
   caption,
   children,
@@ -107,42 +110,59 @@ export function Tile({
   style,
   testID,
 }: TileProps) {
-  const { colors, gradientHero, isDark, shadow, scrim: scrimToken, tintNamed } = useTheme();
+  const { colors, shadow, scrim: scrimToken } = useTheme();
   const inBento = useContext(InBento);
-  const photo = tint === 'photo';
+  const pressFeedback = usePressFeedback();
+  const quickAction = variant === 'quickAction';
   const [imageFailed, setImageFailed] = useState(false);
-  const hasPhotoImage = photo && image && !imageFailed;
-  const showPhotoFallback = photo && (!image || imageFailed);
-  const fill = photo
-    ? colors.surfaceInverse
-    : fillMode === 'surfaceAlt'
-      ? colors.surfaceAlt
-      : tintNamed(tint).bg;
-  const ink = photo ? { color: colors.textInverse } : undefined;
+  const hasPhotoImage = !!image && !imageFailed;
+  const showPhotoFallback = !!image && imageFailed;
+  const fill =
+    hasPhotoImage || showPhotoFallback
+      ? colors.surfaceInverse
+      : quickAction
+        ? colors.surfaceAlt
+        : colors.surface;
+  const ink = hasPhotoImage ? { color: colors.textInverse } : undefined;
   const accessibilityActions = actions?.map(({ name, label }) => ({ name, label }));
   const onAccessibilityAction = actions
     ? (event: AccessibilityActionEvent) => {
         actions.find((action) => action.name === event.nativeEvent.actionName)?.onPress();
       }
     : undefined;
+  const baseHeight = height ?? tileMinHeight(variant);
+  const pressableStyle: ViewStyle | undefined = inBento ? { flex: 1 } : undefined;
 
   useEffect(() => {
     setImageFailed(false);
   }, [image]);
 
   const container: ViewStyle = {
-    minHeight: compact ? COMPACT_TILE_MIN_HEIGHT : TILE_MIN_HEIGHT,
-    padding: compact ? spacing.md : spacing.lg,
+    minHeight: baseHeight,
+    padding: quickAction ? spacing.md : spacing.lg,
     gap: spacing.sm,
-    borderRadius: compact ? radius.lg : radius.xl,
-    borderWidth: photo ? 0 : 1,
-    borderColor: isDark ? colors.border : fill,
+    borderWidth: quickAction || hasPhotoImage || showPhotoFallback ? 0 : 1,
+    borderColor: colors.cardEdge,
     backgroundColor: fill,
-    // iOS clips a shadow with the content, so a photo tile goes without one.
-    ...(photo ? { overflow: 'hidden' } : isDark ? null : shadow.card),
-    ...(height ? { minHeight: height } : null),
+    ...(hasPhotoImage || showPhotoFallback
+      ? { overflow: 'hidden' }
+      : quickAction
+        ? null
+        : shadow.card),
     ...(inBento ? { flex: 1 } : null),
   };
+
+  const art = leading ? (
+    leading
+  ) : illustration ? (
+    <Illustration name={illustration} size={44} />
+  ) : icon ? (
+    <Icon
+      name={icon}
+      size={quickAction ? 24 : 24}
+      color={hasPhotoImage ? colors.textInverse : colors.text}
+    />
+  ) : null;
 
   const body = (
     <>
@@ -163,95 +183,86 @@ export function Tile({
         </>
       ) : null}
       {showPhotoFallback ? (
-        <LinearGradient
-          colors={gradientHero as unknown as readonly [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+        <View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.surfaceAlt,
+            },
+          ]}
+        >
+          <Illustration name="plate" size={44} />
+        </View>
       ) : null}
-      {leading || icon || corner ? (
+      {art || corner ? (
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
+            gap: spacing.sm,
           }}
         >
-          {leading ? (
-            leading
-          ) : icon ? (
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: tint === 'plain' ? colors.surfaceAlt : colors.surface,
-              }}
-            >
-              <Icon name={icon} size={18} color={colors.text} />
-            </View>
-          ) : (
-            <View />
-          )}
+          {art ?? <View />}
           {corner}
         </View>
       ) : null}
-      <View style={{ flex: 1 }} />
       {children}
       {count !== undefined ? (
-        <AppText variant="numeral" style={ink}>
+        <AppText variant={quickAction ? 'caption' : 'bodyStrong'} style={ink}>
           {count}
         </AppText>
       ) : null}
       {caption ? (
-        <AppText variant="caption" muted={!photo} style={ink}>
+        <AppText variant="caption" muted={!hasPhotoImage} style={ink}>
           {caption}
         </AppText>
       ) : null}
+      {badgeLabel ? <Badge tone="warn" label={badgeLabel} /> : null}
     </>
   );
 
+  const accessibleProps = {
+    accessibilityRole,
+    accessibilityLabel,
+    accessibilityState,
+    accessibilityActions,
+    onAccessibilityAction,
+  };
+
   if (!onPress) {
     return (
-      <View
-        accessible
-        accessibilityRole={accessibilityRole}
-        accessibilityLabel={accessibilityLabel}
-        accessibilityState={accessibilityState}
-        accessibilityActions={accessibilityActions}
-        onAccessibilityAction={onAccessibilityAction}
-        testID={testID}
-        style={[container, style]}
-      >
+      <View accessible testID={testID} style={[container, style]} {...accessibleProps}>
         {body}
       </View>
     );
   }
   return (
     <Pressable
+      accessible
       accessibilityRole={accessibilityRole ?? 'button'}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={accessibilityState}
       accessibilityActions={accessibilityActions}
       onAccessibilityAction={onAccessibilityAction}
       onPress={onPress}
+      {...pressFeedback.pressHandlers}
+      style={pressableStyle}
       testID={testID}
-      style={({ pressed }) => [
-        container,
-        { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-        style,
-      ]}
     >
-      {body}
+      <Animated.View style={[container, pressFeedback.animatedStyle, style]}>{body}</Animated.View>
     </Pressable>
   );
 }
 
 export interface BentoProps {
   children: ReactNode;
+  variant?: BentoVariant;
   /**
    * Reports each packed row's y-position relative to the Bento container.
    * Screens that need ScrollView coordinates must add the Bento container's
@@ -260,36 +271,48 @@ export interface BentoProps {
   onRowLayout?: (indices: readonly number[], y: number) => void;
 }
 
-/**
- * Lays tiles and columns out on the two-column grid (spec §6.7). Each child's
- * `span` decides whether it takes a row or half of one.
- */
-export function Bento({ children, onRowLayout }: BentoProps) {
+export function Bento({ children, variant = 'tiles', onRowLayout }: BentoProps) {
+  const [containerWidth, setContainerWidth] = useState(0);
   const items = Children.toArray(children).filter(isValidElement) as ReactElement<{
     span?: TileSpan;
     weight?: number;
   }>[];
-  const rows = bentoRows(items.map((item) => item.props.span ?? 1));
+  const gap = bentoGap(variant);
+  const rows = bentoRowLayout(
+    items.map((item) => item.props.span ?? 1),
+    variant,
+    containerWidth,
+    items.map((item) => item.props.weight),
+  );
+  const handleLayout = (width: number) => {
+    setContainerWidth((current) => (current === width ? current : width));
+  };
+
   return (
     <InBento.Provider value>
-      <View style={{ gap: BENTO_GUTTER }}>
-        {rows.map((row) => (
-          <View
-            key={row.indices.join('-')}
-            onLayout={(event) => onRowLayout?.(row.indices, event.nativeEvent.layout.y)}
-            style={{ flexDirection: 'row', gap: BENTO_GUTTER }}
-          >
-            {row.indices.map((index) => {
-              const flex = items[index]?.props.weight ?? 1;
-              return (
-                <View key={items[index]?.key ?? index} style={{ flex, flexBasis: 0, minWidth: 0 }}>
-                  {items[index]}
-                </View>
-              );
-            })}
-            {row.filler ? <View style={{ flex: 1, flexBasis: 0, minWidth: 0 }} /> : null}
-          </View>
-        ))}
+      <View onLayout={(event) => handleLayout(event.nativeEvent.layout.width)} style={{ gap }}>
+        {rows.map((row) => {
+          const indices = row.cells.map((cell) => cell.index);
+          return (
+            <View
+              key={indices.join('-')}
+              onLayout={(event) => onRowLayout?.(indices, event.nativeEvent.layout.y)}
+              style={{ flexDirection: 'row', alignItems: 'stretch', gap }}
+            >
+              {row.cells.map((cell) => {
+                const item = items[cell.index];
+                return (
+                  <View key={item?.key ?? cell.index} style={bentoLayoutStyle(cell.layout)}>
+                    {item}
+                  </View>
+                );
+              })}
+              {row.fillers.map((filler, index) => (
+                <View key={`filler-${index}`} style={bentoLayoutStyle(filler)} />
+              ))}
+            </View>
+          );
+        })}
       </View>
     </InBento.Provider>
   );
@@ -305,5 +328,7 @@ export interface BentoColumnProps {
 
 /** Stacks tiles in one half of a row; they split its height evenly. */
 export function BentoColumn({ children }: BentoColumnProps) {
-  return <View style={{ flex: 1, flexBasis: 0, minWidth: 0, gap: BENTO_GUTTER }}>{children}</View>;
+  return (
+    <View style={{ flex: 1, flexBasis: 0, minWidth: 0, gap: BENTO_TILE_GAP }}>{children}</View>
+  );
 }

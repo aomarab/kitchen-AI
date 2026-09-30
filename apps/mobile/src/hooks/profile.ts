@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { RouteBody } from '@kitchen/contracts';
 import { api } from '../lib/api';
 import { qk } from './keys';
+import { useAuthStore } from '../stores/auth';
 
 export function useMe() {
   return useQuery({ queryKey: qk.me, queryFn: () => api.call('getMe') });
@@ -37,6 +38,14 @@ export function useRotateInviteCode(id: string) {
   return useMutation({
     mutationFn: () => api.call('rotateInviteCode', { params: { id } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.households }),
+  });
+}
+
+export function useLeaveHousehold(id: string) {
+  const removeHousehold = useAuthStore((state) => state.removeHousehold);
+  return useMutation({
+    mutationFn: () => api.call('leaveHousehold', { params: { id } }),
+    onSuccess: () => removeHousehold(id),
   });
 }
 

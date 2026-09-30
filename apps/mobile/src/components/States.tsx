@@ -1,35 +1,90 @@
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { Icon, type IconName } from './Icon';
+import { Illustration, type IllustrationName } from './Illustration';
+import { OutOfCreditsPanel } from '../features/credits/OutOfCreditsPanel';
+import { useFormat } from '../hooks/useFormat';
+import { formatQty } from '../lib/format';
+import { insufficientCreditsDetails } from '../lib/credits';
 import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 import { errorMessageKey, isInsufficientCredits, isRetryable } from '../lib/errors';
 
+const ILLUSTRATION_BOX_SIZE = 88;
+const SKELETON_THUMB_SIZE = 56;
+const SKELETON_BAR_HEIGHT = 12;
+const SKELETON_SMALL_BAR_HEIGHT = 10;
+
 const CENTER = {
   flex: 1,
   alignItems: 'center',
   justifyContent: 'center',
-  gap: spacing.md,
-  padding: spacing.xl,
+  gap: 10,
+  paddingVertical: 32,
+  paddingHorizontal: 24,
 } as const;
 
 const COMPACT_CENTER = {
   alignItems: 'center',
   justifyContent: 'center',
-  gap: spacing.sm,
-  padding: spacing.lg,
+  gap: 10,
+  paddingVertical: 24,
+  paddingHorizontal: 20,
 } as const;
 
-export function LoadingState({ label, compact = false }: { label?: string; compact?: boolean }) {
+export interface LoadingStateProps {
+  label?: string;
+  compact?: boolean;
+  rows?: number;
+}
+
+export function LoadingState({
+  label,
+  compact = false,
+  rows = compact ? 2 : 3,
+}: LoadingStateProps) {
   const { t } = useLocale();
   const { colors } = useTheme();
   return (
-    <View style={compact ? COMPACT_CENTER : CENTER}>
-      <ActivityIndicator color={colors.primaryText} size={compact ? 'small' : 'large'} />
-      <AppText muted>{label ?? t('common.loading')}</AppText>
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={label ?? t('common.loading')}
+      style={
+        compact
+          ? { gap: spacing.sm }
+          : { ...CENTER, alignItems: 'stretch', justifyContent: 'center' }
+      }
+    >
+      {Array.from({ length: rows }).map((_, index) => (
+        <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <View
+            style={{
+              width: SKELETON_THUMB_SIZE,
+              height: SKELETON_THUMB_SIZE,
+              backgroundColor: colors.surfaceAlt,
+            }}
+          />
+          <View style={{ flex: 1, gap: spacing.sm }}>
+            <View
+              style={{
+                width: index % 2 === 0 ? '72%' : '58%',
+                height: SKELETON_BAR_HEIGHT,
+                backgroundColor: colors.surfaceAlt,
+              }}
+            />
+            <View
+              style={{
+                width: index % 2 === 0 ? '46%' : '64%',
+                height: SKELETON_SMALL_BAR_HEIGHT,
+                backgroundColor: colors.surfaceAlt,
+              }}
+            />
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
@@ -37,22 +92,82 @@ export function LoadingState({ label, compact = false }: { label?: string; compa
 export interface EmptyStateProps {
   title: string;
   message?: string;
-  icon?: IconName;
+  illustration?: IllustrationName;
   actionLabel?: string;
   onAction?: () => void;
+  compact?: boolean;
 }
 
 export function EmptyState({
   title,
   message,
-  icon = 'basket',
+  illustration = 'bag',
   actionLabel,
   onAction,
+  compact = false,
 }: EmptyStateProps) {
+  const contentStyle = compact ? COMPACT_CENTER : CENTER;
   return (
-    <View style={CENTER}>
-      <Icon name={icon} size={40} />
-      <AppText variant="heading" center>
+    <View style={contentStyle}>
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={{
+          width: ILLUSTRATION_BOX_SIZE,
+          height: ILLUSTRATION_BOX_SIZE,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Illustration name={illustration} size={ILLUSTRATION_BOX_SIZE} />
+      </View>
+      <AppText variant="title" center accessibilityRole="header">
+        {title}
+      </AppText>
+      {message ? (
+        <AppText muted center>
+          {message}
+        </AppText>
+      ) : null}
+      {actionLabel && onAction ? (
+        <Button title={actionLabel} onPress={onAction} fullWidth={false} />
+      ) : null}
+    </View>
+  );
+}
+
+function IconState({
+  title,
+  message,
+  icon,
+  actionLabel,
+  onAction,
+  compact,
+}: {
+  title: string;
+  message?: string;
+  icon: IconName;
+  actionLabel?: string;
+  onAction?: () => void;
+  compact: boolean;
+}) {
+  const { colors } = useTheme();
+  const contentStyle = compact ? COMPACT_CENTER : CENTER;
+  return (
+    <View style={contentStyle}>
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={{
+          width: ILLUSTRATION_BOX_SIZE,
+          height: ILLUSTRATION_BOX_SIZE,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon name={icon} size={44} color={colors.textMuted} />
+      </View>
+      <AppText variant="title" center accessibilityRole="header">
         {title}
       </AppText>
       {message ? (
@@ -73,39 +188,42 @@ export interface ErrorStateProps {
   compact?: boolean;
 }
 
-/**
- * Renders a failed request. The error's `messageKey` is translated through i18n
- * — raw error text is never shown to the user (spec §8).
- *
- * A 402 is not a breakage but an out-of-credits state (spec §7): it is named as
- * such and routes the household to top up rather than offering a bare retry,
- * which without credits could never succeed.
- */
 export function ErrorState({ error, onRetry, compact = false }: ErrorStateProps) {
-  const { t } = useLocale();
+  const { t, locale, prefs } = useFormat();
   const router = useRouter();
   const outOfCredits = isInsufficientCredits(error);
-  return (
-    <View style={compact ? COMPACT_CENTER : CENTER}>
-      <Icon name={outOfCredits ? 'wallet' : 'warning'} size={compact ? 28 : 40} />
-      <AppText variant={compact ? 'bodyStrong' : 'heading'} center>
-        {outOfCredits ? t('mobile.credits.outOfCreditsTitle') : t('mobile.common.error')}
-      </AppText>
-      <AppText muted center>
-        {t(errorMessageKey(error))}
-      </AppText>
-      {outOfCredits ? (
-        <Button
-          title={t('mobile.credits.getMore')}
-          icon="wallet"
-          onPress={() => router.push('/buy-credits')}
-          fullWidth={false}
+  const retryable = isRetryable(error);
+  const action = outOfCredits
+    ? { label: t('mobile.credits.getMore'), onPress: () => router.push('/buy-credits') }
+    : onRetry
+      ? { label: t('common.retry'), onPress: onRetry }
+      : undefined;
+
+  if (outOfCredits) {
+    const details = insufficientCreditsDetails(error);
+    return (
+      <View style={compact ? COMPACT_CENTER : { ...CENTER, alignItems: 'stretch' }}>
+        <OutOfCreditsPanel
+          compact={compact}
+          title={t('mobile.credits.outOfCreditsTitle')}
+          needed={details.needed !== null ? formatQty(locale, details.needed, prefs) : null}
+          cost={details.required !== null ? formatQty(locale, details.required, prefs) : null}
+          balance={details.available !== null ? formatQty(locale, details.available, prefs) : null}
+          fallbackMessage={t(errorMessageKey(error))}
+          onGetMore={() => router.push('/buy-credits')}
         />
-      ) : onRetry && isRetryable(error) ? (
-        <Button title={t('common.retry')} icon="sync" onPress={onRetry} fullWidth={false} />
-      ) : onRetry ? (
-        <Button title={t('common.retry')} variant="secondary" onPress={onRetry} fullWidth={false} />
-      ) : null}
-    </View>
+      </View>
+    );
+  }
+
+  return (
+    <IconState
+      compact={compact}
+      icon="alert"
+      title={t('mobile.common.error')}
+      message={t(errorMessageKey(error))}
+      actionLabel={action && (outOfCredits || retryable || onRetry) ? action.label : undefined}
+      onAction={action?.onPress}
+    />
   );
 }

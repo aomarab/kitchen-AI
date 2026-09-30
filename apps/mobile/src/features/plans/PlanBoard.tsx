@@ -1,31 +1,27 @@
 import { useMemo } from 'react';
-import { Pressable, View } from 'react-native';
-import type { MealPlan, MealPlanEntry, MealSlot } from '@kitchen/contracts';
-import { AppText } from '../../components/AppText';
-import { Badge } from '../../components/Badge';
-import { DirectionalIcon } from '../../components/DirectionalIcon';
-import { ListGroup } from '../../components/ListGroup';
-import { RecipeThumb } from '../../components/RecipeThumb';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import type { MealPlan, MealPlanEntry, MealSlot, PlanCoverage } from '@kitchen/contracts';
+import type { MessageKey } from '@kitchen/i18n';
+import { AppText, Badge, DirectionalIcon, Icon, RecipeThumb } from '../../components';
+import { usePressFeedback } from '../../components/press-feedback';
 import { useFormat } from '../../hooks/useFormat';
 import { todayISODate } from '../../lib/expiry';
-import { formatDateL, formatMinutes } from '../../lib/format';
+import { formatDateL, formatMinutes, formatQty, localizedName } from '../../lib/format';
 import { planEntryStatus } from '../../lib/plan-entry-status';
-import { planWeekDays } from '../../lib/plans';
-import { radius, spacing } from '../../theme';
+import { planWeekDays, shouldShowPlanDateColumn } from '../../lib/plans';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 export type PlanView = 'day' | 'week' | 'month';
 
 const SLOT_ORDER: Record<MealSlot, number> = { breakfast: 0, lunch: 1, dinner: 2, snack: 3 };
-const SLOT_KEY: Record<
-  MealSlot,
-  'plans.breakfast' | 'plans.lunch' | 'plans.dinner' | 'plans.snack'
-> = {
+const SLOT_KEY: Record<MealSlot, MessageKey> = {
   breakfast: 'plans.breakfast',
   lunch: 'plans.lunch',
   dinner: 'plans.dinner',
   snack: 'plans.snack',
 };
+const SLOTS: readonly MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 function parseDate(iso: string): Date {
   return new Date(`${iso}T00:00:00`);
@@ -52,6 +48,23 @@ function minuteMessage({
   );
 }
 
+function servingsMessage({
+  t,
+  locale,
+  prefs,
+  servings,
+}: {
+  t: ReturnType<typeof useFormat>['t'];
+  locale: ReturnType<typeof useFormat>['locale'];
+  prefs: ReturnType<typeof useFormat>['prefs'];
+  servings: number;
+}): string {
+  return t('recipe.servings', { count: servings }).replace(
+    String(servings),
+    formatQty(locale, servings, prefs),
+  );
+}
+
 function monthMatrix(anchor: Date): Array<Array<Date | null>> {
   const year = anchor.getFullYear();
   const month = anchor.getMonth();
@@ -67,82 +80,324 @@ function monthMatrix(anchor: Date): Array<Array<Date | null>> {
   return weeks;
 }
 
-function EntryRow({ entry, onPress }: { entry: MealPlanEntry; onPress: () => void }) {
+function isoFromDate(day: Date): string {
+  return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(
+    day.getDate(),
+  ).padStart(2, '0')}`;
+}
+
+function coverageText({
+  entry,
+  coverage,
+  t,
+  locale,
+  prefs,
+}: {
+  entry: MealPlanEntry;
+  coverage?: PlanCoverage | null;
+  t: ReturnType<typeof useFormat>['t'];
+  locale: ReturnType<typeof useFormat>['locale'];
+  prefs: ReturnType<typeof useFormat>['prefs'];
+}): string {
+  if (entry.fullyCovered) return t('mobile.home.allInKitchen');
+  const shortfalls = coverage?.shortfalls ?? [];
+  if (shortfalls.length === 1) {
+    const shortfall = shortfalls[0]!;
+    return t('mobile.plans.ingredientMissing', {
+      name: localizedName(locale, shortfall.nameEn, shortfall.nameAr),
+    });
+  }
+  const count = shortfalls.length > 0 ? shortfalls.length : 1;
+  return t('plans.missingItems', { count }).replace(String(count), formatQty(locale, count, prefs));
+}
+
+function PlanDayRow({
+  entry,
+  today,
+  showDate,
+  coverage,
+  onPress,
+}: {
+  entry: MealPlanEntry;
+  today: string;
+  showDate: boolean;
+  coverage?: PlanCoverage | null;
+  onPress: () => void;
+}) {
   const { t, locale, prefs } = useFormat();
   const { colors } = useTheme();
+  const pressFeedback = usePressFeedback();
+  const date = `${entry.date}T00:00:00`;
+  const isToday = entry.date === today;
   const slot = t(SLOT_KEY[entry.slot]);
   const minutes = entry.recipe.prepMinutes + entry.recipe.cookMinutes;
   const minutesLabel = minuteMessage({ t, locale, prefs, minutes });
   const status = planEntryStatus(entry);
   const statusLabel = t(status.labelKey);
-  const caption = `${slot} · ${minutesLabel}`;
-  const accessibilityLabel = `${slot}, ${entry.recipe.title}, ${minutesLabel}, ${statusLabel}`;
+  const shortfall = coverageText({ entry, coverage, t, locale, prefs });
+  const isCooked = entry.state === 'cooked';
+  const captionTail = isCooked ? statusLabel : isToday ? t('plans.tonight') : shortfall;
+  const caption = `${slot} · ${minutesLabel} · ${captionTail}`;
+  const accessibilityLabel = `${formatDateL(locale, date, {
+    dateStyle: 'medium',
+  })}, ${entry.recipe.title}, ${caption}`;
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+      {...pressFeedback.pressHandlers}
     >
-      <View
-        style={{
-          minHeight: 96,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-          paddingVertical: spacing.md,
-          paddingHorizontal: spacing.lg,
-        }}
+      <Animated.View
+        style={[
+          {
+            minHeight: 80,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 14,
+            paddingVertical: spacing.md,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.rowline,
+          },
+          pressFeedback.animatedStyle,
+        ]}
       >
+        <View style={{ width: 40, alignItems: 'flex-start', gap: 2 }}>
+          {showDate ? (
+            <>
+              <AppText variant="small" color={isToday ? 'primaryText' : 'textMuted'}>
+                {formatDateL(locale, date, { weekday: 'short' })}
+              </AppText>
+              <AppText variant="heading" color={isToday ? 'primaryText' : 'text'}>
+                {formatDateL(locale, date, { day: 'numeric' })}
+              </AppText>
+            </>
+          ) : null}
+        </View>
         <RecipeThumb
           heroImageUrl={entry.recipe.heroImageUrl}
-          dishKey={entry.recipe.id}
           title={entry.recipe.title}
-          style={{ width: 64, height: 64, borderRadius: radius.md }}
+          size={56}
         />
-        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <AppText variant="caption" muted numberOfLines={1}>
-            {caption}
-          </AppText>
-          <AppText variant="bodyStrong" numberOfLines={2}>
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+          <AppText variant="bodyStrong" numberOfLines={1}>
             {entry.recipe.title}
           </AppText>
+          {isCooked ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Icon name="check" size={14} color={colors.success} />
+              <AppText
+                variant="caption"
+                numberOfLines={1}
+                style={{ color: colors.success, flexShrink: 1 }}
+              >
+                {caption}
+              </AppText>
+            </View>
+          ) : (
+            <AppText variant="caption" numberOfLines={1} style={{ color: colors.textMuted }}>
+              {caption}
+            </AppText>
+          )}
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-          <Badge tone={status.tone} label={statusLabel} />
-          <DirectionalIcon name="chevron" size={20} color={colors.textMuted} />
-        </View>
-      </View>
+        <DirectionalIcon name="chevR" size={18} color={colors.control} />
+      </Animated.View>
     </Pressable>
   );
 }
 
-function DaySection({
-  date,
+function MealEntryRow({
+  entry,
+  coverage,
+  onPress,
+}: {
+  entry: MealPlanEntry;
+  coverage?: PlanCoverage | null;
+  onPress: () => void;
+}) {
+  const { t, locale, prefs } = useFormat();
+  const { colors } = useTheme();
+  const pressFeedback = usePressFeedback();
+  const minutes = entry.recipe.prepMinutes + entry.recipe.cookMinutes;
+  const minutesLabel = minuteMessage({ t, locale, prefs, minutes });
+  const servingsLabel = servingsMessage({ t, locale, prefs, servings: entry.servings });
+  const haveLabel = coverageText({ entry, coverage, t, locale, prefs });
+  const accessibilityLabel = `${entry.recipe.title}, ${minutesLabel}, ${servingsLabel}, ${haveLabel}`;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      {...pressFeedback.pressHandlers}
+    >
+      <Animated.View
+        style={[
+          {
+            minHeight: 80,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 14,
+            paddingVertical: 4,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.rowline,
+          },
+          pressFeedback.animatedStyle,
+        ]}
+      >
+        <RecipeThumb
+          heroImageUrl={entry.recipe.heroImageUrl}
+          title={entry.recipe.title}
+          size={72}
+        />
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+          <AppText variant="bodyStrong" numberOfLines={2}>
+            {entry.recipe.title}
+          </AppText>
+          <AppText variant="caption" muted numberOfLines={1}>
+            {minutesLabel} · {servingsLabel}
+          </AppText>
+          <Badge tone={entry.fullyCovered ? 'success' : 'warn'} label={haveLabel} />
+        </View>
+        <DirectionalIcon name="chevR" size={18} color={colors.control} />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+function EmptySlotRow() {
+  const { t } = useFormat();
+  const { colors } = useTheme();
+  return (
+    <View
+      style={{
+        minHeight: 46,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderStyle: 'dashed',
+        borderColor: colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: spacing.sm,
+      }}
+    >
+      <Icon name="plus" size={18} color={colors.textMuted} />
+      <AppText variant="body" muted>
+        {t('mobile.plans.nothingPlanned')}
+      </AppText>
+    </View>
+  );
+}
+
+function DayAgenda({
+  selectedDate,
   entries,
+  coverage,
   onOpenEntry,
 }: {
-  date: string;
+  selectedDate: string;
   entries: readonly MealPlanEntry[];
+  coverage?: PlanCoverage | null;
   onOpenEntry: (entry: MealPlanEntry) => void;
 }) {
-  const { t, locale } = useFormat();
+  const { t } = useFormat();
+  const entriesBySlot = new Map<MealSlot, MealPlanEntry[]>();
+  for (const entry of entries) {
+    const list = entriesBySlot.get(entry.slot) ?? [];
+    list.push(entry);
+    entriesBySlot.set(entry.slot, list);
+  }
+
   return (
-    <View style={{ gap: spacing.sm }}>
-      <AppText variant="heading">
-        {formatDateL(locale, date, { weekday: 'long', day: 'numeric', month: 'long' })}
-      </AppText>
-      {entries.length === 0 ? (
-        <AppText muted>{t('mobile.home.tonightEmpty')}</AppText>
-      ) : (
-        <ListGroup>
-          {entries.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} onPress={() => onOpenEntry(entry)} />
-          ))}
-        </ListGroup>
-      )}
+    <View style={{ gap: spacing.lg }}>
+      {SLOTS.map((slot) => {
+        const slotEntries = entriesBySlot.get(slot) ?? [];
+        return (
+          <View key={`${selectedDate}-${slot}`} style={{ gap: spacing.xs }}>
+            <AppText variant="label" color="textMuted">
+              {t(SLOT_KEY[slot])}
+            </AppText>
+            {slotEntries.length === 0 ? (
+              <EmptySlotRow />
+            ) : (
+              slotEntries.map((entry) => (
+                <MealEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  coverage={coverage}
+                  onPress={() => onOpenEntry(entry)}
+                />
+              ))
+            )}
+          </View>
+        );
+      })}
     </View>
+  );
+}
+
+function MonthCell({
+  iso,
+  has,
+  selected,
+  isToday,
+  onSelectDate,
+}: {
+  iso: string;
+  has: boolean;
+  selected: boolean;
+  isToday: boolean;
+  onSelectDate: (date: string) => void;
+}) {
+  const { t, locale } = useFormat();
+  const { colors } = useTheme();
+  const pressFeedback = usePressFeedback();
+  const label = [
+    formatDateL(locale, iso, { weekday: 'long', day: 'numeric', month: 'long' }),
+    has ? t('mobile.plans.dayPlanned') : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const textColor = selected ? colors.onFill : isToday ? colors.primaryText : colors.text;
+
+  return (
+    <Pressable
+      onPress={() => onSelectDate(iso)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      {...pressFeedback.pressHandlers}
+      style={{ flex: 1, aspectRatio: 1, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Animated.View
+        style={[
+          {
+            width: 44,
+            minHeight: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: selected ? colors.primary : 'transparent',
+            borderWidth: isToday && !selected ? StyleSheet.hairlineWidth : 0,
+            borderColor: isToday && !selected ? colors.primary : 'transparent',
+          },
+          pressFeedback.animatedStyle,
+        ]}
+      >
+        <AppText variant="bodyStrong" style={{ color: textColor }}>
+          {formatDateL(locale, iso, { day: 'numeric' })}
+        </AppText>
+        {has ? (
+          <View
+            style={{
+              width: 4,
+              height: 4,
+              backgroundColor: selected ? colors.onFill : colors.primary,
+            }}
+          />
+        ) : null}
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -150,17 +405,20 @@ export interface PlanBoardProps {
   plan: MealPlan;
   view: PlanView;
   selectedDate: string;
+  coverage?: PlanCoverage | null;
   onSelectDate: (date: string) => void;
   onOpenEntry: (entry: MealPlanEntry) => void;
 }
 
-/**
- * Renders a meal plan as a day agenda, a week list, or a month calendar. Kept
- * out of the screen so the Plans screen stays thin (spec quality bar).
- */
-export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry }: PlanBoardProps) {
+export function PlanBoard({
+  plan,
+  view,
+  selectedDate,
+  coverage,
+  onSelectDate,
+  onOpenEntry,
+}: PlanBoardProps) {
   const { t, locale } = useFormat();
-  const { colors } = useTheme();
   const today = todayISODate();
 
   const byDate = useMemo(() => {
@@ -191,8 +449,14 @@ export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry 
   );
 
   if (view === 'day') {
-    const entries = byDate.get(selectedDate) ?? [];
-    return <DaySection date={selectedDate} entries={entries} onOpenEntry={onOpenEntry} />;
+    return (
+      <DayAgenda
+        selectedDate={selectedDate}
+        entries={byDate.get(selectedDate) ?? []}
+        coverage={coverage}
+        onOpenEntry={onOpenEntry}
+      />
+    );
   }
 
   if (view === 'week') {
@@ -201,18 +465,22 @@ export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry 
       .filter((section) => section.entries.length > 0);
 
     return (
-      <View style={{ gap: spacing.md }}>
+      <View>
         {sections.length === 0 ? (
           <AppText muted>{t('mobile.home.tonightEmpty')}</AppText>
         ) : (
-          sections.map((section) => (
-            <DaySection
-              key={section.date}
-              date={section.date}
-              entries={section.entries}
-              onOpenEntry={onOpenEntry}
-            />
-          ))
+          sections.flatMap((section) =>
+            section.entries.map((entry, index) => (
+              <PlanDayRow
+                key={entry.id}
+                entry={entry}
+                today={today}
+                showDate={shouldShowPlanDateColumn(section.entries, index)}
+                coverage={coverage}
+                onPress={() => onOpenEntry(entry)}
+              />
+            )),
+          )
         )}
       </View>
     );
@@ -231,71 +499,32 @@ export function PlanBoard({ plan, view, selectedDate, onSelectDate, onOpenEntry 
       </View>
       {weeks.map((week, wi) => (
         <View key={wi} style={{ flexDirection: 'row' }}>
-          {week.map((day, di) => {
-            if (!day) return <View key={di} style={{ flex: 1, aspectRatio: 1 }} />;
-            const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(
-              day.getDate(),
-            ).padStart(2, '0')}`;
-            const has = byDate.has(iso);
-            const selected = iso === selectedDate;
-            const isToday = iso === today;
-            const label = [
-              formatDateL(locale, iso, { weekday: 'long', day: 'numeric', month: 'long' }),
-              has ? t('mobile.plans.dayPlanned') : null,
-            ]
-              .filter(Boolean)
-              .join(', ');
-            return (
-              <Pressable
-                key={di}
-                onPress={() => onSelectDate(iso)}
-                accessibilityRole="button"
-                accessibilityLabel={label}
-                accessibilityState={{ selected }}
-                style={{ flex: 1, aspectRatio: 1, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <View
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: radius.pill,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: isToday
-                      ? colors.primary
-                      : selected
-                        ? colors.text
-                        : 'transparent',
-                    borderWidth: selected && !isToday ? 1 : 0,
-                    borderColor: selected && !isToday ? colors.text : 'transparent',
-                  }}
-                >
-                  <AppText
-                    style={{ color: isToday ? colors.onFill : selected ? colors.bg : colors.text }}
-                  >
-                    {formatDateL(locale, iso, { day: 'numeric' })}
-                  </AppText>
-                </View>
-                {has ? (
-                  <View
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: radius.pill,
-                      backgroundColor: colors.primary,
-                    }}
-                  />
-                ) : (
-                  <View style={{ width: 5, height: 5 }} />
-                )}
-              </Pressable>
-            );
-          })}
+          {week.map((day, di) =>
+            day ? (
+              <MonthCell
+                key={isoFromDate(day)}
+                iso={isoFromDate(day)}
+                has={byDate.has(isoFromDate(day))}
+                selected={isoFromDate(day) === selectedDate}
+                isToday={isoFromDate(day) === today}
+                onSelectDate={onSelectDate}
+              />
+            ) : (
+              <View key={di} style={{ flex: 1, aspectRatio: 1 }} />
+            ),
+          )}
         </View>
       ))}
-      <View style={{ gap: spacing.sm }}>
-        {dayEntries.map((entry) => (
-          <EntryRow key={entry.id} entry={entry} onPress={() => onOpenEntry(entry)} />
+      <View>
+        {dayEntries.map((entry, index) => (
+          <PlanDayRow
+            key={entry.id}
+            entry={entry}
+            today={today}
+            showDate={shouldShowPlanDateColumn(dayEntries, index)}
+            coverage={coverage}
+            onPress={() => onOpenEntry(entry)}
+          />
         ))}
       </View>
     </View>

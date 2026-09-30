@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
-import { RoundButton } from './RoundButton';
-import { radius, spacing } from '../theme';
+import { IconButton } from './IconButton';
+import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 
@@ -14,14 +14,6 @@ export interface SheetProps {
   children: ReactNode;
 }
 
-/**
- * Bottom sheet built on RN Modal — no extra dependency required.
- *
- * Carries its own keyboard avoidance. A Modal is hosted outside the root view,
- * so it is a sibling of `Screen`'s KeyboardAvoidingView rather than a child —
- * a text field in here is unprotected even on a screen that has one, and on
- * iOS the keyboard would rise over the input being typed into.
- */
 export function Sheet({ visible, onClose, title, children }: SheetProps) {
   const { t, dir } = useLocale();
   const { colors, shadow } = useTheme();
@@ -31,8 +23,6 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
         accessibilityRole="button"
         accessibilityLabel={t('common.close')}
         onPress={onClose}
-        // A Modal is hosted outside the root view, so it inherits nothing from
-        // the app's direction style and would always lay out LTR.
         style={{
           flex: 1,
           direction: dir,
@@ -42,32 +32,45 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
       >
         <Pressable
           onPress={(event) => event.stopPropagation()}
-          style={{
-            backgroundColor: colors.surface,
-            borderTopStartRadius: radius.lg,
-            borderTopEndRadius: radius.lg,
-            ...shadow.raised,
-          }}
+          style={{ backgroundColor: colors.surface, ...shadow.sheet }}
         >
-          <KeyboardAvoidingView
-            // Expo sets Android's softwareKeyboardLayoutMode to "resize", so
-            // Android already shrinks the window for the keyboard. Adding a
-            // behavior on top of that double-adjusts and pushes content away.
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          >
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <SafeAreaView edges={['bottom']}>
-              <View style={{ padding: spacing.lg, gap: spacing.md }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <View style={{ paddingTop: spacing.sm, paddingHorizontal: spacing.gutter }}>
+                <View
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                  style={{ alignItems: 'center', paddingBottom: spacing.xs }}
+                >
+                  <View style={{ width: 36, height: 4, backgroundColor: colors.border }} />
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    paddingBottom: spacing.xs,
+                  }}
+                >
                   <AppText variant="title" accessibilityRole="header" style={{ flex: 1 }}>
                     {title ?? ''}
                   </AppText>
-                  <RoundButton
-                    icon="close"
-                    tone="sunk"
+                  <IconButton
+                    icon="x"
+                    tone="plain"
                     accessibilityLabel={t('common.close')}
                     onPress={onClose}
                   />
                 </View>
+              </View>
+              <View
+                style={{
+                  paddingTop: spacing.xs,
+                  paddingHorizontal: spacing.gutter,
+                  paddingBottom: spacing.gutter,
+                  gap: spacing.lg,
+                }}
+              >
                 {children}
               </View>
             </SafeAreaView>

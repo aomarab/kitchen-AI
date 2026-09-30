@@ -62,10 +62,10 @@ export function dialFraction(timer: CookingTimer, now: Date): number {
 }
 
 /**
- * The dial, as the segments `Ring` paints.
+ * The segmented timer dial data.
  *
- * `Ring` takes one entry per tick — a colour, or `null` for a blank one — so
- * the countdown is expressed by how many ticks are still lit. Rounding is *up*
+ * One entry per tick — a colour, or `null` for a blank one — expresses how many
+ * ticks are still lit. Rounding is *up*
  * so that a timer with any time left keeps at least one lit tick: rounding to
  * nearest would empty the ring during the final seconds, which reads as
  * "finished" while the food is still cooking.

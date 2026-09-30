@@ -1,49 +1,45 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 import { CountBadge } from '../../components';
-import { spacing } from '../../theme';
+import { usePressFeedback } from '../../components/press-feedback';
+import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 import { useReduceMotion } from '../../hooks/motion';
 
 export const SHUTTER_BADGE_POP_SCALE = 1.15;
 export const SHUTTER_BADGE_POP_STEP_MS = 90;
 export const SHUTTER_BADGE_POP_MS = SHUTTER_BADGE_POP_STEP_MS * 2;
+export const SHUTTER_TOUCH_TARGET_SIZE = 84;
+export const SHUTTER_RING_SIZE = 76;
+export const SHUTTER_CORE_SIZE = 60;
+export const SHUTTER_RING_WIDTH = 3;
+export const SHUTTER_BUSY_OPACITY = 0.4;
 
 interface ShutterProps {
   count: number;
   accessibilityLabel: string;
   countAccessibilityLabel: string;
   disabled?: boolean;
+  busy?: boolean;
   onPress: () => void;
   onOpenTray: () => void;
 }
 
-/** 76pt coral shutter in a 4pt inverse ring, with the animated photo-count badge. */
+/** 76pt inverse shutter with the animated photo-count badge. */
 export function Shutter({
   count,
   accessibilityLabel,
   countAccessibilityLabel,
   disabled = false,
+  busy = false,
   onPress,
   onOpenTray,
 }: ShutterProps) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
-  const pressScale = useRef(new Animated.Value(1)).current;
   const badgeScale = useRef(new Animated.Value(1)).current;
   const previousCount = useRef(count);
-
-  const animatePress = (toValue: number) => {
-    if (reduceMotion) {
-      pressScale.setValue(1);
-      return;
-    }
-    Animated.timing(pressScale, {
-      toValue,
-      duration: 90,
-      useNativeDriver: true,
-    }).start();
-  };
+  const pressFeedback = usePressFeedback();
 
   useEffect(() => {
     if (count <= 0 || count === previousCount.current) {
@@ -71,36 +67,49 @@ export function Shutter({
   }, [badgeScale, count, reduceMotion]);
 
   return (
-    <View style={{ width: 84, height: 84, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{
+        width: SHUTTER_TOUCH_TARGET_SIZE,
+        height: SHUTTER_TOUCH_TARGET_SIZE,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
-        accessibilityState={{ disabled }}
+        accessibilityState={{ disabled, busy }}
         disabled={disabled}
         onPress={onPress}
-        onPressIn={() => animatePress(0.92)}
-        onPressOut={() => animatePress(1)}
-        style={{ width: 84, height: 84, alignItems: 'center', justifyContent: 'center' }}
+        {...pressFeedback.pressHandlers}
+        style={{
+          width: SHUTTER_TOUCH_TARGET_SIZE,
+          height: SHUTTER_TOUCH_TARGET_SIZE,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         <Animated.View
-          style={{
-            width: 84,
-            height: 84,
-            borderRadius: 42,
-            borderWidth: 4,
-            borderColor: colors.textInverse,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: disabled ? 0.55 : 1,
-            transform: [{ scale: pressScale }],
-          }}
+          style={[
+            {
+              width: SHUTTER_RING_SIZE,
+              height: SHUTTER_RING_SIZE,
+              borderRadius: radius.shutter,
+              borderWidth: SHUTTER_RING_WIDTH,
+              borderColor: colors.textInverse,
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+            disabled ? { opacity: 0.55 } : pressFeedback.animatedStyle,
+          ]}
         >
           <View
             style={{
-              width: 76,
-              height: 76,
-              borderRadius: 38,
-              backgroundColor: colors.primary,
+              width: SHUTTER_CORE_SIZE,
+              height: SHUTTER_CORE_SIZE,
+              borderRadius: radius.shutter,
+              backgroundColor: colors.textInverse,
+              opacity: busy ? SHUTTER_BUSY_OPACITY : 1,
             }}
           />
         </Animated.View>

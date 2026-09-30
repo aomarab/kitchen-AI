@@ -7,22 +7,22 @@ import {
   Screen,
   Header,
   AppText,
-  Button,
   Card,
   LoadingState,
   ErrorState,
   Icon,
-  Bento,
-  Tile,
+  SectionLabel,
 } from '../components';
 import { BalanceTile } from '../features/credits/BalanceTile';
+import { CreditPackCard } from '../features/credits/CreditPackCard';
 import { LowBalanceNotice } from '../features/credits/LowBalanceNotice';
 import { useFormat } from '../hooks/useFormat';
 import { useCredits, usePackPrices } from '../hooks/credits';
 import { qk } from '../hooks/keys';
-import { buyCredits } from '../lib/purchase';
-import { canAfford, creditsShort, displayPrice } from '../lib/credits';
+import { canAfford, costOf, creditsShort, displayPrice } from '../lib/credits';
 import { formatQty, formatUsd } from '../lib/format';
+import { buyCredits } from '../lib/purchase';
+import { useToastStore } from '../stores/toast';
 import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
@@ -44,23 +44,26 @@ export default function BuyCreditsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const qc = useQueryClient();
+  const showToast = useToastStore((state) => state.show);
   const params = useLocalSearchParams<{ action?: string | string[] }>();
   const action = actionParam(params.action);
 
   const credits = useCredits();
   const packPrices = usePackPrices();
   const [busyProduct, setBusyProduct] = useState<string | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState(CREDIT_PACKS[0]?.productId ?? null);
-  const [notice, setNotice] = useState<'credited' | 'pending' | 'failed' | null>(null);
+  const [notice, setNotice] = useState<'pending' | 'failed' | null>(null);
 
   const onBuy = async (productId: string) => {
     setNotice(null);
     setBusyProduct(productId);
     try {
       const outcome = await buyCredits(productId);
-      if (outcome.status === 'credited' || outcome.status === 'pending') {
+      if (outcome.status === 'credited') {
         await qc.invalidateQueries({ queryKey: qk.credits });
-        setNotice(outcome.status);
+        showToast({ message: t('mobile.credits.credited') });
+      } else if (outcome.status === 'pending') {
+        await qc.invalidateQueries({ queryKey: qk.credits });
+        setNotice('pending');
       }
       // `cancelled`: the user backed out — say nothing.
     } catch {
@@ -76,14 +79,9 @@ export default function BuyCreditsScreen() {
   };
 
   const balance = credits.data;
-  const selectedPack =
-    CREDIT_PACKS.find((pack) => pack.productId === selectedProductId) ?? CREDIT_PACKS[0] ?? null;
-  const busyPack = busyProduct
-    ? (CREDIT_PACKS.find((pack) => pack.productId === busyProduct) ?? null)
-    : null;
-  const ctaPack = busyPack ?? selectedPack;
   const shortfall =
     balance && action && !canAfford(balance, action) ? creditsShort(balance, action) : 0;
+  const cost = action ? costOf(action) : 0;
 
   return (
     <Screen scroll refreshing={credits.isRefetching} onRefresh={() => void credits.refetch()}>
@@ -100,22 +98,28 @@ export default function BuyCreditsScreen() {
           <LowBalanceNotice balance={balance} />
 
           {shortfall > 0 ? (
-            <Card
-              tone="alt"
-              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
-            >
-              <Icon name="warning" size={20} color={colors.warn} />
-              <AppText variant="bodyStrong" style={{ flex: 1 }} accessibilityRole="alert">
-                {t('mobile.credits.needMore', { needed: formatQty(locale, shortfall, prefs) })}
+            <Card style={{ gap: spacing.md, backgroundColor: colors.surfaceAlt }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <Icon name="alert" size={18} color={colors.warn} />
+                <AppText style={{ flex: 1 }} accessibilityRole="alert">
+                  {t('mobile.credits.needMore', {
+                    needed: formatQty(locale, shortfall, prefs),
+                  })}
+                </AppText>
+              </View>
+              <AppText variant="caption" muted>
+                {t('mobile.credits.costNotice', {
+                  cost: formatQty(locale, cost, prefs),
+                })}
               </AppText>
             </Card>
           ) : null}
 
           {notice ? (
-            <Card tone={notice === 'credited' ? 'primary' : 'surface'} style={{ gap: spacing.xs }}>
+            <Card style={{ gap: spacing.xs }}>
               <AppText
                 variant="bodyStrong"
-                color={notice === 'credited' ? 'success' : notice === 'failed' ? 'danger' : 'text'}
+                color={notice === 'failed' ? 'danger' : 'text'}
                 accessibilityRole="alert"
               >
                 {t(`mobile.credits.${notice}`)}
@@ -123,51 +127,26 @@ export default function BuyCreditsScreen() {
             </Card>
           ) : null}
 
-          <Bento>
+          <SectionLabel>{t('mobile.credits.packs')}</SectionLabel>
+          <>
             {CREDIT_PACKS.map((pack) => {
-              const selected = selectedPack?.productId === pack.productId;
-              const creditsLabel = t('mobile.credits.packCredits', {
-                credits: formatQty(locale, pack.credits, prefs),
-              });
               const price = displayPrice(
                 packPrices.data?.[pack.productId] ?? null,
                 formatUsd(locale, pack.priceUsd, prefs),
               );
               return (
-                <Tile
+                <CreditPackCard
                   key={pack.productId}
-                  span={2}
-                  icon="sparkles"
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: selected, disabled: busyProduct !== null }}
-                  accessibilityLabel={`${creditsLabel}, ${price}`}
-                  onPress={() => {
-                    if (busyProduct === null) setSelectedProductId(pack.productId);
-                  }}
-                  style={selected ? { borderWidth: 2, borderColor: colors.primary } : undefined}
-                >
-                  <View style={{ gap: spacing.xs }}>
-                    <AppText variant="numeral">{formatQty(locale, pack.credits, prefs)}</AppText>
-                    <AppText variant="caption" muted style={{ writingDirection: 'ltr' }}>
-                      {price}
-                    </AppText>
-                  </View>
-                </Tile>
+                  pack={pack}
+                  price={price}
+                  freeGrant={balance.freeGrant}
+                  loading={busyProduct === pack.productId}
+                  disabled={busyProduct !== null}
+                  onBuy={(productId) => void onBuy(productId)}
+                />
               );
             })}
-          </Bento>
-
-          {ctaPack ? (
-            <Button
-              title={t('mobile.credits.buyCta', {
-                credits: formatQty(locale, ctaPack.credits, prefs),
-              })}
-              icon="wallet"
-              loading={busyProduct !== null}
-              disabled={busyProduct !== null}
-              onPress={() => void onBuy(ctaPack.productId)}
-            />
-          ) : null}
+          </>
         </>
       )}
     </Screen>

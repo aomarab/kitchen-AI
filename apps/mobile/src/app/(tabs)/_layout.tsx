@@ -30,28 +30,28 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: t('mobile.tabs.home'),
-          tabBarIcon: ({ color }) => <Icon name="home" color={color} size={22} />,
+          tabBarIcon: ({ color }) => <Icon name="home" color={color} size={24} />,
         }}
       />
       <Tabs.Screen
         name="kitchen"
         options={{
           title: t('mobile.tabs.kitchen'),
-          tabBarIcon: ({ color }) => <Icon name="kitchen" color={color} size={22} />,
+          tabBarIcon: ({ color }) => <Icon name="fridge" color={color} size={24} />,
         }}
       />
       <Tabs.Screen
         name="plans"
         options={{
           title: t('mobile.tabs.plan'),
-          tabBarIcon: ({ color }) => <Icon name="plans" color={color} size={22} />,
+          tabBarIcon: ({ color }) => <Icon name="calendar" color={color} size={24} />,
         }}
       />
       <Tabs.Screen
         name="shopping"
         options={{
           title: t('mobile.tabs.shop'),
-          tabBarIcon: ({ color }) => <Icon name="basket" color={color} size={22} />,
+          tabBarIcon: ({ color }) => <Icon name="bag" color={color} size={24} />,
         }}
       />
     </Tabs>

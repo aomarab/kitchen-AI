@@ -57,10 +57,20 @@ describe('LocationsService (live DB)', () => {
     quantity: number,
     opts: { unit?: 'kg' | 'piece'; expiresAt?: string | null } = {},
   ): Promise<string> {
+    return putItemFor(householdId, locationId, ingredientId, quantity, opts);
+  }
+
+  async function putItemFor(
+    ownerHouseholdId: string,
+    locationId: string,
+    ingredientId: string,
+    quantity: number,
+    opts: { unit?: 'kg' | 'piece'; expiresAt?: string | null } = {},
+  ): Promise<string> {
     const [row] = await ctx.db
       .insert(inventoryItems)
       .values({
-        householdId,
+        householdId: ownerHouseholdId,
         ingredientId,
         locationId,
         quantity: String(quantity),
@@ -72,7 +82,7 @@ describe('LocationsService (live DB)', () => {
     if (!row) throw new Error('failed to seed item');
     await ctx.db.insert(inventoryEvents).values({
       itemId: row.id,
-      householdId,
+      householdId: ownerHouseholdId,
       delta: String(quantity),
       unit: opts.unit ?? 'kg',
       reason: 'added',
@@ -132,7 +142,10 @@ describe('LocationsService (live DB)', () => {
       .select({ id: inventoryItems.id, quantity: inventoryItems.quantity })
       .from(inventoryItems)
       .where(
-        and(eq(inventoryItems.locationId, to.id), eq(inventoryItems.ingredientId, ingredientIds[2]!)),
+        and(
+          eq(inventoryItems.locationId, to.id),
+          eq(inventoryItems.ingredientId, ingredientIds[2]!),
+        ),
       );
     expect(rows).toHaveLength(1);
     expect(rows[0]?.id).toBe(target);
@@ -190,6 +203,42 @@ describe('LocationsService (live DB)', () => {
 
     await cleanup(ctx.db, { households: [otherHousehold], users: [otherUser] });
     await service.delete(householdId, mine.id, { moveTo: (await makeLocation('Spare')).id });
+  });
+
+  it('does not merge moved items into another household item that points at the same destination', async () => {
+    const otherUser = await seedUser(ctx.db);
+    const otherHousehold = await seedHousehold(ctx.db, otherUser);
+    const from = await makeLocation('Scope source');
+    const to = await makeLocation('Scope destination');
+    await putItem(from.id, ingredientIds[0]!, 2);
+    const foreignItem = await putItemFor(otherHousehold, to.id, ingredientIds[0]!, 5);
+
+    await service.delete(householdId, from.id, { moveTo: to.id });
+
+    const rows = await ctx.db
+      .select({
+        id: inventoryItems.id,
+        householdId: inventoryItems.householdId,
+        quantity: inventoryItems.quantity,
+      })
+      .from(inventoryItems)
+      .where(
+        and(
+          eq(inventoryItems.locationId, to.id),
+          eq(inventoryItems.ingredientId, ingredientIds[0]!),
+        ),
+      );
+
+    expect(rows).toHaveLength(2);
+    expect(rows.find((row) => row.id === foreignItem)).toMatchObject({
+      householdId: otherHousehold,
+      quantity: '5.000',
+    });
+    expect(rows.find((row) => row.householdId === householdId)).toMatchObject({
+      quantity: '2.000',
+    });
+
+    await cleanup(ctx.db, { households: [otherHousehold], users: [otherUser] });
   });
 
   it('renames a place without touching what is inside it', async () => {

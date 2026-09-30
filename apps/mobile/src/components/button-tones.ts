@@ -1,20 +1,14 @@
 import type { PaletteColors } from '../theme/palettes';
 
 /**
- * The Apricot button variants (spec §8.5). Kept free of React Native so the
- * palette guards can check every fill and label pair without a renderer, the
- * same way `recipe-thumb-tones.ts` does for the placeholder.
+ * Coral button tones (spec §8). Kept free of React Native so the palette
+ * guards can check every fill and label pair without a renderer.
  */
-export const BUTTON_VARIANTS = [
-  'primary',
-  'secondary',
-  'soft',
-  'ghost',
-  'danger',
-  'media',
-] as const;
+export const BUTTON_VARIANTS = ['primary', 'secondary', 'ghost', 'destructive', 'inverse'] as const;
 
 export type ButtonVariant = (typeof BUTTON_VARIANTS)[number];
+export type ButtonToneName = 'default' | 'danger';
+export type JButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive' | 'inverse';
 
 export interface ButtonTone {
   fill: string;
@@ -22,113 +16,119 @@ export interface ButtonTone {
   label: string;
   /** The 1px edge. Equal to the fill wherever the fill is the edge. */
   border: string;
+  borderWidth: 0 | 1 | 1.5;
 }
 
-export function buttonTone(colors: PaletteColors, variant: ButtonVariant): ButtonTone {
+export interface ButtonToneOptions {
+  tone?: ButtonToneName;
+  disabled?: boolean;
+}
+
+export function buttonTone(
+  colors: PaletteColors,
+  variant: ButtonVariant,
+  { tone = 'default', disabled = false }: ButtonToneOptions = {},
+): ButtonTone {
+  if (disabled) {
+    return {
+      fill: colors.surfaceAlt,
+      pressedFill: colors.surfaceAlt,
+      label: colors.textMuted,
+      border: colors.surfaceAlt,
+      borderWidth: 0,
+    };
+  }
+
   switch (variant) {
     case 'primary':
-      // Coral takes an ink label in both modes: white on it is 2.83:1 (§3).
       return {
         fill: colors.primary,
         pressedFill: colors.primaryPressed,
         label: colors.onFill,
         border: colors.primary,
+        borderWidth: 0,
       };
     case 'secondary':
       return {
-        fill: colors.surface,
-        pressedFill: colors.surface,
-        label: colors.text,
-        border: colors.border,
-      };
-    case 'soft':
-      return {
-        fill: colors.primarySoft,
-        pressedFill: colors.primarySoft,
+        fill: 'transparent',
+        pressedFill: 'transparent',
         label: colors.primaryText,
-        border: colors.primarySoft,
+        border: colors.primary,
+        borderWidth: 1.5,
       };
     case 'ghost':
       return {
         fill: 'transparent',
         pressedFill: 'transparent',
-        label: colors.primaryText,
+        label: tone === 'danger' ? colors.danger : colors.text,
         border: 'transparent',
+        borderWidth: 0,
       };
-    case 'danger':
-      // Not `onFill`: the light-mode red takes white, so the destructive fill
-      // carries its own label token.
+    case 'destructive':
       return {
         fill: colors.danger,
         pressedFill: colors.danger,
         label: colors.onDanger,
         border: colors.danger,
+        borderWidth: 0,
       };
-    case 'media':
-      // On the camera, the still and photos, which are dark in every mode.
+    case 'inverse':
       return {
-        fill: colors.textInverse,
-        pressedFill: colors.textInverse,
-        label: colors.onPrimaryInverse,
-        border: colors.textInverse,
+        fill: colors.inverse,
+        pressedFill: colors.inverse,
+        label: colors.onInverse,
+        border: colors.inverse,
+        borderWidth: 0,
       };
   }
 }
 
-/**
- * The fills a `RoundButton` circle takes (spec §14, "Small controls"): back
- * and close on the page, the same inside a card or sheet, the brand action,
- * the avatar, and controls over the camera or a photo.
- */
-export const ROUND_BUTTON_TONES = [
+export const ICON_BUTTON_TONES = [
+  'plain',
   'surface',
-  'sunk',
-  'primary',
-  'soft',
+  'outline',
+  'coral',
+  'inverse',
   'media',
-  'mediaLight',
 ] as const;
 
-export type RoundButtonTone = (typeof ROUND_BUTTON_TONES)[number];
+export type IconButtonTone = (typeof ICON_BUTTON_TONES)[number];
 
-export interface RoundButtonColors {
+export interface IconButtonColors {
   fill: string;
   glyph: string;
   border: string;
+  borderWidth: 0 | 1;
 }
 
-export function roundButtonTone(
-  colors: PaletteColors,
-  tone: RoundButtonTone,
-  isDark = false,
-): RoundButtonColors {
+export function iconButtonTone(colors: PaletteColors, tone: IconButtonTone): IconButtonColors {
   switch (tone) {
+    case 'plain':
+      return { fill: 'transparent', glyph: colors.text, border: 'transparent', borderWidth: 0 };
     case 'surface':
-      // White on the cream page separates by its shadow in light mode. Dark
-      // mode has no visible shadow, so the edge is drawn instead.
       return {
-        fill: colors.surface,
+        fill: colors.surfaceAlt,
         glyph: colors.text,
-        border: isDark ? colors.border : colors.surface,
+        border: 'transparent',
+        borderWidth: 0,
       };
-    case 'sunk':
-      // Inside a card or a sheet, where a `surface` circle would vanish.
-      return { fill: colors.surfaceAlt, glyph: colors.text, border: colors.surfaceAlt };
-    case 'primary':
-      return { fill: colors.primary, glyph: colors.onFill, border: colors.primary };
-    case 'soft':
-      return { fill: colors.primarySoft, glyph: colors.primaryText, border: colors.primarySoft };
+    case 'outline':
+      return { fill: colors.bg, glyph: colors.text, border: colors.border, borderWidth: 1 };
+    case 'coral':
+      return { fill: colors.primary, glyph: colors.onFill, border: colors.primary, borderWidth: 0 };
+    case 'inverse':
+      return {
+        fill: colors.inverse,
+        glyph: colors.onInverse,
+        border: colors.inverse,
+        borderWidth: 0,
+      };
     case 'media':
       return {
-        fill: colors.surfaceInverseAlt,
+        fill: colors.mediaButton,
         glyph: colors.textInverse,
-        border: colors.borderInverse,
-      };
-    case 'mediaLight':
-      return {
-        fill: colors.textInverse,
-        glyph: colors.onPrimaryInverse,
-        border: colors.textInverse,
+        border: 'transparent',
+        borderWidth: 0,
       };
   }
 }

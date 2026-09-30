@@ -10,7 +10,13 @@ import type {
 } from '@kitchen/contracts';
 import { AppError } from '../../common/errors.js';
 import { DB, type Database } from '../../db/index.js';
-import { ingredients, inventoryEvents, inventoryItems, shoppingListItems } from '../../db/schema.js';
+import {
+  ingredients,
+  inventoryEvents,
+  inventoryItems,
+  shoppingListItems,
+} from '../../db/schema.js';
+import { assertStorageLocation } from '../../inventory/location-assertion.js';
 
 type IngredientRow = typeof ingredients.$inferSelect;
 
@@ -58,7 +64,12 @@ export class ShoppingService {
     const ingredientRows = await this.db
       .select()
       .from(ingredients)
-      .where(inArray(ingredients.id, inserted.map((i) => i.ingredientId)));
+      .where(
+        inArray(
+          ingredients.id,
+          inserted.map((i) => i.ingredientId),
+        ),
+      );
     const byId = new Map(ingredientRows.map((r) => [r.id, r]));
     return inserted.map((item) => this.toItem(item, byId.get(item.ingredientId)!));
   }
@@ -85,6 +96,8 @@ export class ShoppingService {
   /** Moves purchased items into inventory as `purchased` events (spec §5.2/§4.2). */
   async checkout(householdId: string, body: CheckoutShoppingRequest): Promise<InventoryItem[]> {
     return this.db.transaction(async (tx) => {
+      await assertStorageLocation(tx, householdId, body.locationId);
+
       const items = await tx
         .select()
         .from(shoppingListItems)

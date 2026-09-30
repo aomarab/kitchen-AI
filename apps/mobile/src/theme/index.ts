@@ -1,5 +1,5 @@
 import type { Locale } from '@kitchen/i18n';
-import type { Palette, ThemeMode, Tint, TintName } from './palettes';
+import type { Palette, ThemeMode } from './palettes';
 
 /**
  * Design tokens. Kept flat and dependency-free so any component can pull colours,
@@ -9,60 +9,56 @@ import type { Palette, ThemeMode, Tint, TintName } from './palettes';
  */
 
 export { paletteFor, palettes } from './palettes';
-export type {
-  Palette,
-  PaletteColors,
-  Scrim,
-  Tint,
-  TintName,
-  ThemeMode,
-  ColorToken,
-} from './palettes';
+export type { Palette, PaletteColors, Scrim, ThemeMode, ColorToken } from './palettes';
+export {
+  ThemeModeOverride,
+  themeModeWithOverride,
+  useThemeModeOverride,
+} from './ThemeModeOverride';
 
 export const spacing = {
   xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
+  gutter: 20,
   xl: 24,
   xxl: 32,
 } as const;
 
-/**
- * Apricot rounds generously (spec §6.7): `xl` is the bento tile, `lg` the group
- * card, chat bubble and sheet, `md` inputs and thumbnails. Buttons, chips, the
- * composer and the tab bar are pills.
- */
 export const radius = {
-  xs: 8,
-  sm: 12,
-  md: 18,
-  lg: 24,
-  xl: 28,
-  pill: 999,
+  none: 0,
+  shutter: 999,
 } as const;
 
 /**
- * Tiles separate from the cream page by fill, so the card shadow only hints.
- * `raised` is for what floats: the tab bar, the camera button, sheets and the
- * orb's bubble on the camera. Android gets the matching `elevation`.
+ * J uses three shadows in light mode. Dark mode disables them completely
+ * (including Android elevation); dark cards get separation from `cardEdge`.
  */
 export function shadowFor(palette: Palette) {
   const { shadowColor, shadowScale } = palette;
+  const hasShadow = shadowScale > 0;
   return {
     card: {
       shadowColor,
-      shadowOpacity: 0.05 * shadowScale,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 2,
+      shadowOpacity: 0.07 * shadowScale,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: hasShadow ? 2 : 0,
     },
     raised: {
       shadowColor,
-      shadowOpacity: 0.14 * shadowScale,
+      shadowOpacity: 0.16 * shadowScale,
       shadowRadius: 28,
-      shadowOffset: { width: 0, height: 12 },
-      elevation: 8,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: hasShadow ? 8 : 0,
+    },
+    sheet: {
+      shadowColor,
+      shadowOpacity: 0.1 * shadowScale,
+      shadowRadius: 30,
+      shadowOffset: { width: 0, height: -8 },
+      elevation: hasShadow ? 12 : 0,
     },
   } as const;
 }
@@ -70,65 +66,149 @@ export function shadowFor(palette: Palette) {
 export type Shadow = ReturnType<typeof shadowFor>;
 
 /**
- * Typography scale. Arabic runs at a larger line-height than Latin per spec §7,
- * and the `fontFamily` itself (Outfit or Tajawal) is resolved per locale and
- * weight in `lib/fonts.ts` — text primitives call `resolveFontFamily` so nothing
- * here needs to know about font loading.
+ * Typography scale. Coral uses Tajawal for text in both scripts; numerals keep
+ * Outfit Medium through `resolveFontFamily` for tabular figures.
  */
 export interface TextStyleToken {
   fontSize: number;
   lineHeight: number;
   fontWeight: '400' | '500' | '600' | '700';
   letterSpacing: number;
-  /** Only on `numeral`: counts that tick must not jitter as digits change width. */
   fontVariant?: 'tabular-nums'[];
 }
 
-const LATIN_LINE_HEIGHT = 1.35;
-const ARABIC_LINE_HEIGHT = 1.7;
+interface LocaleTypeValues {
+  fontSize: number;
+  lineHeight: number;
+}
 
-/**
- * `letterSpacing` is a Latin-only device and is zeroed for Arabic below, the
- * same way line-height is switched. Arabic is cursive: spacing the letters
- * forces gaps into the joins.
- */
+interface ScaleEntry {
+  en: LocaleTypeValues;
+  ar: LocaleTypeValues;
+  fontWeight: TextStyleToken['fontWeight'];
+  letterSpacing: number;
+  fontVariant?: TextStyleToken['fontVariant'];
+}
+
 const SCALE = {
-  hero: { fontSize: 34, fontWeight: '600' as const, letterSpacing: -0.68 },
-  display: { fontSize: 28, fontWeight: '600' as const, letterSpacing: -0.56 },
-  title: { fontSize: 22, fontWeight: '600' as const, letterSpacing: -0.33 },
-  heading: { fontSize: 18, fontWeight: '600' as const, letterSpacing: -0.18 },
-  body: { fontSize: 16, fontWeight: '400' as const, letterSpacing: 0 },
-  bodyStrong: { fontSize: 16, fontWeight: '500' as const, letterSpacing: 0 },
-  numeral: {
-    fontSize: 40,
-    fontWeight: '700' as const,
-    letterSpacing: -0.8,
-    fontVariant: ['tabular-nums' as const],
+  hero: {
+    en: { fontSize: 34, lineHeight: 40 },
+    ar: { fontSize: 30, lineHeight: 44 },
+    fontWeight: '500',
+    letterSpacing: -0.4,
   },
-  button: { fontSize: 16, fontWeight: '600' as const, letterSpacing: 0.1 },
-  label: { fontSize: 14, fontWeight: '500' as const, letterSpacing: 0.1 },
-  caption: { fontSize: 13, fontWeight: '400' as const, letterSpacing: 0.1 },
-} satisfies Record<
-  string,
-  {
-    fontSize: number;
-    fontWeight: TextStyleToken['fontWeight'];
-    letterSpacing: number;
-    fontVariant?: TextStyleToken['fontVariant'];
-  }
->;
+  display: {
+    en: { fontSize: 28, lineHeight: 34 },
+    ar: { fontSize: 26, lineHeight: 38 },
+    fontWeight: '500',
+    letterSpacing: -0.3,
+  },
+  title: {
+    en: { fontSize: 22, lineHeight: 28 },
+    ar: { fontSize: 20, lineHeight: 30 },
+    fontWeight: '500',
+    letterSpacing: -0.2,
+  },
+  heading: {
+    en: { fontSize: 18, lineHeight: 24 },
+    ar: { fontSize: 17, lineHeight: 26 },
+    fontWeight: '500',
+    letterSpacing: 0,
+  },
+  bodyLarge: {
+    en: { fontSize: 17, lineHeight: 27 },
+    ar: { fontSize: 17, lineHeight: 30 },
+    fontWeight: '400',
+    letterSpacing: 0,
+  },
+  body: {
+    en: { fontSize: 15, lineHeight: 22 },
+    ar: { fontSize: 15, lineHeight: 26 },
+    fontWeight: '400',
+    letterSpacing: 0,
+  },
+  bodyStrong: {
+    en: { fontSize: 15, lineHeight: 22 },
+    ar: { fontSize: 15, lineHeight: 26 },
+    fontWeight: '500',
+    letterSpacing: 0,
+  },
+  label: {
+    en: { fontSize: 13, lineHeight: 18 },
+    ar: { fontSize: 13, lineHeight: 22 },
+    fontWeight: '500',
+    letterSpacing: 0.1,
+  },
+  caption: {
+    en: { fontSize: 13, lineHeight: 18 },
+    ar: { fontSize: 13, lineHeight: 22 },
+    fontWeight: '400',
+    letterSpacing: 0.1,
+  },
+  small: {
+    en: { fontSize: 12, lineHeight: 16 },
+    ar: { fontSize: 12, lineHeight: 18 },
+    fontWeight: '400',
+    letterSpacing: 0.1,
+  },
+  eyebrow: {
+    en: { fontSize: 12, lineHeight: 16 },
+    ar: { fontSize: 12, lineHeight: 18 },
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  button: {
+    en: { fontSize: 15, lineHeight: 20 },
+    ar: { fontSize: 15, lineHeight: 22 },
+    fontWeight: '700',
+    letterSpacing: 0.1,
+  },
+  buttonSmall: {
+    en: { fontSize: 13, lineHeight: 18 },
+    ar: { fontSize: 13, lineHeight: 20 },
+    fontWeight: '700',
+    letterSpacing: 0.1,
+  },
+  numeral: {
+    en: { fontSize: 44, lineHeight: 48 },
+    ar: { fontSize: 44, lineHeight: 52 },
+    fontWeight: '500',
+    letterSpacing: -0.5,
+    fontVariant: ['tabular-nums'],
+  },
+  numeralSmall: {
+    en: { fontSize: 28, lineHeight: 32 },
+    ar: { fontSize: 28, lineHeight: 36 },
+    fontWeight: '500',
+    letterSpacing: -0.3,
+    fontVariant: ['tabular-nums'],
+  },
+  tab: {
+    en: { fontSize: 11, lineHeight: 14 },
+    ar: { fontSize: 11, lineHeight: 16 },
+    fontWeight: '500',
+    letterSpacing: 0.1,
+  },
+} satisfies Record<string, ScaleEntry>;
 
 export type TypographyVariant = keyof typeof SCALE;
 
 /**
  * How far each tier may scale with the system font size.
  *
- * Chrome — pill buttons, field labels, badges — sits in fixed-height rows, so
- * it stops at 1.6x. Content is uncapped: at the largest accessibility sizes the
- * user has asked for very large text and long-form copy should give it to them.
+ * Chrome — buttons, labels, badges and tabs — sits in fixed-height rows, so it
+ * stops at 1.6x. Content is uncapped.
  */
 export const CHROME_MAX_FONT_SCALE = 1.6;
-const CHROME_VARIANTS: readonly TypographyVariant[] = ['button', 'label', 'caption'];
+const CHROME_VARIANTS: readonly TypographyVariant[] = [
+  'button',
+  'buttonSmall',
+  'label',
+  'caption',
+  'small',
+  'eyebrow',
+  'tab',
+];
 
 /**
  * Returned straight to React Native's `maxFontSizeMultiplier`, which accepts
@@ -141,14 +221,15 @@ export function maxFontScaleFor(variant: TypographyVariant): number | undefined 
 
 export function typography(locale: Locale): Record<TypographyVariant, TextStyleToken> {
   const isArabic = locale === 'ar';
-  const factor = isArabic ? ARABIC_LINE_HEIGHT : LATIN_LINE_HEIGHT;
+  const localeKey = isArabic ? 'ar' : 'en';
   const out = {} as Record<TypographyVariant, TextStyleToken>;
   for (const key of Object.keys(SCALE) as TypographyVariant[]) {
     const entry: (typeof SCALE)[TypographyVariant] = SCALE[key];
+    const local = entry[localeKey];
     out[key] = {
-      fontSize: entry.fontSize,
+      fontSize: local.fontSize,
       fontWeight: entry.fontWeight,
-      lineHeight: Math.round(entry.fontSize * factor),
+      lineHeight: local.lineHeight,
       letterSpacing: isArabic ? 0 : entry.letterSpacing,
       ...('fontVariant' in entry ? { fontVariant: [...entry.fontVariant] } : null),
     };
@@ -177,26 +258,4 @@ export function resolveThemeMode(
 ): ThemeMode {
   if (preference !== 'system') return preference;
   return systemScheme === 'dark' ? 'dark' : 'light';
-}
-
-/**
- * Rotates the tints down a list so adjacent cards never repeat. Negative
- * indices wrap forwards rather than falling off the front of the tuple.
- *
- * Kept as a free function taking the tuple, so the palette guard can exercise
- * the wrapping arithmetic without standing up a React renderer.
- */
-export function tintIn(tints: readonly Tint[], index: number): Tint {
-  const count = tints.length;
-  const wrapped = ((Math.trunc(index) % count) + count) % count;
-  return tints[wrapped] ?? tints[0]!;
-}
-
-/**
- * The tint with a fixed role, such as the butter count tile or the sage plan
- * tile (spec §5.3). Rotation (`tintIn`) is for lists; a tile whose colour means
- * something asks for it by name.
- */
-export function tintNamed(tints: readonly Tint[], name: TintName): Tint {
-  return tints.find((tint) => tint.name === name) ?? tints[0]!;
 }

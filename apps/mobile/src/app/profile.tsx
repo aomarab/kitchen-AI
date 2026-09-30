@@ -8,7 +8,6 @@ import {
   Header,
   AppText,
   Button,
-  Card,
   Chip,
   Field,
   ListGroup,
@@ -95,118 +94,117 @@ export default function Profile() {
     }
     setAllergy('');
   };
+  const saveAndReturn = () => {
+    if (canAddAllergy) {
+      update.mutate(
+        { allergies: [...data.allergies, allergyValue] },
+        { onSuccess: () => router.back() },
+      );
+      return;
+    }
+    router.back();
+  };
+
+  const chips = <T extends string>(
+    items: readonly T[],
+    selected: readonly T[],
+    keyPrefix: string,
+  ) => (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+      {items.map((item) => (
+        <Chip
+          key={item}
+          label={t(`${keyPrefix}.${item}` as MessageKey)}
+          selected={selected.includes(item)}
+          onPress={() => {
+            if (keyPrefix === 'mobile.diet') {
+              update.mutate({ dietaryPrefs: toggle(data.dietaryPrefs, item as DietaryPreference) });
+            } else if (keyPrefix === 'mobile.healthGoals') {
+              update.mutate({ healthGoals: toggle(data.healthGoals, item as HealthGoal) });
+            } else {
+              update.mutate({ cuisinePrefs: toggle(data.cuisinePrefs, item as Cuisine) });
+            }
+          }}
+        />
+      ))}
+    </View>
+  );
 
   return (
-    <Screen scroll>
+    <Screen
+      scroll
+      footer={
+        <Button
+          title={t('common.save')}
+          leadingIcon="check"
+          loading={update.isPending && canAddAllergy}
+          onPress={saveAndReturn}
+        />
+      }
+    >
       <Header title={t('profile.title')} onBack={() => router.back()} />
 
       <ListGroup>
         <ToggleRow
-          grouped
           label={t('profile.halal')}
           value={data.halal}
           onValueChange={(halal) => update.mutate({ halal })}
         />
       </ListGroup>
 
-      <Card style={{ gap: spacing.md }}>
-        <View style={{ gap: spacing.xs }}>
-          <AppText variant="label" muted>
-            {t('profile.householdSize')}
-          </AppText>
-          <QuantityStepper
-            value={data.householdSize}
-            min={1}
-            onChange={(householdSize) => update.mutate({ householdSize })}
-            accessibilityLabel={t('profile.householdSize')}
-            decrementLabel={t('mobile.common.decrease')}
-            incrementLabel={t('mobile.common.increase')}
-          />
-        </View>
-      </Card>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <AppText variant="body" style={{ flex: 1 }}>
+          {t('profile.householdSize')}
+        </AppText>
+        <QuantityStepper
+          value={data.householdSize}
+          min={1}
+          onChange={(householdSize) => update.mutate({ householdSize })}
+          accessibilityLabel={t('profile.householdSize')}
+          decrementLabel={t('mobile.common.decrease')}
+          incrementLabel={t('mobile.common.increase')}
+        />
+      </View>
 
       <View style={{ gap: spacing.sm }}>
         <SectionLabel>{t('profile.dietary')}</SectionLabel>
-        <Card>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {DIETS.map((diet) => (
-              <Chip
-                key={diet}
-                label={t(`mobile.diet.${diet}` as MessageKey)}
-                selected={data.dietaryPrefs.includes(diet)}
-                onPress={() => update.mutate({ dietaryPrefs: toggle(data.dietaryPrefs, diet) })}
-              />
-            ))}
-          </View>
-        </Card>
+        {chips(DIETS, data.dietaryPrefs, 'mobile.diet')}
       </View>
 
       <View style={{ gap: spacing.sm }}>
         <SectionLabel>{t('profile.healthGoals')}</SectionLabel>
-        <Card>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {GOALS.map((goal) => (
-              <Chip
-                key={goal}
-                label={t(`mobile.healthGoals.${goal}` as MessageKey)}
-                selected={data.healthGoals.includes(goal)}
-                onPress={() => update.mutate({ healthGoals: toggle(data.healthGoals, goal) })}
-              />
-            ))}
-          </View>
-        </Card>
+        {chips(GOALS, data.healthGoals, 'mobile.healthGoals')}
       </View>
 
       <View style={{ gap: spacing.sm }}>
         <SectionLabel>{t('profile.cuisines')}</SectionLabel>
-        <Card>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {CUISINES.map((cuisine) => (
-              <Chip
-                key={cuisine}
-                label={t(`mobile.cuisines.${cuisine}` as MessageKey)}
-                selected={data.cuisinePrefs.includes(cuisine)}
-                onPress={() => update.mutate({ cuisinePrefs: toggle(data.cuisinePrefs, cuisine) })}
-              />
-            ))}
-          </View>
-        </Card>
+        {chips(CUISINES, data.cuisinePrefs, 'mobile.cuisines')}
       </View>
 
       <View style={{ gap: spacing.sm }}>
         <SectionLabel>{t('profile.allergies')}</SectionLabel>
-        <Card style={{ gap: spacing.md }}>
-          <AppText variant="caption" muted>
-            {t('profile.allergiesHint')}
-          </AppText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {data.allergies.map((item) => (
-              <Chip
-                key={item}
-                label={item}
-                selected
-                onPress={() =>
-                  update.mutate({ allergies: data.allergies.filter((a) => a !== item) })
-                }
-              />
-            ))}
-          </View>
-          <Field
-            value={allergy}
-            onChangeText={setAllergy}
-            placeholder={t('profile.allergies')}
-            autoCorrect={false}
-            returnKeyType="done"
-            onSubmitEditing={saveAllergy}
-          />
-          <Button
-            title={t('common.save')}
-            icon="check"
-            disabled={!canAddAllergy}
-            loading={update.isPending}
-            onPress={saveAllergy}
-          />
-        </Card>
+        <AppText variant="caption" muted>
+          {t('profile.allergiesHint')}
+        </AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {data.allergies.map((item) => (
+            <Chip
+              key={item}
+              label={item}
+              icon="x"
+              onPress={() => update.mutate({ allergies: data.allergies.filter((a) => a !== item) })}
+            />
+          ))}
+        </View>
+        <Field
+          label={t('mobile.profile.addAllergy')}
+          value={allergy}
+          onChangeText={setAllergy}
+          placeholder={t('profile.allergies')}
+          autoCorrect={false}
+          returnKeyType="done"
+          onSubmitEditing={saveAllergy}
+        />
       </View>
     </Screen>
   );

@@ -11,6 +11,7 @@ import { households, householdMembers, storageLocations, users } from '../db/sch
 import { AppError } from '../common/errors.js';
 import { generateInviteCode } from './invite-code.js';
 import { toHousehold, type MemberRow } from './households.serializer.js';
+import { JoinAttemptLimiter } from './join-attempt-limiter.js';
 
 const MAX_CODE_ATTEMPTS = 8;
 
@@ -40,7 +41,10 @@ function isUniqueViolation(error: unknown): boolean {
 
 @Injectable()
 export class HouseholdsService {
-  constructor(@Inject(DB) private readonly db: Database) {}
+  constructor(
+    @Inject(DB) private readonly db: Database,
+    @Inject(JoinAttemptLimiter) private readonly joinAttempts: JoinAttemptLimiter,
+  ) {}
 
   async list(userId: string): Promise<Household[]> {
     const ids = await this.db
@@ -59,9 +63,7 @@ export class HouseholdsService {
             .values({ name: dto.name, inviteCode: generateInviteCode(), createdBy: userId })
             .returning();
           if (!row) throw new AppError('INTERNAL_ERROR');
-          await tx
-            .insert(householdMembers)
-            .values({ householdId: row.id, userId, role: 'owner' });
+          await tx.insert(householdMembers).values({ householdId: row.id, userId, role: 'owner' });
           await tx
             .insert(storageLocations)
             .values(STARTING_LOCATIONS.map((place) => ({ householdId: row.id, ...place })));
@@ -76,22 +78,26 @@ export class HouseholdsService {
     throw new AppError('INTERNAL_ERROR');
   }
 
-  async join(userId: string, inviteCode: string): Promise<Household> {
+  async join(userId: string, inviteCode: string, clientIp: string): Promise<Household> {
+    const identity = { userId, clientIp };
+    await this.joinAttempts.assertAllowed(identity);
+
+    const normalizedInviteCode = inviteCode.toUpperCase();
     const [household] = await this.db
       .select({ id: households.id })
       .from(households)
-      .where(eq(households.inviteCode, inviteCode))
+      .where(eq(households.inviteCode, normalizedInviteCode))
       .limit(1);
-    if (!household) throw AppError.notFound('household.invalidCode');
+    if (!household) {
+      await this.joinAttempts.recordFailure(identity);
+      throw AppError.notFound('household.invalidCode');
+    }
 
     const [existing] = await this.db
       .select({ userId: householdMembers.userId })
       .from(householdMembers)
       .where(
-        and(
-          eq(householdMembers.householdId, household.id),
-          eq(householdMembers.userId, userId),
-        ),
+        and(eq(householdMembers.householdId, household.id), eq(householdMembers.userId, userId)),
       )
       .limit(1);
 
@@ -135,9 +141,7 @@ export class HouseholdsService {
       const [owners] = await this.db
         .select({ value: count() })
         .from(householdMembers)
-        .where(
-          and(eq(householdMembers.householdId, id), eq(householdMembers.role, 'owner')),
-        );
+        .where(and(eq(householdMembers.householdId, id), eq(householdMembers.role, 'owner')));
       if ((owners?.value ?? 0) <= 1) {
         // The last owner cannot abandon a household. See spec §3.4.
         throw AppError.conflict();
@@ -146,9 +150,7 @@ export class HouseholdsService {
 
     await this.db
       .delete(householdMembers)
-      .where(
-        and(eq(householdMembers.householdId, id), eq(householdMembers.userId, userId)),
-      );
+      .where(and(eq(householdMembers.householdId, id), eq(householdMembers.userId, userId)));
   }
 
   private async requireMembership(userId: string, householdId: string): Promise<HouseholdRole> {
@@ -156,10 +158,7 @@ export class HouseholdsService {
       .select({ role: householdMembers.role })
       .from(householdMembers)
       .where(
-        and(
-          eq(householdMembers.householdId, householdId),
-          eq(householdMembers.userId, userId),
-        ),
+        and(eq(householdMembers.householdId, householdId), eq(householdMembers.userId, userId)),
       )
       .limit(1);
     if (!membership) throw AppError.notFound();

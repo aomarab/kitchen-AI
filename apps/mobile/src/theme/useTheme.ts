@@ -1,53 +1,36 @@
 import { useMemo } from 'react';
 import { useColorScheme, type StyleSheet } from 'react-native';
-import { resolveThemeMode, shadowFor, tintIn, tintNamed, type Shadow } from './index';
-import {
-  paletteFor,
-  type Palette,
-  type Scrim,
-  type Tint,
-  type TintName,
-  type ThemeMode,
-} from './palettes';
+import { resolveThemeMode, shadowFor, themeModeWithOverride, type Shadow } from './index';
+import { paletteFor, type Palette, type Scrim, type ThemeMode } from './palettes';
 import { useSettingsStore } from '../stores/settings';
+import { useThemeModeOverride } from './ThemeModeOverride';
 
 export interface Theme {
   readonly colors: Palette['colors'];
-  readonly tints: readonly Tint[];
-  readonly gradientHero: readonly string[];
   readonly scrim: Scrim;
   readonly shadow: Shadow;
   readonly mode: ThemeMode;
   readonly isDark: boolean;
-  /** Rotating tints for a list, so neighbours never repeat. */
-  readonly tintIn: (index: number) => Tint;
-  /** The tint for a tile whose colour has a fixed role. */
-  readonly tintNamed: (name: TintName) => Tint;
 }
 
 /**
- * The active palette. There is deliberately no provider: the preference already
- * lives in the settings store, and a store subscription re-renders exactly the
- * components that read colours. A context would add a second source of truth
- * for the same value and one more thing to forget to wrap a screen in.
+ * The active palette. The persisted preference lives in the settings store, and
+ * a scoped override can force a subtree without writing that preference.
  */
 export function useTheme(): Theme {
   const preference = useSettingsStore((state) => state.themePreference);
   const system = useColorScheme();
-  const mode: ThemeMode = resolveThemeMode(preference, system);
+  const override = useThemeModeOverride();
+  const mode: ThemeMode = themeModeWithOverride(resolveThemeMode(preference, system), override);
 
   return useMemo(() => {
     const palette = paletteFor(mode);
     return {
       colors: palette.colors,
-      tints: palette.tints,
-      gradientHero: palette.gradientHero,
       scrim: palette.scrim,
       shadow: shadowFor(palette),
       mode,
       isDark: mode === 'dark',
-      tintIn: (index: number) => tintIn(palette.tints, index),
-      tintNamed: (name: TintName) => tintNamed(palette.tints, name),
     };
   }, [mode]);
 }

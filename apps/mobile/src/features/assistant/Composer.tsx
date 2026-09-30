@@ -1,10 +1,9 @@
 import { TextInput, View } from 'react-native';
-import { RoundButton } from '../../components';
-import { radius, spacing } from '../../theme';
+import { IconButton } from '../../components';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 import { useLocale } from '../../lib/locale';
 import { resolveFontFamily, useFontStore } from '../../lib/fonts';
-import { composerAction } from '../../lib/assistant/composer';
 import type { AssistantMode } from './LiveAssistantScreen';
 
 export interface ComposerProps {
@@ -20,15 +19,15 @@ export interface ComposerProps {
   onDraftChange: (text: string) => void;
   onSubmit: () => void;
   onToggleMic: () => void;
-  onLivePress: () => void;
+  onModePress: () => void;
 }
 
-/** The F5 pill composer (spec §8.7), using shared RoundButton targets. */
+/** Coral composer (spec §8), keeping text, mic, send and mode actions reachable. */
 export function Composer({
-  mode,
+  mode: _mode,
   draft,
   micMuted,
-  lockMode = false,
+  lockMode: _lockMode = false,
   placeholder,
   liveLabel,
   sendLabel,
@@ -37,18 +36,13 @@ export function Composer({
   onDraftChange,
   onSubmit,
   onToggleMic,
-  onLivePress,
+  onModePress,
 }: ComposerProps) {
   const { colors } = useTheme();
   const { dir, locale } = useLocale();
   const fontsLoaded = useFontStore((state) => state.loaded);
   const fontFamily = resolveFontFamily(locale, fontsLoaded);
-  const action = composerAction({ mode, draft, micMuted });
-  const actionLabel =
-    action === 'mic' ? micLabel : action === 'micMuted' ? micMutedLabel : sendLabel;
-  const actionIcon = action === 'mic' ? 'mic' : action === 'micMuted' ? 'micOff' : 'send';
-  const disabled = action === 'sendDisabled';
-  const onActionPress = action === 'mic' || action === 'micMuted' ? onToggleMic : onSubmit;
+  const disabled = draft.trim().length === 0;
 
   return (
     <View
@@ -56,49 +50,64 @@ export function Composer({
         minHeight: 60,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.sm,
-        borderRadius: radius.pill,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.sm,
+        gap: 6,
+        borderTopWidth: 1,
+        borderTopColor: colors.rowline,
+        backgroundColor: colors.bg,
+        paddingTop: spacing.sm,
+        paddingEnd: spacing.md,
+        paddingBottom: spacing.sm,
+        paddingStart: spacing.lg,
       }}
     >
-      {!lockMode ? (
-        <RoundButton
-          icon="camera"
-          size={40}
-          tone="soft"
-          accessibilityLabel={liveLabel}
-          onPress={onLivePress}
-        />
-      ) : null}
-      <TextInput
-        value={draft}
-        onChangeText={onDraftChange}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
-        onSubmitEditing={onSubmit}
-        returnKeyType="send"
+      <IconButton
+        icon="sliders"
+        size={44}
+        tone="outline"
+        accessibilityLabel={liveLabel}
+        onPress={onModePress}
+      />
+      <View
         style={{
           flex: 1,
           minHeight: 44,
-          color: colors.text,
-          fontFamily,
-          textAlign: 'auto',
-          writingDirection: dir,
-          paddingVertical: 0,
+          justifyContent: 'center',
+          backgroundColor: colors.surfaceAlt,
+          paddingHorizontal: spacing.md,
         }}
-      />
-      <RoundButton
-        icon={actionIcon}
-        directional={actionIcon === 'send'}
+      >
+        <TextInput
+          value={draft}
+          onChangeText={onDraftChange}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textMuted}
+          onSubmitEditing={onSubmit}
+          returnKeyType="send"
+          style={{
+            minHeight: 44,
+            color: colors.text,
+            fontFamily,
+            textAlign: 'auto',
+            writingDirection: dir,
+            paddingVertical: 0,
+          }}
+        />
+      </View>
+      <IconButton
+        icon={micMuted ? 'micOff' : 'mic'}
         size={44}
-        tone="primary"
-        accessibilityLabel={actionLabel}
+        tone="plain"
+        accessibilityLabel={micMuted ? micMutedLabel : micLabel}
+        onPress={onToggleMic}
+      />
+      <IconButton
+        icon="send"
+        directional
+        size={44}
+        tone="coral"
+        accessibilityLabel={sendLabel}
         accessibilityState={{ disabled }}
-        onPress={onActionPress}
+        onPress={onSubmit}
         disabled={disabled}
       />
     </View>

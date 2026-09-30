@@ -42,6 +42,10 @@ export class AppError extends Error {
     return new AppError('CONFLICT', messageKey, details);
   }
 
+  static rateLimited(messageKey?: string, details?: Record<string, unknown>): AppError {
+    return new AppError('RATE_LIMITED', messageKey, details);
+  }
+
   static validation(details?: Record<string, unknown>): AppError {
     return new AppError('VALIDATION_FAILED', 'errors.VALIDATION_FAILED', details);
   }

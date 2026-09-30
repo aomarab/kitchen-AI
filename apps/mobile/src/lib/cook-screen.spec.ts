@@ -20,6 +20,8 @@ describe('cook mode screen', () => {
   it('builds the timer request through the contract-checked planner', () => {
     expect(source).toContain('stepTimerPlan(');
     expect(source).toContain('createTimer.mutate(plan.body)');
+    expect(source).toContain('useUpdateTimer()');
+    expect(source).toContain('updateTimer.mutate({ id: timerId, body })');
     // A hand-rolled request would bypass the label truncation and the
     // MAX_TIMER_DURATION_SEC refusal that `stepTimerPlan` exists to apply.
     expect(source).not.toContain('durationSec:');

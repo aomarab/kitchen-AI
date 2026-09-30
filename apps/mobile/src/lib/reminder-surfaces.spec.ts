@@ -20,9 +20,9 @@ import { SCHEDULED_REMINDER_TYPES, reminderTypeSchema } from '@kitchen/contracts
  * would have passed for a hand-added stretch row.
  *
  * What replaces it is structural, and it is the property that actually
- * matters: the screen renders **one** `ToggleRow`, inside a map over
- * `SCHEDULED_REMINDER_TYPES`. A screen shaped that way cannot offer a switch
- * the engine will ignore, whatever the contract's list becomes.
+ * matters: the screen renders **one** `ToggleRow`, inside a map over the
+ * frame-ordered reminder list. The list stays typed as `ReminderType[]`, and
+ * this test keeps it aligned with the contract's scheduled types.
  */
 const source = (relative: string) =>
   readFileSync(join(__dirname, '..', ...relative.split('/')), 'utf8');
@@ -32,14 +32,32 @@ const occurrences = (haystack: string, needle: string) => haystack.split(needle)
 describe('mobile reminder surfaces', () => {
   const screen = source('app/settings/reminders.tsx');
 
-  it('reads the toggle list from the contract instead of hand-listing it', () => {
-    expect(screen).toContain('SCHEDULED_REMINDER_TYPES.map');
+  it('derives rendered reminder rows from the contract schedule', () => {
+    expect(screen).toContain('SCHEDULED_REMINDER_TYPES');
+    expect(screen).toContain('const REMINDER_ROW_ORDER = [...SCHEDULED_REMINDER_TYPES].sort');
+    expect(screen).toContain('REMINDER_ROW_ORDER.map');
   });
 
   it('renders exactly one ToggleRow, so no nudge can be offered off-list', () => {
     // A hand-added row for a type the engine ignores is the defect this file
     // exists for, and it shows up here as a second `<ToggleRow`.
     expect(occurrences(screen, '<ToggleRow')).toBe(1);
+  });
+
+  it('keeps the frame rank in exact sync with scheduled reminder types', () => {
+    const match = screen.match(
+      /const REMINDER_FRAME_RANK: readonly ReminderType\[] = \[([^\]]+)\]/,
+    );
+    expect(match).not.toBeNull();
+    const frameRankSource = match?.[1] ?? '';
+    const rankedTypes = frameRankSource
+      .split(',')
+      .map((entry) => entry.trim().replaceAll("'", ''))
+      .filter(Boolean);
+
+    expect(rankedTypes).toEqual(['break', 'stretch', 'morning', 'hydration']);
+    expect([...rankedTypes].sort()).toEqual([...SCHEDULED_REMINDER_TYPES].sort());
+    expect([...SCHEDULED_REMINDER_TYPES].sort()).toEqual([...rankedTypes].sort());
   });
 
   it('labels every reminder type, so the derived list can never render blank', () => {

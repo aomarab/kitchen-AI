@@ -37,6 +37,13 @@ export function kioskOrientation(width: number, height: number): 'landscape' | '
   return width > height ? 'landscape' : 'portrait';
 }
 
+export type KioskLayoutMode = 'portrait' | 'wide' | 'tablet';
+
+export function kioskLayoutMode(width: number, height: number): KioskLayoutMode {
+  if (kioskOrientation(width, height) === 'portrait') return 'portrait';
+  return width >= 1000 ? 'tablet' : 'wide';
+}
+
 /**
  * The hero summary: one line per nudge that is both switched on *and*
  * schedulable, in the order the contract lists them.

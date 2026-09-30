@@ -11,6 +11,7 @@ import {
   featuredTimer,
   hasAnyNudge,
   hydrationProgressText,
+  kioskLayoutMode,
   kioskOrientation,
   needsTick,
   wellnessPlanLines,
@@ -63,6 +64,20 @@ describe('kioskOrientation', () => {
 
   it('is total: a square window still has a layout', () => {
     expect(kioskOrientation(500, 500)).toBe('portrait');
+  });
+});
+
+describe('kioskLayoutMode', () => {
+  it('keeps portrait in a single column', () => {
+    expect(kioskLayoutMode(390, 844)).toBe('portrait');
+  });
+
+  it('uses the two-column wide layout for a phone turned sideways', () => {
+    expect(kioskLayoutMode(844, 390)).toBe('wide');
+  });
+
+  it('uses the three-column tablet layout on large landscape glass', () => {
+    expect(kioskLayoutMode(1180, 820)).toBe('tablet');
   });
 });
 

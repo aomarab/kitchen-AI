@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Icon } from './Icon';
@@ -23,6 +23,8 @@ interface YoutubePlayerProps {
   errorLabel: string;
   /** Localized label for the escape hatch out to the YouTube app. */
   openLabel: string;
+  /** Optional overlay rendered only on the thumbnail before playback starts. */
+  thumbnailOverlay?: ReactNode;
 }
 
 /**
@@ -37,12 +39,13 @@ export function YoutubePlayer({
   playLabel,
   errorLabel,
   openLabel,
+  thumbnailOverlay,
 }: YoutubePlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
   const { colors } = useTheme();
 
-  const embedHtml = buildEmbedHtml(youtubeId);
+  const embedHtml = buildEmbedHtml(youtubeId, colors.surfaceInverse);
   const watchUrl = watchOnYoutubeUrl(youtubeId);
   const showError = failed || embedHtml === null;
 
@@ -50,9 +53,9 @@ export function YoutubePlayer({
     <View
       style={{
         aspectRatio: 16 / 9,
-        borderRadius: radius.md,
+        borderRadius: radius.none,
         overflow: 'hidden',
-        backgroundColor: '#000',
+        backgroundColor: colors.surfaceInverse,
       }}
     >
       {showError ? (
@@ -116,7 +119,7 @@ export function YoutubePlayer({
           }}
           onError={() => setFailed(true)}
           onHttpError={() => setFailed(true)}
-          style={{ flex: 1, backgroundColor: '#000' }}
+          style={{ flex: 1, backgroundColor: colors.surfaceInverse }}
         />
       ) : (
         <Pressable
@@ -142,6 +145,7 @@ export function YoutubePlayer({
           >
             <Icon name="play" size={44} color={colors.textInverse} />
           </View>
+          {thumbnailOverlay}
         </Pressable>
       )}
     </View>

@@ -6,9 +6,8 @@ import {
   AppText,
   EmptyState,
   ErrorState,
-  ListGroup,
+  IconButton,
   LoadingState,
-  RoundButton,
   Screen,
   TabHeader,
 } from '../../components';
@@ -40,6 +39,20 @@ function countMessage(raw: string, count: number, formattedCount: string): strin
 
 function itemSentence(name: string, measure: string, purchased: boolean, purchasedLabel: string) {
   return purchased ? `${name}, ${measure}, ${purchasedLabel}` : `${name}, ${measure}`;
+}
+
+function ShopSectionHeading({ title, countText }: { title: string; countText?: string }) {
+  const accessibilityLabel = countText ? `${title}, ${countText}` : title;
+  return (
+    <AppText variant="heading" accessibilityRole="header" accessibilityLabel={accessibilityLabel}>
+      {title}
+      {countText ? (
+        <AppText variant="heading" color="textMuted">
+          {` · ${countText}`}
+        </AppText>
+      ) : null}
+    </AppText>
+  );
 }
 
 export default function Shopping() {
@@ -120,6 +133,7 @@ export default function Shopping() {
   };
 
   const purchasedCountText = formatQty(locale, purchasedIds.length, prefs);
+  const unpurchasedCountText = formatQty(locale, unpurchasedItems.length, prefs);
   const moveTitle =
     purchasedIds.length > 0
       ? countMessage(
@@ -158,25 +172,28 @@ export default function Shopping() {
   return (
     <Screen
       scroll
+      padded={false}
       tabBar
       refreshing={list.isRefetching}
       onRefresh={() => void list.refetch()}
       footer={
-        <ShoppingFooter
-          title={moveTitle}
-          disabled={purchasedIds.length === 0 || !targetLocation}
-          loading={checkout.isPending}
-          onPress={moveToKitchen}
-        />
+        items.length > 0 ? (
+          <ShoppingFooter
+            title={moveTitle}
+            disabled={purchasedIds.length === 0 || !targetLocation}
+            loading={checkout.isPending}
+            onPress={moveToKitchen}
+          />
+        ) : undefined
       }
     >
       <TabHeader
         title={t('shopping.title')}
         action={
           shareMessage ? (
-            <RoundButton
+            <IconButton
               icon="share"
-              tone="surface"
+              tone="plain"
               size={44}
               accessibilityLabel={t('mobile.shop.share')}
               onPress={shareList}
@@ -185,43 +202,59 @@ export default function Shopping() {
         }
       />
 
-      <AddItemField
-        term={term}
-        locale={locale}
-        suggestions={suggestions}
-        placeholder={t('mobile.shop.addPlaceholder')}
-        addLabel={t('mobile.shop.add')}
-        noMatchLabel={t('mobile.shop.noMatch')}
-        showNoMatch={showNoMatch}
-        actionEnabled={addAction.enabled}
-        submitting={addItems.isPending}
-        onTermChange={setTerm}
-        onAddAction={addExactMatch}
-        onChoose={addIngredient}
-      />
+      <View
+        style={{
+          paddingHorizontal: spacing.gutter,
+          paddingBottom: spacing.gutter,
+          gap: spacing.xl,
+        }}
+      >
+        <AddItemField
+          term={term}
+          locale={locale}
+          suggestions={suggestions}
+          placeholder={t('mobile.shop.addPlaceholder')}
+          addLabel={t('mobile.shop.add')}
+          noMatchLabel={t('mobile.shop.noMatch')}
+          showNoMatch={showNoMatch}
+          actionEnabled={addAction.enabled}
+          submitting={addItems.isPending}
+          onTermChange={setTerm}
+          onAddAction={addExactMatch}
+          onChoose={addIngredient}
+        />
 
-      {list.isLoading ? (
-        <LoadingState />
-      ) : list.isError ? (
-        <ErrorState error={list.error} onRetry={() => void list.refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState icon="basket" title={t('shopping.empty')} />
-      ) : (
-        <View style={{ gap: spacing.lg }}>
-          {unpurchasedItems.length > 0 ? (
-            <ListGroup>{renderRows(unpurchasedItems)}</ListGroup>
-          ) : null}
+        {list.isLoading ? (
+          <LoadingState />
+        ) : list.isError ? (
+          <ErrorState error={list.error} onRetry={() => void list.refetch()} />
+        ) : items.length === 0 ? (
+          <EmptyState
+            illustration="bag"
+            title={t('shopping.empty')}
+            message={t('mobile.shop.emptyBody')}
+          />
+        ) : (
+          <View style={{ gap: spacing.xl }}>
+            {unpurchasedItems.length > 0 ? (
+              <View style={{ gap: spacing.sm }}>
+                <ShopSectionHeading
+                  title={t('mobile.home.statShopping')}
+                  countText={unpurchasedCountText}
+                />
+                <View>{renderRows(unpurchasedItems)}</View>
+              </View>
+            ) : null}
 
-          {purchasedItems.length > 0 ? (
-            <View style={{ gap: spacing.sm }}>
-              <AppText variant="heading" muted accessibilityRole="header">
-                {t('shopping.purchased')}
-              </AppText>
-              <ListGroup>{renderRows(purchasedItems)}</ListGroup>
-            </View>
-          ) : null}
-        </View>
-      )}
+            {purchasedItems.length > 0 ? (
+              <View style={{ gap: spacing.sm }}>
+                <ShopSectionHeading title={t('shopping.purchased')} />
+                <View>{renderRows(purchasedItems)}</View>
+              </View>
+            ) : null}
+          </View>
+        )}
+      </View>
     </Screen>
   );
 }

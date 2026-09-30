@@ -1,44 +1,31 @@
 /**
- * Apricot: the app's one palette, in a light and a dark mode (mobile redesign
- * spec §6). Every value here is verified by `palette.spec.ts`.
+ * Coral: the app's one palette, in a light and a dark mode (mobile Coral
+ * redesign spec §5). Every value here is verified by `palette.spec.ts`.
  *
- * - `primary` is the coral *fill*; `primaryText` is the same hue darkened
- *   until it passes as *text*. The coral is bright, so the label on it is ink
- *   (`onFill`) in both modes — never white, which measures under 3:1.
- * - `onFill` labels `primary` and `primaryPressed` only. The destructive fill
- *   takes its own label, `onDanger`, because a light-mode red wants white and
- *   the dark-mode one wants ink.
- *
- * The `*Inverse` group is the *media* surface: the camera viewfinder, a photo,
- * the live assistant's camera and the video player. Those are dark whatever
- * the mode, so the group is one shared object, identical in light and dark.
+ * - `primary` is the coral fill; `primaryText` is the same hue darkened until
+ *   it passes as text on white, `surfaceAlt` and `primarySoft`.
+ * - The `*Inverse` group is the media surface: camera, photos, video and the
+ *   live assistant. It is shared by light and dark modes.
  */
-
-export type TintName = 'plain' | 'butter' | 'sage' | 'apricot';
-
-export interface Tint {
-  readonly bg: string;
-  readonly fg: string;
-  readonly name: TintName;
-}
 
 export interface PaletteColors {
   readonly bg: string;
   readonly surface: string;
   readonly surfaceAlt: string;
   readonly border: string;
+  readonly rowline: string;
+  readonly cardEdge: string;
   readonly text: string;
   readonly textMuted: string;
+  readonly control: string;
   readonly primary: string;
   readonly primaryText: string;
   readonly primaryPressed: string;
+  readonly primaryArt: string;
   readonly primarySoft: string;
-  readonly switchTrackOff: string;
   readonly onFill: string;
   readonly onDanger: string;
   readonly onSuccess: string;
-  readonly accent: string;
-  readonly accentSoft: string;
   readonly warn: string;
   /** Media-safe warning dot for inverse chips where dark-mode `warn` is too light. */
   readonly warnInverse: string;
@@ -56,6 +43,11 @@ export interface PaletteColors {
   readonly textInverseMuted: string;
   readonly primaryInverse: string;
   readonly onPrimaryInverse: string;
+  readonly mediaButton: string;
+  readonly inverse: string;
+  readonly onInverse: string;
+  readonly onInverseMuted: string;
+  readonly primaryOnInverse: string;
   readonly overlay: string;
 }
 
@@ -72,11 +64,7 @@ export interface Scrim {
 
 export interface Palette {
   readonly colors: PaletteColors;
-  readonly tints: readonly Tint[];
-  readonly gradientHero: readonly string[];
   readonly scrim: Scrim;
-  /** Dark pages get a black shadow that no one can see, so depth moves onto
-   *  the border instead and the shadow is dialled back to a faint halo. */
   readonly shadowColor: string;
   readonly shadowScale: number;
 }
@@ -88,25 +76,19 @@ export const NATIVE_SWITCH_THUMB = '#FFFFFF';
 
 /** Constant across light and dark: media surfaces are always dark. */
 const MEDIA = {
-  surfaceInverse: '#1A120E',
-  surfaceInverseAlt: '#3A2B22',
-  borderInverse: '#8A7263',
+  surfaceInverse: '#111111',
+  surfaceInverseAlt: '#2A2A2D',
+  borderInverse: '#8A8A8F',
   textInverse: '#FFFFFF',
-  textInverseMuted: '#D9C8BC',
-  primaryInverse: '#FFB08F',
-  onPrimaryInverse: '#2A1A12',
+  textInverseMuted: '#B4B4B9',
+  primaryInverse: '#FF8A8F',
+  onPrimaryInverse: '#111111',
+  warnInverse: '#A56300',
+  mediaButton: 'rgba(0,0,0,0.45)',
 } as const;
 
-/** The "ember" ramp behind a Tonight tile that has no photo. */
-const EMBER = ['#2A1A12', '#4A2516', '#6A3019'] as const;
-
-/**
- * A single linear ramp from 0 at 40% to 0.82 at the bottom would only clear
- * 0.70 in the bottom 9% of a tile — too thin for a title and a caption. The
- * knee at 60% gives text the bottom 40%.
- */
 const SCRIM: Scrim = {
-  rgb: '#1A120E',
+  rgb: '#000000',
   stops: [
     [0, 0],
     [0.35, 0],
@@ -116,95 +98,90 @@ const SCRIM: Scrim = {
   textMinAlpha: 0.7,
 };
 
-const apricotLight: Palette = {
-  colors: {
-    bg: '#F7F3EF',
-    surface: '#FFFFFF',
-    surfaceAlt: '#F1EAE4',
-    border: '#E6DCD3',
-    text: '#2A1A12',
-    /** The mock's #8A7A70 is 4.12:1 on the page and fails AA; this is the step that passes. */
-    textMuted: '#6F6056',
-    /** The mock's #FF6B3D is 2.83:1 on white and fails even the 3:1 fill bar. */
-    primary: '#F05A2B',
-    primaryPressed: '#E95424',
-    primaryText: '#B83D0C',
-    primarySoft: '#FFE9E0',
-    switchTrackOff: '#7A6A60',
-    onFill: '#2A1A12',
-    onDanger: '#FFFFFF',
-    onSuccess: '#FFFFFF',
-    accent: '#3F6A36',
-    accentSoft: '#E3EDDD',
-    success: '#1C7443',
-    successSoft: '#E4F2E9',
-    warn: '#9A5B00',
-    warnInverse: '#A56300',
-    warnSoft: '#F8ECDA',
-    danger: '#C0341D',
-    dangerSoft: '#FBE5E1',
-    overlay: 'rgba(42,26,18,0.45)',
-    ...MEDIA,
-  },
-  tints: [
-    { bg: '#FFFFFF', fg: '#B83D0C', name: 'plain' },
-    { bg: '#FFF1C9', fg: '#7A5200', name: 'butter' },
-    { bg: '#E3EDDD', fg: '#3F6A36', name: 'sage' },
-    { bg: '#FFE9E0', fg: '#B83D0C', name: 'apricot' },
-  ],
-  gradientHero: EMBER,
+const coralLightColors: PaletteColors = {
+  bg: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F4F4F5',
+  border: '#E5E5E7',
+  rowline: '#EFEFF1',
+  cardEdge: '#FFFFFF',
+  text: '#1A1A1A',
+  textMuted: '#6B6B70',
+  control: '#8A8A8F',
+  primary: '#DC343C',
+  primaryPressed: '#C22A32',
+  primaryText: '#CC2E36',
+  primaryArt: '#F5424B',
+  primarySoft: '#FDECEC',
+  onFill: '#FFFFFF',
+  onDanger: '#FFFFFF',
+  onSuccess: '#FFFFFF',
+  success: '#1A7F37',
+  successSoft: '#EAF5EC',
+  warn: '#9A5B00',
+  warnSoft: '#FBF1E0',
+  danger: '#B3261E',
+  dangerSoft: '#FBE9E7',
+  onInverse: '#FFFFFF',
+  inverse: '#1A1A1A',
+  onInverseMuted: '#B4B4B9',
+  primaryOnInverse: '#FF8A8F',
+  overlay: 'rgba(0,0,0,0.4)',
+  ...MEDIA,
+};
+
+const coralDarkColors: PaletteColors = {
+  bg: '#0F0F10',
+  surface: '#18181A',
+  surfaceAlt: '#1E1E20',
+  border: '#2C2C2F',
+  rowline: '#232326',
+  cardEdge: '#2C2C2F',
+  text: '#F4F4F5',
+  textMuted: '#A1A1A6',
+  control: '#7C7C82',
+  primary: '#DC343C',
+  primaryPressed: '#C22A32',
+  primaryText: '#FF6B70',
+  primaryArt: '#FF6B70',
+  primarySoft: '#2A1415',
+  onFill: '#FFFFFF',
+  onDanger: '#111111',
+  onSuccess: '#111111',
+  success: '#4CC76A',
+  successSoft: '#13261A',
+  warn: '#E0A040',
+  warnSoft: '#2B2110',
+  danger: '#FF8A80',
+  dangerSoft: '#2E1715',
+  onInverse: '#111111',
+  inverse: '#F4F4F5',
+  onInverseMuted: '#55555A',
+  primaryOnInverse: '#C22A32',
+  overlay: 'rgba(0,0,0,0.6)',
+  ...MEDIA,
+};
+
+const coralLight: Palette = {
+  colors: coralLightColors,
   scrim: SCRIM,
-  shadowColor: '#2A1A12',
+  shadowColor: '#1A1A1A',
   shadowScale: 1,
 };
 
-/** Warm, never neutral grey: a roasted-cocoa page, with the mock's coral kept. */
-const apricotDark: Palette = {
-  colors: {
-    bg: '#16100C',
-    surface: '#221913',
-    surfaceAlt: '#2D231C',
-    border: '#3D3027',
-    text: '#F7EEE8',
-    textMuted: '#BFAFA4',
-    primary: '#FF6B3D',
-    primaryPressed: '#FF8660',
-    primaryText: '#FF9A73',
-    primarySoft: '#3B2218',
-    switchTrackOff: '#8A7A70',
-    onFill: '#2A1A12',
-    onDanger: '#2A1A12',
-    onSuccess: '#2A1A12',
-    accent: '#A3CF95',
-    accentSoft: '#1F2B1B',
-    success: '#74D29B',
-    successSoft: '#15291D',
-    warn: '#F2B45E',
-    warnInverse: '#A56300',
-    warnSoft: '#35260F',
-    danger: '#FF8A78',
-    dangerSoft: '#3D1C16',
-    overlay: 'rgba(0,0,0,0.6)',
-    ...MEDIA,
-  },
-  tints: [
-    { bg: '#221913', fg: '#FF9A73', name: 'plain' },
-    { bg: '#342A12', fg: '#F2CD6E', name: 'butter' },
-    { bg: '#1F2B1B', fg: '#A8D39A', name: 'sage' },
-    { bg: '#3B2218', fg: '#FF9A73', name: 'apricot' },
-  ],
-  gradientHero: EMBER,
+const coralDark: Palette = {
+  colors: coralDarkColors,
   scrim: SCRIM,
   shadowColor: '#000000',
-  shadowScale: 1.8,
+  shadowScale: 0,
 };
 
 export const palettes = {
-  apricot: { light: apricotLight, dark: apricotDark },
+  coral: { light: coralLight, dark: coralDark },
 } satisfies Record<string, Record<ThemeMode, Palette>>;
 
 export function paletteFor(mode: ThemeMode): Palette {
-  return palettes.apricot[mode] ?? palettes.apricot.light;
+  return palettes.coral[mode] ?? palettes.coral.light;
 }
 
 export type ColorToken = keyof PaletteColors;

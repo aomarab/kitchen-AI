@@ -1,7 +1,7 @@
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
 import type { IngredientCategory } from '@kitchen/contracts';
-import { foodIconKey } from '../lib/food-icon';
-import { FOOD_ICON_ASSETS } from '../lib/food-icon-assets';
+import { foodIllustration } from '../lib/food-illustration';
+import { Illustration } from './Illustration';
 import { radius } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
@@ -24,7 +24,7 @@ interface FoodIconProps {
  */
 export function FoodIcon({ item, size = 40 }: FoodIconProps) {
   const { colors } = useTheme();
-  const source = FOOD_ICON_ASSETS[foodIconKey(item)];
+  const illustration = foodIllustration(item);
   return (
     <View
       accessible={false}
@@ -32,18 +32,13 @@ export function FoodIcon({ item, size = 40 }: FoodIconProps) {
       style={{
         width: size,
         height: size,
-        borderRadius: radius.sm,
+        borderRadius: radius.none,
         backgroundColor: colors.surfaceAlt,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Image
-        source={source}
-        accessibilityIgnoresInvertColors
-        style={{ width: size * 0.62, height: size * 0.62 }}
-        resizeMode="contain"
-      />
+      <Illustration name={illustration} size={size * 0.72} />
     </View>
   );
 }

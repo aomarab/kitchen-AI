@@ -7,22 +7,18 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { useStyles, useTheme, type Theme } from '../theme/useTheme';
-import { Icon } from './Icon';
-import {
-  RECIPE_THUMB_TONE_FOREGROUNDS,
-  recipeThumbBranch,
-  recipeThumbToneForDish,
-} from './recipe-thumb-tones';
+import { Illustration } from './Illustration';
+import { plateSize, recipeThumbBranch, type RecipeThumbSize } from './recipe-thumb-state';
+import { useTheme } from '../theme/useTheme';
 
-const GLYPH_SIZE = 34;
+export type { RecipeThumbSize } from './recipe-thumb-state';
 
 export interface RecipeThumbProps {
   heroImageUrl: string | null;
-  dishKey: string;
   title: string;
   accessibilityLabel?: string;
   resizeMode?: ImageResizeMode;
+  size?: RecipeThumbSize;
   onImageLoad?: () => void;
   onImageError?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -30,16 +26,15 @@ export interface RecipeThumbProps {
 
 export function RecipeThumb({
   heroImageUrl,
-  dishKey,
   title,
   accessibilityLabel,
   resizeMode = 'cover',
+  size,
   onImageLoad,
   onImageError,
   style,
 }: RecipeThumbProps) {
   const { colors } = useTheme();
-  const styles = useStyles(stylesFor);
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
@@ -47,11 +42,21 @@ export function RecipeThumb({
   }, [heroImageUrl]);
 
   const branch = recipeThumbBranch(heroImageUrl, imageFailed);
-  const tone = recipeThumbToneForDish(dishKey);
-  const foreground = RECIPE_THUMB_TONE_FOREGROUNDS[tone];
+  const frameSize = size ? { width: size, height: size } : null;
+  const artSize = plateSize(size ?? 72);
 
   return (
-    <View style={[styles.frame, style]}>
+    <View
+      style={[
+        {
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: colors.surfaceAlt,
+        },
+        frameSize,
+        style,
+      ]}
+    >
       {branch === 'image' ? (
         <Image
           source={{ uri: heroImageUrl! }}
@@ -71,24 +76,11 @@ export function RecipeThumb({
           accessible={false}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-          style={[StyleSheet.absoluteFill, styles.placeholder, { backgroundColor: colors[tone] }]}
+          style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}
         >
-          <Icon name="restaurant" size={GLYPH_SIZE} color={colors[foreground]} />
+          <Illustration name="plate" size={artSize} />
         </View>
       )}
     </View>
   );
 }
-
-const stylesFor = ({ colors }: Theme) =>
-  StyleSheet.create({
-    frame: {
-      position: 'relative',
-      overflow: 'hidden',
-      backgroundColor: colors.surfaceAlt,
-    },
-    placeholder: {
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-  });

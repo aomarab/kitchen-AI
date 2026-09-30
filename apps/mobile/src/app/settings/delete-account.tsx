@@ -6,8 +6,8 @@ import {
   Header,
   AppText,
   Button,
-  Card,
   Field,
+  Icon,
   LoadingState,
   ErrorState,
 } from '../../components';
@@ -16,7 +16,7 @@ import { useMe, useHouseholds } from '../../hooks/profile';
 import { useDeleteAccount } from '../../hooks/account';
 import { deleteConfirmationWord, matchesDeleteConfirmation } from '../../lib/delete-confirmation';
 import { errorMessageKey } from '../../lib/errors';
-import { radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 import { successorFor } from '../../lib/successor-for';
 
@@ -65,74 +65,93 @@ export default function DeleteAccount() {
     if (!canSubmit) return;
     mutation.mutate(
       { password: user.hasPassword ? password : undefined },
-      // Welcome, not sign-in: the account this user would have signed into no
-      // longer exists, so the only real options are creating a new one or
-      // reading what the app is before deciding.
       { onSuccess: () => router.replace('/welcome') },
     );
   };
 
   return (
-    <Screen scroll>
+    <Screen
+      scroll
+      footer={
+        <View style={{ gap: spacing.sm }}>
+          <Button
+            title={
+              mutation.isPending
+                ? t('mobile.deleteAccount.working')
+                : t('mobile.deleteAccount.submit')
+            }
+            variant="destructive"
+            leadingIcon="trash"
+            disabled={!canSubmit}
+            loading={mutation.isPending}
+            onPress={submit}
+          />
+          <Button
+            title={t('mobile.deleteAccount.cancel')}
+            variant="ghost"
+            disabled={mutation.isPending}
+            onPress={() => router.back()}
+          />
+        </View>
+      }
+    >
       <Header title={t('mobile.deleteAccount.title')} onBack={() => router.back()} />
 
-      <AppText variant="body" muted>
-        {t('mobile.deleteAccount.intro')}
-      </AppText>
+      <AppText variant="body">{t('mobile.deleteAccount.intro')}</AppText>
 
-      <Card style={{ gap: spacing.sm }}>
+      <View style={{ gap: spacing.sm }}>
         <AppText variant="label" muted>
           {t('mobile.deleteAccount.householdsTitle')}
         </AppText>
         {households.map((household) => {
           const successor = successorFor(household.members, user.id);
+          const message = successor
+            ? t('mobile.deleteAccount.handover', {
+                household: household.name,
+                successor: successor.displayName,
+              })
+            : t('mobile.deleteAccount.destroy', { household: household.name });
           return (
             <View
               key={household.id}
               style={{
-                backgroundColor: colors.dangerSoft,
-                borderColor: colors.danger,
-                borderWidth: 1,
-                borderRadius: radius.sm,
-                padding: spacing.md,
+                flexDirection: 'row',
+                gap: spacing.md,
+                alignItems: 'center',
+                padding: spacing.lg,
+                backgroundColor: colors.surfaceAlt,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.rowline,
               }}
             >
-              <AppText variant="caption" color="danger">
-                {successor
-                  ? t('mobile.deleteAccount.handover', {
-                      household: household.name,
-                      successor: successor.displayName,
-                    })
-                  : t('mobile.deleteAccount.destroy', { household: household.name })}
-              </AppText>
+              <Icon name="home" size={40} color={colors.text} />
+              <AppText style={{ flex: 1 }}>{message}</AppText>
             </View>
           );
         })}
-      </Card>
+      </View>
 
-      <Card style={{ gap: spacing.md }}>
+      <Field
+        label={t('mobile.deleteAccount.confirmLabel', { word })}
+        value={confirmation}
+        onChangeText={setConfirmation}
+        autoCapitalize="none"
+        autoCorrect={false}
+        editable={!mutation.isPending}
+      />
+
+      {user.hasPassword ? (
         <Field
-          label={t('mobile.deleteAccount.confirmLabel', { word })}
-          value={confirmation}
-          onChangeText={setConfirmation}
+          label={t('mobile.deleteAccount.passwordLabel')}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
           autoCapitalize="none"
           autoCorrect={false}
+          autoComplete="current-password"
           editable={!mutation.isPending}
         />
-
-        {user.hasPassword ? (
-          <Field
-            label={t('mobile.deleteAccount.passwordLabel')}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="current-password"
-            editable={!mutation.isPending}
-          />
-        ) : null}
-      </Card>
+      ) : null}
 
       {mutation.isError ? (
         <View accessibilityLiveRegion="polite">
@@ -141,23 +160,6 @@ export default function DeleteAccount() {
           </AppText>
         </View>
       ) : null}
-
-      <Button
-        title={
-          mutation.isPending ? t('mobile.deleteAccount.working') : t('mobile.deleteAccount.submit')
-        }
-        variant="danger"
-        icon="trash"
-        disabled={!canSubmit}
-        loading={mutation.isPending}
-        onPress={submit}
-      />
-      <Button
-        title={t('mobile.deleteAccount.cancel')}
-        variant="ghost"
-        disabled={mutation.isPending}
-        onPress={() => router.back()}
-      />
     </Screen>
   );
 }

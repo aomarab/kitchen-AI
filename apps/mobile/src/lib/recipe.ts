@@ -72,18 +72,38 @@ export function parseServingsParam(value: unknown): number | null {
   return parsed;
 }
 
+export const RECIPE_SEGMENTS = ['ingredients', 'steps', 'videos'] as const;
+export type RecipeSegment = (typeof RECIPE_SEGMENTS)[number];
+
+/**
+ * The recipe detail tab to open on. Home's "Watch how" deep-links straight to
+ * the videos, so the tab arrives as a route param and anything unrecognised
+ * falls back to the ingredients.
+ */
+export function parseRecipeSegmentParam(value: unknown): RecipeSegment {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return RECIPE_SEGMENTS.find((segment) => segment === raw) ?? 'ingredients';
+}
+
+export function clampRecipeServings(value: number, min: number, max: number): number {
+  const lower = Math.max(1, Math.floor(min));
+  const upper = Math.max(lower, Math.floor(max));
+  if (!Number.isFinite(value)) return lower;
+  return Math.min(upper, Math.max(lower, Math.round(value)));
+}
+
 export function recipeTopBarFadeRange({
   heroHeight,
   sheetOverlap,
   barHeight,
   fadeDistance,
 }: RecipeTopBarBackingMetrics): RecipeTopBarFadeRange {
-  const end = heroHeight - sheetOverlap - barHeight;
-  return { start: end - fadeDistance, end };
+  const start = Math.max(0, heroHeight - sheetOverlap - barHeight);
+  return { start, end: start + Math.max(1, fadeDistance) };
 }
 
 export function recipeTopBarBacked(offsetY: number, range: RecipeTopBarFadeRange): boolean {
-  return offsetY >= range.start;
+  return offsetY > range.start;
 }
 
 export function stepIngredients<T extends StepIngredient>(

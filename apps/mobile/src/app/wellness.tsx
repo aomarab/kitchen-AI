@@ -1,42 +1,19 @@
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { hydrationCupsDrunk, type ReminderSettings, type ReminderType } from '@kitchen/contracts';
+import { AppText, EmptyState, ErrorState, Header, LoadingState, Screen } from '../components';
 import {
-  Screen,
-  Header,
-  Card,
-  Button,
-  Icon,
-  AppText,
-  LoadingState,
-  ErrorState,
-  EmptyState,
-  type IconName,
-} from '../components';
+  HydrationSummaryCard,
+  NudgeList,
+  WellnessSettingsButton,
+} from '../features/wellness/WellnessBlocks';
 import { useFormat } from '../hooks/useFormat';
 import {
   useAcknowledgeReminder,
   useReminderOccurrences,
   useReminderSettings,
 } from '../hooks/reminders';
-import {
-  hydrationFraction,
-  minutesSinceFired,
-  nudgeRows,
-  outstandingCount,
-  type NudgeRow,
-} from '../lib/wellness';
-import { radius, spacing } from '../theme';
-import { useTheme } from '../theme/useTheme';
-
-const NUDGE_ICONS = {
-  break: 'pause',
-  stretch: 'stretch',
-  morning: 'sunrise',
-  hydration: 'water',
-} as const satisfies Record<ReminderType, IconName>;
-const HYDRATION_PROGRESS_HEIGHT = 10;
-const NUDGE_ICON_SIZE = 44;
+import { nudgeRows, outstandingCount } from '../lib/wellness';
+import { spacing } from '../theme';
 
 export default function Wellness() {
   const { t } = useFormat();
@@ -61,7 +38,7 @@ export default function Wellness() {
       </AppText>
 
       {settingsQuery.data ? (
-        <HydrationCard occurrences={occurrences} settings={settingsQuery.data} />
+        <HydrationSummaryCard occurrences={occurrences} settings={settingsQuery.data} />
       ) : null}
 
       {occurrencesQuery.isLoading ? (
@@ -73,151 +50,22 @@ export default function Wellness() {
         />
       ) : rows.length === 0 ? (
         <EmptyState
-          icon="bell"
+          illustration="bell"
           title={t('mobile.wellness.empty')}
           message={t('mobile.wellness.emptyHint')}
         />
       ) : (
-        <View style={{ gap: spacing.md }}>
-          <AppText variant="label" muted>
-            {outstanding > 0
-              ? t('mobile.wellness.outstanding', { count: outstanding })
-              : t('mobile.wellness.allAnswered')}
-          </AppText>
-          {rows.map((row) => (
-            <NudgeCard
-              key={row.id}
-              row={row}
-              busy={acknowledge.isPending}
-              onAcknowledge={() => acknowledge.mutate(row.id)}
-            />
-          ))}
-        </View>
+        <NudgeList
+          rows={rows}
+          outstanding={outstanding}
+          busy={acknowledge.isPending}
+          onAcknowledge={(id) => acknowledge.mutate(id)}
+        />
       )}
 
-      <Button
-        title={t('mobile.wellness.editSettings')}
-        variant="ghost"
-        icon="settings"
-        onPress={() => router.push('/settings/reminders')}
-      />
+      <View style={{ paddingTop: spacing.sm }}>
+        <WellnessSettingsButton onPress={() => router.push('/settings/reminders')} />
+      </View>
     </Screen>
-  );
-}
-
-function HydrationCard({
-  occurrences,
-  settings,
-}: {
-  occurrences: Parameters<typeof hydrationFraction>[0];
-  settings: ReminderSettings;
-}) {
-  const { t } = useFormat();
-  const { colors, tintNamed } = useTheme();
-  const sage = tintNamed('sage');
-  const fraction = hydrationFraction(occurrences, settings);
-
-  return (
-    <Card tint={sage}>
-      <View style={{ gap: spacing.sm }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <Icon name="water" size={20} color={sage.fg} />
-          <AppText variant="heading">{t('mobile.wellness.hydrationTitle')}</AppText>
-        </View>
-
-        <AppText variant="title">
-          {t('mobile.wellness.hydrationProgress', {
-            count: hydrationCupsDrunk(occurrences),
-            goal: settings.hydrationGoalCups,
-          })}
-        </AppText>
-
-        {/* Decoration only — the reading above it is the accessible one. */}
-        <View
-          style={{
-            height: HYDRATION_PROGRESS_HEIGHT,
-            borderRadius: radius.pill,
-            backgroundColor: colors.border,
-            overflow: 'hidden',
-          }}
-        >
-          <View
-            style={{
-              width: `${Math.round(fraction * 100)}%`,
-              height: '100%',
-              borderRadius: radius.pill,
-              backgroundColor: colors.success,
-            }}
-          />
-        </View>
-
-        <AppText variant="caption" muted>
-          {t('mobile.wellness.hydrationHint')}
-        </AppText>
-      </View>
-    </Card>
-  );
-}
-
-function NudgeCard({
-  row,
-  busy,
-  onAcknowledge,
-}: {
-  row: NudgeRow;
-  busy: boolean;
-  onAcknowledge: () => void;
-}) {
-  const { t } = useFormat();
-  const { colors } = useTheme();
-  const answered = row.acknowledgedAt !== null;
-  const minutes = minutesSinceFired(row.firedAt, new Date());
-
-  return (
-    <Card>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
-        <View
-          style={{
-            width: NUDGE_ICON_SIZE,
-            height: NUDGE_ICON_SIZE,
-            borderRadius: radius.pill,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: answered ? colors.surfaceAlt : colors.primarySoft,
-          }}
-        >
-          <Icon
-            name={NUDGE_ICONS[row.type]}
-            size={20}
-            color={answered ? colors.textMuted : colors.primaryText}
-          />
-        </View>
-
-        <View style={{ flex: 1, gap: spacing.xs }}>
-          <AppText variant="body">{t(row.messageKey as 'reminders.break.body')}</AppText>
-          <AppText variant="caption" muted>
-            {minutes === 0
-              ? t('mobile.wellness.justNow')
-              : t('mobile.wellness.minutesAgo', { minutes })}
-          </AppText>
-
-          {answered ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <Icon name="check" size={14} color={colors.success} />
-              <AppText variant="caption" muted>
-                {t('mobile.wellness.answered')}
-              </AppText>
-            </View>
-          ) : (
-            <Button
-              title={t('mobile.wellness.acknowledge')}
-              variant="secondary"
-              disabled={busy}
-              onPress={onAcknowledge}
-            />
-          )}
-        </View>
-      </View>
-    </Card>
   );
 }

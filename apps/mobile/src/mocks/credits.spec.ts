@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
   CREDIT_PACKS,
   FREE_MONTHLY_GRANT,
+  aiUsageSummarySchema,
   creditBalanceSchema,
   purchaseIntentSchema,
 } from '@kitchen/contracts';
@@ -73,5 +74,14 @@ describe('credits MSW resolvers', () => {
       }),
     });
     expect(res.status).toBe(404);
+  });
+
+  it('getAiUsage returns the Coral Credits frame usage values', async () => {
+    const res = await fetch(`${BASE}/ai/usage`);
+    expect(res.status).toBe(200);
+    const usage = aiUsageSummarySchema.parse(await res.json());
+    expect(usage.spentUsd).toBe(0.018);
+    expect(usage.budgetUsd).toBe(0.675);
+    expect(usage.callCount).toBe(3);
   });
 });

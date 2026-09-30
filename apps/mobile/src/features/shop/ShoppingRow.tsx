@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import { AppText } from '../../components';
-import { spacing } from '../../theme';
+import { useTheme } from '../../theme/useTheme';
 import { ShoppingCheckbox } from './ShoppingCheckbox';
 
 interface ShoppingRowProps {
@@ -18,27 +18,26 @@ export function ShoppingRow({
   accessibilityLabel,
   onToggle,
 }: ShoppingRowProps) {
+  const { colors } = useTheme();
+
   return (
     <View
       style={{
-        minHeight: 56,
+        minHeight: 68,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.md,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.lg,
+        gap: 14,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.rowline,
       }}
     >
       <ShoppingCheckbox checked={purchased} label={accessibilityLabel} onPress={onToggle} />
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText
-          variant="bodyStrong"
-          color={purchased ? 'textMuted' : undefined}
-          style={purchased ? { textDecorationLine: 'line-through' } : undefined}
-        >
+        <AppText variant="body" color={purchased ? 'textMuted' : undefined}>
           {name}
         </AppText>
-        <AppText variant="caption" muted>
+        <AppText variant="caption" color="textMuted">
           {measure}
         </AppText>
       </View>
