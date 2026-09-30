@@ -7,10 +7,7 @@ import { describe, expect, it } from 'vitest';
  * are policed by sweeping the source, the same idiom as
  * `apps/mobile/src/lib/reminder-surfaces.spec.ts`.
  */
-const source = readFileSync(
-  join(__dirname, '..', 'app', 'recipe', '[id]', 'cook.tsx'),
-  'utf8',
-);
+const source = readFileSync(join(__dirname, '..', 'app', 'recipe', '[id]', 'cook.tsx'), 'utf8');
 
 describe('cook mode screen', () => {
   it('has source to police', () => {
@@ -48,7 +45,14 @@ describe('cook mode screen', () => {
     expect(tickAt).toBeLessThan(earlyReturnAt);
   });
 
-  it('uses no physical-direction style keys on the inverse surface', () => {
+  it('uses no physical-direction style keys', () => {
     expect(source).not.toMatch(/\b(marginLeft|marginRight|paddingLeft|paddingRight)\b/);
+  });
+
+  it('follows the theme instead of painting the media surface', () => {
+    // Spec §3: cook mode was the one screen that ignored the user's Light /
+    // Dark choice. The `*Inverse` tokens belong to the camera and to photos.
+    expect(source).not.toMatch(/Inverse/);
+    expect(source).toContain('backgroundColor: colors.bg');
   });
 });

@@ -10,17 +10,17 @@ export interface CardProps {
   accessibilityLabel?: string;
   tone?: 'surface' | 'alt' | 'primary';
   /** Fills the card with one of the rotating pastel tints from the theme. Takes
-   *  precedence over `tone`, and drops the border so the fill reads as the edge. */
+   *  precedence over `tone`. */
   tint?: Tint;
   /** The hero treatment: the ember gradient carrying inverse text. */
   gradient?: boolean;
   style?: ViewStyle;
 }
 
-const toneFor = (colors: PaletteColors): Record<NonNullable<CardProps['tone']>, ViewStyle> => ({
-  surface: { backgroundColor: colors.surface, borderColor: colors.border },
-  alt: { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-  primary: { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft },
+const fillFor = (colors: PaletteColors): Record<NonNullable<CardProps['tone']>, string> => ({
+  surface: colors.surface,
+  alt: colors.surfaceAlt,
+  primary: colors.primarySoft,
 });
 
 export function Card({
@@ -32,15 +32,19 @@ export function Card({
   gradient,
   style,
 }: CardProps) {
-  const { colors, gradientHero } = useTheme();
+  const { colors, gradientHero, isDark, shadow } = useTheme();
+  const fill = tint ? tint.bg : fillFor(colors)[tone];
+  // Spec §6.7: a light card separates from the cream page by its fill and a
+  // faint shadow, so its border matches the fill. A dark page hides any
+  // shadow, so there the depth moves onto the edge.
   const base: ViewStyle = {
     borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
-    ...toneFor(colors)[tone],
-    ...(tint ? { backgroundColor: tint.bg, borderColor: tint.bg } : null),
-    ...(gradient ? { backgroundColor: 'transparent', borderColor: 'transparent' } : null),
+    backgroundColor: fill,
+    borderColor: isDark ? colors.border : fill,
+    ...(isDark ? null : shadow.card),
   };
 
   /** Ember runs from roasted cocoa up to a burnt coral, so inverse text reads
@@ -68,7 +72,10 @@ export function Card({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => [wrapper, { opacity: pressed ? 0.9 : 1 }]}
+      style={({ pressed }) => [
+        wrapper,
+        { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+      ]}
     >
       {body}
     </Pressable>

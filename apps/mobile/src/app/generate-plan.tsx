@@ -182,6 +182,7 @@ export default function GeneratePlan() {
           value={servings}
           onChange={setServings}
           min={1}
+          accessibilityLabel={t('mobile.plans.servings')}
           decrementLabel={t('mobile.common.decrease')}
           incrementLabel={t('mobile.common.increase')}
         />

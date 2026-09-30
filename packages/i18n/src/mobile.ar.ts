@@ -18,6 +18,8 @@ export const mobileAr: MobileMessages = {
       capture: 'تصوير',
       plans: 'الخطط',
       more: 'المزيد',
+      plan: 'الخطة',
+      shop: 'التسوق',
     },
     home: {
       greeting: 'ماذا أطبخ الليلة؟',
@@ -221,6 +223,9 @@ export const mobileAr: MobileMessages = {
       videoUnavailable: 'لا يمكن تشغيل هذا الفيديو الآن.',
       openInYoutube: 'افتح في يوتيوب',
       imageLabel: 'صورة لوصفة {title}',
+    },
+    account: {
+      title: 'الحساب',
     },
     more: {
       title: 'المزيد',

@@ -9,6 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
+import { useTabBarClearance } from './TabBar';
 import { spacing } from '../theme';
 import { contentMaxWidth } from '../theme/layout';
 import { useTheme } from '../theme/useTheme';
@@ -23,6 +24,11 @@ export interface ScreenProps {
   refreshing?: boolean;
   onRefresh?: () => void;
   footer?: ReactNode;
+  /**
+   * A tab screen. The floating bar covers the bottom, so the safe area stops
+   * at the sides and the content pads past the bar instead (spec §8.1).
+   */
+  tabBar?: boolean;
 }
 
 /**
@@ -35,7 +41,8 @@ export function Screen({
   children,
   scroll,
   padded = true,
-  edges = ['top', 'bottom', 'left', 'right'],
+  tabBar = false,
+  edges = tabBar ? ['top', 'left', 'right'] : ['top', 'bottom', 'left', 'right'],
   style,
   contentStyle,
   refreshing,
@@ -44,12 +51,16 @@ export function Screen({
 }: ScreenProps) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
+  const clearance = useTabBarClearance();
   const maxWidth = contentMaxWidth(width);
   // `lg` between top-level blocks against the `sm` most screens use inside a
   // section gives a real 2:1 rhythm tier. At the previous `md` the gap between
   // two sections was 12 and the gap inside one was 8, so nothing grouped and
   // every screen read as one undifferentiated stack.
-  const pad: ViewStyle = padded ? { padding: spacing.lg, gap: spacing.lg } : {};
+  const pad: ViewStyle = {
+    ...(padded ? { padding: spacing.lg, gap: spacing.lg } : null),
+    ...(tabBar ? { paddingBottom: clearance } : null),
+  };
   // `undefined` below the breakpoint leaves the phone layout untouched. Above
   // it the content is capped and centred — but the centring is applied to a
   // *wrapper* (`alignItems: 'center'`) around a max-width child, not to the

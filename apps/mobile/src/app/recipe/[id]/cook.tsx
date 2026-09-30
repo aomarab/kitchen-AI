@@ -47,7 +47,7 @@ export default function CookMode() {
 
   if (recipe.isLoading || !recipe.data) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.surfaceInverse }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <LoadingState />
       </SafeAreaView>
     );
@@ -69,12 +69,12 @@ export default function CookMode() {
   const projected = existing ? projectTimer(existing, now) : null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surfaceInverse }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ flex: 1, padding: spacing.xl, gap: spacing.lg }}>
         <View
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
         >
-          <AppText variant="label" style={{ color: colors.textInverseMuted }}>
+          <AppText variant="label" muted>
             {t('mobile.recipe.stepProgress', {
               current: formatMinutes(locale, step + 1, prefs),
               total: formatMinutes(locale, steps.length, prefs),
@@ -82,7 +82,7 @@ export default function CookMode() {
           </AppText>
           <Button
             title={t('mobile.recipe.exitCookMode')}
-            variant="ghostInverse"
+            variant="ghost"
             fullWidth={false}
             onPress={() => router.back()}
           />
@@ -92,7 +92,7 @@ export default function CookMode() {
           <Button
             title={t('mobile.assistant.cookAsk')}
             icon="sparkles"
-            variant="secondaryInverse"
+            variant="secondary"
             fullWidth={false}
             onPress={() => setAssistantOpen(true)}
           />
@@ -101,7 +101,7 @@ export default function CookMode() {
         <View style={{ flex: 1, justifyContent: 'center', gap: spacing.lg }}>
           {current.durationMinutes ? (
             <Badge
-              tone="inverse"
+              tone="neutral"
               label={t('recipe.cookTime', {
                 minutes: formatMinutes(locale, current.durationMinutes, prefs),
               })}
@@ -117,19 +117,17 @@ export default function CookMode() {
               if (plan.ok) createTimer.mutate(plan.body);
             }}
           />
-          <AppText variant="display" style={{ color: colors.textInverse }}>
-            {current.text}
-          </AppText>
+          <AppText variant="display">{current.text}</AppText>
         </View>
 
-        <AppText variant="caption" style={{ color: colors.textInverseMuted }} center>
+        <AppText variant="caption" muted center>
           {t('mobile.recipe.cookModeHint')}
         </AppText>
 
         <View style={{ flexDirection: 'row', gap: spacing.md }}>
           <Button
             title={t('mobile.recipe.prev')}
-            variant="secondaryInverse"
+            variant="secondary"
             disabled={step === 0}
             onPress={() => setStep((s) => Math.max(0, s - 1))}
             style={{ flex: 1 }}
@@ -138,14 +136,14 @@ export default function CookMode() {
             <Button
               title={t('mobile.recipe.finish')}
               icon="check"
-              variant="primaryInverse"
+              variant="primary"
               onPress={() => router.back()}
               style={{ flex: 1 }}
             />
           ) : (
             <Button
               title={t('mobile.recipe.next')}
-              variant="primaryInverse"
+              variant="primary"
               onPress={() => setStep((s) => Math.min(steps.length - 1, s + 1))}
               style={{ flex: 1 }}
             />
@@ -190,17 +188,13 @@ function StepTimerControl({
   onStart: () => void;
 }) {
   const { t, locale, prefs } = useFormat();
-  const { colors } = useTheme();
 
   if (!plan.ok) return null;
 
   if (projected) {
     const finished = projected.status === 'done';
     return (
-      <AppText
-        variant="label"
-        style={{ color: finished ? colors.textInverse : colors.textInverseMuted }}
-      >
+      <AppText variant="label" muted={!finished}>
         {finished
           ? t('mobile.recipe.stepTimerDone')
           : t('mobile.recipe.stepTimerRunning', {
@@ -216,7 +210,7 @@ function StepTimerControl({
         minutes: formatMinutes(locale, durationMinutes, prefs),
       })}
       icon="clock"
-      variant="secondaryInverse"
+      variant="secondary"
       fullWidth={false}
       disabled={pending}
       onPress={onStart}

@@ -29,14 +29,14 @@ export function Fab({ icon = 'camera', onPress, accessibilityLabel }: FabProps) 
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 56,
-        height: 56,
+        width: 60,
+        height: 60,
         borderRadius: radius.pill,
         backgroundColor: pressed ? colors.primaryPressed : colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
         ...shadow.raised,
-        // Scale, not opacity: a 10% fade is imperceptible on a filled 56pt
+        // Scale, not opacity: a 10% fade is imperceptible on a filled 60pt
         // circle, and press feedback only counts if it can be seen.
         transform: [{ scale: pressed ? 0.94 : 1 }],
       })}

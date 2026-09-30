@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from './AppText';
-import { Icon } from './Icon';
-import { hitSlop, radius, spacing } from '../theme';
+import { RoundButton } from './RoundButton';
+import { radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 import { useLocale } from '../lib/locale';
 
@@ -24,7 +24,7 @@ export interface SheetProps {
  */
 export function Sheet({ visible, onClose, title, children }: SheetProps) {
   const { t, dir } = useLocale();
-  const { colors } = useTheme();
+  const { colors, shadow } = useTheme();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable
@@ -46,6 +46,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
             backgroundColor: colors.surface,
             borderTopStartRadius: radius.lg,
             borderTopEndRadius: radius.lg,
+            ...shadow.raised,
           }}
         >
           <KeyboardAvoidingView
@@ -56,22 +57,16 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
           >
             <SafeAreaView edges={['bottom']}>
               <View style={{ padding: spacing.lg, gap: spacing.md }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <AppText variant="heading">{title ?? ''}</AppText>
-                  <Pressable
-                    accessibilityRole="button"
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                  <AppText variant="title" accessibilityRole="header" style={{ flex: 1 }}>
+                    {title ?? ''}
+                  </AppText>
+                  <RoundButton
+                    icon="close"
+                    tone="sunk"
                     accessibilityLabel={t('common.close')}
-                    hitSlop={hitSlop}
                     onPress={onClose}
-                  >
-                    <Icon name="close" size={20} color={colors.textMuted} />
-                  </Pressable>
+                  />
                 </View>
                 {children}
               </View>

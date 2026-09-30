@@ -86,7 +86,10 @@ export default function EntryDetail() {
         />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <Badge label={t(SLOT_KEY[entry.slot])} />
-          <Badge tone={STATE_TONE[entry.state] ?? 'neutral'} label={t(`plans.${entry.state}` as MessageKey)} />
+          <Badge
+            tone={STATE_TONE[entry.state] ?? 'neutral'}
+            label={t(`plans.${entry.state}` as MessageKey)}
+          />
           {entry.fullyCovered ? <Badge tone="success" label={t('plans.fullyCovered')} /> : null}
         </View>
         <AppText variant="caption" muted>
@@ -104,6 +107,7 @@ export default function EntryDetail() {
           value={entry.servings}
           min={1}
           onChange={(servings) => update.mutate({ entryId: entry.id, body: { servings } })}
+          accessibilityLabel={t('mobile.plans.servings')}
           decrementLabel={t('mobile.common.decrease')}
           incrementLabel={t('mobile.common.increase')}
         />

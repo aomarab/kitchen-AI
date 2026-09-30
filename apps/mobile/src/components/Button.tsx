@@ -1,23 +1,20 @@
 import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
 import { AppText } from './AppText';
+import { buttonTone, type ButtonVariant } from './button-tones';
+import { DirectionalIcon } from './DirectionalIcon';
 import { Icon, type IconName } from './Icon';
-import { hitSlop, radius, spacing, type PaletteColors } from '../theme';
+import { hitSlop, radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
-export type ButtonVariant =
-  | 'primary'
-  | 'secondary'
-  | 'ghost'
-  | 'danger'
-  | 'primaryInverse'
-  | 'ghostInverse'
-  | 'secondaryInverse';
+export type { ButtonVariant } from './button-tones';
 
 export interface ButtonProps {
   title: string;
   onPress?: () => void;
   variant?: ButtonVariant;
   icon?: IconName;
+  /** A trailing arrow ("Get started →"). Mirrors in RTL. */
+  arrow?: boolean;
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -25,44 +22,12 @@ export interface ButtonProps {
   style?: ViewStyle;
 }
 
-const bgFor = (colors: PaletteColors): Record<ButtonVariant, string> => ({
-  primary: colors.primary,
-  secondary: colors.surfaceAlt,
-  ghost: 'transparent',
-  danger: colors.danger,
-  primaryInverse: colors.primaryInverse,
-  ghostInverse: 'transparent',
-  // The cook surface is dark in every mode, so this variant cannot reuse
-  // `surfaceAlt`, which follows the mode and vanishes into the ground in dark.
-  secondaryInverse: colors.surfaceInverseAlt,
-});
-
-const fgFor = (colors: PaletteColors): Record<ButtonVariant, string> => ({
-  // `onFill` and not `textInverse`: in dark mode the fill is light and takes a
-  // dark label, while `textInverse` still belongs to the always-dark cook
-  // surface. The two are the same colour in light mode and opposites in dark.
-  primary: colors.onFill,
-  secondary: colors.text,
-  ghost: colors.primaryText,
-  // Not `onFill`: the coral takes an ink label, but the light-mode red takes
-  // white, so the destructive fill carries its own label token.
-  danger: colors.onDanger,
-  // The lifted brand tone is light in both modes, so its label is always dark.
-  primaryInverse: colors.onPrimaryInverse,
-  ghostInverse: colors.primaryInverse,
-  secondaryInverse: colors.textInverse,
-});
-
-/** Only `primary` gets a pressed colour, matching web's hover:bg-primary-press. */
-const pressedBgFor = (colors: PaletteColors): Partial<Record<ButtonVariant, string>> => ({
-  primary: colors.primaryPressed,
-});
-
 export function Button({
   title,
   onPress,
   variant = 'primary',
   icon,
+  arrow,
   loading,
   disabled,
   fullWidth = true,
@@ -70,10 +35,10 @@ export function Button({
   style,
 }: ButtonProps) {
   const { colors } = useTheme();
-  const BG = bgFor(colors);
-  const FG = fgFor(colors);
-  const PRESSED_BG = pressedBgFor(colors);
+  const tone = buttonTone(colors, variant);
   const isDisabled = disabled || loading;
+  // Only the coral has a pressed colour; every other fill dims instead.
+  const hasPressedFill = tone.pressedFill !== tone.fill;
   return (
     <Pressable
       accessibilityRole="button"
@@ -89,36 +54,37 @@ export function Button({
           justifyContent: 'center',
           gap: spacing.sm,
           minHeight: 48,
-          // Ghost variants have no fill and no border, so horizontal padding is
+          // Ghost has no fill and no border, so horizontal padding is
           // invisible weight that pushes the label off the content margin: the
           // home "See all" link sat 16pt inside the right edge every card below
           // it was flush with. Borderless buttons align to the margin (as iOS's
           // own section headers do); `hitSlop` and the 48pt height keep the
           // touch target legal without the padding.
-          paddingHorizontal: variant === 'ghost' || variant === 'ghostInverse' ? 0 : spacing.lg,
+          paddingHorizontal: variant === 'ghost' ? 0 : spacing.lg,
           borderRadius: radius.pill,
-          backgroundColor: (pressed && PRESSED_BG[variant]) || BG[variant],
-          borderWidth: variant === 'ghost' || variant === 'ghostInverse' ? 0 : 1,
+          backgroundColor: pressed ? tone.pressedFill : tone.fill,
+          borderWidth: variant === 'ghost' ? 0 : 1,
           borderColor:
-            variant === 'secondary'
-              ? colors.border
-              : variant === 'secondaryInverse'
-                ? colors.borderInverse
-                : (pressed && PRESSED_BG[variant]) || BG[variant],
-          opacity: isDisabled ? 0.5 : pressed && !PRESSED_BG[variant] ? 0.85 : 1,
+            variant === 'secondary' ? tone.border : pressed ? tone.pressedFill : tone.fill,
+          opacity: isDisabled ? 0.5 : pressed && !hasPressedFill ? 0.85 : 1,
+          // Filled pills also give a little under the finger; a bare link only dims.
+          transform: [{ scale: pressed && variant !== 'ghost' ? 0.98 : 1 }],
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
         },
+        // The one action a screen asks for is the tallest thing on it (spec §8.5).
+        variant === 'primary' ? { minHeight: 56 } : null,
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={FG[variant]} />
+        <ActivityIndicator color={tone.label} />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          {icon ? <Icon name={icon} size={18} color={FG[variant]} /> : null}
-          <AppText variant="button" style={{ color: FG[variant] }}>
+          {icon ? <Icon name={icon} size={18} color={tone.label} /> : null}
+          <AppText variant="button" style={{ color: tone.label }}>
             {title}
           </AppText>
+          {arrow ? <DirectionalIcon name="arrowForward" size={18} color={tone.label} /> : null}
         </View>
       )}
     </Pressable>

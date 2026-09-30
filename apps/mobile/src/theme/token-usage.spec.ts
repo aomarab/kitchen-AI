@@ -42,7 +42,12 @@ describe('mobile source sweep', () => {
     'Field.tsx': /minHeight:\s*(\d+)/,
     'Header.tsx': /minHeight:\s*(\d+)/,
     'QuantityStepper.tsx': /height:\s*(\d+)/,
+    // The visual circle is 36-40pt; the Pressable around it is what is measured.
+    'RoundButton.tsx': /height:\s*(\d+)/,
+    'SegmentedControl.tsx': /minHeight:\s*(\d+)/,
     'StarRating.tsx': /minHeight:\s*(\d+)/,
+    'TabBar.tsx': /minHeight:\s*(\d+)/,
+    'Tile.tsx': /minHeight:\s*(\d+)/,
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {
@@ -109,15 +114,18 @@ describe('mobile source sweep', () => {
       const imports = [...content.matchAll(/from\s+'(\.[^']*)'/g)].map((m) => m[1]!);
       const resolved = imports.flatMap((spec) => {
         const base = join(file, '..', spec);
-        return [`${base}.tsx`, `${base}.ts`, join(base, 'index.tsx'), join(base, 'index.ts')].filter(
-          (candidate) => {
-            try {
-              return statSync(candidate).isFile();
-            } catch {
-              return false;
-            }
-          },
-        );
+        return [
+          `${base}.tsx`,
+          `${base}.ts`,
+          join(base, 'index.tsx'),
+          join(base, 'index.ts'),
+        ].filter((candidate) => {
+          try {
+            return statSync(candidate).isFile();
+          } catch {
+            return false;
+          }
+        });
       });
       return content + resolved.map((next) => expand(next, seen)).join('');
     };

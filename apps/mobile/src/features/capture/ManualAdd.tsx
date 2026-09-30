@@ -100,15 +100,14 @@ export function ManualAdd() {
       <Card style={{ gap: spacing.md }}>
         <AppText variant="heading">{ingredientName(locale, selected)}</AppText>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <QuantityStepper
-            value={quantity}
-            onChange={setQuantity}
-            decrementLabel={t('mobile.common.decrease')}
-            incrementLabel={t('mobile.common.increase')}
-          />
-          <AppText muted>{unitLabel(t, unit)}</AppText>
-        </View>
+        <QuantityStepper
+          value={quantity}
+          onChange={setQuantity}
+          unit={unitLabel(t, unit)}
+          accessibilityLabel={t('inventory.quantity')}
+          decrementLabel={t('mobile.common.decrease')}
+          incrementLabel={t('mobile.common.increase')}
+        />
 
         <View style={{ gap: spacing.xs }}>
           <AppText variant="label" muted>

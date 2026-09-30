@@ -3,6 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Screen,
+  TabHeader,
   AppText,
   Card,
   Button,
@@ -93,8 +94,13 @@ export default function Home() {
   if (plansQuery.isLoading) return <LoadingState />;
 
   return (
-    <Screen scroll refreshing={plansQuery.isRefetching} onRefresh={() => void plansQuery.refetch()}>
-      <AppText variant="title">{t('mobile.home.greeting')}</AppText>
+    <Screen
+      scroll
+      tabBar
+      refreshing={plansQuery.isRefetching}
+      onRefresh={() => void plansQuery.refetch()}
+    >
+      <TabHeader title={t('mobile.home.greeting')} />
 
       <Card gradient>
         <AppText variant="label" color="primaryInverse">
@@ -121,13 +127,13 @@ export default function Home() {
             >
               <Button
                 title={t('mobile.home.viewRecipe')}
-                variant="primaryInverse"
+                variant="media"
                 onPress={() => router.push(`/recipe/${tonight.recipe.id}`)}
                 fullWidth={false}
               />
               <Button
                 title={t('mobile.home.cook')}
-                variant="ghostInverse"
+                variant="media"
                 onPress={() => router.push(`/recipe/${tonight.recipe.id}/cook`)}
                 fullWidth={false}
               />

@@ -97,19 +97,16 @@ export function BarcodeCapture() {
                   {result.brand}
                 </AppText>
               ) : null}
-              {result.match ? (
-                <Badge tone="info" label={t('recipe.inStock')} />
-              ) : null}
+              {result.match ? <Badge tone="info" label={t('recipe.inStock')} /> : null}
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-              <QuantityStepper
-                value={quantity}
-                onChange={setQuantity}
-                decrementLabel={t('mobile.common.decrease')}
-                incrementLabel={t('mobile.common.increase')}
-              />
-              <AppText muted>{unitLabel(t, unit)}</AppText>
-            </View>
+            <QuantityStepper
+              value={quantity}
+              onChange={setQuantity}
+              unit={unitLabel(t, unit)}
+              accessibilityLabel={t('inventory.quantity')}
+              decrementLabel={t('mobile.common.decrease')}
+              incrementLabel={t('mobile.common.increase')}
+            />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
               {(locations.data ?? []).map((loc) => (
                 <Chip

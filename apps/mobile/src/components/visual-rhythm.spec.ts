@@ -17,13 +17,11 @@ const colors = palettes.apricot.light.colors;
 describe('borderless buttons align to the content margin', () => {
   const source = read('./Button.tsx');
 
-  it('gives ghost variants no horizontal padding', () => {
+  it('gives the ghost variant no horizontal padding', () => {
     // A ghost button paints neither fill nor border, so `paddingHorizontal`
     // only offsets its label from the margin. On the home screen that put
     // "See all" 16pt inside the right edge of every card beneath it.
-    expect(source).toMatch(
-      /paddingHorizontal:\s*variant === 'ghost' \|\| variant === 'ghostInverse'\s*\?\s*0\s*:\s*spacing\.lg/,
-    );
+    expect(source).toMatch(/paddingHorizontal:\s*variant === 'ghost'\s*\?\s*0\s*:\s*spacing\.lg/);
   });
 
   it('keeps the touch target legal without that padding', () => {
@@ -31,6 +29,52 @@ describe('borderless buttons align to the content margin', () => {
     // slop are what carry it over 44pt. Both must stay.
     expect(source).toMatch(/minHeight:\s*48/);
     expect(source).toMatch(/hitSlop=\{hitSlop\}/);
+  });
+});
+
+describe('pushed-screen header', () => {
+  const source = read('./Header.tsx');
+
+  it('centres a bodyStrong title between two equal sides', () => {
+    // Spec §8.6. Equal flex on both sides is what keeps the title optically
+    // centred when only one side (usually back) is occupied.
+    expect(source).toMatch(/variant="bodyStrong"/);
+    expect(source).not.toMatch(/variant="title"/);
+    expect(source.match(/flex:\s*1\b/g) ?? []).toHaveLength(2);
+  });
+
+  it('backs out through a 44pt round button that mirrors in RTL', () => {
+    // The old bare 26pt chevron relied on hitSlop for its touch target.
+    expect(source).toMatch(/<RoundButton[^>]*icon="back"[^>]*directional/);
+  });
+});
+
+describe('surfaces', () => {
+  it.each(['./Card.tsx', './Tile.tsx'])(
+    '%s lifts by shadow in light mode and by its edge in dark mode',
+    (file) => {
+      // Spec §6.7: a dark page makes any shadow invisible, so depth moves to
+      // the border there; in light mode the border matches the fill.
+      const source = read(file);
+      expect(source).toMatch(/isDark \? colors\.border/);
+      expect(source).toMatch(/shadow\.card/);
+    },
+  );
+
+  it.each(['./Card.tsx', './Tile.tsx'])(
+    '%s dims to 0.92 and scales to 0.98 when pressed',
+    (file) => {
+      const source = read(file);
+      expect(source).toMatch(/pressed \? 0\.92/);
+      expect(source).toMatch(/scale: pressed \? 0\.98/);
+    },
+  );
+
+  it('a sheet floats on the raised shadow and closes through a sunk round button', () => {
+    const source = read('./Sheet.tsx');
+    expect(source).toMatch(/shadow\.raised/);
+    expect(source).toMatch(/<RoundButton[^>]*tone="sunk"/);
+    expect(source).toMatch(/variant="title"/);
   });
 });
 
