@@ -34,6 +34,13 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, apricot %s', (mo
     expect(tone.border).not.toBe(tone.fill);
   });
 
+  it('a primary chip uses the brand fill with its ink label', () => {
+    const tone = chipTone(colors, 'pill', false, 'primary');
+    expect(tone.fill).toBe(colors.primary);
+    expect(tone.label).toBe(colors.onFill);
+    expect(contrast(tone.label, tone.fill)).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
   it('a count badge reads', () => {
     const tone = countBadgeTone(colors);
     expect(contrast(tone.label, tone.fill)).toBeGreaterThanOrEqual(AA_TEXT);
@@ -55,6 +62,27 @@ describe.each(['light', 'dark'] as ThemeMode[])('control tones, apricot %s', (mo
     const off = segmentTone(colors, false);
     expect(contrast(off.label, segmentTrack(colors)), 'unselected').toBeGreaterThanOrEqual(AA_TEXT);
   });
+
+  it('media segments use inverse camera-surface tokens', () => {
+    expect(segmentTrack(colors, 'media')).toBe(colors.surfaceInverseAlt);
+
+    const selected = segmentTone(colors, true, mode === 'dark', 'media');
+    expect(selected).toMatchObject({
+      fill: colors.textInverse,
+      label: colors.onPrimaryInverse,
+      border: colors.textInverse,
+    });
+    expect(contrast(selected.label, selected.fill), 'media selected').toBeGreaterThanOrEqual(
+      AA_TEXT,
+    );
+
+    const unselected = segmentTone(colors, false, mode === 'dark', 'media');
+    expect(unselected.label).toBe(colors.textInverseMuted);
+    expect(
+      contrast(unselected.label, segmentTrack(colors, 'media')),
+      'media unselected',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+  });
 });
 
 describe('control touch targets', () => {
@@ -70,9 +98,11 @@ describe('control touch targets', () => {
 
   it('the stepper is one adjustable element with increment and decrement actions', () => {
     const source = read('./QuantityStepper.tsx');
-    expect(source).toMatch(/accessibilityRole="adjustable"/);
+    expect(source).toContain("accessibilityRole={accessible ? 'adjustable' : undefined}");
     expect(source).toMatch(/name: 'increment'/);
     expect(source).toMatch(/name: 'decrement'/);
+    expect(source).toContain('accessible={false}');
+    expect(source).toContain('importantForAccessibility="no"');
   });
 
   it('segments extend their slop to the edge of the 44pt track', () => {

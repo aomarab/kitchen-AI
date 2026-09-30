@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveThemeMode, tintIn, tintNamed } from './index';
-import { palettes, type Palette, type ThemeMode } from './palettes';
+import { NATIVE_SWITCH_THUMB, palettes, type Palette, type ThemeMode } from './palettes';
 import { contrast } from './contrast';
 import {
   RECIPE_THUMB_TONE_FOREGROUNDS,
@@ -73,12 +73,20 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     expect(contrast(colors.onDanger, colors.danger), 'danger').toBeGreaterThanOrEqual(AA_TEXT);
   });
 
+  it('today plan chips read on the primary fill', () => {
+    expect(contrast(colors.onFill, colors.primary), 'today chip').toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
   /**
    * F4's question tile inverts with the mode: `text` becomes the fill and `bg`
    * the label. Ink on cream in light, cream on cocoa in dark.
    */
   it('the inverted question tile reads', () => {
     expect(contrast(colors.bg, colors.text)).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it('the inverted question tile outline separates', () => {
+    expect(contrast(colors.bg, colors.text)).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 
   /**
@@ -94,6 +102,28 @@ describe.each(ALL)('%s palette', (_name, palette) => {
       );
     },
   );
+
+  it('the selected credit pack edge separates from a plain tile', () => {
+    expect(
+      contrast(colors.primary, tintNamed(tints, 'plain').bg),
+      'primary selected edge on plain tile',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
+  it('switch tracks separate from their card and native thumb', () => {
+    expect(
+      contrast(colors.primary, colors.surface),
+      'on switch track on surface',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(
+      contrast(colors.switchTrackOff, colors.surface),
+      'off switch track on surface',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(
+      contrast(colors.switchTrackOff, NATIVE_SWITCH_THUMB),
+      'off switch track under native white thumb',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
 
   it.each(STATUSES)('%s reads on its own soft chip', (status) => {
     const soft = `${status}Soft` as const;
@@ -111,6 +141,13 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     }
   });
 
+  it('success fills carry a readable tick or label', () => {
+    expect(
+      contrast(colors.onSuccess, colors.success),
+      'onSuccess on success',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
   it('primaryText reads as text on its own soft chip', () => {
     expect(contrast(colors.primaryText, colors.primarySoft)).toBeGreaterThanOrEqual(AA_TEXT);
   });
@@ -124,6 +161,26 @@ describe.each(ALL)('%s palette', (_name, palette) => {
    */
   it('primaryText reads as text on a plain surface', () => {
     expect(contrast(colors.primaryText, colors.surface), 'on surface').toBeGreaterThanOrEqual(
+      AA_TEXT,
+    );
+  });
+
+  it('primaryText reads as the Home greeting accent on the page background', () => {
+    expect(contrast(colors.primaryText, colors.bg), 'on bg').toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it.each(['warn', 'danger'] as const)(
+    '%s reads as Use-soon status text on surfaceAlt',
+    (status) => {
+      expect(
+        contrast(colors[status], colors.surfaceAlt),
+        `${status} on surfaceAlt`,
+      ).toBeGreaterThanOrEqual(AA_TEXT);
+    },
+  );
+
+  it.each(['warn', 'danger'] as const)('%s reads as mini-tile status text on surface', (status) => {
+    expect(contrast(colors[status], colors.surface), `${status} on surface`).toBeGreaterThanOrEqual(
       AA_TEXT,
     );
   });
@@ -157,6 +214,14 @@ describe.each(ALL)('%s palette', (_name, palette) => {
       contrast(colors.onPrimaryInverse, colors.primaryInverse),
       'primaryInverse label',
     ).toBeGreaterThanOrEqual(AA_TEXT);
+    expect(
+      contrast(colors.textInverse, colors.surfaceInverse),
+      'light round button fill on media',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(
+      contrast(colors.onPrimaryInverse, colors.textInverse),
+      'light round button glyph',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
   });
 
   /**
@@ -184,6 +249,21 @@ describe.each(ALL)('%s palette', (_name, palette) => {
   /** The capture shutter is the coral on the viewfinder, in both modes. */
   it('the coral shutter separates from the viewfinder', () => {
     expect(contrast(colors.primary, colors.surfaceInverse)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
+  it('capture pins and toast affordances read on inverse media fills', () => {
+    expect(
+      contrast(colors.onPrimaryInverse, colors.textInverse),
+      'pin chip label on textInverse',
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+    expect(
+      contrast(colors.primary, colors.surfaceInverse),
+      'shutter primary on surfaceInverse',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(
+      contrast(colors.warnInverse, colors.textInverse),
+      'warn dot on textInverse',
+    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 
   /**
@@ -244,6 +324,15 @@ describe.each(ALL)('%s palette', (_name, palette) => {
   describe('card tints', () => {
     it.each(tints)('$name carries its own foreground', (tint) => {
       expect(contrast(tint.fg, tint.bg), `${tint.name} fg`).toBeGreaterThanOrEqual(AA_TEXT);
+    });
+
+    it.each(tints)('$name carries review status text', (tint) => {
+      for (const status of STATUSES) {
+        expect(
+          contrast(colors[status], tint.bg),
+          `${status} on ${tint.name}`,
+        ).toBeGreaterThanOrEqual(AA_TEXT);
+      }
     });
 
     it.each(tints)('$name reads with the standard text colours', (tint) => {

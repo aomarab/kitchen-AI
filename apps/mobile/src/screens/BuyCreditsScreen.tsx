@@ -9,18 +9,21 @@ import {
   AppText,
   Button,
   Card,
-  CreditBalance,
   LoadingState,
   ErrorState,
   Icon,
+  Bento,
+  Tile,
 } from '../components';
+import { BalanceTile } from '../features/credits/BalanceTile';
+import { LowBalanceNotice } from '../features/credits/LowBalanceNotice';
 import { useFormat } from '../hooks/useFormat';
 import { useCredits, usePackPrices } from '../hooks/credits';
 import { qk } from '../hooks/keys';
 import { buyCredits } from '../lib/purchase';
 import { canAfford, creditsShort, displayPrice } from '../lib/credits';
 import { formatQty, formatUsd } from '../lib/format';
-import { radius, spacing } from '../theme';
+import { spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
 
 /** Read the optional `action` route param — the priced action that sent the user here. */
@@ -47,6 +50,7 @@ export default function BuyCreditsScreen() {
   const credits = useCredits();
   const packPrices = usePackPrices();
   const [busyProduct, setBusyProduct] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState(CREDIT_PACKS[0]?.productId ?? null);
   const [notice, setNotice] = useState<'credited' | 'pending' | 'failed' | null>(null);
 
   const onBuy = async (productId: string) => {
@@ -72,6 +76,12 @@ export default function BuyCreditsScreen() {
   };
 
   const balance = credits.data;
+  const selectedPack =
+    CREDIT_PACKS.find((pack) => pack.productId === selectedProductId) ?? CREDIT_PACKS[0] ?? null;
+  const busyPack = busyProduct
+    ? (CREDIT_PACKS.find((pack) => pack.productId === busyProduct) ?? null)
+    : null;
+  const ctaPack = busyPack ?? selectedPack;
   const shortfall =
     balance && action && !canAfford(balance, action) ? creditsShort(balance, action) : 0;
 
@@ -86,7 +96,8 @@ export default function BuyCreditsScreen() {
         <ErrorState error={credits.error} onRetry={() => void credits.refetch()} />
       ) : (
         <>
-          <CreditBalance balance={balance} />
+          <BalanceTile balance={balance} />
+          <LowBalanceNotice balance={balance} />
 
           {shortfall > 0 ? (
             <Card
@@ -112,48 +123,51 @@ export default function BuyCreditsScreen() {
             </Card>
           ) : null}
 
-          <View style={{ gap: spacing.md }}>
-            {CREDIT_PACKS.map((pack) => (
-              <Card key={pack.productId} style={{ gap: spacing.md }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                  <View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: radius.md,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: colors.primarySoft,
-                    }}
-                  >
-                    <Icon name="sparkles" size={22} color={colors.primaryText} />
-                  </View>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <AppText variant="heading">
-                      {t('mobile.credits.packCredits', {
-                        credits: formatQty(locale, pack.credits, prefs),
-                      })}
+          <Bento>
+            {CREDIT_PACKS.map((pack) => {
+              const selected = selectedPack?.productId === pack.productId;
+              const creditsLabel = t('mobile.credits.packCredits', {
+                credits: formatQty(locale, pack.credits, prefs),
+              });
+              const price = displayPrice(
+                packPrices.data?.[pack.productId] ?? null,
+                formatUsd(locale, pack.priceUsd, prefs),
+              );
+              return (
+                <Tile
+                  key={pack.productId}
+                  span={2}
+                  icon="sparkles"
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected, disabled: busyProduct !== null }}
+                  accessibilityLabel={`${creditsLabel}, ${price}`}
+                  onPress={() => {
+                    if (busyProduct === null) setSelectedProductId(pack.productId);
+                  }}
+                  style={selected ? { borderWidth: 2, borderColor: colors.primary } : undefined}
+                >
+                  <View style={{ gap: spacing.xs }}>
+                    <AppText variant="numeral">{formatQty(locale, pack.credits, prefs)}</AppText>
+                    <AppText variant="caption" muted style={{ writingDirection: 'ltr' }}>
+                      {price}
                     </AppText>
-                    <AppText variant="caption" muted>
-                      {displayPrice(
-                        packPrices.data?.[pack.productId] ?? null,
-                        formatUsd(locale, pack.priceUsd, prefs),
-                      )}
-                    </AppText>
                   </View>
-                </View>
-                <Button
-                  title={t('mobile.credits.buyCta', {
-                    credits: formatQty(locale, pack.credits, prefs),
-                  })}
-                  icon="wallet"
-                  loading={busyProduct === pack.productId}
-                  disabled={busyProduct !== null}
-                  onPress={() => void onBuy(pack.productId)}
-                />
-              </Card>
-            ))}
-          </View>
+                </Tile>
+              );
+            })}
+          </Bento>
+
+          {ctaPack ? (
+            <Button
+              title={t('mobile.credits.buyCta', {
+                credits: formatQty(locale, ctaPack.credits, prefs),
+              })}
+              icon="wallet"
+              loading={busyProduct !== null}
+              disabled={busyProduct !== null}
+              onPress={() => void onBuy(ctaPack.productId)}
+            />
+          ) : null}
         </>
       )}
     </Screen>

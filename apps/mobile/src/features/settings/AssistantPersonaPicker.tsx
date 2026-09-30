@@ -1,14 +1,23 @@
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import {
   ASSISTANT_PERSONAS,
   assistantPersonaSchema,
   type AssistantPersona,
 } from '@kitchen/contracts';
-import { AppText, Badge, Card, Icon, LoadingState, ErrorState } from '../../components';
+import {
+  AppText,
+  Badge,
+  Card,
+  Icon,
+  ListGroup,
+  ListRow,
+  LoadingState,
+  ErrorState,
+} from '../../components';
 import { useLocale } from '../../lib/locale';
 import { useProfile, useUpdateProfile } from '../../hooks/profile';
 import { resolvePersonaSelection } from '../../lib/assistant/persona';
-import { radius, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
 
 /**
@@ -52,59 +61,31 @@ export function AssistantPersonaPicker() {
         ) : null}
       </Card>
 
-      <View style={{ gap: spacing.sm }} accessibilityRole="radiogroup">
-        {assistantPersonaSchema.options.map((persona) => {
-          const isSelected = persona === selected;
-          return (
-            <Pressable
-              key={persona}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: isSelected }}
-              accessibilityLabel={t(`persona.${persona}`)}
-              onPress={() => update.mutate({ assistantPersona: persona })}
-              style={{
-                gap: spacing.xs,
-                padding: spacing.lg,
-                borderRadius: radius.lg,
-                borderWidth: isSelected ? 2 : 1,
-                borderColor: isSelected ? colors.primary : colors.border,
-                backgroundColor: isSelected ? colors.primarySoft : colors.surface,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: spacing.sm,
-                }}
-              >
-                <AppText
-                  variant="label"
-                  style={{ color: isSelected ? colors.primaryText : colors.text }}
-                >
-                  {t(`persona.${persona}`)}
-                </AppText>
-                {/* Selection is never colour alone: the tick is the signal a
-                    colour-blind user reads, the tint is the reinforcement. */}
-                {isSelected ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                    <Icon name="check" size={14} color={colors.primaryText} />
-                    <AppText variant="caption" style={{ color: colors.primaryText }}>
-                      {t('mobile.assistant.personaSelected')}
-                    </AppText>
-                  </View>
-                ) : null}
-              </View>
-              <AppText variant="caption" muted>
-                {t(`personaDescription.${persona}`)}
-              </AppText>
-              <AppText variant="caption" muted>
-                {t(`dialect.${ASSISTANT_PERSONAS[persona].dialect}`)}
-              </AppText>
-            </Pressable>
-          );
-        })}
+      <View accessibilityRole="radiogroup">
+        <ListGroup>
+          {assistantPersonaSchema.options.map((persona) => {
+            const isSelected = persona === selected;
+            return (
+              <ListRow
+                key={persona}
+                grouped
+                icon="mic"
+                title={t(`persona.${persona}`)}
+                titleColor={isSelected ? 'primaryText' : undefined}
+                subtitle={`${t(`personaDescription.${persona}`)} · ${t(
+                  `dialect.${ASSISTANT_PERSONAS[persona].dialect}`,
+                )}`}
+                trailing={
+                  isSelected ? <Icon name="check" size={20} color={colors.primaryText} /> : null
+                }
+                accessibilityRole="radio"
+                accessibilityState={{ checked: isSelected }}
+                accessibilityLabel={t(`persona.${persona}`)}
+                onPress={() => update.mutate({ assistantPersona: persona })}
+              />
+            );
+          })}
+        </ListGroup>
       </View>
     </View>
   );

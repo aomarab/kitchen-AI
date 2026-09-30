@@ -4,7 +4,12 @@ import { ApiError } from '@kitchen/api-client';
 import { errorMessageKey } from '../lib/errors';
 import { unitSchema, storageLocationTypeSchema, type Unit } from '@kitchen/contracts';
 import {
+  formatDaysLeft,
   formatExpiryLabel,
+  formatDateWithHijri,
+  formatMeasure,
+  formatWeekday,
+  hijriCaption,
   ingredientName,
   itemName,
   localizedName,
@@ -56,6 +61,70 @@ describe('formatExpiryLabel', () => {
   });
 });
 
+describe('formatDaysLeft', () => {
+  const en = createTranslator('en');
+  const ar = createTranslator('ar');
+
+  it('is null without a date', () => {
+    expect(formatDaysLeft(en, 'en', null, {}, NOW)).toBeNull();
+    expect(formatDaysLeft(ar, 'ar', null, {}, NOW)).toBeNull();
+  });
+
+  it('renders expired and today through the short kitchen copy', () => {
+    expect(formatDaysLeft(en, 'en', '2026-07-24', {}, NOW)).toBe('Expired');
+    expect(formatDaysLeft(en, 'en', '2026-07-26', {}, NOW)).toBe('Today');
+    expect(formatDaysLeft(ar, 'ar', '2026-07-24', {}, NOW)).toBe('منتهي الصلاحية');
+    expect(formatDaysLeft(ar, 'ar', '2026-07-26', {}, NOW)).toBe('اليوم');
+  });
+
+  it('renders compact English day counts', () => {
+    expect(formatDaysLeft(en, 'en', '2026-07-27', {}, NOW)).toBe('1 day left');
+    expect(formatDaysLeft(en, 'en', '2026-07-28', {}, NOW)).toBe('2 days left');
+    expect(formatDaysLeft(en, 'en', '2026-07-31', {}, NOW)).toBe('5 days left');
+    expect(formatDaysLeft(en, 'en', '2026-08-10', {}, NOW)).toBe('15 days left');
+  });
+
+  it('renders compact Arabic day counts with requested numerals', () => {
+    const prefs = { easternNumerals: true };
+    expect(formatDaysLeft(ar, 'ar', '2026-07-27', prefs, NOW)).toBe('يوم واحد');
+    expect(formatDaysLeft(ar, 'ar', '2026-07-28', prefs, NOW)).toBe('يومان');
+    expect(formatDaysLeft(ar, 'ar', '2026-07-31', prefs, NOW)).toBe('٥ أيام');
+    expect(formatDaysLeft(ar, 'ar', '2026-08-10', prefs, NOW)).toBe('١٥ يومًا');
+  });
+});
+
+describe('formatWeekday', () => {
+  it('formats the weekday through the shared date formatter', () => {
+    expect(formatWeekday('en', new Date('2026-09-24T12:00:00'))).toBe('Thursday');
+    expect(formatWeekday('ar', new Date('2026-09-24T12:00:00'))).toBe('الخميس');
+  });
+});
+
+describe('hijriCaption', () => {
+  const iso = '2026-09-28T00:00:00';
+
+  it('is null for English even when the Hijri setting is on', () => {
+    expect(hijriCaption('en', iso, true)).toBeNull();
+  });
+
+  it('returns the Hijri companion date for Arabic when the setting is on', () => {
+    expect(hijriCaption('ar', iso, true)).toContain('هـ');
+  });
+
+  it('is null for Arabic when the Hijri setting is off', () => {
+    expect(hijriCaption('ar', iso, false)).toBeNull();
+  });
+
+  it('keeps formatDateWithHijri on the same Hijri eligibility rule', () => {
+    expect(formatDateWithHijri('en', iso, true, { month: 'short', day: 'numeric' })).not.toContain(
+      'هـ',
+    );
+    expect(formatDateWithHijri('ar', iso, true, { month: 'short', day: 'numeric' })).toContain(
+      'هـ',
+    );
+  });
+});
+
 describe('error-envelope rendering', () => {
   it('turns a server error code into a translated message', () => {
     const t = createTranslator('en');
@@ -77,6 +146,56 @@ describe('unit labels', () => {
       expect(unitLabel(ar, unit), unit).not.toBe(`units.${unit}`);
       expect(unitLabel(ar, unit), unit).not.toBe(unitLabel(en, unit));
     }
+  });
+});
+
+describe('formatMeasure', () => {
+  const en = createTranslator('en');
+  const ar = createTranslator('ar');
+
+  it('uses kitchen fraction glyphs for counted and word units', () => {
+    expect(formatMeasure(en, 'en', 2.5, 'piece')).toBe('2½ pc');
+    expect(formatMeasure(en, 'en', 1.25, 'bunch')).toBe('1¼ bunches');
+    expect(formatMeasure(ar, 'ar', 2.5, 'piece')).toBe('\u20662½\u2069 قطعة');
+    expect(formatMeasure(ar, 'ar', 1.25, 'bunch')).toBe('\u20661¼\u2069 حزمة');
+  });
+
+  it('pluralises English word units by count', () => {
+    expect(formatMeasure(en, 'en', 2, 'piece')).toBe('2 pc');
+    expect(formatMeasure(en, 'en', 5, 'clove')).toBe('5 cloves');
+    expect(formatMeasure(en, 'en', 1, 'clove')).toBe('1 clove');
+  });
+
+  it('keeps mass and volume abbreviations decimal', () => {
+    expect(formatMeasure(en, 'en', 1.5, 'kg')).toBe('1.5 kg');
+  });
+
+  it('uses native Arabic CLDR forms for word units', () => {
+    expect(formatMeasure(ar, 'ar', 1, 'clove')).toBe('فص واحد');
+    expect(formatMeasure(ar, 'ar', 2, 'clove')).toBe('فصان');
+    expect(formatMeasure(ar, 'ar', 3, 'clove')).toBe('3 فصوص');
+    expect(formatMeasure(ar, 'ar', 11, 'clove')).toBe('11 فصًا');
+  });
+
+  it('uses native Arabic CLDR forms for pieces', () => {
+    expect(formatMeasure(ar, 'ar', 1, 'piece')).toBe('قطعة واحدة');
+    expect(formatMeasure(ar, 'ar', 2, 'piece')).toBe('قطعتان');
+    expect(formatMeasure(ar, 'ar', 3, 'piece')).toBe('3 قطع');
+    expect(formatMeasure(ar, 'ar', 11, 'piece')).toBe('11 قطعة');
+    expect(formatMeasure(ar, 'ar', 100, 'piece')).toBe('100 قطعة');
+    expect(formatMeasure(ar, 'ar', 2.5, 'piece')).toBe('\u20662½\u2069 قطعة');
+  });
+
+  it('keeps Arabic numeral preferences when rendering fractions', () => {
+    expect(formatMeasure(ar, 'ar', 1.25, 'bunch', { easternNumerals: true })).toBe(
+      '\u2066١¼\u2069 حزمة',
+    );
+  });
+
+  it('does not add isolate marks to Arabic quantities without fraction glyphs', () => {
+    expect(formatMeasure(ar, 'ar', 3, 'piece')).toBe('3 قطع');
+    expect(formatMeasure(ar, 'ar', 1.2, 'piece')).toBe('1.2 قطعة');
+    expect(formatMeasure(ar, 'ar', 1.5, 'kg')).toBe('1.5 كجم');
   });
 });
 

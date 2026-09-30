@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Pressable, View } from 'react-native';
 import type {
   InventoryItemInput,
@@ -6,18 +6,24 @@ import type {
   RecognitionSession,
   StorageLocation,
 } from '@kitchen/contracts';
-import { AppText, Badge, Button, Card, Chip, Field, QuantityStepper } from '../../components';
+import { AppText, Bento, Button, Icon } from '../../components';
+import type { TileSpan } from '../../components/Tile';
 import { useFormat } from '../../hooks/useFormat';
+import { buildInventoryInputs, initialReviewRows, type ReviewRow } from '../../lib/capture';
 import {
-  buildInventoryInputs,
-  includedCount,
-  initialReviewRows,
-  isLowConfidence,
-  type ReviewRow,
-} from '../../lib/capture';
-import { localizedName, locationLabel, unitLabel } from '../../lib/format';
-import { spacing } from '../../theme';
+  focusIndex,
+  needsAnswer,
+  newReviewRow,
+  reviewHeadlineCount,
+  reviewScrollTarget,
+  unansweredCount,
+} from '../../lib/review';
+import { localizedName } from '../../lib/format';
+import { radius, spacing } from '../../theme';
 import { useTheme } from '../../theme/useTheme';
+import { QuestionTile } from './QuestionTile';
+import { ReviewEditSheet, type ReviewSaveMeta } from './ReviewEditSheet';
+import { ReviewTile } from './ReviewTile';
 
 export interface ReviewListProps {
   session: RecognitionSession;
@@ -25,27 +31,292 @@ export interface ReviewListProps {
   locations: StorageLocation[];
   submitting?: boolean;
   onConfirm: (items: InventoryItemInput[]) => void;
+  footer?: 'inline' | 'none';
+  editPresentation?: 'sheet' | 'inline';
+  state?: ReviewListState;
+  focus?: string;
+  onTileLayout?: (tempId: string, index: number, y: number) => void;
 }
 
-/**
- * The AI review list. Recognition rows are editable and each can be removed;
- * nothing reaches inventory until the user taps confirm, which is the only call
- * site of {@link buildInventoryInputs}. Low-confidence rows are flagged.
- */
-export function ReviewList({ session, source, locations, submitting, onConfirm }: ReviewListProps) {
-  const { t, locale } = useFormat();
-  const { colors } = useTheme();
+interface EditState {
+  row: ReviewRow;
+  focusName: boolean;
+}
+
+export interface ReviewListState {
+  rows: ReviewRow[];
+  includedRows: ReviewRow[];
+  answered: ReadonlySet<string>;
+  count: number;
+  unanswered: number;
+  edit: EditState | null;
+  answerYes: (row: ReviewRow) => void;
+  openEdit: (row: ReviewRow, options?: { focusName?: boolean }) => void;
+  openAdd: () => void;
+  updateQuantity: (tempId: string, quantity: number) => void;
+  cancelEdit: () => void;
+  saveEdit: (row: ReviewRow, meta: ReviewSaveMeta) => void;
+  removeEdit: (row: ReviewRow) => void;
+  confirm: () => void;
+}
+
+function locationsKey(locations: readonly StorageLocation[]): string {
+  return locations.map((location) => location.id).join('|');
+}
+
+export function useReviewListState({
+  session,
+  source,
+  locations,
+  onConfirm,
+}: Pick<ReviewListProps, 'session' | 'source' | 'locations' | 'onConfirm'>): ReviewListState {
   const [rows, setRows] = useState<ReviewRow[]>(() => initialReviewRows(session, locations));
+  const [answered, setAnswered] = useState<Set<string>>(() => new Set());
+  const [edit, setEdit] = useState<EditState | null>(null);
+  const locationIds = locationsKey(locations);
 
-  const count = useMemo(() => includedCount(rows), [rows]);
+  useEffect(() => {
+    setRows(initialReviewRows(session, locations));
+    setAnswered(new Set());
+    setEdit(null);
+    // Reset only when the recognition session or the location identity changes;
+    // otherwise an inline [] fallback from a caller would erase edits every render.
+  }, [locationIds, session.id]);
 
-  const update = (tempId: string, patch: Partial<ReviewRow>) =>
-    setRows((prev) => prev.map((row) => (row.tempId === tempId ? { ...row, ...patch } : row)));
+  const includedRows = useMemo(() => rows.filter((row) => row.include), [rows]);
+  const count = useMemo(() => reviewHeadlineCount(rows), [rows]);
+  const unanswered = useMemo(() => unansweredCount(rows, answered), [answered, rows]);
+
+  const updateQuantity = useCallback((tempId: string, quantity: number) => {
+    setRows((prev) => prev.map((row) => (row.tempId === tempId ? { ...row, quantity } : row)));
+  }, []);
+
+  const answerYes = useCallback((row: ReviewRow) => {
+    setAnswered((prev) => new Set(prev).add(row.tempId));
+  }, []);
+
+  const openEdit = useCallback((row: ReviewRow, options?: { focusName?: boolean }) => {
+    setEdit({ row, focusName: !!options?.focusName });
+  }, []);
+
+  const openAdd = useCallback(() => {
+    setEdit({ row: newReviewRow(locations), focusName: true });
+  }, [locations]);
+
+  const cancelEdit = useCallback(() => setEdit(null), []);
+
+  const saveEdit = useCallback((next: ReviewRow, meta: ReviewSaveMeta) => {
+    setRows((prev) => {
+      const exists = prev.some((row) => row.tempId === next.tempId);
+      if (!exists) return [...prev, next];
+      return prev.map((row) => (row.tempId === next.tempId ? next : row));
+    });
+    if (meta.ingredientChanged) {
+      setAnswered((prev) => new Set(prev).add(next.tempId));
+    }
+    setEdit(null);
+  }, []);
+
+  const removeEdit = useCallback((row: ReviewRow) => {
+    setRows((prev) => {
+      const exists = prev.some((candidate) => candidate.tempId === row.tempId);
+      if (!exists) return prev;
+      return prev.map((candidate) =>
+        candidate.tempId === row.tempId ? { ...candidate, include: false } : candidate,
+      );
+    });
+    setEdit(null);
+  }, []);
+
+  const confirm = useCallback(() => {
+    onConfirm(buildInventoryInputs(rows, source));
+  }, [onConfirm, rows, source]);
+
+  return {
+    rows,
+    includedRows,
+    answered,
+    count,
+    unanswered,
+    edit,
+    answerYes,
+    openEdit,
+    openAdd,
+    updateQuantity,
+    cancelEdit,
+    saveEdit,
+    removeEdit,
+    confirm,
+  };
+}
+
+function ReviewAddTile({ onPress }: { onPress: () => void; span?: TileSpan }) {
+  const { t } = useFormat();
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('mobile.review.addSomething')}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        flexBasis: 0,
+        minWidth: 0,
+        minHeight: 140,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: colors.border,
+        backgroundColor: 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        opacity: pressed ? 0.8 : 1,
+        transform: [{ scale: pressed ? 0.98 : 1 }],
+      })}
+    >
+      <Icon name="plus" size={24} color={colors.text} />
+      <AppText variant="bodyStrong">{t('mobile.review.addSomething')}</AppText>
+    </Pressable>
+  );
+}
+
+interface TileDescriptor {
+  key: string;
+  tempId?: string;
+  element: ReactElement;
+}
+
+function ReviewBento({
+  tiles,
+  onTileLayout,
+}: {
+  tiles: TileDescriptor[];
+  onTileLayout?: (tempId: string, index: number, y: number) => void;
+}) {
+  const bentoY = useRef(0);
+  return (
+    <View
+      onLayout={(event) => {
+        bentoY.current = event.nativeEvent.layout.y;
+      }}
+    >
+      <Bento
+        onRowLayout={(indices, rowY) => {
+          for (const index of indices) {
+            const tile = tiles[index];
+            if (tile?.tempId) {
+              onTileLayout?.(tile.tempId, index, reviewScrollTarget(bentoY.current, rowY));
+            }
+          }
+        }}
+      >
+        {tiles.map((tile) => tile.element)}
+      </Bento>
+    </View>
+  );
+}
+
+export function ReviewFooter({
+  state,
+  submitting,
+}: {
+  state: Pick<ReviewListState, 'count' | 'unanswered' | 'confirm'>;
+  submitting?: boolean;
+}) {
+  const { t } = useFormat();
+  const { colors } = useTheme();
+  const disabled = state.count === 0 || state.unanswered > 0;
+  return (
+    <View style={{ gap: spacing.sm }}>
+      {state.unanswered > 0 ? (
+        <AppText variant="caption" color="warn" center>
+          {t('mobile.review.resolveFirst', { count: state.unanswered })}
+        </AppText>
+      ) : null}
+      <Button
+        title={t('mobile.review.addCount', { count: state.count })}
+        icon="check"
+        disabled={disabled}
+        loading={submitting}
+        onPress={state.confirm}
+      />
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xs,
+        }}
+      >
+        <Icon name="info" size={14} color={colors.textMuted} />
+        <AppText variant="caption" muted center>
+          {t('mobile.review.savedOnAdd')}
+        </AppText>
+      </View>
+    </View>
+  );
+}
+
+/** Bento confirmation list. Nothing reaches inventory until ReviewFooter calls confirm. */
+export function ReviewList({
+  session,
+  source,
+  locations,
+  submitting,
+  onConfirm,
+  footer = 'inline',
+  editPresentation,
+  state,
+  focus,
+  onTileLayout,
+}: ReviewListProps) {
+  const { t, locale } = useFormat();
+  const { tintIn } = useTheme();
+  const internal = useReviewListState({ session, source, locations, onConfirm });
+  const review = state ?? internal;
+  const presentation = editPresentation ?? (source === 'assistant' ? 'inline' : 'sheet');
+  const focusedIndex = focusIndex(review.rows, focus);
+
+  const tiles: TileDescriptor[] = review.includedRows.map((row, index) => {
+    const name = localizedName(locale, row.nameEn, row.nameAr);
+    const shouldAsk = needsAnswer(row, review.answered);
+    const element = shouldAsk ? (
+      <QuestionTile
+        key={row.tempId}
+        span={1}
+        name={name}
+        onYes={() => review.answerYes(row)}
+        onNo={() => review.openEdit(row, { focusName: true })}
+      />
+    ) : (
+      <ReviewTile
+        key={row.tempId}
+        span={1}
+        row={row}
+        tint={tintIn(index)}
+        location={locations.find((location) => location.id === row.locationId)}
+        onPress={() => review.openEdit(row)}
+        onQuantityChange={(quantity) => review.updateQuantity(row.tempId, quantity)}
+      />
+    );
+    return { key: row.tempId, tempId: row.tempId, element };
+  });
+
+  tiles.push({
+    key: 'add-something',
+    element: <ReviewAddTile key="add-something" span={1} onPress={review.openAdd} />,
+  });
 
   return (
-    <View style={{ gap: spacing.md }}>
-      <AppText variant="caption" muted>
-        {t('mobile.review.hint')}
+    <View style={{ gap: spacing.lg }}>
+      <AppText variant="hero">
+        {t('mobile.review.headline')}{' '}
+        <AppText variant="hero" color="primaryText">
+          {t('mobile.review.headlineAccent', { count: review.count })}
+        </AppText>
+        {'\n'}
+        {t('mobile.review.headlineTail')}
       </AppText>
 
       {session.emptyPhotoKeys.length > 0 ? (
@@ -54,78 +325,25 @@ export function ReviewList({ session, source, locations, submitting, onConfirm }
         </AppText>
       ) : null}
 
-      {rows.map((row) => (
-        <Card key={row.tempId} tone={row.include ? 'surface' : 'alt'} style={{ gap: spacing.md }}>
-          <View
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-          >
-            <View style={{ flex: 1, gap: 2 }}>
-              <AppText variant="bodyStrong">
-                {localizedName(locale, row.nameEn, row.nameAr)}
-              </AppText>
-              {isLowConfidence(row.confidence) ? (
-                <Badge tone="warn" label={t('capture.lowConfidence')} />
-              ) : null}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('mobile.review.remove')}
-              onPress={() => update(row.tempId, { include: !row.include })}
-            >
-              <AppText variant="label" color={row.include ? 'danger' : 'primaryText'}>
-                {row.include ? t('mobile.review.remove') : t('common.add')}
-              </AppText>
-            </Pressable>
-          </View>
-
-          {row.include ? (
-            <>
-              <QuantityStepper
-                value={row.quantity}
-                onChange={(quantity) => update(row.tempId, { quantity })}
-                unit={unitLabel(t, row.unit)}
-                accessibilityLabel={localizedName(locale, row.nameEn, row.nameAr)}
-                decrementLabel={t('common.delete')}
-                incrementLabel={t('common.add')}
-              />
-
-              <View style={{ gap: spacing.xs }}>
-                <AppText variant="label" muted>
-                  {t('inventory.location')}
-                </AppText>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                  {locations.map((loc) => (
-                    <Chip
-                      key={loc.id}
-                      label={locationLabel(t, loc)}
-                      selected={row.locationId === loc.id}
-                      onPress={() => update(row.tempId, { locationId: loc.id })}
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <Field
-                label={t('inventory.expiryDate')}
-                value={row.expiresAt ?? ''}
-                onChangeText={(text) => update(row.tempId, { expiresAt: text.trim() || null })}
-                placeholder={t('mobile.capture.noExpiry')}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </>
-          ) : null}
-        </Card>
-      ))}
-
-      <View style={{ height: 1, backgroundColor: colors.border }} />
-      <Button
-        title={t('mobile.review.addCount', { count })}
-        icon="check"
-        disabled={count === 0}
-        loading={submitting}
-        onPress={() => onConfirm(buildInventoryInputs(rows, source))}
+      <ReviewBento
+        tiles={tiles}
+        onTileLayout={(tempId, index, y) => {
+          if (focusedIndex === index) onTileLayout?.(tempId, index, y);
+        }}
       />
+
+      <ReviewEditSheet
+        visible={!!review.edit}
+        row={review.edit?.row ?? null}
+        locations={locations}
+        inline={presentation === 'inline'}
+        focusName={review.edit?.focusName}
+        onSave={review.saveEdit}
+        onCancel={review.cancelEdit}
+        onRemove={review.removeEdit}
+      />
+
+      {footer === 'inline' ? <ReviewFooter state={review} submitting={submitting} /> : null}
     </View>
   );
 }

@@ -68,6 +68,49 @@ export function unitLabel(t: Translator, unit: Unit): string {
   return t(`units.${unit}` as MessageKey);
 }
 
+const WORD_MEASURE_UNITS = new Set<Unit>([
+  'bunch',
+  'clove',
+  'slice',
+  'can',
+  'jar',
+  'packet',
+  'bottle',
+  'cup',
+  'pinch',
+]);
+
+const LOCALIZED_MEASURE_UNITS = new Set<Unit>(['piece', ...WORD_MEASURE_UNITS]);
+const FRACTIONAL_MEASURE_UNITS = new Set<Unit>(['piece', ...WORD_MEASURE_UNITS]);
+const LRI = '\u2066';
+const PDI = '\u2069';
+
+const KITCHEN_FRACTIONS: readonly (readonly [number, string])[] = [
+  [1 / 4, '¼'],
+  [1 / 3, '⅓'],
+  [1 / 2, '½'],
+  [2 / 3, '⅔'],
+  [3 / 4, '¾'],
+];
+
+function formatKitchenQuantity(locale: Locale, value: number, prefs: NumeralPrefs): string {
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+  const whole = Math.floor(abs);
+  const fraction = abs - whole;
+
+  if (Math.abs(fraction) <= 0.01 || Math.abs(fraction - 1) <= 0.01) {
+    return `${sign}${formatQty(locale, Math.round(abs), prefs)}`;
+  }
+
+  const match = KITCHEN_FRACTIONS.find(([target]) => Math.abs(fraction - target) <= 0.01);
+  if (!match) return formatQty(locale, value, prefs);
+
+  const wholeText = whole > 0 ? formatQty(locale, whole, prefs) : '';
+  const rendered = `${sign}${wholeText}${match[1]}`;
+  return locale === 'ar' ? `${LRI}${rendered}${PDI}` : rendered;
+}
+
 /**
  * Names the API seeds a new household with. These are never shown: they exist
  * so the row has something to hold, and the client renders the *type* instead
@@ -80,6 +123,14 @@ const SEEDED_NAMES: Record<StorageLocationType, string> = {
   spice_rack: 'Spice rack',
   other: 'Other',
 };
+
+/** The server's default names are placeholders; blank names also fall back to the type label. */
+export function isSeededLocationName(
+  location: Pick<StorageLocation, 'type'> & Partial<Pick<StorageLocation, 'name'>>,
+): boolean {
+  const name = location.name?.trim();
+  return !name || name === SEEDED_NAMES[location.type];
+}
 
 /**
  * Storage location name in the active language.
@@ -99,7 +150,7 @@ export function locationLabel(
   location: Pick<StorageLocation, 'type'> & Partial<Pick<StorageLocation, 'name'>>,
 ): string {
   const name = location.name?.trim();
-  if (name && name !== SEEDED_NAMES[location.type]) return name;
+  if (name && !isSeededLocationName(location)) return name;
   return t(`inventory.locations.${location.type}` as MessageKey);
 }
 
@@ -111,7 +162,14 @@ export function formatMeasure(
   unit: Unit,
   prefs: NumeralPrefs = {},
 ): string {
-  return `${formatQty(locale, value, prefs)} ${unitLabel(t, unit)}`;
+  const quantity = FRACTIONAL_MEASURE_UNITS.has(unit)
+    ? formatKitchenQuantity(locale, value, prefs)
+    : formatQty(locale, value, prefs);
+  if (LOCALIZED_MEASURE_UNITS.has(unit)) {
+    const pluralCount = Math.abs(value - Math.round(value)) <= 0.01 ? Math.round(value) : value;
+    return t(`mobile.measureUnits.${unit}` as MessageKey, { count: pluralCount, quantity });
+  }
+  return `${quantity} ${unitLabel(t, unit)}`;
 }
 
 export function formatDateL(
@@ -122,6 +180,21 @@ export function formatDateL(
   return formatDate(locale, iso, options);
 }
 
+/** Weekday only, through the shared locale date formatter. */
+export function formatWeekday(locale: Locale, iso: string | Date): string {
+  return formatDateL(locale, iso, { weekday: 'long' });
+}
+
+/** Hijri companion date, only for Arabic readers who opted in. */
+export function hijriCaption(
+  locale: Locale,
+  iso: string | Date,
+  showHijri: boolean,
+): string | null {
+  if (locale !== 'ar' || !showHijri) return null;
+  return formatHijriDate(iso);
+}
+
 /** Gregorian date, plus the Hijri date in Arabic when the user opts in. */
 export function formatDateWithHijri(
   locale: Locale,
@@ -130,10 +203,8 @@ export function formatDateWithHijri(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const gregorian = formatDate(locale, iso, options);
-  if (locale === 'ar' && showHijri) {
-    return `${gregorian} · ${formatHijriDate(iso)}`;
-  }
-  return gregorian;
+  const hijri = hijriCaption(locale, iso, showHijri);
+  return hijri ? `${gregorian} · ${hijri}` : gregorian;
 }
 
 /**
@@ -152,6 +223,28 @@ export function formatExpiryLabel(
   if (days < 0) return t('inventory.expired');
   if (days === 0) return t('inventory.expiresToday');
   return t('inventory.expiresIn', { days: formatQty(locale, days, prefs) });
+}
+
+/**
+ * Compact visible expiry status for tight bento mini items. Accessibility keeps
+ * the fuller `formatExpiryLabel` sentence, while the screen uses the short
+ * kitchen-owned copy.
+ */
+export function formatDaysLeft(
+  t: Translator,
+  locale: Locale,
+  expiresAt: string | null,
+  prefs: NumeralPrefs = {},
+  now: Date = new Date(),
+): string | null {
+  const days = daysUntilExpiry(expiresAt, now);
+  if (days === null) return null;
+  if (days < 0) return t('inventory.expired');
+  if (days === 0) return t('mobile.kitchen.leftToday');
+  return t('mobile.kitchen.daysLeft', { days }).replace(
+    String(days),
+    formatQty(locale, days, prefs),
+  );
 }
 
 /** Minutes as a compact localised numeral, for prep/cook badges. */

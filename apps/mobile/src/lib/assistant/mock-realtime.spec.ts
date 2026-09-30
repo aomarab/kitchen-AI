@@ -143,6 +143,24 @@ describe('MockRealtimeAssistantClient', () => {
     expect(assistant?.type === 'transcript' && assistant.turn.role).toBe('assistant');
   });
 
+  it('uses unique transcript ids across restarted sessions', async () => {
+    const first = new MockRealtimeAssistantClient({ connectMs: 10, stepMs: 10 });
+    const second = new MockRealtimeAssistantClient({ connectMs: 10, stepMs: 10 });
+    const firstEvents = collect();
+    const secondEvents = collect();
+
+    await first.start({ locale: 'en', camera: false, onEvent: firstEvents.onEvent });
+    await second.start({ locale: 'en', camera: false, onEvent: secondEvents.onEvent });
+    await vi.advanceTimersByTimeAsync(100);
+
+    const ids = [...firstEvents.events, ...secondEvents.events]
+      .filter((event) => event.type === 'transcript')
+      .map((event) => (event.type === 'transcript' ? event.turn.id : ''));
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.every((id) => /^mock-\d+-/.test(id))).toBe(true);
+  });
+
   describe('sendText', () => {
     it('echoes the user message, then answers, bracketed by speaking', async () => {
       const client = new MockRealtimeAssistantClient({ connectMs: 100, stepMs: 100 });

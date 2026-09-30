@@ -72,6 +72,13 @@ export function useInventoryItem(id: string) {
   });
 }
 
+export function useInventoryEvents() {
+  return useQuery({
+    queryKey: qk.inventoryEvents,
+    queryFn: () => api.call('listInventoryEvents'),
+  });
+}
+
 export function useCreateLocation() {
   const qc = useQueryClient();
   return useMutation({
@@ -117,7 +124,10 @@ export function useUpdateInventoryItem(id: string) {
   return useMutation({
     mutationFn: (body: RouteBody<'updateInventoryItem'>) =>
       api.call('updateInventoryItem', { params: { id }, body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.inventory }),
+    onSuccess: (item) => {
+      qc.setQueryData(qk.inventoryItem(id), item);
+      void qc.invalidateQueries({ queryKey: qk.inventory });
+    },
   });
 }
 

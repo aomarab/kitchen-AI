@@ -17,9 +17,10 @@ import { configureNotificationHandler } from '../lib/notification-scheduler';
 import { setMockLocale } from '../mocks';
 import { startConnectivityMonitor } from '../stores/connectivity';
 import { useAuthStore } from '../stores/auth';
-import { shouldRedirectSignedOut } from '../lib/entry-route';
+import { resetToSignIn, shouldRedirectSignedOut } from '../lib/entry-route';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { SyncFailuresBanner } from '../components/SyncFailuresBanner';
+import { Toast } from '../components/Toast';
 import { useTheme } from '../theme/useTheme';
 
 /**
@@ -66,7 +67,7 @@ function useSignedOutRedirect(ready: boolean): void {
 
   useEffect(() => {
     if (!shouldRedirectSignedOut(ready, status, segments)) return;
-    router.replace('/sign-in');
+    resetToSignIn(router);
   }, [ready, status, segments, router]);
 }
 
@@ -148,6 +149,7 @@ export default function RootLayout() {
             <OfflineBanner />
             <SyncFailuresBanner />
           </View>
+          <Toast />
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

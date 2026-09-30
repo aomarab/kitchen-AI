@@ -1,4 +1,5 @@
 import type { MessageKey } from '@kitchen/i18n';
+import { ApiError } from '@kitchen/api-client';
 import { errorMessageKey } from './errors';
 import { PhotoUploadError } from './upload';
 
@@ -15,4 +16,8 @@ import { PhotoUploadError } from './upload';
 export function captureErrorKey(error: unknown): MessageKey {
   if (error instanceof PhotoUploadError) return 'mobile.capture.uploadFailed';
   return errorMessageKey(error);
+}
+
+export function isNothingFound(error: unknown): boolean {
+  return error instanceof ApiError && error.code === 'AI_NO_RESULT';
 }

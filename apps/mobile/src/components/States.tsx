@@ -16,12 +16,19 @@ const CENTER = {
   padding: spacing.xl,
 } as const;
 
-export function LoadingState({ label }: { label?: string }) {
+const COMPACT_CENTER = {
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: spacing.sm,
+  padding: spacing.lg,
+} as const;
+
+export function LoadingState({ label, compact = false }: { label?: string; compact?: boolean }) {
   const { t } = useLocale();
   const { colors } = useTheme();
   return (
-    <View style={CENTER}>
-      <ActivityIndicator color={colors.primaryText} size="large" />
+    <View style={compact ? COMPACT_CENTER : CENTER}>
+      <ActivityIndicator color={colors.primaryText} size={compact ? 'small' : 'large'} />
       <AppText muted>{label ?? t('common.loading')}</AppText>
     </View>
   );
@@ -63,6 +70,7 @@ export function EmptyState({
 export interface ErrorStateProps {
   error: unknown;
   onRetry?: () => void;
+  compact?: boolean;
 }
 
 /**
@@ -73,14 +81,14 @@ export interface ErrorStateProps {
  * such and routes the household to top up rather than offering a bare retry,
  * which without credits could never succeed.
  */
-export function ErrorState({ error, onRetry }: ErrorStateProps) {
+export function ErrorState({ error, onRetry, compact = false }: ErrorStateProps) {
   const { t } = useLocale();
   const router = useRouter();
   const outOfCredits = isInsufficientCredits(error);
   return (
-    <View style={CENTER}>
-      <Icon name={outOfCredits ? 'wallet' : 'warning'} size={40} />
-      <AppText variant="heading" center>
+    <View style={compact ? COMPACT_CENTER : CENTER}>
+      <Icon name={outOfCredits ? 'wallet' : 'warning'} size={compact ? 28 : 40} />
+      <AppText variant={compact ? 'bodyStrong' : 'heading'} center>
         {outOfCredits ? t('mobile.credits.outOfCreditsTitle') : t('mobile.common.error')}
       </AppText>
       <AppText muted center>

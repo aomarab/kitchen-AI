@@ -9,6 +9,7 @@ import type { PaletteColors } from '../theme/palettes';
 export const CHIP_VARIANTS = ['pill', 'tag'] as const;
 
 export type ChipVariant = (typeof CHIP_VARIANTS)[number];
+export type ChipTone = 'default' | 'primary';
 
 export interface ControlTone {
   fill: string;
@@ -16,11 +17,17 @@ export interface ControlTone {
   border: string;
 }
 
+export type SegmentTone = 'default' | 'media';
+
 export function chipTone(
   colors: PaletteColors,
   variant: ChipVariant,
   selected: boolean,
+  tone: ChipTone = 'default',
 ): ControlTone {
+  if (tone === 'primary') {
+    return { fill: colors.primary, label: colors.onFill, border: colors.primary };
+  }
   if (variant === 'tag') {
     // The location tag inside a tile, which is never selectable.
     return { fill: colors.surface, label: colors.textMuted, border: colors.surface };
@@ -43,11 +50,26 @@ export function stepperTone(
     : { fill: colors.surfaceAlt, glyph: colors.text };
 }
 
-export function segmentTrack(colors: PaletteColors): string {
-  return colors.surfaceAlt;
+export function segmentTrack(colors: PaletteColors, tone: SegmentTone = 'default'): string {
+  return tone === 'media' ? colors.surfaceInverseAlt : colors.surfaceAlt;
 }
 
-export function segmentTone(colors: PaletteColors, selected: boolean, isDark = false): ControlTone {
+export function segmentTone(
+  colors: PaletteColors,
+  selected: boolean,
+  isDark = false,
+  tone: SegmentTone = 'default',
+): ControlTone {
+  if (tone === 'media') {
+    if (!selected) {
+      return { fill: 'transparent', label: colors.textInverseMuted, border: 'transparent' };
+    }
+    return {
+      fill: colors.textInverse,
+      label: colors.onPrimaryInverse,
+      border: colors.textInverse,
+    };
+  }
   if (!selected) return { fill: 'transparent', label: colors.textMuted, border: 'transparent' };
   // The thumb lifts off the track by its shadow in light mode and its edge in dark.
   return {

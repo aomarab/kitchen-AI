@@ -10,12 +10,15 @@ export interface QuantityStepperProps {
   onChange: (value: number) => void;
   step?: number;
   min?: number;
+  max?: number;
   /** Replaces the bare number, e.g. "8 cups". */
   label?: string;
   /** Shown as a caption under the value, e.g. "kg". */
   unit?: string;
   /** What is being adjusted, spoken before the value. */
   accessibilityLabel?: string;
+  /** Parent tiles can expose the accessibility actions while keeping these controls visual. */
+  accessible?: boolean;
   decrementLabel: string;
   incrementLabel: string;
 }
@@ -30,16 +33,19 @@ export function QuantityStepper({
   onChange,
   step = 1,
   min = 0,
+  max,
   label,
   unit,
   accessibilityLabel,
+  accessible = true,
   decrementLabel,
   incrementLabel,
 }: QuantityStepperProps) {
   const { colors } = useTheme();
   const decrement = () => onChange(Math.max(min, value - step));
-  const increment = () => onChange(value + step);
+  const increment = () => onChange(max === undefined ? value + step : Math.min(max, value + step));
   const atMin = value <= min;
+  const atMax = max !== undefined && value >= max;
   const display = label ?? String(value);
 
   const circle = (action: 'decrement' | 'increment', onPress: () => void, disabled: boolean) => {
@@ -48,6 +54,8 @@ export function QuantityStepper({
       <Pressable
         onPress={onPress}
         disabled={disabled}
+        accessible={false}
+        importantForAccessibility="no"
         style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
       >
         {({ pressed }) => (
@@ -72,16 +80,20 @@ export function QuantityStepper({
 
   return (
     <View
-      accessible
-      accessibilityRole="adjustable"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityValue={{ text: unit ? `${display} ${unit}` : display }}
-      accessibilityActions={[
-        { name: 'increment', label: incrementLabel },
-        { name: 'decrement', label: decrementLabel },
-      ]}
+      accessible={accessible}
+      accessibilityRole={accessible ? 'adjustable' : undefined}
+      accessibilityLabel={accessible ? accessibilityLabel : undefined}
+      accessibilityValue={accessible ? { text: unit ? `${display} ${unit}` : display } : undefined}
+      accessibilityActions={
+        accessible
+          ? [
+              { name: 'increment', label: incrementLabel },
+              { name: 'decrement', label: decrementLabel },
+            ]
+          : undefined
+      }
       onAccessibilityAction={(event) => {
-        if (event.nativeEvent.actionName === 'increment') increment();
+        if (event.nativeEvent.actionName === 'increment' && !atMax) increment();
         else if (event.nativeEvent.actionName === 'decrement' && !atMin) decrement();
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
@@ -97,7 +109,7 @@ export function QuantityStepper({
           </AppText>
         ) : null}
       </View>
-      {circle('increment', increment, false)}
+      {circle('increment', increment, atMax)}
     </View>
   );
 }

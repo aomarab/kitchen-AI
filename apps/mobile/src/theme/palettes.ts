@@ -33,11 +33,15 @@ export interface PaletteColors {
   readonly primaryText: string;
   readonly primaryPressed: string;
   readonly primarySoft: string;
+  readonly switchTrackOff: string;
   readonly onFill: string;
   readonly onDanger: string;
+  readonly onSuccess: string;
   readonly accent: string;
   readonly accentSoft: string;
   readonly warn: string;
+  /** Media-safe warning dot for inverse chips where dark-mode `warn` is too light. */
+  readonly warnInverse: string;
   readonly warnSoft: string;
   readonly danger: string;
   readonly dangerSoft: string;
@@ -78,6 +82,9 @@ export interface Palette {
 }
 
 export type ThemeMode = 'light' | 'dark';
+
+/** Native iOS switch thumb colour, used only for contrast maths in palette tests. */
+export const NATIVE_SWITCH_THUMB = '#FFFFFF';
 
 /** Constant across light and dark: media surfaces are always dark. */
 const MEDIA = {
@@ -123,13 +130,16 @@ const apricotLight: Palette = {
     primaryPressed: '#E95424',
     primaryText: '#B83D0C',
     primarySoft: '#FFE9E0',
+    switchTrackOff: '#7A6A60',
     onFill: '#2A1A12',
     onDanger: '#FFFFFF',
+    onSuccess: '#FFFFFF',
     accent: '#3F6A36',
     accentSoft: '#E3EDDD',
-    success: '#1E7A46',
+    success: '#1C7443',
     successSoft: '#E4F2E9',
     warn: '#9A5B00',
+    warnInverse: '#A56300',
     warnSoft: '#F8ECDA',
     danger: '#C0341D',
     dangerSoft: '#FBE5E1',
@@ -161,13 +171,16 @@ const apricotDark: Palette = {
     primaryPressed: '#FF8660',
     primaryText: '#FF9A73',
     primarySoft: '#3B2218',
+    switchTrackOff: '#8A7A70',
     onFill: '#2A1A12',
     onDanger: '#2A1A12',
+    onSuccess: '#2A1A12',
     accent: '#A3CF95',
     accentSoft: '#1F2B1B',
     success: '#74D29B',
     successSoft: '#15291D',
     warn: '#F2B45E',
+    warnInverse: '#A56300',
     warnSoft: '#35260F',
     danger: '#FF8A78',
     dangerSoft: '#3D1C16',

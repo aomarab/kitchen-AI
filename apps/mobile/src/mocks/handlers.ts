@@ -9,6 +9,7 @@ import {
   type CookingTimer,
   type CreateTimerRequest,
   type Ingredient,
+  type InventoryEvent,
   type InventoryItem,
   type Locale,
   type MealPlan,
@@ -21,6 +22,7 @@ import {
 import { CREDIT_PACKS } from '@kitchen/contracts';
 import {
   buildInventory,
+  buildInventoryEvents,
   buildRecognitionSession,
   buildShoppingList,
   buildWeeklyPlan,
@@ -95,6 +97,8 @@ function seedOccurrences(): ReminderOccurrence[] {
   ];
 }
 
+const seededInventory = buildInventory();
+
 const db = {
   user: { ...mockUser },
   household: { ...mockHousehold },
@@ -103,7 +107,8 @@ const db = {
   reminderOccurrences: seedOccurrences(),
   timers: [] as CookingTimer[],
   locations: [...seedLocations],
-  inventory: buildInventory(),
+  inventory: seededInventory,
+  inventoryEvents: buildInventoryEvents(seededInventory),
   shopping: buildShoppingList(),
   catalog: [...catalog],
   plans: new Map<string, MealPlan>(),
@@ -520,7 +525,12 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
     db.inventory = db.inventory.filter((i) => i.id !== id);
     return okEmpty();
   },
-  listInventoryEvents: () => HttpResponse.json([]),
+  listInventoryEvents: () =>
+    HttpResponse.json(
+      [...db.inventoryEvents].sort(
+        (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || a.id.localeCompare(b.id),
+      ),
+    ),
   syncInventoryEvents: async ({ request }) => {
     const body = await readBody(request);
     const events = Array.isArray(body.events) ? (body.events as Body[]) : [];
@@ -541,6 +551,17 @@ const resolvers: Partial<Record<RouteName, HttpResponseResolver>> = {
       }
       item.quantity = Math.max(0, item.quantity + Number(event.delta ?? 0));
       item.updatedAt = isoDateTime(0);
+      db.inventoryEvents.push({
+        id: nextId(),
+        itemId: item.id,
+        householdId: item.householdId,
+        delta: Number(event.delta ?? 0),
+        unit: event.unit as InventoryItem['unit'],
+        reason: event.reason as InventoryEvent['reason'],
+        mealPlanEntryId: (event.mealPlanEntryId as string | null) ?? null,
+        actorUserId: db.user.id,
+        createdAt: String(event.occurredAt ?? isoDateTime(0)),
+      });
       touched.add(item.id);
       processedEventIds.add(clientEventId);
       applied.push(clientEventId);

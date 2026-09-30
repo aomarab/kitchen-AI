@@ -3,6 +3,7 @@ import type {
   CreditBalance,
   Household,
   Ingredient,
+  InventoryEvent,
   InventoryItem,
   Locale,
   MealPlan,
@@ -352,9 +353,50 @@ export function buildInventory(): InventoryItem[] {
       source: seed.source,
       confidence: seed.confidence ?? null,
       photoKey: null,
-      createdAt: isoDateTime(-3),
+      createdAt: isoDateTime(-index),
       updatedAt: isoDateTime(-1),
     };
+  });
+}
+
+function consumedDeltaFor(item: InventoryItem): number {
+  if (item.quantity <= 0) return 0;
+  if (item.unit === 'kg') return Math.min(0.2, item.quantity);
+  if (item.unit === 'l') return Math.min(0.25, item.quantity);
+  if (item.unit === 'ml') return Math.min(100, item.quantity);
+  if (item.unit === 'g') return Math.min(50, item.quantity);
+  return Math.min(1, item.quantity);
+}
+
+export function buildInventoryEvents(items: readonly InventoryItem[]): InventoryEvent[] {
+  return items.flatMap((item, index) => {
+    const consumed = index % 3 === 0 ? consumedDeltaFor(item) : 0;
+    const initial: InventoryEvent = {
+      id: mockId(`e${index}a`),
+      itemId: item.id,
+      householdId: item.householdId,
+      delta: item.quantity + consumed,
+      unit: item.unit,
+      reason: item.source === 'receipt' ? 'purchased' : 'added',
+      mealPlanEntryId: null,
+      actorUserId: USER_ID,
+      createdAt: isoDateTime(-index - 2),
+    };
+    if (consumed <= 0) return [initial];
+    return [
+      initial,
+      {
+        id: mockId(`e${index}b`),
+        itemId: item.id,
+        householdId: item.householdId,
+        delta: -consumed,
+        unit: item.unit,
+        reason: 'consumed',
+        mealPlanEntryId: null,
+        actorUserId: USER_ID,
+        createdAt: isoDateTime(-index - 1),
+      },
+    ];
   });
 }
 

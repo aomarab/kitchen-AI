@@ -18,7 +18,11 @@ export default function SignIn() {
   const submit = () => signIn.mutate({ email, password }, { onSuccess: goHome });
 
   return (
-    <AuthLayout title={t('mobile.auth.welcomeTitle')} subtitle={t('mobile.auth.welcomeSubtitle')}>
+    <AuthLayout
+      title={t('mobile.auth.signInTitle')}
+      titleAccent={t('mobile.auth.signInAccent')}
+      subtitle={t('mobile.auth.welcomeSubtitle')}
+    >
       <View style={{ gap: spacing.md }}>
         <Field
           label={t('auth.email')}

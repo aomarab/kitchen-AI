@@ -38,32 +38,34 @@ export default function Feedback() {
     <Screen scroll>
       <Header title={t('mobile.feedback.title')} onBack={() => router.back()} />
 
-      <View style={{ gap: spacing.sm }}>
-        <AppText variant="label" muted>
-          {t('mobile.feedback.ratingLabel')}
-        </AppText>
-        <StarRating
-          value={rating}
-          onChange={setRating}
-          disabled={submit.isPending}
-          labelFor={(value) => t('mobile.feedback.star', { value })}
+      <Card style={{ gap: spacing.md }}>
+        <View style={{ gap: spacing.sm }}>
+          <AppText variant="label" muted>
+            {t('mobile.feedback.ratingLabel')}
+          </AppText>
+          <StarRating
+            value={rating}
+            onChange={setRating}
+            disabled={submit.isPending}
+            labelFor={(value) => t('mobile.feedback.star', { value })}
+          />
+        </View>
+
+        <Field
+          label={t('mobile.feedback.messageLabel')}
+          placeholder={t('mobile.feedback.messagePlaceholder')}
+          value={message}
+          onChangeText={setMessage}
+          multiline
+          maxLength={FEEDBACK_MESSAGE_MAX}
+          hint={t('mobile.feedback.remaining', { count: FEEDBACK_MESSAGE_MAX - message.length })}
+          style={{ minHeight: 120, paddingTop: spacing.md }}
         />
-      </View>
 
-      <Field
-        label={t('mobile.feedback.messageLabel')}
-        placeholder={t('mobile.feedback.messagePlaceholder')}
-        value={message}
-        onChangeText={setMessage}
-        multiline
-        maxLength={FEEDBACK_MESSAGE_MAX}
-        hint={t('mobile.feedback.remaining', { count: FEEDBACK_MESSAGE_MAX - message.length })}
-        style={{ minHeight: 120, paddingTop: spacing.md }}
-      />
-
-      <AppText variant="caption" muted>
-        {t('mobile.feedback.privacyNote')}
-      </AppText>
+        <AppText variant="caption" muted>
+          {t('mobile.feedback.privacyNote')}
+        </AppText>
+      </Card>
 
       {submit.isError ? (
         <View accessibilityLiveRegion="polite">

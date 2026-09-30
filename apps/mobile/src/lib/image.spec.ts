@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  lastManipulatorActions,
-  resetManipulatorCalls,
-} from '../mocks/expo-image-manipulator';
+import { lastManipulatorActions, resetManipulatorCalls } from '../mocks/expo-image-manipulator';
 import { fitWithin, IMAGE_JPEG_QUALITY, MAX_IMAGE_EDGE_PX, resizeForUpload } from './image';
 
 describe('fitWithin', () => {
@@ -68,9 +65,16 @@ describe('resizeForUpload', () => {
   });
 
   it('returns the uri from the manipulator', async () => {
-    const uri = await resizeForUpload('file://photo.jpg', 4032, 3024);
+    const { uri } = await resizeForUpload('file://photo.jpg', 4032, 3024);
     expect(uri).toBe('file://photo.jpg');
   });
+
+  it('returns the dimensions from the manipulator', async () => {
+    const result = await resizeForUpload('file://photo.jpg', 4032, 3024);
+    expect(result.width).toBe(111);
+    expect(result.height).toBe(222);
+  });
+
   it('falls back to width-only cap when dimensions are zero (OS omitted metadata)', async () => {
     // expo-image-picker documents width/height as possibly 0 when the OS does
     // not provide them. fitWithin(0,0) would return {width:0,height:0} — a

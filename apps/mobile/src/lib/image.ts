@@ -44,9 +44,12 @@ export function fitWithin(
  * rather than the ideal 1024px. This is a deliberate degradation; it is not a
  * reappearance of the orientation bug fixed previously.
  */
-export async function resizeForUpload(uri: string, width: number, height: number): Promise<string> {
-  const knownDims =
-    Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0;
+export async function resizeForUpload(
+  uri: string,
+  width: number,
+  height: number,
+): Promise<{ uri: string; width: number; height: number }> {
+  const knownDims = Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0;
   let resize: { width?: number; height?: number };
   if (knownDims) {
     const fitted = fitWithin(width, height);
@@ -56,10 +59,9 @@ export async function resizeForUpload(uri: string, width: number, height: number
   } else {
     resize = { width: MAX_IMAGE_EDGE_PX };
   }
-  const result = await ImageManipulator.manipulateAsync(
-    uri,
-    [{ resize }],
-    { compress: IMAGE_JPEG_QUALITY, format: ImageManipulator.SaveFormat.JPEG },
-  );
-  return result.uri;
+  const result = await ImageManipulator.manipulateAsync(uri, [{ resize }], {
+    compress: IMAGE_JPEG_QUALITY,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+  return { uri: result.uri, width: result.width, height: result.height };
 }

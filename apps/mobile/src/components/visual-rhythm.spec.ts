@@ -30,17 +30,32 @@ describe('borderless buttons align to the content margin', () => {
     expect(source).toMatch(/minHeight:\s*48/);
     expect(source).toMatch(/hitSlop=\{hitSlop\}/);
   });
+
+  it('lets inline text actions keep their intrinsic width', () => {
+    expect(source).toContain('flexShrink: 0');
+  });
 });
 
 describe('pushed-screen header', () => {
   const source = read('./Header.tsx');
 
-  it('centres a bodyStrong title between two equal sides', () => {
-    // Spec §8.6. Equal flex on both sides is what keeps the title optically
-    // centred when only one side (usually back) is occupied.
+  it('centres a bodyStrong title over intrinsic-width side controls', () => {
+    // The title must stay screen-centred, but the Review trailing "Retake" text
+    // action needs its intrinsic width in Arabic instead of one cramped flex
+    // share. The wider side becomes symmetric padding around the centred title.
     expect(source).toMatch(/variant="bodyStrong"/);
     expect(source).not.toMatch(/variant="title"/);
-    expect(source.match(/flex:\s*1\b/g) ?? []).toHaveLength(2);
+    expect(source).toContain("position: 'absolute'");
+    expect(source).toContain('start: 0');
+    expect(source).toContain('end: 0');
+    expect(source).toContain('const sideInset = Math.max(sideWidths.start, sideWidths.end, 44)');
+    expect(source).toContain('paddingHorizontal: sideInset + spacing.sm');
+    expect(source).toContain("onLayout={measureSide('end')}");
+
+    const trailingSlot =
+      source.match(/<View onLayout=\{measureSide\('end'\)\}[\s\S]*?\{trailing\}<\/View>/)?.[0] ??
+      '';
+    expect(trailingSlot).not.toMatch(/flex:\s*1\b/);
   });
 
   it('backs out through a 44pt round button that mirrors in RTL', () => {
@@ -92,18 +107,57 @@ describe('screen rhythm', () => {
 describe('home screen palette', () => {
   const source = read('../app/(tabs)/home.tsx');
 
-  it('paints the week progress in the brand colour, not the lone accent blue', () => {
+  it('paints the sage plan tile progress in the brand colour, not the herb accent', () => {
     expect(source).not.toMatch(/backgroundColor:\s*colors\.accent/);
     expect(source).toMatch(/backgroundColor:\s*colors\.primary/);
-    // Guards the premise: accent really is a different hue, so painting one
-    // bar with it stranded a blue element on an otherwise violet screen.
+    // Guards the premise: accent really is a different hue, so painting this
+    // progress bar with it would strand one herb-green metric on a coral screen.
     expect(colors.accent).not.toBe(colors.primary);
   });
 
-  it('does not mark the quick-add actions with a drill-down chevron', () => {
-    // Photo, barcode and receipt open a capture flow; they do not push a
-    // detail page. A disclosure indicator on an action row is the iOS
-    // convention for "there is more underneath", which there is not.
+  it('does not mark the Home action tiles with a drill-down chevron', () => {
+    // Scan receipt and plan week are actions, not detail pages. A disclosure
+    // indicator says "there is more underneath", which there is not.
     expect(source).not.toMatch(/showChevron/);
+  });
+});
+
+describe('G1 primitive extensions', () => {
+  it('lets Tile replace the icon with a leading slot, fall back to ember and expose actions', () => {
+    const source = read('./Tile.tsx');
+    expect(source).toContain('leading?: ReactNode');
+    expect(source).toContain("fill?: 'tint' | 'surfaceAlt'");
+    expect(source).toContain('compact?: boolean');
+    expect(source).toContain('const TILE_MIN_HEIGHT = 120');
+    expect(source).toContain('const COMPACT_TILE_MIN_HEIGHT = 112');
+    expect(source).toContain('minHeight: compact ? COMPACT_TILE_MIN_HEIGHT : TILE_MIN_HEIGHT');
+    expect(source).toContain('padding: compact ? spacing.md : spacing.lg');
+    expect(source).toContain('borderRadius: compact ? radius.lg : radius.xl');
+    expect(source).toContain('accessibilityRole?: AccessibilityRole');
+    expect(source).toContain('accessibilityState?: AccessibilityState');
+    expect(source).toContain('accessibilityActions');
+    expect(source).toContain('onAccessibilityAction');
+    expect(source).toContain("fillMode === 'surfaceAlt'");
+    expect(source).toContain('imageFailed');
+    expect(source).toContain('onError={() => setImageFailed(true)}');
+    expect(source).toContain('showPhotoFallback');
+    expect(source).toMatch(/showPhotoFallback\s*=\s*photo && \(!image \|\| imageFailed\)/);
+    expect(source).toContain('gradientHero');
+    const fallbackBlock = source.match(/\{showPhotoFallback \? \([\s\S]*?\) : null\}/)?.[0] ?? '';
+    expect(fallbackBlock).not.toContain('scrimGradient');
+  });
+
+  it('renders TabHeader accent text as primaryText in the same display line', () => {
+    const source = read('./TabHeader.tsx');
+    expect(source).toContain('titleAccent?: string');
+    expect(source).toContain('color="primaryText"');
+    expect(source).toContain('variant="display"');
+  });
+
+  it('keeps a 48pt RoundButton target for the Tonight play control', () => {
+    const source = read('./RoundButton.tsx');
+    expect(source).toContain('36 | 40 | 44 | 48');
+    expect(source).toContain('const targetSize = size === 48 ? 48 : 44');
+    expect(source).toContain('size === 48 ? { width: targetSize, height: targetSize } : null');
   });
 });

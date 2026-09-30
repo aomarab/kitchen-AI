@@ -1,11 +1,11 @@
 import { useEffect, type ReactNode } from 'react';
-import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { ScrollView, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useRouter } from 'expo-router';
 import { formatRemaining } from '@kitchen/contracts';
-import { AppText, Button, Icon, LoadingState, ErrorState } from '../components';
+import { AppText, Button, Card, Icon, LoadingState, ErrorState } from '../components';
 import { useFormat } from '../hooks/useFormat';
 import { useHouseholds } from '../hooks/profile';
 import {
@@ -28,6 +28,8 @@ import {
 import { formatDateL } from '../lib/format';
 import { radius, spacing } from '../theme';
 import { useTheme } from '../theme/useTheme';
+
+const MINI_CARD_ICON_SIZE = 48;
 
 /**
  * The kitchen kiosk: the phone propped against the backsplash while you cook
@@ -93,58 +95,80 @@ export default function KitchenScreen() {
   const planLines = wellnessPlanLines(settings, t);
   const timer = featuredTimer(timers, tick);
   const isLandscape = kioskOrientation(width, height) === 'landscape';
+  const planLabel = t('mobile.screen.planLabel');
+  const heroEyebrow = hasAnyNudge(settings) ? planLabel : t('mobile.screen.planIdleLabel');
+  const nudgeMessage = nudge ? t(nudge.messageKey as 'reminders.break.body') : null;
+  const heroMessage =
+    nudgeMessage ?? (planLines.length > 0 ? planLines.join(', ') : t('mobile.screen.planIdle'));
   const householdName =
     householdsQuery.data?.find((household) => household.id === activeHouseholdId)?.name ??
     t('mobile.screen.title');
 
-  const hero = (
+  const heroText = (
     <View
-      accessibilityLabel={t('mobile.screen.planLabel')}
+      accessible
+      accessibilityLabel={`${heroEyebrow}, ${heroMessage}`}
+      style={{ gap: spacing.sm }}
+    >
+      <AppText variant="label" style={{ color: colors.textInverseMuted }}>
+        {heroEyebrow}
+      </AppText>
+      {nudgeMessage ? (
+        <AppText variant="title" style={{ color: colors.textInverse }}>
+          {nudgeMessage}
+        </AppText>
+      ) : planLines.length > 0 ? (
+        planLines.map((line) => (
+          <AppText key={line} variant="heading" style={{ color: colors.textInverse }}>
+            {line}
+          </AppText>
+        ))
+      ) : (
+        <AppText variant="body" style={{ color: colors.textInverseMuted }}>
+          {heroMessage}
+        </AppText>
+      )}
+    </View>
+  );
+
+  const hero = (
+    <Card
+      gradient
       style={{
         flex: isLandscape ? 1.4 : undefined,
+        borderRadius: radius.xl,
+      }}
+      contentStyle={{
+        flex: isLandscape ? 1 : undefined,
         gap: spacing.lg,
         padding: spacing.xl,
         borderRadius: radius.xl,
-        backgroundColor: colors.surfaceInverse,
         justifyContent: 'center',
       }}
     >
-      <AppText variant="label" style={{ color: colors.textInverseMuted }}>
-        {hasAnyNudge(settings) ? t('mobile.screen.planLabel') : t('mobile.screen.planIdleLabel')}
-      </AppText>
-
       {nudge ? (
         <View style={{ gap: spacing.lg, alignItems: 'flex-start' }}>
-          <AppText variant="title" style={{ color: colors.textInverse }}>
-            {t(nudge.messageKey as 'reminders.break.body')}
-          </AppText>
+          {heroText}
           <Button
             title={t('mobile.screen.nudgeAcknowledge')}
+            variant="media"
             disabled={acknowledge.isPending}
             onPress={() => acknowledge.mutate(nudge.id)}
           />
         </View>
       ) : planLines.length > 0 ? (
-        <View style={{ gap: spacing.sm }}>
-          {planLines.map((line) => (
-            <AppText key={line} variant="heading" style={{ color: colors.textInverse }}>
-              {line}
-            </AppText>
-          ))}
-        </View>
+        heroText
       ) : (
         <View style={{ gap: spacing.lg, alignItems: 'flex-start' }}>
-          <AppText variant="body" style={{ color: colors.textInverseMuted }}>
-            {t('mobile.screen.planIdle')}
-          </AppText>
+          {heroText}
           <Button
             title={t('mobile.screen.planIdleCta')}
-            variant="secondary"
+            variant="media"
             onPress={() => router.push('/settings/reminders')}
           />
         </View>
       )}
-    </View>
+    </Card>
   );
 
   const cards = (
@@ -218,8 +242,7 @@ function MiniCard({
 }) {
   const { colors } = useTheme();
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Card
       accessibilityLabel={`${label} ${value}`}
       onPress={onPress}
       style={{
@@ -229,29 +252,30 @@ function MiniCard({
         gap: spacing.lg,
         padding: spacing.xl,
         borderRadius: radius.lg,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
       }}
     >
       <View
         style={{
-          width: 48,
-          height: 48,
+          width: MINI_CARD_ICON_SIZE,
+          height: MINI_CARD_ICON_SIZE,
           borderRadius: radius.md,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: tone === 'primary' ? colors.primarySoft : colors.accentSoft,
         }}
       >
-        <Icon name={icon} size={24} color={tone === 'primary' ? colors.primaryText : colors.text} />
+        <Icon
+          name={icon}
+          size={24}
+          color={tone === 'primary' ? colors.primaryText : colors.accent}
+        />
       </View>
       <View style={{ flex: 1, gap: spacing.xs }}>
-        <AppText variant="label" muted numberOfLines={1}>
+        <AppText variant="label" muted>
           {label}
         </AppText>
         <AppText variant="title">{value}</AppText>
       </View>
-    </Pressable>
+    </Card>
   );
 }

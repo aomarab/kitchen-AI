@@ -241,10 +241,12 @@ The catalogs are append-only per namespace (copilot instructions, "i18n and RTL"
 
 ## §6 Tokens (`apps/mobile/src/theme/palettes.ts`)
 
-The `PaletteColors` shape is kept, which avoids churn across every component. `Palette` gains two
+The `PaletteColors` shape is kept, which avoids churn across every component. `Palette` gains these
 members:
 
 - `colors.onDanger`, the label on a `danger` fill
+- `colors.onSuccess`, the tick/label on a `success` fill
+- `colors.switchTrackOff`, the off-state track for native switches
 - `scrim`, a structured gradient object defined in §6.4
 
 `onFill` now labels `primary` and `primaryPressed` only, because a coral fill takes an ink label
@@ -252,29 +254,31 @@ while the light danger fill takes white.
 
 ### §6.1 Apricot light
 
-| Token            | Value                 | Role                                                                              |
-| ---------------- | --------------------- | --------------------------------------------------------------------------------- |
-| `bg`             | `#F7F3EF`             | Cream page                                                                        |
-| `surface`        | `#FFFFFF`             | Cards, plain tiles, tab bar                                                       |
-| `surfaceAlt`     | `#F1EAE4`             | Sunk fills: segmented track, composer, stepper "−", search                        |
-| `border`         | `#E6DCD3`             | Hairlines (decorative; separation is by fill)                                     |
-| `text`           | `#2A1A12`             | Ink                                                                               |
-| `textMuted`      | `#6F6056`             | Captions and **inactive tab labels** (the mock's `#8A7A70` is 4.12:1 and dropped) |
-| `primary`        | `#F05A2B`             | Coral fill                                                                        |
-| `primaryPressed` | `#E95424`             | Pressed coral                                                                     |
-| `primaryText`    | `#B83D0C`             | Headline keyword, links, active tab                                               |
-| `primarySoft`    | `#FFE9E0`             | Apricot soft fill                                                                 |
-| `onFill`         | `#2A1A12`             | Label on `primary` / `primaryPressed`                                             |
-| `onDanger`       | `#FFFFFF`             | **New.** Label on `danger`                                                        |
-| `accent`         | `#3F6A36`             | Herb: foreground on sage                                                          |
-| `accentSoft`     | `#E3EDDD`             | Sage                                                                              |
-| `success`        | `#1E7A46`             | Status: fresh / in stock / cooked                                                 |
-| `successSoft`    | `#E4F2E9`             |                                                                                   |
-| `warn`           | `#9A5B00`             | Status: use soon / running low / to buy                                           |
-| `warnSoft`       | `#F8ECDA`             |                                                                                   |
-| `danger`         | `#C0341D`             | Status: today / expired; destructive fill                                         |
-| `dangerSoft`     | `#FBE5E1`             |                                                                                   |
-| `overlay`        | `rgba(42,26,18,0.45)` | Sheet backdrop                                                                    |
+| Token            | Value                 | Role                                                                                |
+| ---------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| `bg`             | `#F7F3EF`             | Cream page                                                                          |
+| `surface`        | `#FFFFFF`             | Cards, plain tiles, tab bar                                                         |
+| `surfaceAlt`     | `#F1EAE4`             | Sunk fills: segmented track, composer, stepper "−", search                          |
+| `border`         | `#E6DCD3`             | Hairlines (decorative; separation is by fill)                                       |
+| `text`           | `#2A1A12`             | Ink                                                                                 |
+| `textMuted`      | `#6F6056`             | Captions and **inactive tab labels** (the mock's `#8A7A70` is 4.12:1 and dropped)   |
+| `primary`        | `#F05A2B`             | Coral fill                                                                          |
+| `primaryPressed` | `#E95424`             | Pressed coral                                                                       |
+| `primaryText`    | `#B83D0C`             | Headline keyword, links, active tab                                                 |
+| `primarySoft`    | `#FFE9E0`             | Apricot soft fill                                                                   |
+| `switchTrackOff` | `#7A6A60`             | Native switch off track                                                             |
+| `onFill`         | `#2A1A12`             | Label on `primary` / `primaryPressed`                                               |
+| `onDanger`       | `#FFFFFF`             | **New.** Label on `danger`                                                          |
+| `onSuccess`      | `#FFFFFF`             | **New.** Tick/label on `success`                                                    |
+| `accent`         | `#3F6A36`             | Herb: foreground on sage                                                            |
+| `accentSoft`     | `#E3EDDD`             | Sage                                                                                |
+| `success`        | `#1C7443`             | Status: fresh / in stock / cooked (darkened from #1E7A46: 4.8:1 on the `sage` tint) |
+| `successSoft`    | `#E4F2E9`             |                                                                                     |
+| `warn`           | `#9A5B00`             | Status: use soon / running low / to buy                                             |
+| `warnSoft`       | `#F8ECDA`             |                                                                                     |
+| `danger`         | `#C0341D`             | Status: today / expired; destructive fill                                           |
+| `dangerSoft`     | `#FBE5E1`             |                                                                                     |
+| `overlay`        | `rgba(42,26,18,0.45)` | Sheet backdrop                                                                      |
 
 `shadowColor #2A1A12`, `shadowScale 1`.
 
@@ -286,14 +290,15 @@ Warm, never neutral grey. The page is roasted-cocoa dark and the coral keeps the
 | ---------------- | ----------------- | ------------- | --------- |
 | `bg`             | `#16100C`         | `onFill`      | `#2A1A12` |
 | `surface`        | `#221913`         | `onDanger`    | `#2A1A12` |
-| `surfaceAlt`     | `#2D231C`         | `accent`      | `#A3CF95` |
-| `border`         | `#3D3027`         | `accentSoft`  | `#1F2B1B` |
-| `text`           | `#F7EEE8`         | `success`     | `#74D29B` |
-| `textMuted`      | `#BFAFA4`         | `successSoft` | `#15291D` |
-| `primary`        | `#FF6B3D`         | `warn`        | `#F2B45E` |
-| `primaryPressed` | `#FF8660`         | `warnSoft`    | `#35260F` |
-| `primaryText`    | `#FF9A73`         | `danger`      | `#FF8A78` |
-| `primarySoft`    | `#3B2218`         | `dangerSoft`  | `#3D1C16` |
+| `surfaceAlt`     | `#2D231C`         | `onSuccess`   | `#2A1A12` |
+| `border`         | `#3D3027`         | `accent`      | `#A3CF95` |
+| `text`           | `#F7EEE8`         | `accentSoft`  | `#1F2B1B` |
+| `textMuted`      | `#BFAFA4`         | `success`     | `#74D29B` |
+| `primary`        | `#FF6B3D`         | `successSoft` | `#15291D` |
+| `primaryPressed` | `#FF8660`         | `warn`        | `#F2B45E` |
+| `primaryText`    | `#FF9A73`         | `warnSoft`    | `#35260F` |
+| `primarySoft`    | `#3B2218`         | `danger`      | `#FF8A78` |
+| `switchTrackOff` | `#8A7A70`         | `dangerSoft`  | `#3D1C16` |
 | `overlay`        | `rgba(0,0,0,0.6)` |               |           |
 
 `shadowColor #000000`, `shadowScale 1.8`. In dark mode, cards and tiles also carry a 1px `border`
@@ -378,7 +383,9 @@ These values must hold. They are computed with WCAG 2.x relative luminance and a
 | `primaryText` on bg / surface / soft        | 4.5 | 5.13 / 5.66 / 4.85        | 9.09 / 8.32 / 7.09        |
 | `onFill` on primary / pressed               | 4.5 | 4.94 / 4.59               | 5.91 / 7.04               |
 | `onDanger` on danger                        | 4.5 | 5.60                      | 7.30                      |
+| `onSuccess` on success                      | 3.0 | 5.79                      | 9.11                      |
 | primary / pressed / danger fill on surface  | 3.0 | 3.39 / 3.65 / 5.60        | 6.10 / 7.26 / 7.53        |
+| switch track off on surface / native thumb  | 3.0 | 5.17 / 5.17               | 4.19 / 4.12               |
 | success / warn / danger on own soft         | 4.5 | 4.63 / 4.65 / 4.64        | 8.37 / 7.99 / 6.66        |
 | status as a border on bg and surface        | 3.0 | ≥ 4.84                    | ≥ 7.53                    |
 | tint fg on tint (plain/butter/sage/apricot) | 4.5 | 5.66 / 6.16 / 5.24 / 4.85 | 8.32 / 9.24 / 8.77 / 7.09 |
@@ -1011,8 +1018,9 @@ These screens are specified in words. Each reuses the primitives above.
   3. With no match it shows `mobile.shop.noMatch`. The `+` is disabled until a suggestion is
      chosen, because free-text items are not in the contract, and adding them would be a contract
      change outside this redesign.
-- Items sit in a group card with round 24pt checkboxes. A checked box is a `success` fill with a
-  white tick. The `shopping.purchased` group is struck through in `textMuted`.
+- Items sit in a group card with round 24pt checkboxes. A checked box is a `success` fill with an
+  `onSuccess` tick (white in light, ink in dark). The `shopping.purchased` group is struck through
+  in `textMuted`.
 - A sticky `primary` "Move n to Kitchen" (existing `shopping.moveToKitchen`) uses the existing
   write path.
 
@@ -1071,7 +1079,9 @@ These screens are specified in words. Each reuses the primitives above.
 - A butter balance tile with the orb and a `numeral` balance.
 - Packs as plain tiles. The selected one gets a 2pt `primary` edge.
 - One `primary` purchase CTA. RevenueCat and Apple rules are unchanged.
-- The usage list sits in a group card.
+- The balance breakdown (free this month, purchased, the refill note) sits in a group card, with
+  the low-balance notice. There is no per-action usage list: clients see credits, never vendor cost
+  (AI credits spec).
 
 **Timers, wellness and smart screen (`timers`, `wellness`, `screen`)**
 

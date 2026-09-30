@@ -36,24 +36,66 @@ describe('mobile source sweep', () => {
    * dimension. Adding a control means adding a line here, which is the point:
    * it forces the size to be a decision rather than an accident.
    */
-  const TOUCH_TARGETS: Record<string, RegExp> = {
-    'Button.tsx': /minHeight:\s*(\d+)/,
-    'Fab.tsx': /height:\s*(\d+)/,
-    'Field.tsx': /minHeight:\s*(\d+)/,
-    'Header.tsx': /minHeight:\s*(\d+)/,
-    'QuantityStepper.tsx': /height:\s*(\d+)/,
+  const TOUCH_TARGETS: Record<string, { path: string; pattern: RegExp }> = {
+    'Button.tsx': { path: 'components/Button.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Fab.tsx': { path: 'components/Fab.tsx', pattern: /height:\s*(\d+)/ },
+    'Field.tsx': { path: 'components/Field.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Header.tsx': { path: 'components/Header.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'QuantityStepper.tsx': { path: 'components/QuantityStepper.tsx', pattern: /height:\s*(\d+)/ },
     // The visual circle is 36-40pt; the Pressable around it is what is measured.
-    'RoundButton.tsx': /height:\s*(\d+)/,
-    'SegmentedControl.tsx': /minHeight:\s*(\d+)/,
-    'StarRating.tsx': /minHeight:\s*(\d+)/,
-    'TabBar.tsx': /minHeight:\s*(\d+)/,
-    'Tile.tsx': /minHeight:\s*(\d+)/,
+    'RoundButton.tsx': { path: 'components/RoundButton.tsx', pattern: /height:\s*(\d+)/ },
+    'SegmentedControl.tsx': {
+      path: 'components/SegmentedControl.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'StarRating.tsx': { path: 'components/StarRating.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'TabBar.tsx': { path: 'components/TabBar.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Tile.tsx': { path: 'components/Tile.tsx', pattern: /COMPACT_TILE_MIN_HEIGHT\s*=\s*(\d+)/ },
+    'ToggleRow.tsx': { path: 'components/ToggleRow.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'BalanceTile.tsx': {
+      path: 'features/credits/BalanceTile.tsx',
+      pattern: /BALANCE_ORB_SIZE\s*=\s*(\d+)/,
+    },
+    'ArPins.tsx': { path: 'features/capture/ArPins.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'Shutter.tsx': { path: 'features/capture/Shutter.tsx', pattern: /width:\s*(\d+)/ },
+    'QuestionTile.tsx': {
+      path: 'features/capture/QuestionTile.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'ReviewEditSheet.tsx': {
+      path: 'features/capture/ReviewEditSheet.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'ReviewList.tsx': { path: 'features/capture/ReviewList.tsx', pattern: /minHeight:\s*(\d+)/ },
+    'DayChipStrip.tsx': {
+      path: 'features/plans/DayChipStrip.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'shopping.tsx': { path: 'app/(tabs)/shopping.tsx', pattern: /size=\{(\d+)\}/ },
+    'AddItemField.tsx': {
+      path: 'features/shop/AddItemField.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'ShoppingCheckbox.tsx': {
+      path: 'features/shop/ShoppingCheckbox.tsx',
+      pattern: /height:\s*(\d+)/,
+    },
+    'ShoppingRow.tsx': {
+      path: 'features/shop/ShoppingRow.tsx',
+      pattern: /minHeight:\s*(\d+)/,
+    },
+    'recipe/[id]/index.tsx': { path: 'app/recipe/[id]/index.tsx', pattern: /height:\s*(\d+)/ },
+    'recipe/[id]/cook.tsx': { path: 'app/recipe/[id]/cook.tsx', pattern: /height:\s*(\d+)/ },
+    'item/[id].tsx': { path: 'app/item/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
+    'entry/[id].tsx': { path: 'app/entry/[id].tsx', pattern: /MINI_TILE_HEIGHT\s*=\s*(\d+)/ },
+    'screen.tsx': { path: 'app/screen.tsx', pattern: /MINI_CARD_ICON_SIZE\s*=\s*(\d+)/ },
+    'wellness.tsx': { path: 'app/wellness.tsx', pattern: /NUDGE_ICON_SIZE\s*=\s*(\d+)/ },
   };
 
   it('keeps every interactive control at or above the 44pt minimum', () => {
-    for (const [file, pattern] of Object.entries(TOUCH_TARGETS)) {
-      const content = readFileSync(join(SRC, 'components', file), 'utf8');
-      const match = content.match(pattern);
+    for (const [file, target] of Object.entries(TOUCH_TARGETS)) {
+      const content = readFileSync(join(SRC, target.path), 'utf8');
+      const match = content.match(target.pattern);
       expect(
         match,
         `${file} no longer declares the touch dimension this guard tracks. If ` +
@@ -65,6 +107,12 @@ describe('mobile source sweep', () => {
           '(Android asks for 48dp). Small targets are a rejection risk and a ' +
           'real barrier for anyone with a motor impairment.',
       ).toBeGreaterThanOrEqual(44);
+      if (file === 'Field.tsx') {
+        expect(
+          Number(match![1]),
+          'Auth fields must use the 56pt spec §9.7 box',
+        ).toBeGreaterThanOrEqual(56);
+      }
     }
   });
 

@@ -1,10 +1,6 @@
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  hydrationCupsDrunk,
-  type ReminderSettings,
-  type ReminderType,
-} from '@kitchen/contracts';
+import { hydrationCupsDrunk, type ReminderSettings, type ReminderType } from '@kitchen/contracts';
 import {
   Screen,
   Header,
@@ -39,6 +35,8 @@ const NUDGE_ICONS = {
   morning: 'sunrise',
   hydration: 'water',
 } as const satisfies Record<ReminderType, IconName>;
+const HYDRATION_PROGRESS_HEIGHT = 10;
+const NUDGE_ICON_SIZE = 44;
 
 export default function Wellness() {
   const { t } = useFormat();
@@ -115,14 +113,15 @@ function HydrationCard({
   settings: ReminderSettings;
 }) {
   const { t } = useFormat();
-  const { colors } = useTheme();
+  const { colors, tintNamed } = useTheme();
+  const sage = tintNamed('sage');
   const fraction = hydrationFraction(occurrences, settings);
 
   return (
-    <Card>
+    <Card tint={sage}>
       <View style={{ gap: spacing.sm }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <Icon name="water" size={20} color={colors.primary} />
+          <Icon name="water" size={20} color={sage.fg} />
           <AppText variant="heading">{t('mobile.wellness.hydrationTitle')}</AppText>
         </View>
 
@@ -136,9 +135,9 @@ function HydrationCard({
         {/* Decoration only — the reading above it is the accessible one. */}
         <View
           style={{
-            height: 10,
+            height: HYDRATION_PROGRESS_HEIGHT,
             borderRadius: radius.pill,
-            backgroundColor: colors.surfaceAlt,
+            backgroundColor: colors.border,
             overflow: 'hidden',
           }}
         >
@@ -147,7 +146,7 @@ function HydrationCard({
               width: `${Math.round(fraction * 100)}%`,
               height: '100%',
               borderRadius: radius.pill,
-              backgroundColor: colors.primary,
+              backgroundColor: colors.success,
             }}
           />
         </View>
@@ -179,8 +178,8 @@ function NudgeCard({
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
         <View
           style={{
-            width: 40,
-            height: 40,
+            width: NUDGE_ICON_SIZE,
+            height: NUDGE_ICON_SIZE,
             borderRadius: radius.pill,
             alignItems: 'center',
             justifyContent: 'center',

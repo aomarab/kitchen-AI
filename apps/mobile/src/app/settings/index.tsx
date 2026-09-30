@@ -2,7 +2,17 @@ import { View, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { type Locale } from '@kitchen/i18n';
-import { Screen, Header, AppText, Card, Chip, ToggleRow, ListRow } from '../../components';
+import {
+  Screen,
+  Header,
+  AppText,
+  Card,
+  Chip,
+  ToggleRow,
+  ListGroup,
+  ListRow,
+  SectionLabel,
+} from '../../components';
 import { useLocale } from '../../lib/locale';
 import { useSettingsStore } from '../../stores/settings';
 import { spacing } from '../../theme';
@@ -30,100 +40,116 @@ export default function Settings() {
     <Screen scroll>
       <Header title={t('mobile.settings.title')} onBack={() => router.back()} />
 
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('common.language')}
-        </AppText>
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <Chip
-            label={t('common.english')}
-            selected={locale === 'en'}
-            onPress={() => chooseLocale('en')}
-          />
-          <Chip
-            label={t('common.arabic')}
-            selected={locale === 'ar'}
-            onPress={() => chooseLocale('ar')}
-          />
-        </View>
-      </View>
-
       <Card style={{ gap: spacing.lg }}>
-        <AppText variant="label" muted>
-          {t('mobile.settings.appearance')}
-        </AppText>
-        <ThemePicker />
+        <View style={{ gap: spacing.sm }}>
+          <SectionLabel>{t('common.language')}</SectionLabel>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Chip
+              label={t('common.english')}
+              selected={locale === 'en'}
+              onPress={() => chooseLocale('en')}
+            />
+            <Chip
+              label={t('common.arabic')}
+              selected={locale === 'ar'}
+              onPress={() => chooseLocale('ar')}
+            />
+          </View>
+        </View>
+
+        <View style={{ gap: spacing.sm }}>
+          <SectionLabel>{t('mobile.settings.appearance')}</SectionLabel>
+          <ThemePicker />
+        </View>
+      </Card>
+
+      <ListGroup>
         <ToggleRow
+          grouped
           label={t('mobile.settings.easternNumerals')}
           hint={t('mobile.settings.easternNumeralsHint')}
           value={easternNumerals}
           onValueChange={setEasternNumerals}
         />
         <ToggleRow
+          grouped
           label={t('mobile.settings.showHijri')}
           hint={t('mobile.settings.showHijriHint')}
           value={showHijri}
           onValueChange={setShowHijri}
         />
-      </Card>
+      </ListGroup>
 
-      <ListRow
-        title={t('mobile.places.entry')}
-        subtitle={t('mobile.places.entryHint')}
-        showChevron
-        onPress={() => router.push('/settings/places')}
-      />
+      <ListGroup>
+        <ListRow
+          grouped
+          icon="location"
+          title={t('mobile.places.entry')}
+          showChevron
+          onPress={() => router.push('/settings/places')}
+        />
 
-      <ListRow
-        title={t('mobile.reminders.entry')}
-        subtitle={t('mobile.reminders.entryHint')}
-        showChevron
-        onPress={() => router.push('/settings/reminders')}
-      />
+        <ListRow
+          grouped
+          icon="clock"
+          title={t('mobile.reminders.entry')}
+          showChevron
+          onPress={() => router.push('/settings/reminders')}
+        />
 
-      <ListRow
-        title={t('mobile.assistant.personaEntry')}
-        subtitle={t('mobile.assistant.personaEntryHint')}
-        showChevron
-        onPress={() => router.push('/settings/assistant')}
-      />
+        <ListRow
+          grouped
+          icon="mic"
+          title={t('mobile.assistant.personaEntry')}
+          showChevron
+          onPress={() => router.push('/settings/assistant')}
+        />
+      </ListGroup>
 
-      <ListRow
-        title={t('mobile.feedback.entry')}
-        subtitle={t('mobile.feedback.entryHint')}
-        showChevron
-        onPress={() => router.push('/settings/feedback')}
-      />
+      <ListGroup>
+        <ListRow
+          grouped
+          icon="captions"
+          title={t('mobile.feedback.entry')}
+          showChevron
+          onPress={() => router.push('/settings/feedback')}
+        />
+      </ListGroup>
 
-      <ListRow
-        title={t('mobile.deleteAccount.link')}
-        titleColor="danger"
-        showChevron
-        onPress={() => router.push('/settings/delete-account')}
-      />
+      <View style={{ gap: spacing.sm }}>
+        <SectionLabel>{t('mobile.settings.legal')}</SectionLabel>
+        <ListGroup>
+          <ListRow
+            grouped
+            icon="info"
+            title={t('mobile.settings.privacyPolicy')}
+            showChevron
+            onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+          />
 
-      <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('mobile.settings.legal')}
-        </AppText>
+          <ListRow
+            grouped
+            icon="info"
+            title={t('mobile.settings.terms')}
+            showChevron
+            onPress={() => void Linking.openURL(TERMS_URL)}
+          />
+        </ListGroup>
       </View>
 
-      <ListRow
-        title={t('mobile.settings.privacyPolicy')}
-        showChevron
-        onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
-      />
-
-      <ListRow
-        title={t('mobile.settings.terms')}
-        showChevron
-        onPress={() => void Linking.openURL(TERMS_URL)}
-      />
+      <ListGroup>
+        <ListRow
+          grouped
+          icon="trash"
+          title={t('mobile.deleteAccount.link')}
+          titleColor="danger"
+          showChevron
+          onPress={() => router.push('/settings/delete-account')}
+        />
+      </ListGroup>
 
       <View style={{ gap: spacing.xs }}>
-        <AppText variant="label" muted>
-          {t('mobile.settings.about')}
-        </AppText>
+        <SectionLabel>{t('mobile.settings.about')}</SectionLabel>
         <AppText variant="caption" muted>
           {t('mobile.more.appVersion', { version })}
         </AppText>
