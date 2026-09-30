@@ -20,6 +20,7 @@ import { CATALOG_PORT } from '../ai.constants.js';
 import type { IngredientResolverPort } from '../catalog/ingredient-resolver.port.js';
 import { buildVisionPrompt } from '../prompts/vision.prompt.js';
 import { runInBillingContext } from '../usage/billing-context.js';
+import { sanitizeBox } from './box.js';
 import { suggestedExpiry, suggestedLocation } from './suggestions.js';
 
 export interface RecognizeInput {
@@ -138,6 +139,9 @@ export class RecognitionService {
           hint as StorageLocationType | undefined,
         ),
         photoKey,
+        // Relative to `photoKey`'s image, which is why deduplication above
+        // keeps the first photo's item: its box and its key must agree.
+        box: sanitizeBox(item.box),
       };
     });
 

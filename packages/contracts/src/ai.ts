@@ -92,6 +92,32 @@ function modelNullable<T extends z.ZodTypeAny>(schema: T) {
 }
 
 /**
+ * Where an item sits in the photo it was recognised in, normalised to that
+ * uploaded image: origin top-left, every value a fraction of width or height.
+ * Drawn by the mobile capture screen as a pin; absent means "no position", and
+ * the client lists the item in its tray instead.
+ */
+export const normalizedBoxSchema = z
+  .object({
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+    w: z.number().gt(0).max(1),
+    h: z.number().gt(0).max(1),
+  })
+  .refine((b) => b.x + b.w <= 1 + 1e-6 && b.y + b.h <= 1 + 1e-6, 'box exceeds image');
+export type NormalizedBox = z.infer<typeof normalizedBoxSchema>;
+
+/**
+ * The box as the model writes it: deliberately loose, and sanitised by the API
+ * before it reaches a client. A strict 0..1 schema here would fail the whole
+ * scan on one slightly out-of-range number and pay for a repair call, which is
+ * the failure `modelNullable` exists to avoid. `.catch(null)` extends that to a
+ * box that is malformed outright — a position is a nicety, never worth a retry.
+ */
+const rawBoxSchema = z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() });
+export type RawVisionBox = z.infer<typeof rawBoxSchema>;
+
+/**
  * Raw structured output from the vision model, before catalog resolution.
  * Kept separate from the API response so a model change cannot silently alter
  * the client contract.
@@ -103,6 +129,7 @@ export const visionIngredientSchema = z.object({
   estimatedQuantity: quantitySchema,
   unit: unitSchema,
   confidence: z.number().min(0).max(1),
+  box: modelNullable(rawBoxSchema).catch(null),
 });
 export type VisionIngredient = z.infer<typeof visionIngredientSchema>;
 
@@ -124,6 +151,12 @@ export const recognizedItemSchema = z.object({
   suggestedExpiresAt: isoDateSchema.nullable(),
   suggestedLocationType: z.enum(['fridge', 'freezer', 'pantry', 'spice_rack', 'other']),
   photoKey: z.string().nullable(),
+  /**
+   * Optional rather than defaulted, so every other producer of a
+   * `RecognizedItem` (receipts, barcode, mocks) compiles unchanged. Clients
+   * read `null` and `undefined` alike as "no box".
+   */
+  box: normalizedBoxSchema.nullish(),
 });
 export type RecognizedItem = z.infer<typeof recognizedItemSchema>;
 

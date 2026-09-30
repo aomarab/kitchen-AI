@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { resolveThemeMode, tintIn } from './index';
-import { palettes, type Palette, type ThemeFamily, type ThemeMode } from './palettes';
+import { resolveThemeMode, tintIn, tintNamed } from './index';
+import { palettes, type Palette, type ThemeMode } from './palettes';
 import { contrast } from './contrast';
 import {
   RECIPE_THUMB_TONE_FOREGROUNDS,
@@ -23,12 +23,11 @@ const RECIPE_THUMB_PAIRS = RECIPE_THUMB_TONE_TOKENS.map(
 );
 
 /**
- * Every palette faces the identical bar. The picker lets a user land on any of
- * these six, so "the default one is accessible" is not a claim worth making —
- * asserting the set is the only version of this test that means anything.
+ * Both modes face the identical bar. Appearance follows the phone by default,
+ * so "light is accessible" is not a claim worth making on its own.
  */
 const ALL: readonly (readonly [string, Palette])[] = (
-  Object.keys(palettes) as ThemeFamily[]
+  Object.keys(palettes) as (keyof typeof palettes)[]
 ).flatMap((family) =>
   (['light', 'dark'] as ThemeMode[]).map(
     (mode) => [`${family} ${mode}`, palettes[family][mode]] as const,
@@ -36,7 +35,7 @@ const ALL: readonly (readonly [string, Palette])[] = (
 );
 
 describe.each(ALL)('%s palette', (_name, palette) => {
-  const { colors, tints, gradientHero } = palette;
+  const { colors, tints, gradientHero, scrim } = palette;
 
   it.each(['text', 'textMuted'] as const)('%s reads on every surface', (token) => {
     for (const surface of SURFACES) {
@@ -61,9 +60,9 @@ describe.each(ALL)('%s palette', (_name, palette) => {
   });
 
   /**
-   * `onFill` rather than `textInverse`, because the two part company in dark
-   * mode: a dark-mode fill is light and takes a dark label, while
-   * `textInverse` still belongs to the always-dark cook surface.
+   * The coral is bright, so its label is ink in both modes. The destructive
+   * fill has its own label, `onDanger`: the light-mode red takes white, which
+   * `onFill` (ink) would fail on.
    */
   it('button fills carry readable labels', () => {
     expect(contrast(colors.onFill, colors.primary), 'primary').toBeGreaterThanOrEqual(AA_TEXT);
@@ -71,7 +70,15 @@ describe.each(ALL)('%s palette', (_name, palette) => {
       contrast(colors.onFill, colors.primaryPressed),
       'primary pressed',
     ).toBeGreaterThanOrEqual(AA_TEXT);
-    expect(contrast(colors.onFill, colors.danger), 'danger').toBeGreaterThanOrEqual(AA_TEXT);
+    expect(contrast(colors.onDanger, colors.danger), 'danger').toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  /**
+   * F4's question tile inverts with the mode: `text` becomes the fill and `bg`
+   * the label. Ink on cream in light, cream on cocoa in dark.
+   */
+  it('the inverted question tile reads', () => {
+    expect(contrast(colors.bg, colors.text)).toBeGreaterThanOrEqual(AA_TEXT);
   });
 
   /**
@@ -112,7 +119,7 @@ describe.each(ALL)('%s palette', (_name, palette) => {
    * DateField's "clear date" is brand-coloured label text on a card.
    *
    * Only `surface` is certified for it: measured against `surfaceAlt` the same
-   * violet is 4.28:1, under AA, so a brand label must never be moved onto the
+   * brand hue can fall under AA, so a brand label must never be moved onto the
    * alt surface — use `primarySoft` as its backing instead.
    */
   it('primaryText reads as text on a plain surface', () => {
@@ -121,7 +128,7 @@ describe.each(ALL)('%s palette', (_name, palette) => {
     );
   });
 
-  it('cook mode inverts legibly', () => {
+  it('media surfaces invert legibly', () => {
     expect(contrast(colors.textInverse, colors.surfaceInverse), 'primary').toBeGreaterThanOrEqual(
       AA_TEXT,
     );
@@ -132,17 +139,15 @@ describe.each(ALL)('%s palette', (_name, palette) => {
   });
 
   /**
-   * Cook mode is the one screen that inverts, and it hosts buttons. A
-   * light-mode `primary` is 1.20:1 on `surfaceInverse` — the CTA fill
-   * disappears and the ghost label is unreadable. These three pairs are what
-   * the `primaryInverse` / `ghostInverse` variants must satisfy. The label is
-   * `onPrimaryInverse` and not `text`, because cook mode stays dark even when
-   * the app is in dark mode, where `text` is light and would vanish.
+   * The camera, a photo and the video player are dark in every mode, and they
+   * host buttons (the `media` variant). The label on the lifted brand fill is
+   * `onPrimaryInverse` and not `text`, because the media surface stays dark
+   * even when the app is in dark mode, where `text` is light and would vanish.
    */
-  it('cook mode buttons separate from the inverted surface', () => {
+  it('media surfaces carry buttons that separate', () => {
     expect(
       contrast(colors.primaryInverse, colors.surfaceInverse),
-      'ghostInverse label',
+      'media ghost label',
     ).toBeGreaterThanOrEqual(AA_TEXT);
     expect(
       contrast(colors.primaryInverse, colors.surfaceInverse),
@@ -155,15 +160,13 @@ describe.each(ALL)('%s palette', (_name, palette) => {
   });
 
   /**
-   * Cook mode also hosts a step badge and a "previous" button, and those had
-   * been drawing their fills from the mode-following `warnSoft` / `surfaceAlt`
-   * tokens. That is invisible in dark mode, where a "soft" tint is a dark tint
-   * and the cook ground is already dark — the pair measured 1.08:1. The fills
-   * therefore come from the always-dark group instead. The lift is deliberately
-   * gentle, so the border carries the affordance and is held to the full
-   * non-text ratio.
+   * Badges and secondary controls on a media surface draw their fills from the
+   * always-dark group, never the mode-following `surfaceAlt`: in dark mode a
+   * "soft" tint is a dark tint and the pair measured 1.08:1. The lift is
+   * deliberately gentle, so the border carries the affordance and is held to
+   * the full non-text ratio.
    */
-  it('cook mode secondary surfaces stay visible against the inverted ground', () => {
+  it('media secondary surfaces stay visible against the dark ground', () => {
     expect(
       contrast(colors.surfaceInverseAlt, colors.surfaceInverse),
       'lifted inverse surface',
@@ -176,6 +179,59 @@ describe.each(ALL)('%s palette', (_name, palette) => {
       contrast(colors.textInverse, colors.surfaceInverseAlt),
       'label on lifted inverse surface',
     ).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  /** The capture shutter is the coral on the viewfinder, in both modes. */
+  it('the coral shutter separates from the viewfinder', () => {
+    expect(contrast(colors.primary, colors.surfaceInverse)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
+  /**
+   * Text on a photo sits over the scrim. The worst photo is pure white, so the
+   * white label is measured against the scrim composited over white at the
+   * lowest alpha text is allowed on.
+   */
+  describe('photo scrim', () => {
+    function alphaAt(position: number): number {
+      const { stops } = scrim;
+      for (let i = 0; i < stops.length - 1; i += 1) {
+        const [[p0, a0], [p1, a1]] = [stops[i]!, stops[i + 1]!];
+        if (position >= p0 && position <= p1) {
+          return p1 === p0 ? a1 : a0 + ((a1 - a0) * (position - p0)) / (p1 - p0);
+        }
+      }
+      return stops.at(-1)![1];
+    }
+
+    function overWhite(hex: string, alpha: number): string {
+      const channels = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      const mixed = channels.map((c) => Math.round(c * alpha + 255 * (1 - alpha)));
+      return `#${mixed.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+    }
+
+    it('white text clears AA at the lowest alpha text may sit on', () => {
+      const worst = overWhite(scrim.rgb, scrim.textMinAlpha);
+      expect(contrast(colors.textInverse, worst), `on ${worst}`).toBeGreaterThanOrEqual(AA_TEXT);
+    });
+
+    /**
+     * The trap the knee in the ramp fixes: a single linear ramp to 0.82 only
+     * clears 0.70 in the bottom 9% of a tile, too thin for a title and a
+     * caption. Text needs the bottom 40%.
+     */
+    it('gives text the bottom 40% of a tile', () => {
+      for (let step = 0; step <= 40; step += 1) {
+        const position = 0.6 + (0.4 * step) / 40;
+        expect(alphaAt(position), `alpha at ${position}`).toBeGreaterThanOrEqual(
+          scrim.textMinAlpha - 1e-9,
+        );
+      }
+    });
+
+    it('leaves the top of the photo clear', () => {
+      expect(alphaAt(0)).toBe(0);
+      expect(alphaAt(0.35)).toBe(0);
+    });
   });
 
   /**
@@ -241,7 +297,7 @@ describe.each(ALL)('%s palette', (_name, palette) => {
    * lavender tint landed 5.0 away from it.
    *
    * Euclidean RGB distance is a coarse proxy for perceptibility, but it is the
-   * right shape of check here: mint, blush and sky separate from the ground by
+   * right shape of check here: butter, sage and apricot separate from the ground by
    * hue rather than lightness, so a luminance-only rule would wrongly demand
    * they get darker.
    */
@@ -281,8 +337,36 @@ describe.each(ALL)('%s palette', (_name, palette) => {
   });
 });
 
+/**
+ * Media surfaces are dark in every mode, so the `*Inverse` group must not drift
+ * between light and dark — a camera that changes colour with the phone's
+ * appearance is a camera that is not showing the photo.
+ */
+it('media tokens are identical in light and dark', () => {
+  const MEDIA = [
+    'surfaceInverse',
+    'surfaceInverseAlt',
+    'borderInverse',
+    'textInverse',
+    'textInverseMuted',
+    'primaryInverse',
+    'onPrimaryInverse',
+  ] as const;
+  for (const token of MEDIA) {
+    expect(palettes.apricot.dark.colors[token], token).toBe(palettes.apricot.light.colors[token]);
+  }
+});
+
+describe('named tints', () => {
+  const { tints } = palettes.apricot.light;
+
+  it.each(['plain', 'butter', 'sage', 'apricot'] as const)('%s exists', (name) => {
+    expect(tintNamed(tints, name).name).toBe(name);
+  });
+});
+
 describe('tint rotation', () => {
-  const { tints } = palettes.violet.light;
+  const { tints } = palettes.apricot.light;
 
   it('rotates without repeating a neighbour', () => {
     for (let i = 0; i < tints.length * 2; i += 1) {
@@ -294,34 +378,6 @@ describe('tint rotation', () => {
     expect(tintIn(tints, -1).name).toBe(tints[tints.length - 1]!.name);
     expect(tintIn(tints, -tints.length).name).toBe(tints[0]!.name);
     expect(tintIn(tints, 1.7).name).toBe(tints[1]!.name);
-  });
-});
-
-/**
- * The families must stay recognisably different from one another, or the picker
- * is three ways to choose the same screen. Comparing `primary` is the honest
- * test: it is the colour a user actually points at in the swatch row.
- */
-describe('families are distinguishable from each other', () => {
-  const MIN_DISTANCE = 60;
-
-  function distance(a: string, b: string): number {
-    const toRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-    const [x, y] = [toRgb(a), toRgb(b)];
-    return Math.hypot(...x.map((c, i) => c - y[i]!));
-  }
-
-  it.each([
-    ['violet', 'terracotta'],
-    ['violet', 'green'],
-    ['terracotta', 'green'],
-  ] as const)('%s and %s do not collide', (a, b) => {
-    for (const mode of ['light', 'dark'] as const) {
-      expect(
-        distance(palettes[a][mode].colors.primary, palettes[b][mode].colors.primary),
-        `${a} vs ${b} in ${mode}`,
-      ).toBeGreaterThanOrEqual(MIN_DISTANCE);
-    }
   });
 });
 

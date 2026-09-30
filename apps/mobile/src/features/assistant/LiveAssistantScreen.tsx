@@ -757,7 +757,8 @@ function Pill({
   const { colors } = useTheme();
   const bg =
     tone === 'danger' ? colors.danger : tone === 'primary' ? colors.primary : colors.textInverse;
-  const fg = tone === 'light' ? colors.surfaceInverse : colors.onFill;
+  const fg =
+    tone === 'danger' ? colors.onDanger : tone === 'light' ? colors.surfaceInverse : colors.onFill;
   return (
     <View
       accessibilityLabel={accessibilityLabel}
@@ -806,11 +807,13 @@ function Control({
           ? colors.textInverse
           : colors.surfaceInverseAlt;
   const fg =
-    tone === 'primary' || tone === 'danger'
-      ? colors.onFill
-      : active
-        ? colors.surfaceInverse
-        : colors.textInverse;
+    tone === 'danger'
+      ? colors.onDanger
+      : tone === 'primary'
+        ? colors.onFill
+        : active
+          ? colors.surfaceInverse
+          : colors.textInverse;
   return (
     <Pressable
       accessibilityRole="button"

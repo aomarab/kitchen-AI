@@ -106,6 +106,7 @@ function makeRecognitionService(credits: CreditsService, gatewayImpl?: Partial<A
     estimatedQuantity: 200,
     unit: 'g',
     confidence: 0.95,
+    box: null,
   };
   const gateway = {
     execute: vi.fn(async () => ({ ingredients: [fakeIngredient] }) satisfies VisionResult),
@@ -223,7 +224,13 @@ function makePlanService(credits: CreditsService, plannerImpl?: Partial<PlannerS
     ...plannerImpl,
   } as unknown as PlannerService;
 
-  return new PlanService(ctx.db, undefined as never, planner, credits, new MediaService(ctx.db, undefined as never));
+  return new PlanService(
+    ctx.db,
+    undefined as never,
+    planner,
+    credits,
+    new MediaService(ctx.db, undefined as never),
+  );
 }
 
 describe('PlanService.regenerateEntry debit site (plan.regenerateEntry)', () => {
@@ -293,9 +300,15 @@ function makePlanProcessor(credits: CreditsService, plannerImpl?: Partial<Planne
     }),
     ...plannerImpl,
   } as unknown as PlannerService;
-  return new PlanProcessor(store, planner, credits, {
-    warmMedia: async () => 0,
-  } as unknown as PlanService, { warmPlanTitles: async () => 0 } as unknown as RecipeTranslationService);
+  return new PlanProcessor(
+    store,
+    planner,
+    credits,
+    {
+      warmMedia: async () => 0,
+    } as unknown as PlanService,
+    { warmPlanTitles: async () => 0 } as unknown as RecipeTranslationService,
+  );
 }
 
 function makeReceiptProcessor(credits: CreditsService, receiptImpl?: Partial<ReceiptService>) {

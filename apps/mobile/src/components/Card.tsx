@@ -12,7 +12,7 @@ export interface CardProps {
   /** Fills the card with one of the rotating pastel tints from the theme. Takes
    *  precedence over `tone`, and drops the border so the fill reads as the edge. */
   tint?: Tint;
-  /** The hero treatment: a violet gradient carrying inverse text. */
+  /** The hero treatment: the ember gradient carrying inverse text. */
   gradient?: boolean;
   style?: ViewStyle;
 }
@@ -43,7 +43,8 @@ export function Card({
     ...(gradient ? { backgroundColor: 'transparent', borderColor: 'transparent' } : null),
   };
 
-  /** The kit's feature card runs deep violet up into the brand violet. */
+  /** Ember runs from roasted cocoa up to a burnt coral, so inverse text reads
+   *  across the whole ramp (`palette.spec.ts`, "hero gradient"). */
   const body = gradient ? (
     <LinearGradient
       colors={gradientHero as unknown as readonly [string, string, ...string[]]}

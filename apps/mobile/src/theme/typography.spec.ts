@@ -22,9 +22,19 @@ describe('typography', () => {
     expect(typography('ar').body.lineHeight).toBeGreaterThan(typography('en').body.lineHeight);
   });
 
-  it('carries a 700-weight button tier for pill labels', () => {
-    expect(typography('en').button.fontWeight).toBe('700');
+  it('carries a 600-weight button tier for pill labels', () => {
+    expect(typography('en').button.fontWeight).toBe('600');
     expect(typography('en').button.fontSize).toBe(16);
+  });
+
+  /**
+   * Tile counts, the credit balance and the cook timer change digit by digit.
+   * Proportional figures make the number shuffle sideways as it ticks.
+   */
+  it('sets numerals in tabular figures, in both locales', () => {
+    expect(typography('en').numeral.fontVariant).toEqual(['tabular-nums']);
+    expect(typography('ar').numeral.fontVariant).toEqual(['tabular-nums']);
+    expect(typography('en').body.fontVariant).toBeUndefined();
   });
 });
 
@@ -49,7 +59,15 @@ describe('maxFontScaleFor', () => {
   it('leaves the content variants uncapped', () => {
     // undefined rather than Infinity: this value is handed to React Native's
     // maxFontSizeMultiplier prop, which accepts null, 0, or a number >= 1.
-    for (const variant of ['display', 'title', 'heading', 'body', 'bodyStrong'] as const) {
+    for (const variant of [
+      'hero',
+      'display',
+      'title',
+      'heading',
+      'body',
+      'bodyStrong',
+      'numeral',
+    ] as const) {
       expect(maxFontScaleFor(variant), variant).toBeUndefined();
     }
   });
@@ -57,8 +75,17 @@ describe('maxFontScaleFor', () => {
   it('classifies every variant in the scale', () => {
     // Adding a variant without deciding whether it is chrome or content would
     // silently default it to uncapped. Fail here instead.
-    expect(Object.keys(typography('en')).sort()).toEqual(
-      ['body', 'bodyStrong', 'button', 'caption', 'display', 'heading', 'label', 'title'],
-    );
+    expect(Object.keys(typography('en')).sort()).toEqual([
+      'body',
+      'bodyStrong',
+      'button',
+      'caption',
+      'display',
+      'heading',
+      'hero',
+      'label',
+      'numeral',
+      'title',
+    ]);
   });
 });

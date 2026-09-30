@@ -10,7 +10,7 @@ import {
 } from './recipe-thumb-tones';
 
 const source = () => readFileSync(join(__dirname, 'RecipeThumb.tsx'), 'utf8');
-const colors = palettes.violet.light.colors;
+const colors = palettes.apricot.light.colors;
 
 describe('recipe thumb tone selection', () => {
   it('is deterministic for a given dish key', () => {

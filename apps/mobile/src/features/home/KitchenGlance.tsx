@@ -32,7 +32,7 @@ export function KitchenGlance({
   locations: readonly StorageLocation[];
 }) {
   const { t, locale, prefs } = useFormat();
-  const { colors, tintFor } = useTheme();
+  const { colors, tintIn } = useTheme();
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale > 1.3;
   const router = useRouter();
@@ -110,7 +110,7 @@ export function KitchenGlance({
             : { flexDirection: 'row', alignItems: 'center', gap: spacing.lg }
         }
       >
-        <Ring ticks={ticks.map((index) => (index === null ? null : tintFor(index).fg))}>
+        <Ring ticks={ticks.map((index) => (index === null ? null : tintIn(index).fg))}>
           <AppText variant="title" maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>
             {formatQty(locale, items.length, prefs)}
           </AppText>
@@ -147,7 +147,7 @@ export function KitchenGlance({
                     width: 10,
                     height: 10,
                     borderRadius: radius.pill,
-                    backgroundColor: tintFor(index).fg,
+                    backgroundColor: tintIn(index).fg,
                   }}
                 />
                 <AppText variant="caption" numberOfLines={1} style={{ flex: 1 }}>

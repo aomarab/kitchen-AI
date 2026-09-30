@@ -44,7 +44,9 @@ const fgFor = (colors: PaletteColors): Record<ButtonVariant, string> => ({
   primary: colors.onFill,
   secondary: colors.text,
   ghost: colors.primaryText,
-  danger: colors.onFill,
+  // Not `onFill`: the coral takes an ink label, but the light-mode red takes
+  // white, so the destructive fill carries its own label token.
+  danger: colors.onDanger,
   // The lifted brand tone is light in both modes, so its label is always dark.
   primaryInverse: colors.onPrimaryInverse,
   ghostInverse: colors.primaryInverse,
